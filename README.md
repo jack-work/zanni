@@ -151,11 +151,17 @@ flake.nix                lib.mkBoiledSite · packages.{default,assets,example} �
 Extracted from `~/dev/spain-flake/master/stubs/figar/index.html`, with the
 component vocabulary and the QA guards taken from the `figaro-libretto` skill.
 
-- **`boil` is ratified** (2026-08-16). `gesso`, `phosphor` and `fontpack` are
-  my proposals: a painter's ground, a CRT coating, and the workshop's own word.
-  Plainer alternatives, if you would rather: `dither`, `scanlines`, `faces`.
-  A rename costs one directory and one class prefix.
+- **`boil` is ratified** (2026-08-16). `gesso`, `phosphor`, `fontpack` and
+  `glyphmark` are my proposals: a painter's ground, a CRT coating, and two of
+  the workshop's own words. Plainer alternatives, if you would rather:
+  `dither`, `scanlines`, `faces`, `pixelmark`. A rename costs one directory
+  and one class prefix.
 - **The raster cost of a boiled subtree has never been measured.** figar.org's
   mitigation is reasoned, not profiled. See `docs/boil.md` law 3.
-- **Where this repo is published is undecided** — GitHub alongside the other
-  `jack-work` flakes, or spain's own keel host.
+- **Where this repo is published is settled.** keel on spain is the source of
+  truth, at `git@spain:jack/zanni.git`, browsable at
+  `https://keel.kelliher.info/jack/zanni`. GitHub
+  (`github:jack-work/zanni`) is a mirror that keel pushes on every receive —
+  it strictly follows spain, so anything pushed straight to GitHub gets
+  overwritten. Consumers still take the GitHub URL as their flake input,
+  because a flake input must be fetchable without spain's SSH.
