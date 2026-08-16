@@ -85,6 +85,27 @@ for (const name of want) {
   if (name === 'gesso') gesso();
   if (name === 'phosphor') phosphor();
   if (name === 'fontpack') fontpack();
+  if (name === 'glyphmark') glyphmark();
+}
+
+function glyphmark() {
+  console.log('[glyphmark] the mark');
+  check('it scales with nearest-neighbour', /image-rendering:\s*pixelated/.test(css));
+  check('the mark is sized in whole pixels, tunably',
+    /\.glyphmark\s*\{[^{}]*var\(--glyphmark-size/.test(css));
+  /* The trap this component exists to prevent: pixelated on a full-size
+     photo does nothing. If a page wears .glyphmark, the image it wears it
+     on should have come through lib.pixelate — which names its output
+     *-pixel.png — or be small by hand. This is a warning-shaped check: it
+     can only see the filename, so it says what it can see. */
+  const marks = html.match(/<img[^>]*class="[^"]*glyphmark[^"]*"[^>]*>/g) || [];
+  const small = (m) => {
+    const uri = (m.match(/src="(data:image\/[^"]*)"/) || [])[1];
+    if (uri) return uri.length < 24000;         /* an 80px PNG is ~4KB of base64 */
+    return /src="[^"]*(pixel|glyph)[^"]*"/.test(m);
+  };
+  check('the mark points at a small source', marks.every(small),
+    'image-rendering: pixelated does nothing to a large photo — see docs/glyphmark.md');
 }
 
 function gesso() {

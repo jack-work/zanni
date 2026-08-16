@@ -14,7 +14,7 @@
       ...
     }:
     let
-      version = "0.2.0";
+      version = "0.3.0";
     in
     {
       # One call, the way gluck-service-lib's mkPythonService is one call.
@@ -33,6 +33,27 @@
       # (`<!-- zanni:boil -->`). A missing marker fails the build: a static
       # site whose effect silently did not arrive is the exact failure this
       # library was written against.
+      # Downsample first, pixelate second. `image-rendering: pixelated` on a
+      # full-size photograph does nothing visible — the browser's downscale
+      # path is not nearest-neighbour. figar.org's mark is a 26x26 PNG scaled
+      # UP to 38px; this reproduces that discipline reproducibly, so nobody
+      # has to remember an imagemagick incantation or check a binary into git
+      # by hand.
+      lib.pixelate =
+        {
+          pkgs,
+          src,
+          size ? 96,
+          colors ? 64,
+          name ? "pixel.png",
+        }:
+        pkgs.runCommand name { nativeBuildInputs = [ pkgs.imagemagick ]; } ''
+          magick ${src} -auto-orient \
+            -resize ${toString size}x${toString size}^ \
+            -gravity center -extent ${toString size}x${toString size} \
+            -colors ${toString colors} -strip PNG8:$out
+        '';
+
       lib.mkBoiledSite =
         {
           pkgs,
@@ -41,6 +62,9 @@
           version ? "0.1.0",
           components ? [ "boil" ],
           pages ? [ "index.html" ],
+          # Extra files to lay over the source tree, name -> derivation or
+          # path. For generated assets a site should not keep in git.
+          files ? { },
         }:
         let
           zanni = self.packages.${pkgs.system}.default;
@@ -55,6 +79,10 @@
             runHook preInstall
             mkdir -p $out
             cp -r . $out/
+            chmod -R u+w $out
+            ${pkgs.lib.concatStringsSep "\n" (
+              pkgs.lib.mapAttrsToList (n: v: "cp -r ${v} \"$out/${n}\"") files
+            )}
             for page in ${pkgs.lib.escapeShellArgs pages}; do
               zanni-inline ${flags} "$out/$page" -o "$out/$page.zanni"
               mv "$out/$page.zanni" "$out/$page"

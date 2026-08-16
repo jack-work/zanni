@@ -13,7 +13,8 @@ who turns up wherever he is needed.
 | **gesso** | the prepared ground: parchment plus a 6px conic dither, and the palette it was chosen against | CSS only |
 | **phosphor** | the CRT veil: a 1px/3px scanline comb multiplied over a box, with an optional bloom | CSS only |
 | **fontpack** | three faces, three jobs — Jacquard 24 display, EB Garamond prose, VT323 technical | a `<head>` fragment + CSS |
-| glyphmark, liftcard, scena | the rest of figar.org's vocabulary | not extracted |
+| **glyphmark** | the portrait as a pixel mark: a genuinely small source scaled up with nearest-neighbour, bordered in gold | CSS + a Nix image step (`lib.pixelate`) |
+| liftcard, scena | the rest of figar.org's vocabulary | not extracted |
 
 Together the four are the whole voice: `boil` moves, `gesso` grounds,
 `phosphor` veils, `fontpack` speaks. Each is independently wearable — boil on
@@ -105,6 +106,10 @@ zanni-check FILE.html                                  # the guard
 ```
 
 `nix run .#inline` and `nix run .#check` if you would rather not install them.
+
+`zanni.lib.pixelate { inherit pkgs; src = ./photo.jpg; size = 80; }` downsamples
+an image at build time — glyphmark needs a small source, because
+`image-rendering: pixelated` only governs magnification. See `docs/glyphmark.md`.
 
 ## Why this is a package and not a snippet
 

@@ -83,8 +83,7 @@
   .full .links a { color: var(--oxblood); }
   .full .ornament { color: var(--gold); }
   .full .ornament::before, .full .ornament::after { background: rgba(162, 118, 42, 0.6); }
-  .full .profile-photo { border-color: var(--gold); outline-color: rgba(162,118,42,0.5);
-                         image-rendering: pixelated; }
+  .full .profile-photo { --glyphmark-size: 92px; --glyphmark-border: 2px; }
 
   /* Frozen: what a reduced-motion reader gets. The displacement stays, the
      stepping stops — because the <animate> elements are gone, not because a
@@ -97,6 +96,7 @@
 <!-- zanni:gesso -->
 <!-- zanni:phosphor -->
 <!-- zanni:fontpack -->
+<!-- zanni:glyphmark -->
 
 <div class="head">
   <h1>zanni · boil</h1>
@@ -154,11 +154,13 @@
 
   <!-- 3 ── boil plus the rest of the texture -->
   <div class="specimen">
-    <div class="label">3 · <b>boil + gesso + phosphor + fontpack</b> — the whole voice</div>
+    <div class="label">3 · <b>boil + gesso + phosphor + fontpack + glyphmark</b> — the whole voice</div>
     <div class="panel full gesso phosphor-host">
       <div class="card">
         <div class="frame boil-ui"></div>
-        <img class="profile-photo" alt="" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='92' height='92'><rect width='92' height='92' fill='%23dcc4b0'/><circle cx='46' cy='36' r='16' fill='%23a2762a'/><path d='M14 92c4-22 18-30 32-30s28 8 32 30z' fill='%23a2762a'/></svg>">
+        <!-- glyphmark: an 80px source scaled up to 92px with nearest-neighbour.
+             The pixels are in the FILE, not in a filter. -->
+        <img class="profile-photo glyphmark glyphmark-round" alt="" src="data:image/png;base64,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">
         <h1 class="boil-text fontpack-display">John Kelliher</h1>
         <div class="title boil-text fontpack-mono">Senior Software Engineer</div>
         <div class="ornament boil-ui" aria-hidden="true">◆</div>
