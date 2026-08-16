@@ -106,7 +106,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jacquard+24&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=VT323&display=swap">
 </head>
 <body>
-<!-- zanni:boil begin (zanni 0.3.0) -->
+<!-- zanni:boil begin (zanni 0.4.0) -->
 <!-- zanni · boil — filter defs.
      Inlined into the host document by `zanni-inline`. It MUST be inline:
      CSS `filter: url(#id)` resolves only within the same document, and
@@ -211,7 +211,7 @@
 })();
 </script>
 <!-- zanni:boil end -->
-<!-- zanni:gesso begin (zanni 0.3.0) -->
+<!-- zanni:gesso begin (zanni 0.4.0) -->
 <style>
 /* zanni · gesso — the ground you paint on.
  *
@@ -270,7 +270,7 @@
 .gesso ::selection { background: rgba(162, 118, 42, 0.25); }
 </style>
 <!-- zanni:gesso end -->
-<!-- zanni:phosphor begin (zanni 0.3.0) -->
+<!-- zanni:phosphor begin (zanni 0.4.0) -->
 <style>
 /* zanni · phosphor — the CRT veil.
  *
@@ -303,14 +303,43 @@
   z-index: 2;
   background: repeating-linear-gradient(
     0deg,
-    rgba(0, 0, 0, var(--phosphor-ink, 0.22)) 0 1px,
-    transparent 1px var(--phosphor-pitch, 3px)
+    rgba(0, 0, 0, var(--phosphor-ink, 0.22)) 0 var(--phosphor-line, 1px),
+    transparent var(--phosphor-line, 1px) var(--phosphor-pitch, 3px)
   );
   mix-blend-mode: multiply;
   opacity: var(--phosphor-strength, 0.5);
 }
 
 .phosphor-host { position: relative; }
+
+/* SOFT — the comb blurred into a wave.
+ *
+ * The default comb is a square wave: full ink for a pixel, nothing for two.
+ * Honest to a CRT seen up close, and on a dense modern display it reads as a
+ * fence — worse, a 1px bar on a fractional device-pixel grid aliases into
+ * moiré as the page scrolls.
+ *
+ * This ramps instead of stepping: ink at the line, clear by the middle of the
+ * pitch, ink again at the next. A triangular wave rather than a square one,
+ * which is what a defocused scanline actually looks like.
+ *
+ * No blur filter, deliberately. `filter: blur()` here would cost a raster
+ * pass AND would blur the content beneath rather than the veil, since the
+ * veil is the overlay's own background. The gradient softens for free.
+ *
+ * Both selectors are compound on purpose. A bare `.phosphor-soft` would match
+ * the HOST element and paint the box itself instead of its overlay — I wrote
+ * that bug, and the panel went opaque black. zanni-check now forbids it.
+ */
+.phosphor.phosphor-soft,
+.phosphor-host.phosphor-soft::after {
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, var(--phosphor-ink, 0.22)) 0,
+    transparent calc(var(--phosphor-pitch, 3px) / 2),
+    rgba(0, 0, 0, var(--phosphor-ink, 0.22)) var(--phosphor-pitch, 3px)
+  );
+}
 
 /* The gentle sibling of the comb: a slow bloom from the centre, as if the
  * tube were warm. Opt-in, and it respects reduced motion — this one CAN be
@@ -330,7 +359,7 @@
 }
 </style>
 <!-- zanni:phosphor end -->
-<!-- zanni:fontpack begin (zanni 0.3.0) -->
+<!-- zanni:fontpack begin (zanni 0.4.0) -->
 <style>
 /* zanni · fontpack — three faces, three jobs.
  *
@@ -375,7 +404,7 @@
 }
 </style>
 <!-- zanni:fontpack end -->
-<!-- zanni:glyphmark begin (zanni 0.3.0) -->
+<!-- zanni:glyphmark begin (zanni 0.4.0) -->
 <style>
 /* zanni · glyphmark — the portrait as a pixel mark.
  *
@@ -475,7 +504,7 @@
   <!-- 3 ── boil plus the rest of the texture -->
   <div class="specimen">
     <div class="label">3 · <b>boil + gesso + phosphor + fontpack + glyphmark</b> — the whole voice</div>
-    <div class="panel full gesso phosphor-host">
+    <div class="panel full gesso phosphor-host phosphor-soft">
       <div class="card">
         <div class="frame boil-ui"></div>
         <!-- glyphmark: an 80px source scaled up to 92px with nearest-neighbour.

@@ -1,6 +1,6 @@
 {
   "name": "zanni",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Visual components extracted from figar.org.",
   "components": {
     "boil": {
@@ -42,12 +42,19 @@
       "classes": [
         "phosphor",
         "phosphor-host",
+        "phosphor-soft",
         "phosphor-bloom"
       ],
       "files": [
         "phosphor.css"
       ],
-      "docs": "docs/phosphor.md"
+      "docs": "docs/phosphor.md",
+      "knobs": [
+        "--phosphor-ink",
+        "--phosphor-pitch",
+        "--phosphor-line",
+        "--phosphor-strength"
+      ]
     },
     "fontpack": {
       "summary": "Three faces, three jobs: Jacquard 24 display, EB Garamond prose, VT323 technical.",

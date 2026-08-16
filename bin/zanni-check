@@ -126,6 +126,14 @@ function phosphor() {
   /* A veil that eats clicks is a bug report waiting to be filed. */
   check('it cannot eat clicks', /\.phosphor[\s\S]{0,200}pointer-events:\s*none/.test(css));
   check('the host is positioned', /\.phosphor-host\s*\{[^{}]*position:\s*relative/.test(css));
+  /* The bug this exists for: a bare `.phosphor-soft { background: … }` matches
+     the HOST and paints the box instead of its ::after overlay — the panel
+     goes opaque. A veil variant may only restyle the overlay or the
+     standalone sibling. A checker cannot see WHICH box a rule lands on, so
+     this asserts the selector shape that makes it impossible. */
+  check('the soft variant never paints the host itself',
+    !/(^|[,{}])\s*\.phosphor-soft\s*[,{]/m.test(css),
+    'bare .phosphor-soft rule: it would fill the host, not the veil');
   check('the bloom stops under reduced motion',
     /prefers-reduced-motion[\s\S]{0,120}\.phosphor-bloom\s*\{[^{}]*animation:\s*none/.test(css));
 }
