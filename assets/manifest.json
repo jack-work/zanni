@@ -1,33 +1,45 @@
 {
   "name": "zanni",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Visual components extracted from figar.org.",
   "components": {
     "boil": {
       "summary": "Animated fractal-noise displacement over type and chrome (line boil / Squigglevision). Not a blur.",
       "marker": "<!-- zanni:boil -->",
       "classes": [
-        "boil-text",
-        "boil-ui",
-        "boil-stage",
         "boil-slack",
+        "boil-text",
         "boil-text-squiggle",
-        "boil-ui-squiggle",
-        "boil-stage-squiggle",
+        "boil-text-fine",
         "boil-text-strong",
+        "boil-text-erode",
+        "boil-ui",
+        "boil-ui-squiggle",
+        "boil-ui-fine",
         "boil-ui-strong",
-        "boil-stage-strong"
+        "boil-ui-erode",
+        "boil-stage",
+        "boil-stage-squiggle",
+        "boil-stage-fine",
+        "boil-stage-strong",
+        "boil-stage-erode"
       ],
       "filters": [
         "pixel-text",
-        "pixel-stage",
-        "pixel-ui",
         "pixel-text-squiggle",
-        "pixel-stage-squiggle",
-        "pixel-ui-squiggle",
+        "pixel-text-fine",
         "pixel-text-strong",
+        "pixel-text-erode",
+        "pixel-stage",
+        "pixel-stage-squiggle",
+        "pixel-stage-fine",
         "pixel-stage-strong",
-        "pixel-ui-strong"
+        "pixel-stage-erode",
+        "pixel-ui",
+        "pixel-ui-squiggle",
+        "pixel-ui-fine",
+        "pixel-ui-strong",
+        "pixel-ui-erode"
       ],
       "files": [
         "boil.gen.js",

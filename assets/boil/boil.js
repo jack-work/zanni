@@ -51,7 +51,7 @@
        * .boil-text and .boil-text-squiggle still steps in unison rather than
        * beating against itself. */
       var nodes = [];
-      ['', '-squiggle', '-strong'].forEach(function (v) {
+      ['', '-squiggle', '-fine', '-strong', '-erode'].forEach(function (v) {
         var f = document.getElementById('pixel-' + which + v);
         if (f) {
           var t = f.querySelector('feTurbulence');

@@ -106,7 +106,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jacquard+24&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=VT323&display=swap">
 </head>
 <body>
-<!-- zanni:boil begin (zanni 0.5.0) -->
+<!-- zanni:boil begin (zanni 0.6.0) -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <filter id="pixel-text" x="-6%" y="-14%" width="112%" height="128%">
     <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="3" result="n"/>
@@ -120,9 +120,21 @@
     <feGaussianBlur in="d" stdDeviation="0.4" result="b"/>
     <feComponentTransfer in="b"><feFuncA type="table" tableValues="0 0.2 1 1 1"/></feComponentTransfer>
   </filter>
+  <filter id="pixel-text-fine" x="-6%" y="-14%" width="112%" height="128%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.25" numOctaves="1" seed="3" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="2" result="d"/>
+    <feGaussianBlur in="d" stdDeviation="0.4" result="b"/>
+    <feComponentTransfer in="b"><feFuncA type="table" tableValues="0 0.2 1 1 1"/></feComponentTransfer>
+  </filter>
   <filter id="pixel-text-strong" x="-6%" y="-14%" width="112%" height="128%">
     <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="1" seed="3" result="n"/>
     <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="6" result="d"/>
+    <feGaussianBlur in="d" stdDeviation="0.4" result="b"/>
+    <feComponentTransfer in="b"><feFuncA type="table" tableValues="0 0.2 1 1 1"/></feComponentTransfer>
+  </filter>
+  <filter id="pixel-text-erode" x="-6%" y="-14%" width="112%" height="128%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="1" seed="3" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="4" result="d"/>
     <feGaussianBlur in="d" stdDeviation="0.4" result="b"/>
     <feComponentTransfer in="b"><feFuncA type="table" tableValues="0 0.2 1 1 1"/></feComponentTransfer>
   </filter>
@@ -134,9 +146,17 @@
     <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="1" seed="7" result="n"/>
     <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="3"/>
   </filter>
+  <filter id="pixel-stage-fine" x="-2%" y="-2%" width="104%" height="104%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.25" numOctaves="1" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="2"/>
+  </filter>
   <filter id="pixel-stage-strong" x="-2%" y="-2%" width="104%" height="104%">
     <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="1" seed="7" result="n"/>
     <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="6"/>
+  </filter>
+  <filter id="pixel-stage-erode" x="-2%" y="-2%" width="104%" height="104%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="1" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="4"/>
   </filter>
   <filter id="pixel-ui" x="-3%" y="-3%" width="106%" height="106%">
     <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="11" result="n"/>
@@ -146,9 +166,17 @@
     <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="1" seed="11" result="n"/>
     <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="3"/>
   </filter>
+  <filter id="pixel-ui-fine" x="-3%" y="-3%" width="106%" height="106%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.25" numOctaves="1" seed="11" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="2"/>
+  </filter>
   <filter id="pixel-ui-strong" x="-3%" y="-3%" width="106%" height="106%">
     <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="1" seed="11" result="n"/>
     <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="6"/>
+  </filter>
+  <filter id="pixel-ui-erode" x="-3%" y="-3%" width="106%" height="106%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="1" seed="11" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="4"/>
   </filter>
 </svg>
 <script type="application/json" id="zanni-boil-config">{"text":[3,7,13,5,11,3],"stage":[7,3,12,5,9,7],"ui":[11,4,9,14,6,11],"dur":{"text":1200,"stage":1600,"ui":1400},"driver":"js"}</script>
@@ -204,6 +232,21 @@
 .boil-text-strong    { filter: url(#pixel-text-strong); }
 .boil-ui-strong      { filter: url(#pixel-ui-strong); }
 .boil-stage-strong   { filter: url(#pixel-stage-strong); }
+
+/* FINE — for small type. The wavelength must be comparable to the glyph or
+ * the glyph merely translates: at freq 0.05 the wave is ~20px, so 19px mono
+ * rides one slow swell and looks still while 56px display type bends nicely.
+ * Match the variant to the type size, not to the taste. */
+.boil-text-fine      { filter: url(#pixel-text-fine); }
+.boil-ui-fine        { filter: url(#pixel-ui-fine); }
+.boil-stage-fine     { filter: url(#pixel-stage-fine); }
+
+/* ERODE — short wavelength and a big scale, so edges chew rather than bend.
+ * This is texture, not motion, and it costs legibility: use it on display
+ * type and headings, never on prose you expect anyone to read. */
+.boil-text-erode     { filter: url(#pixel-text-erode); }
+.boil-ui-erode       { filter: url(#pixel-ui-erode); }
+.boil-stage-erode    { filter: url(#pixel-stage-erode); }
 
 /* Slack for boiled text that sits against a clipping edge. Opt-in: applying
  * it everywhere would shift layout for no reason. */
@@ -268,7 +311,7 @@
        * .boil-text and .boil-text-squiggle still steps in unison rather than
        * beating against itself. */
       var nodes = [];
-      ['', '-squiggle', '-strong'].forEach(function (v) {
+      ['', '-squiggle', '-fine', '-strong', '-erode'].forEach(function (v) {
         var f = document.getElementById('pixel-' + which + v);
         if (f) {
           var t = f.querySelector('feTurbulence');
@@ -312,7 +355,7 @@
 })();
 </script>
 <!-- zanni:boil end -->
-<!-- zanni:gesso begin (zanni 0.5.0) -->
+<!-- zanni:gesso begin (zanni 0.6.0) -->
 <style>
 /* zanni · gesso — the ground you paint on.
  *
@@ -371,7 +414,7 @@
 .gesso ::selection { background: rgba(162, 118, 42, 0.25); }
 </style>
 <!-- zanni:gesso end -->
-<!-- zanni:phosphor begin (zanni 0.5.0) -->
+<!-- zanni:phosphor begin (zanni 0.6.0) -->
 <style>
 /* zanni · phosphor — the CRT veil.
  *
@@ -460,7 +503,7 @@
 }
 </style>
 <!-- zanni:phosphor end -->
-<!-- zanni:fontpack begin (zanni 0.5.0) -->
+<!-- zanni:fontpack begin (zanni 0.6.0) -->
 <style>
 /* zanni · fontpack — three faces, three jobs.
  *
@@ -505,7 +548,7 @@
 }
 </style>
 <!-- zanni:fontpack end -->
-<!-- zanni:glyphmark begin (zanni 0.5.0) -->
+<!-- zanni:glyphmark begin (zanni 0.6.0) -->
 <style>
 /* zanni · glyphmark — the portrait as a pixel mark.
  *

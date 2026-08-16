@@ -50,6 +50,21 @@
 .boil-ui-strong      { filter: url(#pixel-ui-strong); }
 .boil-stage-strong   { filter: url(#pixel-stage-strong); }
 
+/* FINE — for small type. The wavelength must be comparable to the glyph or
+ * the glyph merely translates: at freq 0.05 the wave is ~20px, so 19px mono
+ * rides one slow swell and looks still while 56px display type bends nicely.
+ * Match the variant to the type size, not to the taste. */
+.boil-text-fine      { filter: url(#pixel-text-fine); }
+.boil-ui-fine        { filter: url(#pixel-ui-fine); }
+.boil-stage-fine     { filter: url(#pixel-stage-fine); }
+
+/* ERODE — short wavelength and a big scale, so edges chew rather than bend.
+ * This is texture, not motion, and it costs legibility: use it on display
+ * type and headings, never on prose you expect anyone to read. */
+.boil-text-erode     { filter: url(#pixel-text-erode); }
+.boil-ui-erode       { filter: url(#pixel-ui-erode); }
+.boil-stage-erode    { filter: url(#pixel-stage-erode); }
+
 /* Slack for boiled text that sits against a clipping edge. Opt-in: applying
  * it everywhere would shift layout for no reason. */
 .boil-slack { padding: 4px; }

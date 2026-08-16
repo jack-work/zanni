@@ -37,10 +37,26 @@ const DEFAULTS = {
  * Squigglevision actually are. Measured cost difference between these and the
  * default: about 5%. The intensity is nearly free; only AREA and whether it
  * animates at all are expensive. */
+/* The wavelength of the noise is 1/freq, IN PIXELS, and it does not know how
+ * big your type is. If the wavelength is much larger than a glyph, the whole
+ * glyph gets nearly the same offset and simply TRANSLATES — motion without
+ * squiggle. That is why `squiggle` (wavelength ~20px) is lively on a 56px
+ * display face and looks inert on 19px mono: the small glyph is riding one
+ * slow wave instead of sitting across several.
+ *
+ * So intensity is not one axis, it is two, and the second one must be matched
+ * to type size:
+ *
+ *   freq  LOW  (long wave)  -> whole strokes bend      -> big display type
+ *   freq  MID                -> per-glyph wobble        -> body and small type
+ *   freq  HIGH (short wave)  -> edges chew and erode    -> texture, not motion
+ */
 const VARIANTS = {
   '':         {},                                  // as figar.org ships
-  'squiggle': { freq: 0.05, scale: 3.0 },          // strokes visibly bend
-  'strong':   { freq: 0.05, scale: 6.0 },          // theatrical; test legibility
+  'squiggle': { freq: 0.05, scale: 3.0 },          // display type: strokes bend
+  'fine':     { freq: 0.25, scale: 2.0 },          // small type: per-glyph wobble
+  'strong':   { freq: 0.05, scale: 6.0 },          // display type, theatrical
+  'erode':    { freq: 0.70, scale: 4.0 },          // chewed edges; legibility cost
 };
 
 const num = (v) => (typeof v === 'number' ? v : parseFloat(v));

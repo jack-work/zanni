@@ -211,15 +211,18 @@ function boil() {
   }
 
   console.log('[boil] intensity variants');
-  ['squiggle', 'strong'].forEach((v) => {
+  ['squiggle', 'fine', 'strong', 'erode'].forEach((v) => {
     check(v + ' exists for all three registers',
       ['text', 'stage', 'ui'].every((w) => byId('pixel-' + w + '-' + v)));
     /* The point of a variant is a LOWER baseFrequency, which is what makes
        whole strokes bend instead of pixels fuzzing. A variant that only
        raised the scale would erode the glyphs instead. */
-    const f = (byId('pixel-text-' + v).match(/baseFrequency="([\d.]+)"/) || [])[1];
-    check(v + ' lowers the noise frequency, not just the scale',
-      parseFloat(f) < 0.5, 'baseFrequency=' + f);
+    const f = parseFloat((byId('pixel-text-' + v).match(/baseFrequency="([\d.]+)"/) || [])[1]);
+    /* Each variant exists for a different WAVELENGTH regime; a variant that
+       only raised the scale would erode where it meant to bend. */
+    const want = { squiggle: [0, 0.1], fine: [0.1, 0.5], strong: [0, 0.1], erode: [0.5, 2] }[v];
+    check(v + ' sits in its intended wavelength band',
+      f > want[0] && f <= want[1], 'baseFrequency=' + f + ' wanted ' + want.join('..'));
   });
 
   console.log('[boil] the shape of the old bug');
