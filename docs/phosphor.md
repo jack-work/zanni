@@ -15,8 +15,38 @@ opacity: 0.5;
 ```
 
 1px of near-black every 3px, multiplied into what is beneath at half strength.
-Knobs: `--phosphor-ink` (0.22), `--phosphor-pitch` (3px), `--phosphor-strength`
-(0.5).
+
+## Turning it down
+
+Four knobs, no forking required:
+
+| property | default | what it does |
+|---|---|---|
+| `--phosphor-ink` | `0.22` | how dark the line is |
+| `--phosphor-pitch` | `3px` | gap between lines — larger is calmer |
+| `--phosphor-line` | `1px` | thickness of the line (hard comb only) |
+| `--phosphor-strength` | `0.5` | opacity of the whole veil |
+
+And `.phosphor-soft`, which is the bigger lever: it **ramps instead of steps**.
+The default comb is a square wave — full ink for a pixel, nothing for two —
+which is faithful to a CRT up close and reads as aggressive on a dense display,
+where a 1px bar on a fractional device-pixel grid also aliases into moiré as
+the page scrolls. The soft variant is a triangular wave: ink at the line, clear
+by the middle of the pitch, ink again at the next. That is what a defocused
+scanline actually looks like.
+
+Note there is **no blur filter** involved, deliberately. A `filter: blur()`
+here would cost a raster pass and would blur the *content* beneath, not the
+veil — the veil is a background of the overlay, so a filter on the overlay
+hits everything it covers. The gradient does the softening for free.
+
+Settings that have been looked at on real type:
+
+| ink / pitch / strength | reads as |
+|---|---|
+| `0.22 / 3px / 0.5` hard | figar.org as built; unmistakably a screen |
+| `0.14 / 4px / 0.34` soft | a shadow rather than a fence — jack.kelliher.info |
+| `0.10 / 5px / 0.26` soft | barely there; texture you notice only if you look |
 
 ## Three ways to get it wrong
 
