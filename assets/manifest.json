@@ -1,6 +1,6 @@
 {
   "name": "zanni",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Visual components extracted from figar.org.",
   "components": {
     "boil": {
@@ -10,19 +10,42 @@
         "boil-text",
         "boil-ui",
         "boil-stage",
-        "boil-slack"
+        "boil-slack",
+        "boil-text-squiggle",
+        "boil-ui-squiggle",
+        "boil-stage-squiggle",
+        "boil-text-strong",
+        "boil-ui-strong",
+        "boil-stage-strong"
       ],
       "filters": [
         "pixel-text",
         "pixel-stage",
-        "pixel-ui"
+        "pixel-ui",
+        "pixel-text-squiggle",
+        "pixel-stage-squiggle",
+        "pixel-ui-squiggle",
+        "pixel-text-strong",
+        "pixel-stage-strong",
+        "pixel-ui-strong"
       ],
       "files": [
-        "boil.defs.svg",
+        "boil.gen.js",
         "boil.css",
         "boil.js"
       ],
-      "docs": "docs/boil.md"
+      "docs": "docs/boil.md",
+      "knobs": [
+        "boil.driver",
+        "boil.text.freq",
+        "boil.text.scale",
+        "boil.text.dur",
+        "boil.text.blur",
+        "boil.stage.freq",
+        "boil.stage.scale",
+        "boil.ui.freq",
+        "boil.ui.scale"
+      ]
     },
     "gesso": {
       "summary": "The prepared ground: parchment plus a 6px conic dither, and the palette it was chosen against.",

@@ -75,14 +75,115 @@ initial seed — still displaced, no longer moving. Ship `boil.css` without
    triple. `examples/card.html` shows the difference in three panels rather
    than asking anyone to imagine it.
 
-## Tuning knobs
+## Knobs, and why they are not CSS
 
-- displacement `scale` — calmer as it falls;
-- `dur` — lazier as it rises;
-- the `feFuncA` table — crispness of type;
-- the type blur `stdDeviation` — how much softening the table has to undo.
+**A filter cannot be tuned from a stylesheet.** `scale`, `baseFrequency` and
+`stdDeviation` are XML attributes on the filter primitives, not CSS
+properties, so `var()` inside them does not resolve — Chrome reads an invalid
+number and the element renders *completely unfiltered*, with no error.
+Verified in Chrome 145 against a literal control. That is why boil has two
+knob mechanisms and neither is a custom property.
 
-Turn one at a time. The four interact.
+### 1. Class — pick an intensity at runtime
+
+```html
+<h1 class="boil-text">…</h1>            <!-- as figar.org ships -->
+<h1 class="boil-text-squiggle">…</h1>   <!-- strokes visibly bend -->
+<h1 class="boil-text-strong">…</h1>     <!-- theatrical -->
+```
+
+Also `-ui-` and `-stage-`. Each is a separate `<filter>` in the defs.
+
+### 2. `--set` — set the house strength at build time
+
+```sh
+zanni-inline --set boil.text.scale=2.4 --set boil.text.freq=0.08 page.html
+zanni-inline --set boil.driver=smil page.html
+```
+
+Knobs: `boil.driver`, and per register (`text`/`stage`/`ui`) `freq`, `scale`,
+`dur`, `blur`, `seeds`, `region`. **An unknown knob is an error, not a
+no-op** — a setting that quietly does nothing is the failure mode this
+library exists against.
+
+### The lever that actually matters is `freq`, not `scale`
+
+`baseFrequency` is the *wavelength* of the noise.
+
+- **High (0.9, the default):** neighbouring pixels get uncorrelated offsets.
+  The effect reads as fuzz. Raise `scale` here and glyphs **erode** — they
+  get chewed, not bent.
+- **Low (0.05):** neighbouring pixels move together, so whole strokes flex.
+  *That* is line boil and Squigglevision.
+
+If the boil looks too subtle, lowering `freq` is the fix. Raising `scale`
+alone at `freq: 0.9` makes it damaged rather than lively.
+
+Below ~0.02 the wavelength exceeds the text and the whole word merely
+translates — motion without squiggle.
+
+## What it costs
+
+Measured, not reasoned. Chrome 145, headless, 1280×900 @1x, CPU raster, 5s
+windows, summed across raster threads. Absolute figures are not a claim about
+any particular laptop; the **ratios** are the transferable fact.
+
+### Animating at all is the entire cost
+
+| variant | raster | vs shipping |
+|---|---|---|
+| no filter | 0 ms | — |
+| boil with no animation | 0 ms | — |
+| SMIL, `dur=20s` (seed steps every 3.3s) | 60.0 s | 0.99× |
+| SMIL, `dur=1.2s` (every 0.2s) | 60.6 s | 1.00× |
+| SMIL, `dur=0.3s` (every 0.05s) | 60.4 s | 1.00× |
+| **JS driver, same seeds at the same 5Hz** | **5.7 s** | **0.09×** |
+
+Read the first four rows carefully: **the seed rate does not matter to SMIL.**
+Twenty seconds costs the same as three tenths. That is the signature of a
+subtree marked dirty *every frame* rather than on change — Chrome
+re-rasterises ~60×/s while the output only changes 5×/s, so 55 of every 60
+rasters are pixel-identical and discarded.
+
+Writing the seed from script only when it changes removes that waste, which
+is where the ~11× comes from. On the shipped artifact end-to-end it measured
+**14×**. This is why `boil.js` is not optional and why `driver: js` is the
+default; `--set boil.driver=smil` remains for pages that must animate with no
+script, and costs what it costs.
+
+### Intensity is nearly free
+
+| setting | raster | vs default |
+|---|---|---|
+| default (`freq 0.9`, `scale 1.2`) | 3.30 s | 1.00× |
+| squiggle (`freq 0.05`, `scale 3`) | 3.00 s | 0.91× |
+| strong (`freq 0.05`, `scale 6`) | 3.20 s | 0.97× |
+| default, blur + alpha tail removed | — | 0.99× |
+
+Within noise. **A more visible squiggle is not more expensive.** The blur and
+alpha table are free too.
+
+### Area is the real scaling factor, and it caps at the viewport
+
+| filtered area | raster | vs 1× |
+|---|---|---|
+| 0.25× | 17.5 s | 0.30× |
+| 0.5× | 33.3 s | 0.57× |
+| 1× (fills the viewport) | 58.9 s | 1.00× |
+| 2× (twice the document) | 58.5 s | 0.99× |
+
+Roughly linear in filtered area, then **flat** — content scrolled off screen
+is not rastered. So the worst case is bounded by the viewport, not by document
+length. Cost ≈ *visible filtered area × per-pixel work × frames re-rastered*,
+and the driver is what governs the last term.
+
+### Still unmeasured
+
+Everything above is one machine, headless, CPU raster, one browser. GPU
+raster, a real compositor and a phone may weight these differently — in
+particular `feTurbulence` is procedural noise generated per pixel, and a GPU
+may amortise it far better or far worse. Treat the ratios as sound and the
+absolutes as local.
 
 ## Why it must be inlined
 

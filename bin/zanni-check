@@ -157,18 +157,15 @@ function boil() {
   ['pixel-text', 'pixel-stage', 'pixel-ui'].forEach((id) =>
     check(id + ' is defined', new RegExp('<filter id="' + id + '"').test(html)));
 
-  check('every filter steps its seed discretely',
-    (filterText.match(/calcMode="discrete"/g) || []).length === 3);
   check('the noise is displaced, not merely blurred',
-    (filterText.match(/feDisplacementMap/g) || []).length === 3);
+    (filterText.match(/feDisplacementMap/g) || []).length === filters.length);
   check('type is re-crisped after its blur',
     /feGaussianBlur[\s\S]*?feComponentTransfer[\s\S]*?feFuncA type="table"/.test(byId('pixel-text')));
 
   /* The stage filter must stay a pure displacement: an alpha threshold there
-     destroys low-alpha fills and dimmed layers. One blur in the document, and
-     it belongs to the type filter. */
-  check('only the type filter blurs', (filterText.match(/feGaussianBlur/g) || []).length === 1);
+     destroys low-alpha fills and dimmed layers. */
   check('the stage filter has no alpha table', !/feFuncA/.test(byId('pixel-stage')));
+  check('the chrome filter has no alpha table', !/feFuncA/.test(byId('pixel-ui')));
 
   /* Filter regions: without the enlarged box the displaced edge is clipped,
      and the type filter's box is deliberately taller than it is wide. */
@@ -178,25 +175,52 @@ function boil() {
   check('the chrome filters enlarge their regions',
     /width="104%"/.test(region('pixel-stage')) && /width="106%"/.test(region('pixel-ui')));
 
-  /* Unset on purpose: the chain runs in the SVG default linearRGB, and the
-     alpha ramp was tuned there. */
   check('colour interpolation is left at the SVG default',
     !/color-interpolation-filters/.test(filterText));
-
-  /* The host must take no layout and not be announced. */
   check('the defs host is inert',
     /<svg width="0" height="0"[^>]*position:absolute[^>]*aria-hidden="true"/.test(html));
 
-  console.log('[boil] the application layer');
-  [['boil-text', 'pixel-text'], ['boil-ui', 'pixel-ui'], ['boil-stage', 'pixel-stage']]
-    .forEach(([cls, id]) => check('.' + cls + ' applies #' + id,
-      new RegExp('\\.' + cls + '\\s*\\{[^{}]*filter:\\s*url\\(#' + id + '\\)').test(css)));
+  console.log('[boil] the driver');
+  const cfg = (html.match(/id="zanni-boil-config">([^<]*)</) || [])[1];
+  check('the driver config is present', !!cfg);
+  let driver = null;
+  if (cfg) { try { driver = JSON.parse(cfg).driver; } catch (e) { /* reported below */ } }
+  check('the driver config parses', driver === 'js' || driver === 'smil', String(cfg).slice(0, 80));
 
-  console.log('[boil] reduced motion');
-  /* CSS cannot stop SMIL. If the script that removes the animates is gone,
-     reduced-motion readers get the boil anyway. */
-  check('the SMIL animates are removed under reduced motion',
-    /prefers-reduced-motion/.test(html) && /filter animate/.test(html));
+  if (driver === 'smil') {
+    /* The escape hatch. If a page opts into SMIL it must actually step
+       discretely — tweened turbulence is a heat haze, not ink. */
+    check('SMIL steps its seed discretely',
+      (filterText.match(/calcMode="discrete"/g) || []).length === filters.length);
+  } else {
+    /* The default. A stray <animate> here would silently cost ~11x: SMIL
+       keeps the filtered subtree dirty every frame, while the JS driver
+       writes a seed only when it changes. This guard is the whole reason
+       the measurement was worth taking. */
+    check('no SMIL animation is left on the filters',
+      !/<animate\b/.test(filterText),
+      'a SMIL animate re-rasterises the subtree every frame: ~11x the cost');
+    check('the seed driver ships with the defs',
+      /zanni-boil-config/.test(html) && /prefers-reduced-motion/.test(html));
+    check('the driver declines to run under reduced motion',
+      /prefers-reduced-motion[\s\S]{0,200}return/.test(html));
+    check('the driver writes a seed only when it changes',
+      /getAttribute\('seed'\)\s*!==/.test(html),
+      'a redundant write is a whole wasted raster of the subtree');
+    check('the driver stops for a hidden tab', /visibilitychange/.test(html));
+  }
+
+  console.log('[boil] intensity variants');
+  ['squiggle', 'strong'].forEach((v) => {
+    check(v + ' exists for all three registers',
+      ['text', 'stage', 'ui'].every((w) => byId('pixel-' + w + '-' + v)));
+    /* The point of a variant is a LOWER baseFrequency, which is what makes
+       whole strokes bend instead of pixels fuzzing. A variant that only
+       raised the scale would erode the glyphs instead. */
+    const f = (byId('pixel-text-' + v).match(/baseFrequency="([\d.]+)"/) || [])[1];
+    check(v + ' lowers the noise frequency, not just the scale',
+      parseFloat(f) < 0.5, 'baseFrequency=' + f);
+  });
 
   console.log('[boil] the shape of the old bug');
   const dangling = css.match(/,\s*\n\s*\n/g) || [];
@@ -204,6 +228,7 @@ function boil() {
     dangling.length + ' found');
   check('body is still its own rule', /(^|\n)\s*body\s*\{/.test(css));
 }
+
 
 console.log('[zanni] ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

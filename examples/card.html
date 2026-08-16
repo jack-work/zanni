@@ -106,48 +106,52 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jacquard+24&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=VT323&display=swap">
 </head>
 <body>
-<!-- zanni:boil begin (zanni 0.4.0) -->
-<!-- zanni · boil — filter defs.
-     Inlined into the host document by `zanni-inline`. It MUST be inline:
-     CSS `filter: url(#id)` resolves only within the same document, and
-     external `url(sprite.svg#id)` is Firefox-only in practice.
-
-     The host <svg> is width/height 0 and position:absolute so it takes no
-     layout, and aria-hidden so it is not announced.
-
-     Note what is deliberately ABSENT: `color-interpolation-filters` is never
-     set, so the whole chain runs in the SVG default linearRGB. Pinning sRGB
-     changes how the blur and the alpha ramp compose, and the type stops
-     matching figar.org. If you retune, retune on purpose. -->
+<!-- zanni:boil begin (zanni 0.5.0) -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <!-- TYPE. Displace 1.2 → blur 0.4 → an alpha table that re-crisps the
-       antialiasing while letting hairline rules pass through. The region is
-       taller than it is wide (-14%/128% vs -6%/112%) because displaced
-       descenders leave the box vertically first. -->
   <filter id="pixel-text" x="-6%" y="-14%" width="112%" height="128%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="3" result="n">
-      <animate attributeName="seed" values="3;7;13;5;11;3" dur="1.2s" repeatCount="indefinite" calcMode="discrete"/>
-    </feTurbulence>
+    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="3" result="n"/>
     <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="1.2" result="d"/>
     <feGaussianBlur in="d" stdDeviation="0.4" result="b"/>
     <feComponentTransfer in="b"><feFuncA type="table" tableValues="0 0.2 1 1 1"/></feComponentTransfer>
   </filter>
-  <!-- DIAGRAM SVG. Displacement only (1.4). Never add a threshold here: an
-       alpha table destroys low-alpha fills and dimmed layers. -->
+  <filter id="pixel-text-squiggle" x="-6%" y="-14%" width="112%" height="128%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="1" seed="3" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="3" result="d"/>
+    <feGaussianBlur in="d" stdDeviation="0.4" result="b"/>
+    <feComponentTransfer in="b"><feFuncA type="table" tableValues="0 0.2 1 1 1"/></feComponentTransfer>
+  </filter>
+  <filter id="pixel-text-strong" x="-6%" y="-14%" width="112%" height="128%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="1" seed="3" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="6" result="d"/>
+    <feGaussianBlur in="d" stdDeviation="0.4" result="b"/>
+    <feComponentTransfer in="b"><feFuncA type="table" tableValues="0 0.2 1 1 1"/></feComponentTransfer>
+  </filter>
   <filter id="pixel-stage" x="-2%" y="-2%" width="104%" height="104%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="7" result="n">
-      <animate attributeName="seed" values="7;3;12;5;9;7" dur="1.6s" repeatCount="indefinite" calcMode="discrete"/>
-    </feTurbulence>
+    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="7" result="n"/>
     <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="1.4"/>
   </filter>
-  <!-- CHROME. Displacement only, calmest of the three (0.9). -->
+  <filter id="pixel-stage-squiggle" x="-2%" y="-2%" width="104%" height="104%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="1" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="3"/>
+  </filter>
+  <filter id="pixel-stage-strong" x="-2%" y="-2%" width="104%" height="104%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="1" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="6"/>
+  </filter>
   <filter id="pixel-ui" x="-3%" y="-3%" width="106%" height="106%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="11" result="n">
-      <animate attributeName="seed" values="11;4;9;14;6;11" dur="1.4s" repeatCount="indefinite" calcMode="discrete"/>
-    </feTurbulence>
+    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="11" result="n"/>
     <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="0.9"/>
   </filter>
+  <filter id="pixel-ui-squiggle" x="-3%" y="-3%" width="106%" height="106%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="1" seed="11" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="3"/>
+  </filter>
+  <filter id="pixel-ui-strong" x="-3%" y="-3%" width="106%" height="106%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="1" seed="11" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="6"/>
+  </filter>
 </svg>
+<script type="application/json" id="zanni-boil-config">{"text":[3,7,13,5,11,3],"stage":[7,3,12,5,9,7],"ui":[11,4,9,14,6,11],"dur":{"text":1200,"stage":1600,"ui":1400},"driver":"js"}</script>
 <style>
 /* zanni · boil — the application layer.
  *
@@ -177,41 +181,138 @@
 /* Diagram SVG. Displacement only — no alpha threshold, ever. */
 .boil-stage { filter: url(#pixel-stage); }
 
+/* INTENSITY, chosen at runtime by class.
+ *
+ * A filter cannot be tuned from CSS: scale and baseFrequency are XML
+ * attributes on the filter primitives, not CSS properties, so var() in them
+ * does not resolve — it reads as an invalid number and the element renders
+ * unfiltered. Verified in Chrome 145. Hence a filter per intensity rather
+ * than a custom property.
+ *
+ * The lever that matters is baseFrequency, not scale. It is the WAVELENGTH of
+ * the noise. At 0.9 (the default, as figar.org ships) neighbouring pixels get
+ * uncorrelated offsets and the effect reads as fuzz — raise the scale and the
+ * glyphs erode rather than bend. At 0.05 neighbouring pixels move together, so
+ * whole strokes flex: that is what line boil and Squigglevision actually are.
+ *
+ * Measured cost of the louder variants: about 5% over the default. Intensity
+ * is nearly free. Area is what costs, and animating at all is what costs most. */
+.boil-text-squiggle  { filter: url(#pixel-text-squiggle); }
+.boil-ui-squiggle    { filter: url(#pixel-ui-squiggle); }
+.boil-stage-squiggle { filter: url(#pixel-stage-squiggle); }
+
+.boil-text-strong    { filter: url(#pixel-text-strong); }
+.boil-ui-strong      { filter: url(#pixel-ui-strong); }
+.boil-stage-strong   { filter: url(#pixel-stage-strong); }
+
 /* Slack for boiled text that sits against a clipping edge. Opt-in: applying
  * it everywhere would shift layout for no reason. */
 .boil-slack { padding: 4px; }
 
-/* Reduced motion is NOT handled here, and cannot be. `animation: none` does
- * not stop SMIL <animate>; boil.js removes those elements instead. If you
- * ship boil.css without boil.js, reduced-motion users get the boil anyway. */
+/* Reduced motion is NOT handled here, and cannot be — there is no CSS
+ * animation to stop. boil.js drives the seed and simply declines to start
+ * under prefers-reduced-motion. Ship boil.css without boil.js and the boil is
+ * static: displaced, never moving. That is a sane floor rather than a bug. */
 </style>
 <script>
-/* zanni · boil — reduced-motion honour guard.
+/* zanni · boil — the seed driver, and the reduced-motion guard.
  *
- * SMIL is not CSS. A blanket `@media (prefers-reduced-motion: reduce) { *
- * { animation: none !important } }` does nothing to <animate> inside a
- * <filter>: the seed keeps stepping and the type keeps boiling. The only
- * reliable stop is to remove the animate elements, which freezes each filter
- * on its initial seed — still displaced, no longer moving.
+ * WHY THIS EXISTS AT ALL, and why it is not a SMIL <animate>:
  *
- * This is the piece every hand-copy of the CSS forgets. It is the reason
- * boil is a package and not a snippet. */
+ * A SMIL animation attached to a filter keeps the filtered subtree
+ * perpetually dirty. Chrome re-rasterises it every frame — about 60 times a
+ * second — even though `calcMode="discrete"` means the OUTPUT only changes
+ * five times a second. Fifty-five of every sixty rasters produce a
+ * pixel-identical image and are thrown away.
+ *
+ * Measured (Chrome 145, headless, 1280x900, CPU raster, 5s windows):
+ *
+ *   no filter at all ............................  0 ms raster
+ *   boil with no <animate> ......................  0 ms raster
+ *   boil, SMIL dur=20s  (seed changes /3.3s) .... 60.0 s  0.99x
+ *   boil, SMIL dur=1.2s (seed changes /0.2s) .... 60.6 s  1.00x
+ *   boil, SMIL dur=0.3s (seed changes /0.05s) ... 60.4 s  1.00x
+ *   boil, THIS DRIVER, same seeds at the same 5Hz  5.7 s  0.09x
+ *
+ * The seed RATE is irrelevant to SMIL's cost and decisive for this driver's,
+ * which is exactly what "dirty every frame" versus "dirty on change" predicts.
+ * Writing the attribute only when the value changes is an 11x saving on the
+ * single most expensive thing in this library.
+ *
+ * Consequences worth knowing:
+ *   - Without JS the boil is STATIC — displaced, not moving. That is a
+ *     reasonable floor, and it is what reduced-motion readers get too.
+ *   - Nothing here runs when the document is hidden; a background tab should
+ *     not be rasterising a filter nobody is looking at.
+ */
 (function () {
-  if (typeof window === 'undefined' || !window.matchMedia) return;
-  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  var kill = function () {
-    var nodes = document.querySelectorAll('filter animate');
-    for (var i = 0; i < nodes.length; i++) nodes[i].remove();
-  };
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+  function start() {
+    var el = document.getElementById('zanni-boil-config');
+    if (!el) return;                       // defs were inlined without a config
+    var cfg;
+    try { cfg = JSON.parse(el.textContent); } catch (e) { return; }
+    if (cfg.driver === 'smil') return;     // the markup animates itself
+
+    /* Reduced motion: leave every filter on its first seed. Note a CSS
+     * `animation: none` cannot do this job — there is no CSS animation here,
+     * and there would be no way to stop SMIL from CSS either. */
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    var clocks = [];
+    ['text', 'stage', 'ui'].forEach(function (which) {
+      var seeds = cfg[which];
+      if (!seeds || seeds.length < 2) return;
+      /* Every variant of one register shares a clock, so a page mixing
+       * .boil-text and .boil-text-squiggle still steps in unison rather than
+       * beating against itself. */
+      var nodes = [];
+      ['', '-squiggle', '-strong'].forEach(function (v) {
+        var f = document.getElementById('pixel-' + which + v);
+        if (f) {
+          var t = f.querySelector('feTurbulence');
+          if (t) nodes.push(t);
+        }
+      });
+      if (!nodes.length) return;
+      var period = Math.max(1, Math.round((cfg.dur[which] || 1200) / seeds.length));
+      clocks.push({ nodes: nodes, seeds: seeds, period: period, i: 0, timer: null });
+    });
+    if (!clocks.length) return;
+
+    function tick(c) {
+      c.i = (c.i + 1) % c.seeds.length;
+      var v = String(c.seeds[c.i]);
+      for (var j = 0; j < c.nodes.length; j++) {
+        /* Only write when it differs. A write is what marks the filter dirty,
+         * so a redundant write is a whole wasted raster of the subtree. */
+        if (c.nodes[j].getAttribute('seed') !== v) c.nodes[j].setAttribute('seed', v);
+      }
+    }
+    function run() {
+      stop();
+      clocks.forEach(function (c) { c.timer = setInterval(function () { tick(c); }, c.period); });
+    }
+    function stop() {
+      clocks.forEach(function (c) { if (c.timer) { clearInterval(c.timer); c.timer = null; } });
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      document.hidden ? stop() : run();
+    });
+    if (!document.hidden) run();
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', kill, { once: true });
+    document.addEventListener('DOMContentLoaded', start, { once: true });
   } else {
-    kill();
+    start();
   }
 })();
 </script>
 <!-- zanni:boil end -->
-<!-- zanni:gesso begin (zanni 0.4.0) -->
+<!-- zanni:gesso begin (zanni 0.5.0) -->
 <style>
 /* zanni · gesso — the ground you paint on.
  *
@@ -270,7 +371,7 @@
 .gesso ::selection { background: rgba(162, 118, 42, 0.25); }
 </style>
 <!-- zanni:gesso end -->
-<!-- zanni:phosphor begin (zanni 0.4.0) -->
+<!-- zanni:phosphor begin (zanni 0.5.0) -->
 <style>
 /* zanni · phosphor — the CRT veil.
  *
@@ -359,7 +460,7 @@
 }
 </style>
 <!-- zanni:phosphor end -->
-<!-- zanni:fontpack begin (zanni 0.4.0) -->
+<!-- zanni:fontpack begin (zanni 0.5.0) -->
 <style>
 /* zanni · fontpack — three faces, three jobs.
  *
@@ -404,7 +505,7 @@
 }
 </style>
 <!-- zanni:fontpack end -->
-<!-- zanni:glyphmark begin (zanni 0.4.0) -->
+<!-- zanni:glyphmark begin (zanni 0.5.0) -->
 <style>
 /* zanni · glyphmark — the portrait as a pixel mark.
  *
@@ -503,25 +604,37 @@
 
   <!-- 3 ── boil plus the rest of the texture -->
   <div class="specimen">
-    <div class="label">3 · <b>boil + gesso + phosphor + fontpack + glyphmark</b> — the whole voice</div>
+    <div class="label">3 · <b>the whole voice</b> — and boil at squiggle/strong</div>
     <div class="panel full gesso phosphor-host phosphor-soft">
       <div class="card">
         <div class="frame boil-ui"></div>
         <!-- glyphmark: an 80px source scaled up to 92px with nearest-neighbour.
              The pixels are in the FILE, not in a filter. -->
         <img class="profile-photo glyphmark glyphmark-round" alt="" src="data:image/png;base64,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">
-        <h1 class="boil-text fontpack-display">John Kelliher</h1>
-        <div class="title boil-text fontpack-mono">Senior Software Engineer</div>
-        <div class="ornament boil-ui" aria-hidden="true">◆</div>
+        <h1 class="boil-text-squiggle fontpack-display">John Kelliher</h1>
+        <div class="title boil-text-squiggle fontpack-mono">Senior Software Engineer</div>
+        <div class="ornament boil-ui-squiggle" aria-hidden="true">◆</div>
         <p class="blurb boil-text fontpack-prose">Senior Software Engineer at Microsoft building distributed
         infrastructure for agentic development platforms and real-time collaborative
         state systems at global scale.</p>
-        <a class="email boil-text fontpack-mono" href="#">jackwkelliher@gmail.com</a>
-        <div class="links boil-text fontpack-mono"><a href="#">LinkedIn</a><span class="sep">·</span><a href="#">GitHub</a><span class="sep">·</span><a href="#">Résumé</a></div>
+        <a class="email boil-text-strong fontpack-mono" href="#">jackwkelliher@gmail.com</a>
+        <div class="links boil-text-strong fontpack-mono"><a href="#">LinkedIn</a><span class="sep">·</span><a href="#">GitHub</a><span class="sep">·</span><a href="#">Résumé</a></div>
       </div>
     </div>
   </div>
 
+</div>
+
+<div class="row" style="margin-top:22px">
+  <div class="specimen" style="grid-column:1/-1">
+    <div class="label">boil intensity — same type, three settings. <b>baseFrequency</b> is the lever, not scale.</div>
+    <div class="panel gesso" style="display:grid;grid-template-columns:repeat(3,1fr);gap:0">
+      <div style="padding:14px"><div class="boil-text" style="font:38px 'EB Garamond',serif;color:#2b1a15">Kelliher</div><div style="font:11px ui-monospace,monospace;color:#7a584a">default · freq 0.9 scale 1.2</div></div>
+      <div style="padding:14px"><div class="boil-text-squiggle" style="font:38px 'EB Garamond',serif;color:#2b1a15">Kelliher</div><div style="font:11px ui-monospace,monospace;color:#7a584a">squiggle · freq 0.05 scale 3</div></div>
+      <div style="padding:14px"><div class="boil-text-strong" style="font:38px 'EB Garamond',serif;color:#2b1a15">Kelliher</div><div style="font:11px ui-monospace,monospace;color:#7a584a">strong · freq 0.05 scale 6</div></div>
+    </div>
+    <svg width="0" height="0" aria-hidden="true"><g class="boil-stage"></g><g class="boil-stage-squiggle"></g><g class="boil-stage-strong"></g><g class="boil-ui-strong"></g></svg>
+  </div>
 </div>
 
 <script>

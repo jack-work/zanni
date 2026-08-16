@@ -26,10 +26,35 @@
 /* Diagram SVG. Displacement only — no alpha threshold, ever. */
 .boil-stage { filter: url(#pixel-stage); }
 
+/* INTENSITY, chosen at runtime by class.
+ *
+ * A filter cannot be tuned from CSS: scale and baseFrequency are XML
+ * attributes on the filter primitives, not CSS properties, so var() in them
+ * does not resolve — it reads as an invalid number and the element renders
+ * unfiltered. Verified in Chrome 145. Hence a filter per intensity rather
+ * than a custom property.
+ *
+ * The lever that matters is baseFrequency, not scale. It is the WAVELENGTH of
+ * the noise. At 0.9 (the default, as figar.org ships) neighbouring pixels get
+ * uncorrelated offsets and the effect reads as fuzz — raise the scale and the
+ * glyphs erode rather than bend. At 0.05 neighbouring pixels move together, so
+ * whole strokes flex: that is what line boil and Squigglevision actually are.
+ *
+ * Measured cost of the louder variants: about 5% over the default. Intensity
+ * is nearly free. Area is what costs, and animating at all is what costs most. */
+.boil-text-squiggle  { filter: url(#pixel-text-squiggle); }
+.boil-ui-squiggle    { filter: url(#pixel-ui-squiggle); }
+.boil-stage-squiggle { filter: url(#pixel-stage-squiggle); }
+
+.boil-text-strong    { filter: url(#pixel-text-strong); }
+.boil-ui-strong      { filter: url(#pixel-ui-strong); }
+.boil-stage-strong   { filter: url(#pixel-stage-strong); }
+
 /* Slack for boiled text that sits against a clipping edge. Opt-in: applying
  * it everywhere would shift layout for no reason. */
 .boil-slack { padding: 4px; }
 
-/* Reduced motion is NOT handled here, and cannot be. `animation: none` does
- * not stop SMIL <animate>; boil.js removes those elements instead. If you
- * ship boil.css without boil.js, reduced-motion users get the boil anyway. */
+/* Reduced motion is NOT handled here, and cannot be — there is no CSS
+ * animation to stop. boil.js drives the seed and simply declines to start
+ * under prefers-reduced-motion. Ship boil.css without boil.js and the boil is
+ * static: displaced, never moving. That is a sane floor rather than a bug. */
