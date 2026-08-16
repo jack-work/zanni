@@ -1,0 +1,16 @@
+{
+  "name": "zanni",
+  "version": "0.1.0",
+  "description": "Visual components extracted from figar.org. One component so far.",
+  "components": {
+    "boil": {
+      "summary": "Animated fractal-noise displacement over type and chrome (line boil / Squigglevision). Not a blur.",
+      "marker": "<!-- zanni:boil -->",
+      "classes": ["boil-text", "boil-ui", "boil-stage", "boil-slack"],
+      "filters": ["pixel-text", "pixel-stage", "pixel-ui"],
+      "files": ["boil.defs.svg", "boil.css", "boil.js"],
+      "docs": "docs/boil.md"
+    }
+  },
+  "planned": ["dither", "glyphmark", "liftcard", "fontpack", "scena"]
+}

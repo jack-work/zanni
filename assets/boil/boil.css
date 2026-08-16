@@ -1,0 +1,35 @@
+/* zanni · boil — the application layer.
+ *
+ * Three classes, one rule each. This is the whole public surface.
+ *
+ * Why classes and not a selector list: figar.org applies the type filter
+ * through an eleven-selector list accreted over one workshop. A line-oriented
+ * dead-CSS sweep once matched only its LAST line, deleted that line together
+ * with the declaration block, and left a dangling comma that annexed the rule
+ * after it. The boil silently died and nobody noticed until it was seen.
+ * A one-line rule has no last line to eat.
+ *
+ * The laws are in docs/boil.md and they are not optional. The short form:
+ *   - never boil a wrapper: a filter is a containing block for fixed/absolute
+ *     descendants and a new stacking context;
+ *   - a boiled subtree is ONE raster unit — everything inside re-rasterizes
+ *     together on any change;
+ *   - give clipped text ~4px of slack: displaced glyphs move ~±scale/2 px.
+ */
+
+/* Type and the navbar. Displace → blur → re-crisp. */
+.boil-text { filter: url(#pixel-text); }
+
+/* Chrome: frames, rails, ornaments, stage shells. The calmest of the three. */
+.boil-ui { filter: url(#pixel-ui); }
+
+/* Diagram SVG. Displacement only — no alpha threshold, ever. */
+.boil-stage { filter: url(#pixel-stage); }
+
+/* Slack for boiled text that sits against a clipping edge. Opt-in: applying
+ * it everywhere would shift layout for no reason. */
+.boil-slack { padding: 4px; }
+
+/* Reduced motion is NOT handled here, and cannot be. `animation: none` does
+ * not stop SMIL <animate>; boil.js removes those elements instead. If you
+ * ship boil.css without boil.js, reduced-motion users get the boil anyway. */

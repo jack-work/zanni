@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>zanni · boil — three cards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jacquard+24&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=VT323&display=swap" rel="stylesheet">
+<style>
+  /* ── the page around the specimens ─────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #1b1a18; color: #cfc6b8;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    padding: 40px 20px 64px;
+  }
+  .head { max-width: 1200px; margin: 0 auto 28px; }
+  .head h1 { font-size: 30px; font-weight: 600; letter-spacing: 0.04em; }
+  .head p { max-width: 62ch; margin-top: 10px; line-height: 1.6; color: #9b9184; font-size: 17px; }
+  .head code { font-family: ui-monospace, monospace; font-size: 14px; color: #cbb27a; }
+  .controls { max-width: 1200px; margin: 0 auto 22px; display: flex; gap: 12px; align-items: center; }
+  .controls button {
+    font: inherit; font-size: 15px; background: #2a2724; color: #cfc6b8;
+    border: 1px solid #4a453e; padding: 7px 13px; cursor: pointer;
+  }
+  .controls button:hover { background: #35312c; }
+  .controls .note { color: #7d7469; font-size: 15px; }
+
+  .row { max-width: 1200px; margin: 0 auto; display: grid; gap: 22px;
+         grid-template-columns: repeat(3, 1fr); align-items: start; }
+  @media (max-width: 1000px) { .row { grid-template-columns: 1fr; } }
+  .specimen { position: relative; }
+  .specimen > .label {
+    font-family: ui-monospace, monospace; font-size: 12.5px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: #8d8377; margin-bottom: 9px;
+  }
+  .specimen > .label b { color: #cbb27a; font-weight: 400; }
+
+  /* ── the card, as jack.kelliher.info actually ships it ─────────────── */
+  .panel { padding: 26px 18px; background: #ece7dd; position: relative; overflow: hidden; }
+  .card {
+    background: #faf8f4; border: 1px solid #c4bdb4;
+    max-width: 420px; margin: 0 auto; padding: 34px 30px;
+    text-align: center; position: relative; color: #2a2520;
+    font-family: 'Cormorant Garamond', Palatino, Georgia, serif;
+  }
+  .card .frame { position: absolute; inset: 7px; border: 1px solid #d8d1c7; pointer-events: none; }
+  .profile-photo {
+    width: 92px; height: 92px; border-radius: 50%; object-fit: cover;
+    border: 2px solid #c4bdb4; outline: 1px solid #c4bdb4; outline-offset: 4px;
+    margin-bottom: 22px; background: #d8d1c7;
+  }
+  .card h1 { font-weight: 600; font-size: 31px; line-height: 1.15; letter-spacing: 0.035em; margin-bottom: 6px; }
+  .title { font-variant: small-caps; text-transform: lowercase; font-weight: 500;
+           font-size: 14px; letter-spacing: 0.16em; color: #7a7068; margin-bottom: 22px; }
+  .ornament { display: flex; align-items: center; justify-content: center; gap: 12px;
+              margin: 0 auto 22px; font-size: 7px; color: #b8ad9e; }
+  .ornament::before, .ornament::after { content: ''; width: 36px; height: 1px; background: #c4bdb4; }
+  .blurb { font-size: 16px; line-height: 1.7; color: #3a342e; margin-bottom: 24px;
+           text-align: justify; text-align-last: center; }
+  .email { display: inline-block; font-size: 15.5px; font-style: italic; color: #7a7068;
+           text-decoration: none; margin-bottom: 8px; }
+  .links { font-size: 14px; letter-spacing: 0.06em; color: #8a8078; }
+  .links a { color: #7a7068; text-decoration: none; }
+  .links .sep { margin: 0 8px; color: #c4bdb4; }
+
+  /* ── panel 3 only: the rest of the figar.org texture ───────────────────
+     Law 5. Boil alone is shimmer and nothing more. figar.org's look is boil
+     PLUS a dither ground, scanlines, and the font triple. This panel exists
+     so the difference is seen rather than imagined. */
+  .full.panel {
+    background-color: #e7d4c4;
+    background-image: repeating-conic-gradient(#dfc9b6 0% 25%, transparent 0% 50%);
+    background-size: 6px 6px;
+  }
+  .full .card { background: #e7d4c4; border-color: #a2762a; }
+  .full .card .frame { border-color: rgba(162, 118, 42, 0.55); }
+  .full .card h1 { font-family: 'Jacquard 24', 'Cormorant Garamond', serif; font-size: 44px; font-weight: 400; color: #2b1a15; }
+  .full .title, .full .links, .full .email { font-family: 'VT323', ui-monospace, monospace; }
+  .full .title { font-size: 17px; letter-spacing: 0.14em; color: #7d2e2e; font-variant: normal; }
+  .full .blurb { font-family: 'EB Garamond', Georgia, serif; color: #2b1a15; }
+  .full .email { font-size: 19px; font-style: normal; color: #a2762a; }
+  .full .links { font-size: 17px; color: #7a584a; }
+  .full .links a { color: #7d2e2e; }
+  .full .ornament { color: #a2762a; }
+  .full .ornament::before, .full .ornament::after { background: rgba(162, 118, 42, 0.6); }
+  .full .profile-photo { border-color: #a2762a; outline-color: rgba(162,118,42,0.5); image-rendering: pixelated; }
+  .full .scanlines {
+    position: absolute; inset: 0; pointer-events: none; mix-blend-mode: multiply;
+    background: repeating-linear-gradient(to bottom, rgba(43,26,21,0.10) 0 1px, transparent 1px 3px);
+  }
+
+  /* Frozen: what a reduced-motion reader gets. The displacement stays, the
+     stepping stops — because the <animate> elements are gone, not because a
+     CSS rule asked them to stop. */
+  body.frozen .controls .note::after { content: ' — animates removed'; }
+</style>
+</head>
+<body>
+<!-- zanni:boil begin (zanni 0.1.0) -->
+<!-- zanni · boil — filter defs.
+     Inlined into the host document by `zanni-inline`. It MUST be inline:
+     CSS `filter: url(#id)` resolves only within the same document, and
+     external `url(sprite.svg#id)` is Firefox-only in practice.
+
+     The host <svg> is width/height 0 and position:absolute so it takes no
+     layout, and aria-hidden so it is not announced.
+
+     Note what is deliberately ABSENT: `color-interpolation-filters` is never
+     set, so the whole chain runs in the SVG default linearRGB. Pinning sRGB
+     changes how the blur and the alpha ramp compose, and the type stops
+     matching figar.org. If you retune, retune on purpose. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <!-- TYPE. Displace 1.2 → blur 0.4 → an alpha table that re-crisps the
+       antialiasing while letting hairline rules pass through. The region is
+       taller than it is wide (-14%/128% vs -6%/112%) because displaced
+       descenders leave the box vertically first. -->
+  <filter id="pixel-text" x="-6%" y="-14%" width="112%" height="128%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="3" result="n">
+      <animate attributeName="seed" values="3;7;13;5;11;3" dur="1.2s" repeatCount="indefinite" calcMode="discrete"/>
+    </feTurbulence>
+    <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="1.2" result="d"/>
+    <feGaussianBlur in="d" stdDeviation="0.4" result="b"/>
+    <feComponentTransfer in="b"><feFuncA type="table" tableValues="0 0.2 1 1 1"/></feComponentTransfer>
+  </filter>
+  <!-- DIAGRAM SVG. Displacement only (1.4). Never add a threshold here: an
+       alpha table destroys low-alpha fills and dimmed layers. -->
+  <filter id="pixel-stage" x="-2%" y="-2%" width="104%" height="104%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="7" result="n">
+      <animate attributeName="seed" values="7;3;12;5;9;7" dur="1.6s" repeatCount="indefinite" calcMode="discrete"/>
+    </feTurbulence>
+    <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="1.4"/>
+  </filter>
+  <!-- CHROME. Displacement only, calmest of the three (0.9). -->
+  <filter id="pixel-ui" x="-3%" y="-3%" width="106%" height="106%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="11" result="n">
+      <animate attributeName="seed" values="11;4;9;14;6;11" dur="1.4s" repeatCount="indefinite" calcMode="discrete"/>
+    </feTurbulence>
+    <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="0.9"/>
+  </filter>
+</svg>
+<style>
+/* zanni · boil — the application layer.
+ *
+ * Three classes, one rule each. This is the whole public surface.
+ *
+ * Why classes and not a selector list: figar.org applies the type filter
+ * through an eleven-selector list accreted over one workshop. A line-oriented
+ * dead-CSS sweep once matched only its LAST line, deleted that line together
+ * with the declaration block, and left a dangling comma that annexed the rule
+ * after it. The boil silently died and nobody noticed until it was seen.
+ * A one-line rule has no last line to eat.
+ *
+ * The laws are in docs/boil.md and they are not optional. The short form:
+ *   - never boil a wrapper: a filter is a containing block for fixed/absolute
+ *     descendants and a new stacking context;
+ *   - a boiled subtree is ONE raster unit — everything inside re-rasterizes
+ *     together on any change;
+ *   - give clipped text ~4px of slack: displaced glyphs move ~±scale/2 px.
+ */
+
+/* Type and the navbar. Displace → blur → re-crisp. */
+.boil-text { filter: url(#pixel-text); }
+
+/* Chrome: frames, rails, ornaments, stage shells. The calmest of the three. */
+.boil-ui { filter: url(#pixel-ui); }
+
+/* Diagram SVG. Displacement only — no alpha threshold, ever. */
+.boil-stage { filter: url(#pixel-stage); }
+
+/* Slack for boiled text that sits against a clipping edge. Opt-in: applying
+ * it everywhere would shift layout for no reason. */
+.boil-slack { padding: 4px; }
+
+/* Reduced motion is NOT handled here, and cannot be. `animation: none` does
+ * not stop SMIL <animate>; boil.js removes those elements instead. If you
+ * ship boil.css without boil.js, reduced-motion users get the boil anyway. */
+</style>
+<script>
+/* zanni · boil — reduced-motion honour guard.
+ *
+ * SMIL is not CSS. A blanket `@media (prefers-reduced-motion: reduce) { *
+ * { animation: none !important } }` does nothing to <animate> inside a
+ * <filter>: the seed keeps stepping and the type keeps boiling. The only
+ * reliable stop is to remove the animate elements, which freezes each filter
+ * on its initial seed — still displaced, no longer moving.
+ *
+ * This is the piece every hand-copy of the CSS forgets. It is the reason
+ * boil is a package and not a snippet. */
+(function () {
+  if (typeof window === 'undefined' || !window.matchMedia) return;
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var kill = function () {
+    var nodes = document.querySelectorAll('filter animate');
+    for (var i = 0; i < nodes.length; i++) nodes[i].remove();
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', kill, { once: true });
+  } else {
+    kill();
+  }
+})();
+</script>
+<!-- zanni:boil end -->
+
+<div class="head">
+  <h1>zanni · boil</h1>
+  <p>Three specimens of the same business card. The effect is <b>not</b> a blur:
+  it is animated fractal-noise displacement — <code>feTurbulence</code> stepping
+  a <code>discrete</code> seed into <code>feDisplacementMap</code>, then, for type
+  only, a 0.4 blur and an alpha table that re-crisps the edge. Open this file
+  directly in a browser; there is no build step.</p>
+</div>
+
+<div class="controls">
+  <button id="freeze" type="button">Freeze the boil</button>
+  <span class="note">simulates <code>prefers-reduced-motion</code>: removes every <code>&lt;animate&gt;</code>, which is the only thing that stops SMIL</span>
+</div>
+
+<div class="row">
+
+  <!-- 1 ── as it ships today -->
+  <div class="specimen">
+    <div class="label">1 · <b>today</b> — jack.kelliher.info as it ships</div>
+    <div class="panel">
+      <div class="card">
+        <div class="frame"></div>
+        <img class="profile-photo" alt="" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='92' height='92'><rect width='92' height='92' fill='%23d8d1c7'/><circle cx='46' cy='36' r='16' fill='%23b8ad9e'/><path d='M14 92c4-22 18-30 32-30s28 8 32 30z' fill='%23b8ad9e'/></svg>">
+        <h1>John Kelliher</h1>
+        <div class="title">Senior Software Engineer</div>
+        <div class="ornament" aria-hidden="true">◆</div>
+        <p class="blurb">Senior Software Engineer at Microsoft building distributed
+        infrastructure for agentic development platforms and real-time collaborative
+        state systems at global scale.</p>
+        <a class="email" href="#">jackwkelliher@gmail.com</a>
+        <div class="links"><a href="#">LinkedIn</a><span class="sep">·</span><a href="#">GitHub</a><span class="sep">·</span><a href="#">Résumé</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 ── boil only: the shimmer, nothing else changed -->
+  <div class="specimen">
+    <div class="label">2 · <b>boil only</b> — same palette, same fonts</div>
+    <div class="panel">
+      <div class="card">
+        <div class="frame boil-ui"></div>
+        <img class="profile-photo" alt="" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='92' height='92'><rect width='92' height='92' fill='%23d8d1c7'/><circle cx='46' cy='36' r='16' fill='%23b8ad9e'/><path d='M14 92c4-22 18-30 32-30s28 8 32 30z' fill='%23b8ad9e'/></svg>">
+        <h1 class="boil-text">John Kelliher</h1>
+        <div class="title boil-text">Senior Software Engineer</div>
+        <div class="ornament boil-ui" aria-hidden="true">◆</div>
+        <p class="blurb boil-text">Senior Software Engineer at Microsoft building distributed
+        infrastructure for agentic development platforms and real-time collaborative
+        state systems at global scale.</p>
+        <a class="email boil-text" href="#">jackwkelliher@gmail.com</a>
+        <div class="links boil-text"><a href="#">LinkedIn</a><span class="sep">·</span><a href="#">GitHub</a><span class="sep">·</span><a href="#">Résumé</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 ── boil plus the rest of the texture -->
+  <div class="specimen">
+    <div class="label">3 · <b>boil + ground</b> — dither, scanlines, font triple</div>
+    <div class="panel full">
+      <div class="scanlines" aria-hidden="true"></div>
+      <div class="card">
+        <div class="frame boil-ui"></div>
+        <img class="profile-photo" alt="" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='92' height='92'><rect width='92' height='92' fill='%23dcc4b0'/><circle cx='46' cy='36' r='16' fill='%23a2762a'/><path d='M14 92c4-22 18-30 32-30s28 8 32 30z' fill='%23a2762a'/></svg>">
+        <h1 class="boil-text">John Kelliher</h1>
+        <div class="title boil-text">Senior Software Engineer</div>
+        <div class="ornament boil-ui" aria-hidden="true">◆</div>
+        <p class="blurb boil-text">Senior Software Engineer at Microsoft building distributed
+        infrastructure for agentic development platforms and real-time collaborative
+        state systems at global scale.</p>
+        <a class="email boil-text" href="#">jackwkelliher@gmail.com</a>
+        <div class="links boil-text"><a href="#">LinkedIn</a><span class="sep">·</span><a href="#">GitHub</a><span class="sep">·</span><a href="#">Résumé</a></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /* The freeze button does exactly what boil.js does for a reduced-motion
+     reader, so the two paths cannot drift apart in what they demonstrate. */
+  document.getElementById('freeze').addEventListener('click', function () {
+    document.querySelectorAll('filter animate').forEach(function (a) { a.remove(); });
+    document.body.classList.add('frozen');
+    this.disabled = true;
+    this.textContent = 'Frozen — reload to boil again';
+  });
+</script>
+</body>
+</html>

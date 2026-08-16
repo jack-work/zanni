@@ -1,0 +1,133 @@
+#!/usr/bin/env node
+/* zanni-check — prove the effect survived the build.
+ *
+ * Lineage: this is the '[QA] the stylesheet' block of the figaro-libretto
+ * qa_agent, promoted out of a page generator and made to stand alone. It
+ * exists because of a real regression: a dead-CSS sweep matched one rule per
+ * line, ate the last line of the boil selector list plus the body rule, and
+ * the effect vanished silently. Nobody noticed until it was SEEN.
+ *
+ * Everything here asserts on the built HTML as TEXT, which is the layer that
+ * had no cover. It adds one guard the original never had — that the classes
+ * are actually WORN by some element — because a library can now fail a
+ * second way: perfectly defined, never applied.
+ *
+ *   zanni-check FILE.html [--component boil]...
+ */
+'use strict';
+const fs = require('fs');
+const path = require('path');
+
+const argv = process.argv.slice(2);
+let file = null, want = [];
+let assets = process.env.ZANNI_ASSETS || path.join(__dirname, '..', 'assets');
+for (let i = 0; i < argv.length; i++) {
+  const a = argv[i];
+  if (a === '--component' || a === '-c') want.push(argv[++i]);
+  else if (a === '--assets') assets = argv[++i];
+  else if (a === '-h' || a === '--help') {
+    process.stdout.write('usage: zanni-check FILE.html [--component NAME]...\n');
+    process.exit(0);
+  } else if (file === null) file = a;
+}
+if (!file) { process.stderr.write('usage: zanni-check FILE.html\n'); process.exit(2); }
+
+const manifest = JSON.parse(fs.readFileSync(path.join(assets, 'manifest.json'), 'utf8'));
+const html = fs.readFileSync(file, 'utf8');
+const css = (html.match(/<style[^>]*>([\s\S]*?)<\/style>/g) || []).join('\n');
+/* Assertions about what the document DOES must not be satisfied — or broken —
+ * by what it SAYS. This library documents itself in comments that name the
+ * very attributes being checked, so counting assertions read the stripped
+ * text. The two guards about the old regression deliberately keep the raw
+ * CSS, because a dangling comma is a fact about the file as written. */
+const bare = html.replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+const filters = bare.match(/<filter\b[\s\S]*?<\/filter>/g) || [];
+const filterText = filters.join('\n');
+const byId = (id) => filters.find((f) => f.includes('id="' + id + '"')) || '';
+
+let pass = 0, fail = 0;
+const check = (n, c, d) => c ? (pass++, console.log('  ok   ' + n))
+                             : (fail++, console.log('  FAIL ' + n + (d ? ' :: ' + d : '')));
+
+if (want.length === 0) {
+  want = Object.keys(manifest.components).filter((n) =>
+    html.includes('<!-- zanni:' + n + ' begin'));
+  if (want.length === 0) {
+    console.log('zanni-check: no zanni component found in ' + file);
+    process.exit(1);
+  }
+}
+
+console.log('[zanni] ' + file);
+
+for (const name of want) {
+  const c = manifest.components[name];
+  if (!c) { check('component ' + name + ' exists in the manifest', false); continue; }
+  console.log('[' + name + '] injected');
+  check('the block was injected', html.includes('<!-- zanni:' + name + ' begin'));
+  check('no marker left uninlined', !html.includes(c.marker));
+  if (name === 'boil') boil();
+}
+
+function boil() {
+  console.log('[boil] the filters');
+  ['pixel-text', 'pixel-stage', 'pixel-ui'].forEach((id) =>
+    check(id + ' is defined', new RegExp('<filter id="' + id + '"').test(html)));
+
+  check('every filter steps its seed discretely',
+    (filterText.match(/calcMode="discrete"/g) || []).length === 3);
+  check('the noise is displaced, not merely blurred',
+    (filterText.match(/feDisplacementMap/g) || []).length === 3);
+  check('type is re-crisped after its blur',
+    /feGaussianBlur[\s\S]*?feComponentTransfer[\s\S]*?feFuncA type="table"/.test(byId('pixel-text')));
+
+  /* The stage filter must stay a pure displacement: an alpha threshold there
+     destroys low-alpha fills and dimmed layers. One blur in the document, and
+     it belongs to the type filter. */
+  check('only the type filter blurs', (filterText.match(/feGaussianBlur/g) || []).length === 1);
+  check('the stage filter has no alpha table', !/feFuncA/.test(byId('pixel-stage')));
+
+  /* Filter regions: without the enlarged box the displaced edge is clipped,
+     and the type filter's box is deliberately taller than it is wide. */
+  const region = (id) => (byId(id).match(/<filter[^>]*>/) || [''])[0];
+  check('the type filter enlarges its region',
+    /x="-6%"/.test(region('pixel-text')) && /height="128%"/.test(region('pixel-text')));
+  check('the chrome filters enlarge their regions',
+    /width="104%"/.test(region('pixel-stage')) && /width="106%"/.test(region('pixel-ui')));
+
+  /* Unset on purpose: the chain runs in the SVG default linearRGB, and the
+     alpha ramp was tuned there. */
+  check('colour interpolation is left at the SVG default',
+    !/color-interpolation-filters/.test(filterText));
+
+  /* The host must take no layout and not be announced. */
+  check('the defs host is inert',
+    /<svg width="0" height="0"[^>]*position:absolute[^>]*aria-hidden="true"/.test(html));
+
+  console.log('[boil] the application layer');
+  [['boil-text', 'pixel-text'], ['boil-ui', 'pixel-ui'], ['boil-stage', 'pixel-stage']]
+    .forEach(([cls, id]) => check('.' + cls + ' applies #' + id,
+      new RegExp('\\.' + cls + '\\s*\\{[^{}]*filter:\\s*url\\(#' + id + '\\)').test(css)));
+
+  /* The guard the original never had. A component can now fail a second way:
+     defined perfectly, worn by nobody. */
+  const worn = ['boil-text', 'boil-ui', 'boil-stage'].filter((cls) =>
+    new RegExp('class="[^"]*\\b' + cls + '\\b').test(html));
+  check('at least one element actually wears the boil', worn.length > 0,
+    'no element carries boil-text/boil-ui/boil-stage');
+
+  console.log('[boil] reduced motion');
+  /* CSS cannot stop SMIL. If the script that removes the animates is gone,
+     reduced-motion readers get the boil anyway. */
+  check('the SMIL animates are removed under reduced motion',
+    /prefers-reduced-motion/.test(html) && /filter animate/.test(html));
+
+  console.log('[boil] the shape of the old bug');
+  const dangling = css.match(/,\s*\n\s*\n/g) || [];
+  check('no selector list left dangling on a comma', dangling.length === 0,
+    dangling.length + ' found');
+  check('body is still its own rule', /(^|\n)\s*body\s*\{/.test(css));
+}
+
+console.log('[zanni] ' + pass + ' passed, ' + fail + ' failed');
+process.exit(fail ? 1 : 0);
