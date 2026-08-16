@@ -106,7 +106,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jacquard+24&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=VT323&display=swap">
 </head>
 <body>
-<!-- zanni:boil begin (zanni 0.7.0) -->
+<!-- zanni:boil begin (zanni 0.7.1) -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <filter id="pixel-text" x="-6%" y="-14%" width="112%" height="128%">
     <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="3" result="n"/>
@@ -355,7 +355,7 @@
 })();
 </script>
 <!-- zanni:boil end -->
-<!-- zanni:gesso begin (zanni 0.7.0) -->
+<!-- zanni:gesso begin (zanni 0.7.1) -->
 <style>
 /* zanni · gesso — the ground you paint on.
  *
@@ -414,7 +414,7 @@
 .gesso ::selection { background: rgba(162, 118, 42, 0.25); }
 </style>
 <!-- zanni:gesso end -->
-<!-- zanni:phosphor begin (zanni 0.7.0) -->
+<!-- zanni:phosphor begin (zanni 0.7.1) -->
 <style>
 /* zanni · phosphor — the CRT veil.
  *
@@ -503,7 +503,7 @@
 }
 </style>
 <!-- zanni:phosphor end -->
-<!-- zanni:fontpack begin (zanni 0.7.0) -->
+<!-- zanni:fontpack begin (zanni 0.7.1) -->
 <style>
 /* zanni · fontpack — three faces, three jobs.
  *
@@ -548,7 +548,7 @@
 }
 </style>
 <!-- zanni:fontpack end -->
-<!-- zanni:glyphmark begin (zanni 0.7.0) -->
+<!-- zanni:glyphmark begin (zanni 0.7.1) -->
 <style>
 /* zanni · glyphmark — the portrait as a pixel mark.
  *
@@ -585,12 +585,15 @@
  * grid; only its window is a circle. */
 .glyphmark-round {
   border-radius: 50%;
-  outline: 1px solid rgba(162, 118, 42, 0.5);
-  outline-offset: 4px;
+  /* The outer ring is its own hairline. Under boil an edge moves by about
+   * ±scale/2, so a 1px ring at scale 3 breaks into dashes rather than waving —
+   * give it enough width to survive its own displacement. */
+  outline: var(--glyphmark-ring, 2px) solid rgba(162, 118, 42, 0.5);
+  outline-offset: var(--glyphmark-ring-gap, 5px);
 }
 </style>
 <!-- zanni:glyphmark end -->
-<!-- zanni:heft begin (zanni 0.7.0) -->
+<!-- zanni:heft begin (zanni 0.7.1) -->
 <style>
 /* zanni · heft — pick a thing up, throw it about, watch it settle back.
  *

@@ -1,6 +1,6 @@
 {
   "name": "zanni",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Visual components extracted from figar.org.",
   "components": {
     "boil": {
@@ -120,7 +120,13 @@
       "files": [
         "glyphmark.css"
       ],
-      "docs": "docs/glyphmark.md"
+      "docs": "docs/glyphmark.md",
+      "knobs": [
+        "--glyphmark-size",
+        "--glyphmark-border",
+        "--glyphmark-ring",
+        "--glyphmark-ring-gap"
+      ]
     },
     "heft": {
       "summary": "Pick a thing up, throw it about, let go, watch it settle back. Composes via CSS translate; lifts the ancestor, not the child.",

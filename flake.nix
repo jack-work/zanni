@@ -14,7 +14,7 @@
       ...
     }:
     let
-      version = "0.7.0";
+      version = "0.7.1";
     in
     {
       # One call, the way gluck-service-lib's mkPythonService is one call.

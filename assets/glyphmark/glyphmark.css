@@ -33,6 +33,9 @@
  * grid; only its window is a circle. */
 .glyphmark-round {
   border-radius: 50%;
-  outline: 1px solid rgba(162, 118, 42, 0.5);
-  outline-offset: 4px;
+  /* The outer ring is its own hairline. Under boil an edge moves by about
+   * ±scale/2, so a 1px ring at scale 3 breaks into dashes rather than waving —
+   * give it enough width to survive its own displacement. */
+  outline: var(--glyphmark-ring, 2px) solid rgba(162, 118, 42, 0.5);
+  outline-offset: var(--glyphmark-ring-gap, 5px);
 }
