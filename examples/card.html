@@ -106,7 +106,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jacquard+24&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=VT323&display=swap">
 </head>
 <body>
-<!-- zanni:boil begin (zanni 0.7.1) -->
+<!-- zanni:boil begin (zanni 0.8.0) -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <filter id="pixel-text" x="-6%" y="-14%" width="112%" height="128%">
     <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="3" result="n"/>
@@ -355,7 +355,7 @@
 })();
 </script>
 <!-- zanni:boil end -->
-<!-- zanni:gesso begin (zanni 0.7.1) -->
+<!-- zanni:gesso begin (zanni 0.8.0) -->
 <style>
 /* zanni · gesso — the ground you paint on.
  *
@@ -414,7 +414,7 @@
 .gesso ::selection { background: rgba(162, 118, 42, 0.25); }
 </style>
 <!-- zanni:gesso end -->
-<!-- zanni:phosphor begin (zanni 0.7.1) -->
+<!-- zanni:phosphor begin (zanni 0.8.0) -->
 <style>
 /* zanni · phosphor — the CRT veil.
  *
@@ -503,7 +503,7 @@
 }
 </style>
 <!-- zanni:phosphor end -->
-<!-- zanni:fontpack begin (zanni 0.7.1) -->
+<!-- zanni:fontpack begin (zanni 0.8.0) -->
 <style>
 /* zanni · fontpack — three faces, three jobs.
  *
@@ -548,7 +548,7 @@
 }
 </style>
 <!-- zanni:fontpack end -->
-<!-- zanni:glyphmark begin (zanni 0.7.1) -->
+<!-- zanni:glyphmark begin (zanni 0.8.0) -->
 <style>
 /* zanni · glyphmark — the portrait as a pixel mark.
  *
@@ -593,7 +593,7 @@
 }
 </style>
 <!-- zanni:glyphmark end -->
-<!-- zanni:heft begin (zanni 0.7.1) -->
+<!-- zanni:heft begin (zanni 0.8.0) -->
 <style>
 /* zanni · heft — pick a thing up, throw it about, watch it settle back.
  *
@@ -627,6 +627,19 @@
 
 .heft.held {
   cursor: grabbing;
+  /* Drop any filter while the thing is in hand.
+   *
+   * A filtered subtree is one raster unit, and MOVING it re-rasterises the
+   * whole thing every frame — 60x a second instead of the ~5x boil's seed
+   * steps cost at rest. That is the single worst case in this library, and a
+   * drag is exactly when you hit it: on a phone, where cost scales with
+   * DEVICE pixels (DPR 3 is 9x the work for the same box), it is the
+   * difference between a smooth throw and a slideshow.
+   *
+   * Nothing is lost. Nobody can see a shimmer on something they are flinging
+   * across the screen, and the effect returns the instant it settles. With
+   * the filter gone the drag is a pure compositor translate. */
+  filter: none;
   position: relative;
   z-index: 9999;
   /* Any idle float on the element pauses while it is in hand — a thing being

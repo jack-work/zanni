@@ -30,6 +30,19 @@
 
 .heft.held {
   cursor: grabbing;
+  /* Drop any filter while the thing is in hand.
+   *
+   * A filtered subtree is one raster unit, and MOVING it re-rasterises the
+   * whole thing every frame — 60x a second instead of the ~5x boil's seed
+   * steps cost at rest. That is the single worst case in this library, and a
+   * drag is exactly when you hit it: on a phone, where cost scales with
+   * DEVICE pixels (DPR 3 is 9x the work for the same box), it is the
+   * difference between a smooth throw and a slideshow.
+   *
+   * Nothing is lost. Nobody can see a shimmer on something they are flinging
+   * across the screen, and the effect returns the instant it settles. With
+   * the filter gone the drag is a pure compositor translate. */
+  filter: none;
   position: relative;
   z-index: 9999;
   /* Any idle float on the element pauses while it is in hand — a thing being

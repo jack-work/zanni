@@ -110,6 +110,11 @@ function heft() {
     /user-drag:\s*none/.test(css) && /dragstart/.test(html));
   check('the pointer is released on cancel and blur',
     /pointercancel/.test(html) && /'blur'/.test(html));
+  /* The most expensive thing in this library is moving a filtered element:
+     it re-rasters every frame instead of ~5 times a second. */
+  check('a held element drops its filter',
+    /\.heft\.held\s*\{[^{}]*filter:\s*none/.test(css),
+    'dragging a filtered element re-rasters it at 60fps');
   check('reduced motion flattens the spring but keeps the drag',
     /prefers-reduced-motion[\s\S]{0,200}\.heft\.settling/.test(css));
 }
