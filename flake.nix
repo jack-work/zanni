@@ -14,7 +14,7 @@
       ...
     }:
     let
-      version = "0.6.0";
+      version = "0.7.0";
     in
     {
       # One call, the way gluck-service-lib's mkPythonService is one call.
@@ -46,11 +46,29 @@
           size ? 96,
           colors ? 64,
           name ? "pixel.png",
+          # Bring the image into the page's palette. `saturation` below 100
+          # drains the original hues; `tint` then pulls what remains toward one
+          # colour by `tintAmount`. This is deliberately NOT a gradient map:
+          # mapping luminance straight onto an ink->gold ramp inverts a
+          # portrait — a bright background becomes gold and the face goes dark
+          # and muddy. Draining and tinting keeps the face a face while making
+          # it belong to the page. Set tint = null to leave colour alone.
+          saturation ? 100,
+          tint ? null,
+          tintAmount ? 20,
+          # A little contrast, because quantising to few colours flattens the
+          # midtones that carry a face.
+          levels ? "4%,96%",
         }:
+        let
+          tone = pkgs.lib.optionalString (tint != null)
+            "-modulate 100,${toString saturation} -fill '${tint}' -colorize ${toString tintAmount}% -level ${levels}";
+        in
         pkgs.runCommand name { nativeBuildInputs = [ pkgs.imagemagick ]; } ''
           magick ${src} -auto-orient \
             -resize ${toString size}x${toString size}^ \
             -gravity center -extent ${toString size}x${toString size} \
+            ${tone} \
             -colors ${toString colors} -strip PNG8:$out
         '';
 

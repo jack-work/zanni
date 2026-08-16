@@ -1,0 +1,54 @@
+/* zanni · heft — pick a thing up, throw it about, watch it settle back.
+ *
+ * Named for the word you use when you lift something to judge its weight.
+ * The whole gag is that an object on a page should behave like an object on
+ * a table: it moves when you pull it, and it returns when you stop.
+ *
+ * Extracted from figar.org's `makeDraggable`, including the two decisions
+ * that are easy to get wrong and were already got right there:
+ *
+ *   - It composes via the CSS `translate` PROPERTY, not `transform`. A
+ *     filtered or animated element usually already owns its transform; using
+ *     translate means the drag and the animation stack instead of fighting,
+ *     and neither has to know about the other.
+ *
+ *   - A filter and a transform both create stacking contexts, so a held
+ *     element cannot escape its parent's. Raising the CHILD's z-index does
+ *     nothing. `body.hefting` raises the ancestor instead — figar.org lost an
+ *     afternoon to this exact bug with a portrait inside a navbar.
+ */
+
+/* Ours to move, not the browser's to fling: no native image drag, no ghost,
+ * no selection halo. */
+.heft {
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+  touch-action: none;          /* the pointer is ours once a drag is real */
+}
+
+.heft.held {
+  cursor: grabbing;
+  position: relative;
+  z-index: 9999;
+  /* Any idle float on the element pauses while it is in hand — a thing being
+   * held should not also be bobbing on its own. */
+  animation-play-state: paused;
+}
+
+/* The return. An overshoot curve, so it arrives like something with mass
+ * rather than something being tweened. */
+.heft.settling {
+  transition: translate var(--heft-settle, 650ms) var(--heft-ease, cubic-bezier(0.2, 1.6, 0.3, 1));
+}
+
+/* Lift the ANCESTOR, not the child. See the note above: a child cannot climb
+ * out of a stacking context its parent created, however large its z-index. */
+body.hefting .heft-lift { z-index: 9999; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* The drag still works — it is a direct response to the pointer, not
+   * decoration. Only the springy return is flattened. */
+  .heft.settling { transition: translate 1ms linear; }
+}

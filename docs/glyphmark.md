@@ -37,10 +37,28 @@ That is what `zanni.lib.pixelate` is for:
 files."profile-pixel.png" = zanni.lib.pixelate {
   inherit pkgs;
   src = ./www/profile.jpg;
-  size = 80;          # the mark is displayed at 120px → 1.5× magnification
-  colors = 48;        # a small indexed palette, as the figaro glyph has
+  size = 48;              # displayed at 120px → 2.5× magnification
+  colors = 24;
+  saturation = 42;        # drain the original hues…
+  tint = "#a2762a";       # …and pull what is left toward gold
+  tintAmount = 22;
 };
 ```
+
+### Bringing it into the palette
+
+`saturation` drains the photograph's own colours; `tint` then pulls what
+remains toward one of them, by `tintAmount` percent.
+
+This is deliberately **not** a gradient map. Mapping luminance straight onto an
+ink→oxblood→gold→paper ramp is the obvious idea and it looks wrong on a
+portrait: a bright background becomes gold while the face — mid-luminance —
+drops to dark oxblood, so the subject reads as a hole. Tried, rendered,
+rejected. Draining and tinting keeps a face a face while making it belong to
+the page.
+
+`levels` adds a little contrast back, because quantising to twenty-odd colours
+flattens exactly the midtones a face is made of.
 
 ```html
 <img class="glyphmark glyphmark-round" src="profile-pixel.png" alt="…">

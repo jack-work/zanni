@@ -86,6 +86,32 @@ for (const name of want) {
   if (name === 'phosphor') phosphor();
   if (name === 'fontpack') fontpack();
   if (name === 'glyphmark') glyphmark();
+  if (name === 'heft') heft();
+}
+
+function heft() {
+  console.log('[heft] the drag');
+  /* translate, not transform: a filtered or animated element usually already
+     owns its transform, and the two must stack rather than fight. */
+  check('it composes via the translate property, not transform',
+    /\.heft\.settling\s*\{[^{}]*transition:\s*translate/.test(css) &&
+    /style\.translate\s*=/.test(html),
+    'transform would fight any animation already on the element');
+  check('the settle is tunable', /var\(--heft-settle/.test(css));
+  /* The bug figar.org actually hit: a held child cannot escape the stacking
+     context its parent created, so the ANCESTOR is what must be raised. */
+  check('it raises the ancestor, not the child',
+    /body\.hefting\s+\.heft-lift\s*\{[^{}]*z-index/.test(css),
+    'a child cannot climb out of its parent stacking context');
+  check('a press does not commit: there is slack before a drag',
+    /SLACK2|<\s*64|dx \* dx \+ dy \* dy/.test(html));
+  check('a drag defers to a text selection', /getSelection/.test(html));
+  check('the native image drag is refused',
+    /user-drag:\s*none/.test(css) && /dragstart/.test(html));
+  check('the pointer is released on cancel and blur',
+    /pointercancel/.test(html) && /'blur'/.test(html));
+  check('reduced motion flattens the spring but keeps the drag',
+    /prefers-reduced-motion[\s\S]{0,200}\.heft\.settling/.test(css));
 }
 
 function glyphmark() {

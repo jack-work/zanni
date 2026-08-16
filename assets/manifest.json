@@ -1,6 +1,6 @@
 {
   "name": "zanni",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Visual components extracted from figar.org.",
   "components": {
     "boil": {
@@ -121,10 +121,26 @@
         "glyphmark.css"
       ],
       "docs": "docs/glyphmark.md"
+    },
+    "heft": {
+      "summary": "Pick a thing up, throw it about, let go, watch it settle back. Composes via CSS translate; lifts the ancestor, not the child.",
+      "marker": "<!-- zanni:heft -->",
+      "classes": [
+        "heft",
+        "heft-lift"
+      ],
+      "knobs": [
+        "--heft-settle",
+        "--heft-ease"
+      ],
+      "files": [
+        "heft.css",
+        "heft.js"
+      ],
+      "docs": "docs/heft.md"
     }
   },
   "planned": [
-    "liftcard",
     "scena"
   ]
 }
