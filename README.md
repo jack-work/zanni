@@ -76,8 +76,9 @@ zanni-check FILE.html                                  # the guard
 Three reasons, each of which a hand-copy gets wrong:
 
 1. **It cannot be linked.** `filter: url(#id)` resolves only in the same
-   document; external `url(sprite.svg#id)` is Firefox-only in practice. The
-   defs must be injected into the page.
+   document. Measured in Chrome 145: an external `url(sprite.svg#id)` renders
+   pixel-identical to no filter at all — no error, no warning, just no effect.
+   The defs must be injected into the page.
 2. **Reduced motion is JavaScript.** `animation: none` does not stop SMIL. The
    `<animate>` elements have to be removed. Every copy of the CSS forgets this.
 3. **It can die silently.** On figar.org it did: a dead-CSS sweep matched one

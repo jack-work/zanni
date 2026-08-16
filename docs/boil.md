@@ -86,10 +86,22 @@ Turn one at a time. The four interact.
 
 ## Why it must be inlined
 
-`filter: url(#id)` resolves only within the same document. External
-`url(sprite.svg#id)` works in Firefox and, in practice, not in Chrome or
-Safari. So boil cannot be delivered as a linked stylesheet; `zanni-inline`
-injects the defs, the styles and the script into the page at build time.
-Note that this project's only local browser is Firefox — the one browser that
-would falsely reassure you here — so the inline path is unconditional rather
-than conditional on a test we cannot honestly run.
+`filter: url(#id)` resolves only within the same document. So boil cannot be
+delivered as a linked stylesheet; `zanni-inline` injects the defs, the styles
+and the script into the page at build time.
+
+**Measured**, 2026-08-16, Google Chrome for Testing 145.0.7632.6, headless,
+three lines of identical type — unfiltered, `url(sprite.svg#pixel-text)`,
+`url(#pixel-text)` where the defs are inline in the document:
+
+- the inline line boils;
+- the external line renders **pixel-identical to the unfiltered one**.
+
+Note the shape of that failure. It is not an error, not a console warning, not
+an unrendered element: the filter is simply *not applied* and the page looks
+fine. A packaging mistake here produces exactly the silent disappearance this
+library exists to prevent, which is why `zanni-check` asserts on the built
+artifact rather than trusting the recipe.
+
+Safari is untested here — no Safari on this machine. WebKit has historically
+followed Chrome on this point, but that is inference, not measurement.
