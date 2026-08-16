@@ -66,7 +66,61 @@ for (const name of want) {
   console.log('[' + name + '] injected');
   check('the block was injected', html.includes('<!-- zanni:' + name + ' begin'));
   check('no marker left uninlined', !html.includes(c.marker));
+
+  /* Generic, manifest-driven, and the two failures no component can afford:
+     a class the manifest promises but the stylesheet never defines, and a
+     component that is perfectly defined and worn by nobody. The second is
+     the shape the original regression took — the effect was gone and every
+     test still passed. */
+  const edge = '(?![\\w-])';
+  const undef = (c.classes || []).filter((cls) =>
+    !new RegExp('\\.' + cls + edge + '[^{}]*\\{').test(css));
+  check('every class the manifest promises has a rule', undef.length === 0, undef.join(', '));
+  const worn = (c.classes || []).filter((cls) =>
+    new RegExp('class="[^"]*\\b' + cls + edge).test(html));
+  check('some element actually wears it', worn.length > 0,
+    'nothing carries ' + (c.classes || []).map((x) => '.' + x).join(' / '));
+
   if (name === 'boil') boil();
+  if (name === 'gesso') gesso();
+  if (name === 'phosphor') phosphor();
+  if (name === 'fontpack') fontpack();
+}
+
+function gesso() {
+  console.log('[gesso] the ground');
+  check('the dither is a conic checker, not an image',
+    /repeating-conic-gradient\(\s*var\(--dither\)/.test(css));
+  check('the checker has a cell size', /background-size:\s*var\(--gesso-cell\)/.test(css));
+  ['--paper', '--dither', '--ink', '--gold', '--oxblood'].forEach((v) =>
+    check(v + ' is defined', new RegExp('\\' + v + ':').test(css)));
+  check('selection belongs to the palette', /::selection/.test(css));
+}
+
+function phosphor() {
+  console.log('[phosphor] the veil');
+  check('the comb is a repeating linear gradient',
+    /\.phosphor[\s\S]{0,400}repeating-linear-gradient\(\s*\n?\s*0deg/.test(css));
+  check('it multiplies into what is beneath', /mix-blend-mode:\s*multiply/.test(css));
+  /* A veil that eats clicks is a bug report waiting to be filed. */
+  check('it cannot eat clicks', /\.phosphor[\s\S]{0,200}pointer-events:\s*none/.test(css));
+  check('the host is positioned', /\.phosphor-host\s*\{[^{}]*position:\s*relative/.test(css));
+  check('the bloom stops under reduced motion',
+    /prefers-reduced-motion[\s\S]{0,120}\.phosphor-bloom\s*\{[^{}]*animation:\s*none/.test(css));
+}
+
+function fontpack() {
+  console.log('[fontpack] the three faces');
+  (manifest.components.fontpack.families || []).forEach((f) =>
+    check("'" + f + "' is named", html.includes("'" + f + "'") || html.includes(f.replace(/ /g, '+'))));
+  check('the faces are fetched from the head',
+    /<!-- zanni:fontpack head -->[\s\S]*?<\/head>/.test(html));
+  check('the preconnects precede the stylesheet',
+    html.indexOf('rel="preconnect"') < html.indexOf('fonts.googleapis.com/css2'));
+  check('type is swapped in, not hidden', /display=swap/.test(html));
+  /* VT323 is bitmap-derived and disintegrates below ~13px. */
+  check('the technical face keeps its floor',
+    /\.fontpack-mono\s*\{[^{}]*font-size:\s*max\(13px/.test(css));
 }
 
 function boil() {
@@ -108,13 +162,6 @@ function boil() {
   [['boil-text', 'pixel-text'], ['boil-ui', 'pixel-ui'], ['boil-stage', 'pixel-stage']]
     .forEach(([cls, id]) => check('.' + cls + ' applies #' + id,
       new RegExp('\\.' + cls + '\\s*\\{[^{}]*filter:\\s*url\\(#' + id + '\\)').test(css)));
-
-  /* The guard the original never had. A component can now fail a second way:
-     defined perfectly, worn by nobody. */
-  const worn = ['boil-text', 'boil-ui', 'boil-stage'].filter((cls) =>
-    new RegExp('class="[^"]*\\b' + cls + '\\b').test(html));
-  check('at least one element actually wears the boil', worn.length > 0,
-    'no element carries boil-text/boil-ui/boil-stage');
 
   console.log('[boil] reduced motion');
   /* CSS cannot stop SMIL. If the script that removes the animates is gone,

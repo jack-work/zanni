@@ -57,14 +57,25 @@ for (const name of components) {
   const dir = path.join(assets, name);
   const read = (f) => fs.readFileSync(path.join(dir, f), 'utf8').trimEnd();
   const parts = ['<!-- zanni:' + name + ' begin (zanni ' + manifest.version + ') -->'];
+  const head = [];
   for (const f of c.files) {
-    if (f.endsWith('.svg')) parts.push(read(f));
+    /* A stylesheet link and its preconnects belong in the head — a warm-up
+       that arrives after the request it was warming is decoration. Anything
+       named *.head.html goes there; everything else lands at the marker. */
+    if (f.endsWith('.head.html')) head.push(read(f));
+    else if (f.endsWith('.svg')) parts.push(read(f));
     else if (f.endsWith('.css')) parts.push('<style>\n' + read(f) + '\n</style>');
     else if (f.endsWith('.js')) parts.push('<script>\n' + read(f) + '\n</script>');
     else die('do not know how to inline ' + f);
   }
   parts.push('<!-- zanni:' + name + ' end -->');
   html = html.split(c.marker).join(parts.join('\n'));
+
+  if (head.length) {
+    if (!/<\/head>/i.test(html)) die('no </head> in ' + input + ', and ' + name + ' needs one');
+    const block = '<!-- zanni:' + name + ' head -->\n' + head.join('\n') + '\n';
+    html = html.replace(/<\/head>/i, block + '</head>');
+  }
 }
 
 if (out) fs.writeFileSync(out, html);

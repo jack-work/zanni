@@ -6,7 +6,9 @@
 <title>zanni · boil — three cards</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jacquard+24&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=VT323&display=swap" rel="stylesheet">
+<!-- Cormorant is the card's own face, panels 1 and 2. The three pixel-classical
+     faces arrive with the fontpack component, injected into this head. -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <style>
   /* ── the page around the specimens ─────────────────────────────────── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -65,31 +67,24 @@
   .links a { color: #7a7068; text-decoration: none; }
   .links .sep { margin: 0 8px; color: #c4bdb4; }
 
-  /* ── panel 3 only: the rest of the figar.org texture ───────────────────
-     Law 5. Boil alone is shimmer and nothing more. figar.org's look is boil
-     PLUS a dither ground, scanlines, and the font triple. This panel exists
-     so the difference is seen rather than imagined. */
-  .full.panel {
-    background-color: #e7d4c4;
-    background-image: repeating-conic-gradient(#dfc9b6 0% 25%, transparent 0% 50%);
-    background-size: 6px 6px;
-  }
-  .full .card { background: #e7d4c4; border-color: #a2762a; }
+  /* ── panel 3: composed of zanni components, not hand-written ──────────
+     Law 5 made concrete. Everything below is either a zanni class worn in
+     the markup (.gesso, .phosphor, .fontpack-*) or a local override of a
+     palette custom property that gesso defines. The panel demonstrates the
+     framework composing; it does not re-implement it. */
+  .full .card { background: var(--paper); border-color: var(--gold); }
   .full .card .frame { border-color: rgba(162, 118, 42, 0.55); }
-  .full .card h1 { font-family: 'Jacquard 24', 'Cormorant Garamond', serif; font-size: 44px; font-weight: 400; color: #2b1a15; }
-  .full .title, .full .links, .full .email { font-family: 'VT323', ui-monospace, monospace; }
-  .full .title { font-size: 17px; letter-spacing: 0.14em; color: #7d2e2e; font-variant: normal; }
-  .full .blurb { font-family: 'EB Garamond', Georgia, serif; color: #2b1a15; }
-  .full .email { font-size: 19px; font-style: normal; color: #a2762a; }
-  .full .links { font-size: 17px; color: #7a584a; }
-  .full .links a { color: #7d2e2e; }
-  .full .ornament { color: #a2762a; }
+  .full .card h1 { font-size: 44px; color: var(--ink); }
+  .full .title { font-size: 17px; letter-spacing: 0.14em; color: var(--oxblood);
+                 font-variant: normal; text-transform: lowercase; }
+  .full .blurb { color: var(--ink); }
+  .full .email { font-size: 19px; font-style: normal; color: var(--gold); }
+  .full .links { font-size: 17px; color: var(--muted); }
+  .full .links a { color: var(--oxblood); }
+  .full .ornament { color: var(--gold); }
   .full .ornament::before, .full .ornament::after { background: rgba(162, 118, 42, 0.6); }
-  .full .profile-photo { border-color: #a2762a; outline-color: rgba(162,118,42,0.5); image-rendering: pixelated; }
-  .full .scanlines {
-    position: absolute; inset: 0; pointer-events: none; mix-blend-mode: multiply;
-    background: repeating-linear-gradient(to bottom, rgba(43,26,21,0.10) 0 1px, transparent 1px 3px);
-  }
+  .full .profile-photo { border-color: var(--gold); outline-color: rgba(162,118,42,0.5);
+                         image-rendering: pixelated; }
 
   /* Frozen: what a reduced-motion reader gets. The displacement stays, the
      stepping stops — because the <animate> elements are gone, not because a
@@ -99,6 +94,9 @@
 </head>
 <body>
 <!-- zanni:boil -->
+<!-- zanni:gesso -->
+<!-- zanni:phosphor -->
+<!-- zanni:fontpack -->
 
 <div class="head">
   <h1>zanni · boil</h1>
@@ -156,20 +154,19 @@
 
   <!-- 3 ── boil plus the rest of the texture -->
   <div class="specimen">
-    <div class="label">3 · <b>boil + ground</b> — dither, scanlines, font triple</div>
-    <div class="panel full">
-      <div class="scanlines" aria-hidden="true"></div>
+    <div class="label">3 · <b>boil + gesso + phosphor + fontpack</b> — the whole voice</div>
+    <div class="panel full gesso phosphor-host">
       <div class="card">
         <div class="frame boil-ui"></div>
         <img class="profile-photo" alt="" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='92' height='92'><rect width='92' height='92' fill='%23dcc4b0'/><circle cx='46' cy='36' r='16' fill='%23a2762a'/><path d='M14 92c4-22 18-30 32-30s28 8 32 30z' fill='%23a2762a'/></svg>">
-        <h1 class="boil-text">John Kelliher</h1>
-        <div class="title boil-text">Senior Software Engineer</div>
+        <h1 class="boil-text fontpack-display">John Kelliher</h1>
+        <div class="title boil-text fontpack-mono">Senior Software Engineer</div>
         <div class="ornament boil-ui" aria-hidden="true">◆</div>
-        <p class="blurb boil-text">Senior Software Engineer at Microsoft building distributed
+        <p class="blurb boil-text fontpack-prose">Senior Software Engineer at Microsoft building distributed
         infrastructure for agentic development platforms and real-time collaborative
         state systems at global scale.</p>
-        <a class="email boil-text" href="#">jackwkelliher@gmail.com</a>
-        <div class="links boil-text"><a href="#">LinkedIn</a><span class="sep">·</span><a href="#">GitHub</a><span class="sep">·</span><a href="#">Résumé</a></div>
+        <a class="email boil-text fontpack-mono" href="#">jackwkelliher@gmail.com</a>
+        <div class="links boil-text fontpack-mono"><a href="#">LinkedIn</a><span class="sep">·</span><a href="#">GitHub</a><span class="sep">·</span><a href="#">Résumé</a></div>
       </div>
     </div>
   </div>

@@ -6,7 +6,9 @@
 <title>zanni · boil — three cards</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jacquard+24&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=VT323&display=swap" rel="stylesheet">
+<!-- Cormorant is the card's own face, panels 1 and 2. The three pixel-classical
+     faces arrive with the fontpack component, injected into this head. -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <style>
   /* ── the page around the specimens ─────────────────────────────────── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -65,40 +67,47 @@
   .links a { color: #7a7068; text-decoration: none; }
   .links .sep { margin: 0 8px; color: #c4bdb4; }
 
-  /* ── panel 3 only: the rest of the figar.org texture ───────────────────
-     Law 5. Boil alone is shimmer and nothing more. figar.org's look is boil
-     PLUS a dither ground, scanlines, and the font triple. This panel exists
-     so the difference is seen rather than imagined. */
-  .full.panel {
-    background-color: #e7d4c4;
-    background-image: repeating-conic-gradient(#dfc9b6 0% 25%, transparent 0% 50%);
-    background-size: 6px 6px;
-  }
-  .full .card { background: #e7d4c4; border-color: #a2762a; }
+  /* ── panel 3: composed of zanni components, not hand-written ──────────
+     Law 5 made concrete. Everything below is either a zanni class worn in
+     the markup (.gesso, .phosphor, .fontpack-*) or a local override of a
+     palette custom property that gesso defines. The panel demonstrates the
+     framework composing; it does not re-implement it. */
+  .full .card { background: var(--paper); border-color: var(--gold); }
   .full .card .frame { border-color: rgba(162, 118, 42, 0.55); }
-  .full .card h1 { font-family: 'Jacquard 24', 'Cormorant Garamond', serif; font-size: 44px; font-weight: 400; color: #2b1a15; }
-  .full .title, .full .links, .full .email { font-family: 'VT323', ui-monospace, monospace; }
-  .full .title { font-size: 17px; letter-spacing: 0.14em; color: #7d2e2e; font-variant: normal; }
-  .full .blurb { font-family: 'EB Garamond', Georgia, serif; color: #2b1a15; }
-  .full .email { font-size: 19px; font-style: normal; color: #a2762a; }
-  .full .links { font-size: 17px; color: #7a584a; }
-  .full .links a { color: #7d2e2e; }
-  .full .ornament { color: #a2762a; }
+  .full .card h1 { font-size: 44px; color: var(--ink); }
+  .full .title { font-size: 17px; letter-spacing: 0.14em; color: var(--oxblood);
+                 font-variant: normal; text-transform: lowercase; }
+  .full .blurb { color: var(--ink); }
+  .full .email { font-size: 19px; font-style: normal; color: var(--gold); }
+  .full .links { font-size: 17px; color: var(--muted); }
+  .full .links a { color: var(--oxblood); }
+  .full .ornament { color: var(--gold); }
   .full .ornament::before, .full .ornament::after { background: rgba(162, 118, 42, 0.6); }
-  .full .profile-photo { border-color: #a2762a; outline-color: rgba(162,118,42,0.5); image-rendering: pixelated; }
-  .full .scanlines {
-    position: absolute; inset: 0; pointer-events: none; mix-blend-mode: multiply;
-    background: repeating-linear-gradient(to bottom, rgba(43,26,21,0.10) 0 1px, transparent 1px 3px);
-  }
+  .full .profile-photo { border-color: var(--gold); outline-color: rgba(162,118,42,0.5);
+                         image-rendering: pixelated; }
 
   /* Frozen: what a reduced-motion reader gets. The displacement stays, the
      stepping stops — because the <animate> elements are gone, not because a
      CSS rule asked them to stop. */
   body.frozen .controls .note::after { content: ' — animates removed'; }
 </style>
+<!-- zanni:fontpack head -->
+<!-- zanni · fontpack — the three faces, fetched together.
+     Injected into </head> by zanni-inline (any *.head.html in a component
+     goes there), because a stylesheet link belongs in the head and the
+     preconnects are worthless if they arrive after the request they were
+     meant to warm up.
+
+     One request for three families, `display=swap` so type is readable
+     before the webfont lands. If you would rather not talk to Google at
+     all, drop this file and self-host the same three families: nothing
+     else in fontpack refers to the CDN. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jacquard+24&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=VT323&display=swap">
 </head>
 <body>
-<!-- zanni:boil begin (zanni 0.1.0) -->
+<!-- zanni:boil begin (zanni 0.2.0) -->
 <!-- zanni · boil — filter defs.
      Inlined into the host document by `zanni-inline`. It MUST be inline:
      CSS `filter: url(#id)` resolves only within the same document, and
@@ -203,6 +212,170 @@
 })();
 </script>
 <!-- zanni:boil end -->
+<!-- zanni:gesso begin (zanni 0.2.0) -->
+<style>
+/* zanni · gesso — the ground you paint on.
+ *
+ * A painter's gesso is the prepared surface: before the picture, the panel.
+ * Here it is figar.org's parchment — a flat paper colour with a 6px checker
+ * of a slightly darker paper laid over it by a repeating-conic-gradient, so
+ * the page reads as a dithered bitmap rather than a flat fill. Two colours
+ * and a grid; there is no image and no request.
+ *
+ * It also carries the palette, because the ground and the ink were chosen
+ * against each other and shipping one without the other gives you neither.
+ * Every value is a custom property: override them and keep the mechanism.
+ */
+
+:root {
+  /* paper and its dither */
+  --paper: #e7d4c4;
+  --paper-2: #dcc4b0;
+  --dither: #dfc9b6;
+  --gesso-cell: 6px;
+
+  /* ink */
+  --ink: #2b1a15;
+  --muted: #7a584a;
+  --rule: rgba(43, 26, 21, 0.2);
+
+  /* editorial colours — gold is for focus, and ≤2 focal elements per view */
+  --gold: #a2762a;
+  --gold-bright: #d9a94e;
+  --oxblood: #7d2e2e;
+
+  /* the dark register: velvet stage and the type that sits on it */
+  --stage: #1a0d0f;
+  --stage-2: #271215;
+  --stage-ink: #f0dfc8;
+  --stage-muted: #a5887b;
+}
+
+.gesso {
+  background-color: var(--paper);
+  background-image: repeating-conic-gradient(var(--dither) 0% 25%, transparent 0% 50%);
+  background-size: var(--gesso-cell) var(--gesso-cell);
+  color: var(--ink);
+}
+
+/* The same ground in the dark register, for panes that read as a stage. */
+.gesso-stage {
+  background-color: var(--stage);
+  background-image: repeating-conic-gradient(var(--stage-2) 0% 25%, transparent 0% 50%);
+  background-size: var(--gesso-cell) var(--gesso-cell);
+  color: var(--stage-ink);
+}
+
+/* Selection should belong to the palette too, or the browser's blue undoes
+ * the whole conceit the first time anyone drags a cursor across a line. */
+.gesso ::selection { background: rgba(162, 118, 42, 0.25); }
+</style>
+<!-- zanni:gesso end -->
+<!-- zanni:phosphor begin (zanni 0.2.0) -->
+<style>
+/* zanni · phosphor — the CRT veil.
+ *
+ * Named for the coating a cathode-ray tube glows through: the scanline is an
+ * artefact of that screen, not a decoration added to it. One horizontal comb
+ * — 1px of near-black over 2px of nothing — multiplied into whatever is
+ * beneath, at half strength.
+ *
+ * It is an OVERLAY, so it needs a positioned ancestor and it must not eat
+ * clicks. Two ways to wear it:
+ *
+ *   <div class="phosphor-host">        an element whose ::after is the veil
+ *     …
+ *   </div>
+ *
+ *   <div class="phosphor"></div>       an explicit sibling, when you need to
+ *                                      control where it sits on the z-axis
+ *
+ * Deliberately NOT applied to the whole page by default. A veil over <body>
+ * covers position:fixed chrome as well, and mix-blend-mode: multiply against
+ * a transparent backdrop is a well-known way to get a grey rectangle.
+ */
+
+.phosphor,
+.phosphor-host::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, var(--phosphor-ink, 0.22)) 0 1px,
+    transparent 1px var(--phosphor-pitch, 3px)
+  );
+  mix-blend-mode: multiply;
+  opacity: var(--phosphor-strength, 0.5);
+}
+
+.phosphor-host { position: relative; }
+
+/* The gentle sibling of the comb: a slow bloom from the centre, as if the
+ * tube were warm. Opt-in, and it respects reduced motion — this one CAN be
+ * stopped by CSS, because it is a CSS animation and not SMIL. */
+.phosphor-bloom {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(46% 52% at 50% 48%,
+    rgba(217, 169, 78, 0.13) 0%, rgba(217, 169, 78, 0) 72%);
+  mix-blend-mode: screen;
+  animation: phosphor-breathe 7s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate;
+}
+@keyframes phosphor-breathe { from { opacity: 0.55; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .phosphor-bloom { animation: none; }
+}
+</style>
+<!-- zanni:phosphor end -->
+<!-- zanni:fontpack begin (zanni 0.2.0) -->
+<style>
+/* zanni · fontpack — three faces, three jobs.
+ *
+ * Pixel-classical is a three-register voice, and the registers do not swap:
+ *
+ *   Jacquard 24   display, numerals, drop caps.  A pixel blackletter; it has
+ *                 one weight (400) and asking for another gets you a browser
+ *                 synthesising a bold, which smears the pixel grid.
+ *   EB Garamond   prose, and act names in italic. The humane register.
+ *   VT323         everything technical: commands, labels, chips, timestamps.
+ *                 A CRT terminal face. NEVER below ~13px CSS — it is a
+ *                 bitmap-derived design and it disintegrates when small.
+ *
+ * The rule that makes it read as one voice rather than three fonts: each
+ * face owns a job, and no element borrows another's. Display type is not
+ * body copy set larger.
+ */
+
+:root {
+  --fontpack-display: 'Jacquard 24', 'Cormorant Garamond', serif;
+  --fontpack-prose: 'EB Garamond', Georgia, 'Times New Roman', serif;
+  --fontpack-mono: 'VT323', ui-monospace, 'Courier New', monospace;
+}
+
+.fontpack-display {
+  font-family: var(--fontpack-display);
+  font-weight: 400;               /* the only weight it has */
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+.fontpack-prose {
+  font-family: var(--fontpack-prose);
+  line-height: 1.6;
+  font-feature-settings: 'kern' 1, 'liga' 1, 'onum' 1;
+}
+
+.fontpack-mono {
+  font-family: var(--fontpack-mono);
+  font-size: max(13px, 1em);      /* the floor, enforced where it is worn */
+  letter-spacing: 0.06em;
+}
+</style>
+<!-- zanni:fontpack end -->
 
 <div class="head">
   <h1>zanni · boil</h1>
@@ -260,20 +433,19 @@
 
   <!-- 3 ── boil plus the rest of the texture -->
   <div class="specimen">
-    <div class="label">3 · <b>boil + ground</b> — dither, scanlines, font triple</div>
-    <div class="panel full">
-      <div class="scanlines" aria-hidden="true"></div>
+    <div class="label">3 · <b>boil + gesso + phosphor + fontpack</b> — the whole voice</div>
+    <div class="panel full gesso phosphor-host">
       <div class="card">
         <div class="frame boil-ui"></div>
         <img class="profile-photo" alt="" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='92' height='92'><rect width='92' height='92' fill='%23dcc4b0'/><circle cx='46' cy='36' r='16' fill='%23a2762a'/><path d='M14 92c4-22 18-30 32-30s28 8 32 30z' fill='%23a2762a'/></svg>">
-        <h1 class="boil-text">John Kelliher</h1>
-        <div class="title boil-text">Senior Software Engineer</div>
+        <h1 class="boil-text fontpack-display">John Kelliher</h1>
+        <div class="title boil-text fontpack-mono">Senior Software Engineer</div>
         <div class="ornament boil-ui" aria-hidden="true">◆</div>
-        <p class="blurb boil-text">Senior Software Engineer at Microsoft building distributed
+        <p class="blurb boil-text fontpack-prose">Senior Software Engineer at Microsoft building distributed
         infrastructure for agentic development platforms and real-time collaborative
         state systems at global scale.</p>
-        <a class="email boil-text" href="#">jackwkelliher@gmail.com</a>
-        <div class="links boil-text"><a href="#">LinkedIn</a><span class="sep">·</span><a href="#">GitHub</a><span class="sep">·</span><a href="#">Résumé</a></div>
+        <a class="email boil-text fontpack-mono" href="#">jackwkelliher@gmail.com</a>
+        <div class="links boil-text fontpack-mono"><a href="#">LinkedIn</a><span class="sep">·</span><a href="#">GitHub</a><span class="sep">·</span><a href="#">Résumé</a></div>
       </div>
     </div>
   </div>

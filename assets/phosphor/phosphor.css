@@ -1,0 +1,56 @@
+/* zanni · phosphor — the CRT veil.
+ *
+ * Named for the coating a cathode-ray tube glows through: the scanline is an
+ * artefact of that screen, not a decoration added to it. One horizontal comb
+ * — 1px of near-black over 2px of nothing — multiplied into whatever is
+ * beneath, at half strength.
+ *
+ * It is an OVERLAY, so it needs a positioned ancestor and it must not eat
+ * clicks. Two ways to wear it:
+ *
+ *   <div class="phosphor-host">        an element whose ::after is the veil
+ *     …
+ *   </div>
+ *
+ *   <div class="phosphor"></div>       an explicit sibling, when you need to
+ *                                      control where it sits on the z-axis
+ *
+ * Deliberately NOT applied to the whole page by default. A veil over <body>
+ * covers position:fixed chrome as well, and mix-blend-mode: multiply against
+ * a transparent backdrop is a well-known way to get a grey rectangle.
+ */
+
+.phosphor,
+.phosphor-host::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, var(--phosphor-ink, 0.22)) 0 1px,
+    transparent 1px var(--phosphor-pitch, 3px)
+  );
+  mix-blend-mode: multiply;
+  opacity: var(--phosphor-strength, 0.5);
+}
+
+.phosphor-host { position: relative; }
+
+/* The gentle sibling of the comb: a slow bloom from the centre, as if the
+ * tube were warm. Opt-in, and it respects reduced motion — this one CAN be
+ * stopped by CSS, because it is a CSS animation and not SMIL. */
+.phosphor-bloom {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(46% 52% at 50% 48%,
+    rgba(217, 169, 78, 0.13) 0%, rgba(217, 169, 78, 0) 72%);
+  mix-blend-mode: screen;
+  animation: phosphor-breathe 7s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate;
+}
+@keyframes phosphor-breathe { from { opacity: 0.55; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .phosphor-bloom { animation: none; }
+}

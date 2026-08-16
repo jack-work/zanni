@@ -1,7 +1,7 @@
 {
   "name": "zanni",
-  "version": "0.1.0",
-  "description": "Visual components extracted from figar.org. One component so far.",
+  "version": "0.2.0",
+  "description": "Visual components extracted from figar.org.",
   "components": {
     "boil": {
       "summary": "Animated fractal-noise displacement over type and chrome (line boil / Squigglevision). Not a blur.",
@@ -10,7 +10,29 @@
       "filters": ["pixel-text", "pixel-stage", "pixel-ui"],
       "files": ["boil.defs.svg", "boil.css", "boil.js"],
       "docs": "docs/boil.md"
+    },
+    "gesso": {
+      "summary": "The prepared ground: parchment plus a 6px conic dither, and the palette it was chosen against.",
+      "marker": "<!-- zanni:gesso -->",
+      "classes": ["gesso", "gesso-stage"],
+      "files": ["gesso.css"],
+      "docs": "docs/gesso.md"
+    },
+    "phosphor": {
+      "summary": "The CRT veil: a 1px/3px scanline comb multiplied over a positioned box, with an optional bloom.",
+      "marker": "<!-- zanni:phosphor -->",
+      "classes": ["phosphor", "phosphor-host", "phosphor-bloom"],
+      "files": ["phosphor.css"],
+      "docs": "docs/phosphor.md"
+    },
+    "fontpack": {
+      "summary": "Three faces, three jobs: Jacquard 24 display, EB Garamond prose, VT323 technical.",
+      "marker": "<!-- zanni:fontpack -->",
+      "classes": ["fontpack-display", "fontpack-prose", "fontpack-mono"],
+      "families": ["Jacquard 24", "EB Garamond", "VT323"],
+      "files": ["fontpack.head.html", "fontpack.css"],
+      "docs": "docs/fontpack.md"
     }
   },
-  "planned": ["dither", "glyphmark", "liftcard", "fontpack", "scena"]
+  "planned": ["glyphmark", "liftcard", "scena"]
 }
