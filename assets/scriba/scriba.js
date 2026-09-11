@@ -95,38 +95,59 @@
   }
 
   /* The block layer, deliberately small: headings, bullet and ordered lists,
-     rules, and paragraphs in which a single newline is a line break. Anything
-     more wants a real parser, and this is a renderer for a details pane. */
+     rules, and paragraphs in which a single newline is a line break.
+     Anything more wants a real parser, and this is a renderer for a details
+     pane.
+
+     It walks LINES, not just blank-line chunks: a heading followed straight
+     by a list, with no blank line between them, is ordinary markdown and the
+     chunk-at-a-time version rendered it as one flat paragraph. */
   function blocks(s) {
     var out = [];
     var chunks = s.split(/\n{2,}/);
-    for (var i = 0; i < chunks.length; i++) {
-      var chunk = chunks[i].replace(/^\n+|\n+$/g, '');
-      if (!chunk) continue;
-      if (/^\u0000\d+\u0000$/.test(chunk)) { out.push(chunk); continue; }
+    for (var c = 0; c < chunks.length; c++) {
+      var lines = chunks[c].replace(/^\n+|\n+$/g, '').split('\n');
+      var para = [], list = null, kind = '';
 
-      var heading = /^(#{1,6})[ \t]+(.+)$/.exec(chunk);
-      if (heading && chunk.indexOf('\n') < 0) {
-        var level = Math.min(heading[1].length + 2, 6);
-        out.push('<h' + level + '>' + heading[2] + '</h' + level + '>');
-        continue;
+      function flushPara() {
+        if (para.length) { out.push('<p>' + para.join('<br>') + '</p>'); para = []; }
       }
-      if (/^[ \t]*(?:[-*_][ \t]*){3,}$/.test(chunk)) { out.push('<hr>'); continue; }
+      function flushList() {
+        if (list) { out.push('<' + kind + '>' + list.join('') + '</' + kind + '>'); list = null; }
+      }
+      function flush() { flushPara(); flushList(); }
 
-      var lines = chunk.split('\n');
-      if (lines.every(function (l) { return /^[ \t]*[-*+][ \t]+\S/.test(l); })) {
-        out.push('<ul>' + lines.map(function (l) {
-          return '<li>' + l.replace(/^[ \t]*[-*+][ \t]+/, '') + '</li>';
-        }).join('') + '</ul>');
-        continue;
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        if (!line.trim()) continue;
+
+        if (/^\u0000\d+\u0000$/.test(line.trim())) { flush(); out.push(line.trim()); continue; }
+
+        var heading = /^(#{1,6})[ \t]+(.+)$/.exec(line);
+        if (heading) {
+          flush();
+          var level = Math.min(heading[1].length + 2, 6);
+          out.push('<h' + level + '>' + heading[2] + '</h' + level + '>');
+          continue;
+        }
+
+        if (/^[ \t]*(?:[-*_][ \t]*){3,}$/.test(line)) { flush(); out.push('<hr>'); continue; }
+
+        var bullet = /^[ \t]*[-*+][ \t]+(\S.*)$/.exec(line);
+        var number = /^[ \t]*\d+[.)][ \t]+(\S.*)$/.exec(line);
+        if (bullet || number) {
+          var want = bullet ? 'ul' : 'ol';
+          flushPara();
+          if (list && kind !== want) flushList();
+          if (!list) { list = []; kind = want; }
+          list.push('<li>' + (bullet ? bullet[1] : number[1]) + '</li>');
+          continue;
+        }
+
+        flushList();
+        para.push(line);
       }
-      if (lines.every(function (l) { return /^[ \t]*\d+[.)][ \t]+\S/.test(l); })) {
-        out.push('<ol>' + lines.map(function (l) {
-          return '<li>' + l.replace(/^[ \t]*\d+[.)][ \t]+/, '') + '</li>';
-        }).join('') + '</ol>');
-        continue;
-      }
-      out.push('<p>' + lines.join('<br>') + '</p>');
+      flush();
     }
     return out.join('\n');
   }

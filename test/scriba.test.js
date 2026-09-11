@@ -64,6 +64,13 @@ eq('trailing punctuation stays outside the link', md.toHTML('go to https://figar
    '<p>go to <a href="https://figar.org" target="_blank" rel="noopener noreferrer">' +
    'https://figar.org</a>.</p>');
 eq('a rule', md.toHTML('---'), '<hr>');
+/* The shape the calendar actually hit: no blank line between them. */
+eq('a heading followed straight by a list', md.toHTML('## Bring\n- a coat\n- a hat'),
+   '<h4>Bring</h4>\n<ul><li>a coat</li><li>a hat</li></ul>');
+eq('a list followed straight by prose', md.toHTML('- one\ntail text'),
+   '<ul><li>one</li></ul>\n<p>tail text</p>');
+eq('bullets and numbers do not merge into one list', md.toHTML('- a\n1. b'),
+   '<ul><li>a</li></ul>\n<ol><li>b</li></ol>');
 
 console.log('[scriba] the browser-only law: an href is executable here');
 [
