@@ -76,10 +76,24 @@ for (const name of want) {
   const undef = (c.classes || []).filter((cls) =>
     !new RegExp('\\.' + cls + edge + '[^{}]*\\{').test(css));
   check('every class the manifest promises has a rule', undef.length === 0, undef.join(', '));
-  const worn = (c.classes || []).filter((cls) =>
-    new RegExp('class="[^"]*\\b' + cls + edge).test(html));
-  check('some element actually wears it', worn.length > 0,
-    'nothing carries ' + (c.classes || []).map((x) => '.' + x).join(' / '));
+  /* A component whose markup is built at runtime has no class to find in
+     the source. For those the same question ("is this reachable at all, or
+     merely defined?") is asked twice instead: the script must create the
+     classes, and some element must carry the attribute that activates it. */
+  if (c.constructed) {
+    const built = (c.classes || []).filter((cls) =>
+      new RegExp("'" + cls + "'|class': '[^']*" + cls + edge + "|class=\"[^\"]*" + cls + edge).test(html));
+    check('the script builds the classes it promises', built.length > 0,
+      'nothing constructs ' + (c.classes || []).map((x) => '.' + x).join(' / '));
+    check('some element activates it',
+      !c.activator || new RegExp('\\b' + c.activator + '\\b').test(bare),
+      'no element carries ' + c.activator + ', so the component never runs');
+  } else {
+    const worn = (c.classes || []).filter((cls) =>
+      new RegExp('class="[^"]*\\b' + cls + edge).test(html));
+    check('some element actually wears it', worn.length > 0,
+      'nothing carries ' + (c.classes || []).map((x) => '.' + x).join(' / '));
+  }
 
   if (name === 'boil') boil();
   if (name === 'gesso') gesso();
@@ -88,6 +102,35 @@ for (const name of want) {
   if (name === 'glyphmark') glyphmark();
   if (name === 'heft') heft();
   if (name === 'scriba') scriba();
+  if (name === 'stilo') stilo();
+}
+
+function stilo() {
+  console.log('[stilo] the writing surface');
+  /* Preview is scriba's work. A page that inlines the surface without the
+     renderer gets plain text, which is honest but is almost never what the
+     author meant, so the manifest declares the dependency and it is checked. */
+  const needs = manifest.components.stilo.requires || [];
+  needs.forEach((dep) =>
+    check('it is inlined together with ' + dep,
+      html.includes('<!-- zanni:' + dep + ' begin'),
+      'stilo previews through ' + dep + '; without it the tab shows plain text'));
+  check('the surface keeps a technical face',
+    /\.stilo-input\s*\{[^{}]*font-family:\s*var\(--stilo-face/.test(css));
+  check('and that face keeps its floor',
+    /\.stilo-input\s*\{[^{}]*font-size:\s*max\(14px/.test(css),
+    'VT323 disintegrates small, and this is the one surface read character by character');
+  check('the tabs say which one is live',
+    /\[aria-selected='true'\]/.test(css) && /aria-selected/.test(html));
+  /* The textarea loses its own border to make the panel read as one object,
+     so the ring has to be put back on the wrapper or focus vanishes. */
+  check('focus is still visible after the border was removed',
+    /\.stilo:focus-within\s*\{/.test(css));
+  check('preview renders when shown, not on every keystroke',
+    !/addEventListener\('input'/.test(html),
+    'rendering per keystroke is the cost a tab exists to avoid');
+  check('the textarea survives, so a form still submits it',
+    /wrap\.appendChild\(area\)/.test(html));
 }
 
 function scriba() {

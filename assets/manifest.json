@@ -159,6 +159,33 @@
       "knobs": [
         "--scriba-code-bg"
       ]
+    },
+    "stilo": {
+      "summary": "A textarea that gains a Write/Preview pair and a technical face. Preview is scriba's job.",
+      "marker": "<!-- zanni:stilo -->",
+      "classes": [
+        "stilo",
+        "stilo-bar",
+        "stilo-tab",
+        "stilo-input",
+        "stilo-preview",
+        "stilo-empty"
+      ],
+      "files": [
+        "stilo.css",
+        "stilo.js"
+      ],
+      "docs": "docs/stilo.md",
+      "requires": [
+        "scriba"
+      ],
+      "knobs": [
+        "--stilo-face",
+        "--stilo-field",
+        "--stilo-min"
+      ],
+      "constructed": true,
+      "activator": "data-stilo"
     }
   },
   "planned": [

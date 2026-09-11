@@ -1,0 +1,76 @@
+/* zanni · stilo — the writing surface.
+ *
+ * A technical face for the thing being typed, a humane one for the preview,
+ * so the two tabs never look like the same document in two moods.
+ */
+
+.stilo {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--rule, rgba(43, 26, 21, 0.2));
+  background: var(--stilo-field, rgba(43, 26, 21, 0.05));
+}
+
+.stilo-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--rule, rgba(43, 26, 21, 0.2));
+}
+
+.stilo-tab {
+  font-family: var(--fontpack-mono, ui-monospace, monospace);
+  font-size: max(13px, 0.85rem);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted, #7a584a);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 0.3rem 0.8rem;
+  cursor: pointer;
+}
+
+.stilo-tab:hover { color: var(--ink, #2b1a15); }
+
+.stilo-tab[aria-selected='true'] {
+  color: var(--ink, #2b1a15);
+  border-bottom-color: var(--gold, #a2762a);
+}
+
+/* The surface being typed into. VT323 is bitmap-derived and falls apart
+   below ~13px, and this is the one place in the library where someone reads
+   their own words back character by character. */
+.stilo-input {
+  font-family: var(--stilo-face, var(--fontpack-mono, ui-monospace, monospace));
+  font-size: max(14px, 1rem);
+  line-height: 1.45;
+  letter-spacing: 0.03em;
+  color: var(--ink, #2b1a15);
+  background: transparent;
+  border: 0;
+  padding: 0.55rem 0.6rem;
+  min-height: var(--stilo-min, 7rem);
+  resize: vertical;
+  width: 100%;
+  box-sizing: border-box;
+  tab-size: 2;
+}
+
+.stilo-input:focus { outline: none; }
+
+/* The focus ring belongs to the whole surface, since the textarea's own
+   border was removed to make the panel read as one object. */
+.stilo:focus-within { border-color: var(--gold, #a2762a); }
+
+.stilo-preview {
+  padding: 0.55rem 0.6rem;
+  min-height: var(--stilo-min, 7rem);
+  overflow-wrap: anywhere;
+}
+
+.stilo-empty {
+  font-family: var(--fontpack-mono, ui-monospace, monospace);
+  font-size: max(13px, 0.9rem);
+  color: var(--muted, #7a584a);
+  margin: 0;
+}
