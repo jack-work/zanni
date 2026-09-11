@@ -18,6 +18,7 @@ silently.
 | **phosphor** | faint CRT scanline veil | a `repeating-linear-gradient` comb multiplied over a positioned box | CSS | `--phosphor-ink` `-pitch` `-line` `-strength`; `.phosphor-soft` ramps instead of stepping |
 | **fontpack** | three faces, one job each | Jacquard 24 display, EB Garamond prose, VT323 technical. No element borrows another's face | head fragment, CSS | `--fontpack-display` `-prose` `-mono` |
 | **glyphmark** | a photo as visible pixels | a genuinely small source magnified with `image-rendering: pixelated`. `lib.pixelate` shrinks and tints it in the build | CSS, Nix | `--glyphmark-size` `-border` `-ring`; `size` `colors` `saturation` `tint` |
+| **scriba** | markdown into the page | escape first, mark up second, and an href must be on a scheme allowlist. A port of gluck-herald's `internal/md`, carrying its test corpus so drift is visible | CSS, JS | `--scriba-code-bg` |
 | **heft** | pick a thing up, throw it, watch it settle back | composes via the CSS `translate` property so it never fights an animation, and raises the ancestor because a child cannot escape its parent stacking context | CSS, JS | `--heft-settle` `--heft-ease` |
 
 ## Use

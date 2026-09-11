@@ -87,6 +87,38 @@ for (const name of want) {
   if (name === 'fontpack') fontpack();
   if (name === 'glyphmark') glyphmark();
   if (name === 'heft') heft();
+  if (name === 'scriba') scriba();
+}
+
+function scriba() {
+  console.log('[scriba] the copyist');
+  /* The ordering that carries the security property: code is stashed, then
+     everything is escaped, and only then is anything marked up. */
+  const mine = (html.split('<!-- zanni:scriba begin')[1] || '').split('<!-- zanni:scriba end')[0];
+  const order = (a, b) => mine.indexOf(a) >= 0 && mine.indexOf(b) > mine.indexOf(a);
+  check('it escapes before it marks up',
+    order('<pre><code', 's = escapeHTML(s);'),
+    'marking up before escaping is how a script tag survives');
+  check('code is stashed before anything else runs',
+    order('<pre><code', "s.replace(/\\[(") || order('<pre><code', 'SAFE_SCHEMES'),
+    'an inline rule that reaches into code has already lost');
+  /* The browser-only law. Telegram will not execute an href; a browser will. */
+  check('an href scheme must be on the allowlist',
+    /SAFE_SCHEMES/.test(html) && /'javascript:'/.test(html) === false &&
+    /https:/.test(html),
+    'without this, [x](javascript:...) is an injection');
+  check('a link cannot reach back through window.opener',
+    /rel="noopener noreferrer"/.test(html));
+  check('it writes to the DOM in exactly one place',
+    (html.match(/\.innerHTML\s*=/g) || []).length === 1,
+    'every additional innerHTML is another place to audit');
+  check('the rendered block has a hand',
+    /\.scriba\s*\{[^{}]*font-family/.test(css));
+  /* A code span inside a pre would otherwise paint its background twice. */
+  check('a code span inside a block does not paint twice',
+    /\.scriba pre code\s*\{[^{}]*background:\s*none/.test(css));
+  check('the technical face keeps its floor',
+    /\.scriba code\s*\{[^{}]*font-size:\s*max\(13px/.test(css));
 }
 
 function heft() {

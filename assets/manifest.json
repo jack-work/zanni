@@ -144,6 +144,21 @@
         "heft.js"
       ],
       "docs": "docs/heft.md"
+    },
+    "scriba": {
+      "summary": "Markdown into the page: a port of gluck-herald's internal/md, made safe for a browser.",
+      "marker": "<!-- zanni:scriba -->",
+      "classes": [
+        "scriba"
+      ],
+      "files": [
+        "scriba.css",
+        "scriba.js"
+      ],
+      "docs": "docs/scriba.md",
+      "knobs": [
+        "--scriba-code-bg"
+      ]
     }
   },
   "planned": [

@@ -159,6 +159,17 @@
           zanni-check $out/card.html
         '';
 
+        # The renderer is the one component with logic rather than only
+        # declarations, so it carries unit tests and they run in the build.
+        checks.scriba = pkgs.runCommand "zanni-scriba-test" {
+          nativeBuildInputs = [ pkgs.nodejs ];
+        } ''
+          cp -r ${./assets} assets
+          cp -r ${./test} test
+          node test/scriba.test.js
+          touch $out
+        '';
+
         checks.example = pkgs.runCommand "zanni-check-example" {
           nativeBuildInputs = [ self.packages.${system}.default pkgs.diffutils ];
         } ''

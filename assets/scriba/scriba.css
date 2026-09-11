@@ -1,0 +1,79 @@
+/* zanni · scriba — the copyist's hand.
+ *
+ * Type only. No colour that is not the palette's, no box that is not needed,
+ * so a rendered block sits inside whatever panel it was dropped into.
+ */
+
+.scriba {
+  font-family: var(--fontpack-prose, Georgia, serif);
+  line-height: 1.55;
+}
+
+.scriba > :first-child { margin-top: 0; }
+.scriba > :last-child { margin-bottom: 0; }
+
+.scriba p { margin: 0 0 0.7em; }
+
+.scriba h3,
+.scriba h4,
+.scriba h5,
+.scriba h6 {
+  font-family: var(--fontpack-display, serif);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  margin: 1em 0 0.4em;
+}
+
+.scriba h3 { font-size: 1.3em; }
+.scriba h4 { font-size: 1.15em; }
+.scriba h5,
+.scriba h6 { font-size: 1em; }
+
+.scriba ul,
+.scriba ol { margin: 0 0 0.7em; padding-left: 1.3em; }
+
+.scriba li { margin: 0.15em 0; }
+
+.scriba a {
+  color: var(--gold, #a2762a);
+  text-underline-offset: 2px;
+}
+
+.scriba a:hover { color: var(--gold-bright, #d9a94e); }
+
+.scriba code {
+  font-family: var(--fontpack-mono, ui-monospace, monospace);
+  font-size: max(13px, 0.92em);
+  background: var(--scriba-code-bg, rgba(43, 26, 21, 0.07));
+  padding: 0.05em 0.3em;
+}
+
+.scriba pre {
+  font-family: var(--fontpack-mono, ui-monospace, monospace);
+  background: var(--scriba-code-bg, rgba(43, 26, 21, 0.07));
+  padding: 0.6em 0.8em;
+  margin: 0 0 0.7em;
+  overflow-x: auto;
+}
+
+/* The block already carries the background; the span inside must not paint
+   a second one over it. */
+.scriba pre code {
+  background: none;
+  padding: 0;
+  font-size: max(13px, 0.92em);
+}
+
+.scriba hr {
+  border: 0;
+  border-top: 1px solid var(--rule, rgba(43, 26, 21, 0.2));
+  margin: 1em 0;
+}
+
+.scriba blockquote {
+  margin: 0 0 0.7em;
+  padding-left: 0.8em;
+  border-left: 2px solid var(--rule, rgba(43, 26, 21, 0.2));
+  color: var(--muted, #7a584a);
+}
