@@ -335,7 +335,10 @@ function boil() {
   const dangling = css.match(/,\s*\n\s*\n/g) || [];
   check('no selector list left dangling on a comma', dangling.length === 0,
     dangling.length + ' found');
-  check('body is still its own rule', /(^|\n)\s*body\s*\{/.test(css));
+  // docs/checks.md, "the body witness"
+  if (/(^|[,{}\n])\s*body\b/.test(css)) {
+    check('body is still its own rule', /(^|\n)\s*body\s*\{/.test(css));
+  }
 }
 
 
