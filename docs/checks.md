@@ -59,3 +59,22 @@ guard added afterwards asserts the **selector shape** that makes the mistake
 impossible, because that is the part text can check.
 
 Rendering is still the last check. Look at the picture.
+
+## Worn
+
+A component counts as used if an element carries one of its classes **or** the
+stylesheet reads one of its custom properties.
+
+The second case is not a loophole. `fontpack` and `gesso` both document
+consumption through variables: take `--fontpack-mono` and dress your own
+selectors. Asserting classes alone failed a page that used the component
+exactly as written.
+
+The guard still catches the case it was built for: a component injected,
+defined, and referenced by nothing.
+
+A component's own injected block is excluded from that search. `fontpack.css`
+reads `var(--fontpack-display)` itself, so searching the whole document made the
+guard a tautology: it passed for a component nothing else referenced. The
+question is whether the **page** uses it, so only CSS outside the component's
+own block counts.

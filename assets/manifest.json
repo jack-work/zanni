@@ -69,7 +69,10 @@
       "files": [
         "gesso.css"
       ],
-      "docs": "docs/gesso.md"
+      "docs": "docs/gesso.md",
+      "knobs": [
+        "--gesso-cell"
+      ]
     },
     "phosphor": {
       "summary": "The CRT veil: a 1px/3px scanline comb multiplied over a positioned box, with an optional bloom.",
@@ -108,7 +111,12 @@
         "fontpack.head.html",
         "fontpack.css"
       ],
-      "docs": "docs/fontpack.md"
+      "docs": "docs/fontpack.md",
+      "knobs": [
+        "--fontpack-display",
+        "--fontpack-prose",
+        "--fontpack-mono"
+      ]
     },
     "glyphmark": {
       "summary": "The portrait as a pixel mark: a genuinely small source image scaled up with nearest-neighbour, bordered in gold.",
