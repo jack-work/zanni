@@ -46,14 +46,16 @@
   function toHTML(src) {
     if (src == null) return '';
     var stash = [];
+    /* docs/scriba.md, "block tokens and inline tokens". */
     function keep(html) { return '\u0000' + (stash.push(html) - 1) + '\u0000'; }
+    function keepBlock(html) { return '\u0001' + (stash.push(html) - 1) + '\u0001'; }
 
     var s = String(src).replace(/\r\n/g, '\n');
 
     /* Code first and verbatim: nothing inside it may be marked up. */
     s = s.replace(/```[ \t]*([A-Za-z0-9_+-]*)[ \t]*\n([\s\S]*?)```/g, function (_, lang, body) {
       var open = lang ? '<pre><code class="language-' + escapeAttr(lang) + '">' : '<pre><code>';
-      return keep(open + escapeHTML(body.replace(/\n+$/, '')) + '</code></pre>');
+      return keepBlock(open + escapeHTML(body.replace(/\n+$/, '')) + '</code></pre>');
     });
     s = s.replace(/`([^`\n]+)`/g, function (_, code) {
       return keep('<code>' + escapeHTML(code) + '</code>');
@@ -83,7 +85,7 @@
 
     s = blocks(s);
 
-    return s.replace(/\u0000(\d+)\u0000/g, function (_, i) {
+    return s.replace(/[\u0000\u0001](\d+)[\u0000\u0001]/g, function (_, i) {
       var v = stash[Number(i)];
       return v === undefined ? '' : v;
     }).trim();
@@ -121,7 +123,7 @@
         var line = lines[i];
         if (!line.trim()) continue;
 
-        if (/^\u0000\d+\u0000$/.test(line.trim())) { flush(); out.push(line.trim()); continue; }
+        if (/^\u0001\d+\u0001$/.test(line.trim())) { flush(); out.push(line.trim()); continue; }
 
         var heading = /^(#{1,6})[ \t]+(.+)$/.exec(line);
         if (heading) {

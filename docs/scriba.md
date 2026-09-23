@@ -97,3 +97,20 @@ one pass over blank-line-separated chunks.
 Incremental rendering, for streaming text, is not here yet. The seam for it is
 `blocks()`: it is already chunk-at-a-time, and the stash is already keyed by
 index.
+
+## Block tokens and inline tokens
+
+Code and links are stashed before escaping and restored at the end. The block
+layer walks the stashed text, so it has to tell the two kinds apart.
+
+| sentinel | used for | block layer |
+|---|---|---|
+| `\u0000N\u0000` | inline code, links, autolinks | wrapped in `<p>` like any text |
+| `\u0001N\u0001` | fenced code blocks | emitted raw |
+
+Both indices address the same stash; only the sentinel differs.
+
+They shared one sentinel until 661bf8bc reported it. A line that was exactly
+one token was treated as a code block, so a paragraph containing only a link,
+or only inline code, came out as a bare `<a>` with no `<p>`. Consumers were
+wrapping non-block lines themselves to work around it.
