@@ -60,7 +60,7 @@ initial seed — still displaced, no longer moving. Ship `boil.css` without
    `z-index: 9999`; the fix was raising the *ancestor's* z-index. Anything you
    lift — drag, tooltip, modal — meets this.
 3. **A boiled subtree is one raster unit.** Any visual change inside
-   re-rasterizes all of it. On figar.org that single fact drove the entire
+   re-rasterizes all of it. Moving it does not: see `motion.md`. On figar.org that single fact drove the entire
    animation architecture: one 30 Hz governor with quantized, dirty-checked
    writes, which took DOM writes from 4800 to 274 and forced layouts from 1200
    to 0. **Open question:** the raster cost itself was never measured. Those
