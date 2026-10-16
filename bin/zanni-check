@@ -256,13 +256,16 @@ function phosphor() {
 function fontpack() {
   console.log('[fontpack] the three faces');
   (manifest.components.fontpack.families || []).forEach((f) =>
-    check("'" + f + "' is named", html.includes("'" + f + "'") || html.includes(f.replace(/ /g, '+'))));
-  check('the faces are fetched from the head',
-    /<!-- zanni:fontpack head -->[\s\S]*?<\/head>/.test(html));
-  check('the preconnects precede the stylesheet',
-    html.indexOf('rel="preconnect"') < html.indexOf('fonts.googleapis.com/css2'));
-  check('type is swapped in, not hidden', /display=swap/.test(html));
-  /* VT323 is bitmap-derived and disintegrates below ~13px. */
+    check("'" + f + "' is named", html.includes("'" + f + "'")));
+  const faces = bare.match(/@font-face\s*\{[^{}]*\}/g) || [];
+  check('the faces are declared in the page', faces.length > 0);
+  check('every face is carried inline as woff2',
+    faces.length > 0 && faces.every((f) => /src:\s*url\(data:font\/woff2;base64,/.test(f)),
+    faces.filter((f) => !/url\(data:font\/woff2/.test(f)).map((f) => f.slice(0, 80)).join(' | '));
+  check('no font is fetched from a third party',
+    !/fonts\.(googleapis|gstatic)\.com|use\.typekit|fonts\.bunny/.test(bare));
+  check('type is swapped in, not hidden',
+    faces.length > 0 && faces.every((f) => /font-display:\s*swap/.test(f)));
   check('the technical face keeps its floor',
     /\.fontpack-mono\s*\{[^{}]*font-size:\s*max\(13px/.test(css));
 }

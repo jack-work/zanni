@@ -1,6 +1,6 @@
 {
   "name": "zanni",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Visual components extracted from figar.org.",
   "components": {
     "boil": {
@@ -95,7 +95,7 @@
       ]
     },
     "fontpack": {
-      "summary": "Three faces, three jobs: Jacquard 24 display, EB Garamond prose, VT323 technical.",
+      "summary": "Three faces, three jobs: Jacquard 24 display, EB Garamond prose, VT323 technical. Self-hosted: inlined as data: URIs, or served from fonts/ with fonts.css.",
       "marker": "<!-- zanni:fontpack -->",
       "classes": [
         "fontpack-display",
@@ -108,11 +108,12 @@
         "VT323"
       ],
       "files": [
-        "fontpack.head.html",
+        "fontpack.gen.js",
         "fontpack.css"
       ],
       "docs": "docs/fontpack.md",
       "knobs": [
+        "fontpack.faces",
         "--fontpack-display",
         "--fontpack-prose",
         "--fontpack-mono"

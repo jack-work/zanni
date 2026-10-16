@@ -14,7 +14,7 @@
       ...
     }:
     let
-      version = "0.8.0";
+      version = "0.9.0";
     in
     {
       # One call, the way gluck-service-lib's mkPythonService is one call.
@@ -167,6 +167,15 @@
           cp -r ${./assets} assets
           cp -r ${./test} test
           node test/scriba.test.js
+          touch $out
+        '';
+
+        checks.fontpack-stylesheet = pkgs.runCommand "zanni-fontpack-stylesheet" {
+          nativeBuildInputs = [ pkgs.nodejs pkgs.diffutils ];
+        } ''
+          node ${./assets/fontpack/fontpack.gen.js} > built.css
+          diff -u ${./assets/fontpack/fonts.css} built.css \
+            || { echo "assets/fontpack/fonts.css is stale: node assets/fontpack/fontpack.gen.js > assets/fontpack/fonts.css"; exit 1; }
           touch $out
         '';
 
