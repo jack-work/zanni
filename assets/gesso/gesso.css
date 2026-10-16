@@ -33,13 +33,32 @@
   --stage-2: #271215;
   --stage-ink: #f0dfc8;
   --stage-muted: #a5887b;
+
+  --z-ground: light-dark(var(--paper), var(--stage));
+  --z-ground-2: light-dark(var(--paper-2), var(--stage-2));
+  --z-grain: light-dark(var(--dither), var(--stage-2));
+  --z-ink: light-dark(var(--ink), var(--stage-ink));
+  --z-muted: light-dark(#6b4a3d, var(--stage-muted));
+  --z-rule: light-dark(var(--rule), rgba(240, 223, 200, 0.18));
+  --z-line: light-dark(#c2a690, #4a2b2c);
+  --z-accent: light-dark(var(--oxblood), var(--gold-bright));
+  --z-on-accent: light-dark(#f6ede2, var(--stage));
+  --z-focus: light-dark(var(--gold), var(--gold-bright));
+  --z-ok: light-dark(#3d6b2a, #9cc47a);
+  --z-fail: light-dark(#a8322a, #ec7a64);
+  --z-warn: light-dark(#87580f, #e2b25c);
+  --z-tint: light-dark(rgba(125, 46, 46, 0.12), rgba(217, 169, 78, 0.16));
+  --z-shadow: light-dark(rgba(43, 26, 21, 0.3), rgba(0, 0, 0, 0.65));
 }
 
+:root[data-scheme=light] { color-scheme: light; }
+:root[data-scheme=dark] { color-scheme: dark; }
+
 .gesso {
-  background-color: var(--paper);
-  background-image: repeating-conic-gradient(var(--dither) 0% 25%, transparent 0% 50%);
+  background-color: var(--z-ground);
+  background-image: repeating-conic-gradient(var(--z-grain) 0% 25%, transparent 0% 50%);
   background-size: var(--gesso-cell) var(--gesso-cell);
-  color: var(--ink);
+  color: var(--z-ink);
 }
 
 /* The same ground in the dark register, for panes that read as a stage. */

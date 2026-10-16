@@ -31,6 +31,39 @@ a velvet stage rather than as paper.
 Gold is editorial: **at most two focal elements per view.** It stops being
 focus the moment it is everywhere.
 
+## Light and dark
+
+`gesso.css` also defines scheme tokens. Each is `light-dark(<paper value>,
+<stage value>)`, so it resolves by the `color-scheme` of the element it is
+used on:
+
+| token | light | dark |
+|---|---|---|
+| `--z-ground` | `--paper` | `--stage` |
+| `--z-ground-2` | `--paper-2` | `--stage-2` |
+| `--z-grain` | `--dither` | `--stage-2` |
+| `--z-ink` | `--ink` | `--stage-ink` |
+| `--z-muted` | `#6b4a3d` | `--stage-muted` |
+| `--z-rule`, `--z-line` | translucent and solid rules | the same on the stage |
+| `--z-accent`, `--z-on-accent` | oxblood, paper | gold-bright, stage |
+| `--z-focus` | gold | gold-bright |
+| `--z-ok`, `--z-fail`, `--z-warn` | verdigris, vermilion, ochre | lighter versions of each |
+| `--z-tint`, `--z-shadow` | selection and hover tint, drop shadow | the same for the stage |
+
+`.gesso` paints with them. A page decides its scheme:
+
+| page says | result |
+|---|---|
+| nothing | light, as before: `color-scheme` defaults to light |
+| `:root { color-scheme: light dark; }` | follows `prefers-color-scheme`, live, with no script |
+| `<html data-scheme="dark">` or `"light"` | pinned. Meant for a server that read the reader's choice from the `zanni-scheme` cookie and rendered it |
+
+The palette names (`--paper`, `--ink`, `--stage`…) keep their meaning. Code
+that names them directly stays light. Code that should follow the scheme
+moves to the `--z-*` tokens.
+
+`light-dark()` needs Chrome 123, Firefox 120 or Safari 17.5.
+
 ## What it costs
 
 One paint of a repeating gradient, no animation, no layer. It is the cheapest

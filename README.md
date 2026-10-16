@@ -14,7 +14,7 @@ silently.
 | component | effect | how | form | knobs |
 |---|---|---|---|---|
 | **boil** | type and edges shimmer as if redrawn each frame | `feTurbulence` steps a discrete seed into `feDisplacementMap`; type also gets a 0.4 blur and an alpha table that re-crisps the edge | SVG defs, CSS, JS | class variants `-squiggle` `-fine` `-strong` `-erode`; `--set boil.text.scale` etc. Lower `freq` bends strokes, higher `freq` erodes them. Match the variant to the type size |
-| **gesso** | warm parchment ground, and the palette | one `repeating-conic-gradient` on a 6px grid is a checkerboard; no image, no request | CSS | `--gesso-cell`, every palette colour |
+| **gesso** | warm parchment ground, the palette, and light/dark | one `repeating-conic-gradient` on a 6px grid is a checkerboard; no image, no request. `--z-*` tokens resolve with `light-dark()`, so `color-scheme` or `data-scheme` turns the paper into the velvet stage | CSS | `--gesso-cell`, every palette colour, `--z-*` |
 | **phosphor** | faint CRT scanline veil | a `repeating-linear-gradient` comb multiplied over a positioned box | CSS | `--phosphor-ink` `-pitch` `-line` `-strength`; `.phosphor-soft` ramps instead of stepping |
 | **fontpack** | three faces, one job each | Jacquard 24 display, EB Garamond prose, VT323 technical. No element borrows another's face. Self-hosted: inlined as `data:` woff2, or served from `fonts/` | generated CSS, woff2 | `--fontpack-display` `-prose` `-mono`; `--set fontpack.faces=` |
 | **glyphmark** | a photo as visible pixels | a genuinely small source magnified with `image-rendering: pixelated`. `lib.pixelate` shrinks and tints it in the build | CSS, Nix | `--glyphmark-size` `-border` `-ring`; `size` `colors` `saturation` `tint` |

@@ -60,7 +60,7 @@
       ]
     },
     "gesso": {
-      "summary": "The prepared ground: parchment plus a 6px conic dither, and the palette it was chosen against.",
+      "summary": "The prepared ground: parchment plus a 6px conic dither, the palette it was chosen against, and scheme tokens (--z-*) that follow color-scheme into the velvet stage.",
       "marker": "<!-- zanni:gesso -->",
       "classes": [
         "gesso",
@@ -71,7 +71,10 @@
       ],
       "docs": "docs/gesso.md",
       "knobs": [
-        "--gesso-cell"
+        "--gesso-cell",
+        "--z-ground",
+        "--z-ink",
+        "--z-accent"
       ]
     },
     "phosphor": {

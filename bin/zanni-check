@@ -226,10 +226,18 @@ function glyphmark() {
 function gesso() {
   console.log('[gesso] the ground');
   check('the dither is a conic checker, not an image',
-    /repeating-conic-gradient\(\s*var\(--dither\)/.test(css));
+    /repeating-conic-gradient\(\s*var\(--z-grain\)/.test(css));
   check('the checker has a cell size', /background-size:\s*var\(--gesso-cell\)/.test(css));
-  ['--paper', '--dither', '--ink', '--gold', '--oxblood'].forEach((v) =>
+  ['--paper', '--dither', '--ink', '--gold', '--oxblood', '--stage', '--stage-ink'].forEach((v) =>
     check(v + ' is defined', new RegExp('\\' + v + ':').test(css)));
+  ['--z-ground', '--z-grain', '--z-ink', '--z-muted', '--z-accent', '--z-focus'].forEach((v) =>
+    check(v + ' has a light and a dark value',
+      new RegExp('\\' + v + ':\\s*light-dark\\(').test(css)));
+  check('the ground is painted from the scheme tokens',
+    /\.gesso\s*\{[^{}]*background-color:\s*var\(--z-ground\)[^{}]*color:\s*var\(--z-ink\)/.test(css));
+  ['light', 'dark'].forEach((m) =>
+    check('data-scheme=' + m + ' pins the scheme',
+      new RegExp(':root\\[data-scheme=' + m + '\\]\\s*\\{\\s*color-scheme:\\s*' + m).test(css)));
   check('selection belongs to the palette', /::selection/.test(css));
 }
 
