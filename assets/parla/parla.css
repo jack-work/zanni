@@ -1,0 +1,91 @@
+.parla {
+  --parla-head: 104px;
+  --parla-mouth: 0.6;
+  --parla-tilt: -1.5deg;
+  --parla-outline: 3px;
+  display: flex;
+  align-items: flex-start;
+  gap: 1.3rem;
+  margin: 0.4rem 0 1.4rem;
+}
+
+.parla-head {
+  flex: none;
+  width: var(--parla-head);
+  height: var(--parla-head);
+  box-sizing: border-box;
+  image-rendering: pixelated;
+  border: 3px solid light-dark(#a2762a, #d9a94e);
+  background: #e7d4c4;
+  box-shadow: 4px 4px 0 var(--z-shadow);
+}
+
+.parla-bubble {
+  position: relative;
+  flex: 1;
+  min-height: 2.9em;
+  margin: 0.15rem 0 0;
+  padding: 0.75rem 1.05rem;
+  font: 19px/1.45 var(--fontpack-prose, Georgia, serif);
+  color: var(--z-ink);
+  background: var(--z-ground-2);
+  border: var(--parla-outline) solid var(--z-ink);
+  border-radius: 18px 18px 18px 10px;
+  box-shadow: 5px 5px 0 var(--z-shadow);
+  transform: rotate(var(--parla-tilt));
+  transform-origin: 0 60%;
+  animation: parla-pop 320ms cubic-bezier(0.2, 1.6, 0.3, 1) both;
+}
+
+.parla-bubble::before,
+.parla-bubble::after {
+  content: "";
+  position: absolute;
+  border-style: solid;
+  border-color: transparent;
+}
+
+.parla-bubble::before {
+  left: calc(-20px - var(--parla-outline));
+  top: calc(var(--parla-head) * var(--parla-mouth) - 0.15rem - 12px);
+  border-width: 12px 22px 6px 0;
+  border-right-color: var(--z-ink);
+}
+
+.parla-bubble::after {
+  left: -15px;
+  top: calc(var(--parla-head) * var(--parla-mouth) - 0.15rem - 12px + var(--parla-outline) + 1px);
+  border-width: 8px 16px 3px 0;
+  border-right-color: var(--z-ground-2);
+}
+
+.parla-bubble.parla-wiggle { animation: parla-wiggle 420ms ease-in-out; }
+.parla-bubble.parla-again { animation-name: parla-pop-again; }
+.parla-bubble.parla-ahem { font-family: var(--fontpack-mono, monospace); font-size: 24px; letter-spacing: 0.06em; }
+
+@keyframes parla-pop {
+  from { opacity: 0; transform: rotate(var(--parla-tilt)) scale(0.6); }
+  to { opacity: 1; transform: rotate(var(--parla-tilt)) scale(1); }
+}
+
+@keyframes parla-pop-again {
+  from { opacity: 0.4; transform: rotate(var(--parla-tilt)) scale(0.92); }
+  to { opacity: 1; transform: rotate(var(--parla-tilt)) scale(1); }
+}
+
+@keyframes parla-wiggle {
+  0%, 100% { transform: rotate(var(--parla-tilt)); }
+  20% { transform: rotate(calc(var(--parla-tilt) - 3deg)) translateX(-3px); }
+  45% { transform: rotate(calc(var(--parla-tilt) + 3deg)) translateX(3px); }
+  70% { transform: rotate(calc(var(--parla-tilt) - 2deg)) translateX(-2px); }
+}
+
+@media (min-width: 640px) {
+  .parla { --parla-head: 130px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parla-bubble,
+  .parla-bubble.parla-wiggle,
+  .parla-bubble.parla-again { animation: none; }
+}

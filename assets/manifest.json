@@ -1,6 +1,6 @@
 {
   "name": "zanni",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Visual components extracted from figar.org.",
   "components": {
     "boil": {
@@ -198,6 +198,36 @@
       ],
       "constructed": true,
       "activator": "data-stilo"
+    },
+    "parla": {
+      "summary": "Figaro speaks: the pixel head, liftable with heft, and a cartoon speech bubble from his mouth that can say, quip, be interrupted with an *AHEM*, and wiggle.",
+      "marker": "<!-- zanni:parla -->",
+      "classes": [
+        "parla",
+        "parla-head",
+        "parla-bubble",
+        "parla-wiggle",
+        "parla-again",
+        "parla-ahem"
+      ],
+      "files": [
+        "parla.css",
+        "parla.js"
+      ],
+      "assets": [
+        "figaro-head.png"
+      ],
+      "docs": "docs/parla.md",
+      "requires": [
+        "gesso"
+      ],
+      "knobs": [
+        "--parla-head",
+        "--parla-mouth",
+        "--parla-tilt",
+        "--parla-outline"
+      ],
+      "activator": "data-parla"
     }
   },
   "planned": [

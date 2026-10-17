@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>zanni · parla</title>
+<link rel="stylesheet" href="../assets/fontpack/fonts.css">
+<link rel="stylesheet" href="../assets/gesso/gesso.css">
+<link rel="stylesheet" href="../assets/fontpack/fontpack.css">
+<link rel="stylesheet" href="../assets/heft/heft.css">
+<link rel="stylesheet" href="../assets/parla/parla.css">
+<style>
+  :root { color-scheme: light dark; }
+  body { max-width: 34rem; margin: 4rem auto; padding: 0 1.2rem; }
+  button { font: 18px var(--fontpack-mono); margin: 0 .4rem .4rem 0; padding: .4rem .8rem; }
+</style>
+<body class="gesso">
+<div class="parla" data-parla>
+  <img class="parla-head heft" src="../assets/parla/figaro-head.png" alt="Figaro" draggable="false">
+  <p class="parla-bubble" aria-live="polite">Hover over a button to learn more.</p>
+</div>
+<button id="quip">quip</button>
+<button id="explain">interrupt</button>
+<button id="rest">rest</button>
+<script src="../assets/heft/heft.js"></script>
+<script src="../assets/parla/parla.js"></script>
+<script>
+  var f = document.querySelector('[data-parla]').parla;
+  document.getElementById('quip').onclick = function () { f.quip('The boss should really be paying me more to do this.', 3000); };
+  document.getElementById('explain').onmouseenter = function () { f.interrupt('This one explains itself.'); };
+  document.getElementById('rest').onclick = function () { f.rest(); };
+</script>

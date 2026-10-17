@@ -14,7 +14,7 @@
       ...
     }:
     let
-      version = "0.9.0";
+      version = "0.10.0";
     in
     {
       # One call, the way gluck-service-lib's mkPythonService is one call.
@@ -187,6 +187,19 @@
           diff -u ${./examples/card.html} built.html \
             || { echo "examples/card.html is stale: re-run make example"; exit 1; }
           touch $out
+        '';
+
+        checks.parla = pkgs.runCommand "zanni-parla-test" {
+          nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.playwright ])) ];
+          PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
+          PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+          FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
+        } ''
+          set -o pipefail
+          export HOME=$TMPDIR
+          cp -r ${./assets} assets
+          cp -r ${./examples} examples
+          python3 ${./test/parla.test.py} examples/parla.html 2>&1 | tee $out
         '';
 
         apps.inline = flake-utils.lib.mkApp {
