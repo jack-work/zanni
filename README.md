@@ -22,6 +22,7 @@ silently.
 | **stilo** | a textarea that gains Write/Preview and a technical face | previews through `scriba`, renders on tab rather than on keystroke, and stays the same textarea so a form still submits it | CSS, JS | `--stilo-face` `--stilo-field` `--stilo-min` |
 | **heft** | pick a thing up, throw it, watch it settle back | composes via the CSS `translate` property so it never fights an animation, and raises the ancestor because a child cannot escape its parent stacking context | CSS, JS | `--heft-settle` `--heft-ease` |
 | **parla** | Figaro speaks: the pixel head and a cartoon bubble from his mouth | a tilted, outlined bubble whose tail sits at `--parla-mouth` of the head; `say`, `quip`, `interrupt` (with an *AHEM* when it cuts a quip) and `rest` on `el.parla` | CSS, JS | `--parla-head` `-mouth` `-tilt` `-outline` |
+| **filo** | the seeker over a video or audio element, for mouse, touch, keyboard and a TV remote | one focus stop with `role=slider`; held keys and drags commit one seek, because each seek is a fresh Range request; a vim keymap beside the D-pad's | CSS, JS | `--filo-track` `-thumb` `-hit`; `step` `big` `fine` `autohide` `globalKeys` |
 
 ## Use
 

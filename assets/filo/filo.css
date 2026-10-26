@@ -1,0 +1,158 @@
+.filo {
+  --filo-played: 0%;
+  --filo-at: 0%;
+  --filo-track: 8px;
+  --filo-thumb: 14px;
+  --filo-hit: 44px;
+  --filo-face: var(--fontpack-mono, ui-monospace, monospace);
+  --filo-prose: var(--fontpack-prose, Georgia, serif);
+  --filo-ink: var(--z-ink, #2b1a15);
+  --filo-ground: var(--z-ground, #f2e6d8);
+  --filo-accent: var(--z-accent, #7d2e2e);
+  --filo-on-accent: var(--z-on-accent, #f6ede2);
+  --filo-line: var(--z-line, #c2a690);
+  --filo-muted: var(--z-muted, #6b4a3d);
+  --filo-focus: var(--z-focus, #b8862b);
+  --filo-shadow: var(--z-shadow, rgba(43, 26, 21, 0.3));
+  display: grid;
+  gap: 8px;
+  color: var(--filo-ink);
+  font-family: var(--filo-prose);
+  transition: opacity 0.2s ease, translate 0.2s ease;
+}
+
+.filo-hidden {
+  opacity: 0;
+  translate: 0 12px;
+  pointer-events: none;
+}
+
+.filo-title { font-size: 1.15em; line-height: 1.25; overflow-wrap: anywhere; }
+.filo-title:empty { display: none; }
+
+.filo-chapter { font-family: var(--filo-face); color: var(--filo-muted); min-height: 1.2em; }
+
+.filo-row {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  font-family: var(--filo-face);
+  font-size: 1.1em;
+  font-variant-numeric: tabular-nums;
+}
+
+.filo-play {
+  font: inherit;
+  font-size: 1.2em;
+  min-width: var(--filo-hit);
+  min-height: var(--filo-hit);
+  padding: 0 8px;
+  color: var(--filo-on-accent);
+  background: var(--filo-accent);
+  border: 2px solid var(--filo-ink);
+  cursor: pointer;
+}
+
+.filo-track {
+  position: relative;
+  height: var(--filo-hit);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.filo-track:focus { outline: none; }
+
+.filo-rail {
+  position: relative;
+  width: 100%;
+  height: var(--filo-track);
+  border: 2px solid var(--filo-ink);
+  background: var(--filo-ground);
+  box-sizing: content-box;
+}
+
+.filo-track:focus-visible .filo-rail { outline: 3px solid var(--filo-focus); outline-offset: 4px; }
+
+.filo-buffered {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: repeating-conic-gradient(var(--filo-line) 0 25%, transparent 0 50%) 0 0 / 4px 4px;
+}
+
+.filo-played {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--filo-played);
+  background: var(--filo-accent);
+}
+
+.filo-tick {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 3px;
+  margin-left: -1px;
+  background: var(--filo-ground);
+}
+
+.filo-thumb {
+  position: absolute;
+  left: var(--filo-played);
+  top: 50%;
+  width: var(--filo-thumb);
+  height: var(--filo-thumb);
+  translate: -50% -50%;
+  background: var(--filo-ink);
+  border: 2px solid var(--filo-ground);
+  outline: 2px solid var(--filo-ink);
+  box-sizing: border-box;
+}
+
+.filo-ghost {
+  position: absolute;
+  left: var(--filo-at);
+  top: 50%;
+  width: 3px;
+  height: calc(var(--filo-thumb) + 4px);
+  translate: -50% -50%;
+  background: var(--filo-ink);
+  opacity: 0.55;
+  display: none;
+}
+
+.filo-flag {
+  position: absolute;
+  bottom: calc(100% - 6px);
+  left: var(--filo-at);
+  translate: var(--filo-flag-shift, -50%) 0;
+  white-space: nowrap;
+  background: var(--filo-ground);
+  border: 2px solid var(--filo-ink);
+  box-shadow: 3px 3px 0 var(--filo-shadow);
+  padding: 2px 8px 4px;
+  text-align: center;
+  line-height: 1.15;
+  display: none;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.filo-flag-time { display: block; font-size: 1.1em; }
+.filo-flag-chapter { display: block; font-family: var(--filo-prose); font-size: 0.8em; color: var(--filo-muted); }
+.filo-flag-chapter:empty { display: none; }
+
+.filo-previewing .filo-flag,
+.filo-previewing .filo-ghost { display: block; }
+
+.filo-held .filo-thumb { --filo-thumb: 20px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .filo { transition: none; }
+}

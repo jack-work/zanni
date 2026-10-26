@@ -1,6 +1,6 @@
 {
   "name": "zanni",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Visual components extracted from figar.org.",
   "components": {
     "boil": {
@@ -228,6 +228,44 @@
         "--parla-outline"
       ],
       "activator": "data-parla"
+    },
+    "filo": {
+      "summary": "The seeker: one focus stop over a media element, with buffered dither, chapter notches, a time flag, held keys that commit one seek, and a keymap for keyboards, D-pads and remotes.",
+      "marker": "<!-- zanni:filo -->",
+      "classes": [
+        "filo",
+        "filo-hidden",
+        "filo-title",
+        "filo-chapter",
+        "filo-row",
+        "filo-play",
+        "filo-track",
+        "filo-rail",
+        "filo-buffered",
+        "filo-played",
+        "filo-tick",
+        "filo-thumb",
+        "filo-ghost",
+        "filo-flag",
+        "filo-flag-time",
+        "filo-flag-chapter",
+        "filo-previewing",
+        "filo-held"
+      ],
+      "files": [
+        "filo.css",
+        "filo.js"
+      ],
+      "docs": "docs/filo.md",
+      "knobs": [
+        "--filo-track",
+        "--filo-thumb",
+        "--filo-hit",
+        "--filo-face",
+        "--filo-prose"
+      ],
+      "constructed": true,
+      "activator": "data-filo"
     }
   },
   "planned": [

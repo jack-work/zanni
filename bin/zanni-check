@@ -112,6 +112,25 @@ for (const name of want) {
   if (name === 'heft') heft();
   if (name === 'scriba') scriba();
   if (name === 'stilo') stilo();
+  if (name === 'filo') filo();
+}
+
+function filo() {
+  console.log('[filo] the seeker');
+  check('the track keeps a visible focus ring',
+    /\.filo-track:focus-visible\s+\.filo-rail\s*\{[^{}]*outline:/.test(css));
+  check('hiding the bar keeps it focusable',
+    /\.filo-hidden\s*\{[^{}]*opacity:\s*0/.test(css)
+      && !/\.filo-hidden\s*\{[^{}]*(display:\s*none|visibility:\s*hidden)/.test(css),
+    'display or visibility would drop focus off the one stop a D-pad has');
+  check('a finger on the track still scrolls the page vertically',
+    /\.filo-track\s*\{[^{}]*touch-action:\s*pan-y/.test(css));
+  check('the slide-away honours reduced motion',
+    /prefers-reduced-motion[\s\S]{0,120}\.filo\s*\{[^{}]*transition:\s*none/.test(css));
+  check('the track is announced as a slider', /role: 'slider'/.test(html));
+  check('a held key commits once, after it is let go',
+    /COMMIT_MS\s*=\s*\d+/.test(html) && /setTimeout\(function \(\) \{ commit\(pending\)/.test(html),
+    'without the debounce a held key is a Range request per repeat');
 }
 
 function stilo() {
