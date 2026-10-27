@@ -1,6 +1,6 @@
 {
   "name": "zanni",
-  "version": "0.13.1",
+  "version": "0.14.0",
   "description": "Visual components extracted from figar.org.",
   "components": {
     "boil": {
@@ -320,6 +320,46 @@
       ],
       "constructed": true,
       "activator": "data-filo"
+    },
+    "bacchetta": {
+      "summary": "The phone remote: a cast button with a dropdown of screens, and a remote that opens on cast as a bottom sheet (a card on wide screens) and minimises to a bar. Pixel keys, a scrubber that seeks once per drag, a D-pad, boil as a setting.",
+      "marker": "<!-- zanni:bacchetta -->",
+      "classes": [
+        "bacchetta",
+        "bacchetta-sheet",
+        "bacchetta-key",
+        "bacchetta-icon",
+        "bacchetta-track",
+        "bacchetta-rail",
+        "bacchetta-fill",
+        "bacchetta-thumb",
+        "bacchetta-flag",
+        "bacchetta-transport",
+        "bacchetta-play",
+        "bacchetta-pad",
+        "bacchetta-ok",
+        "bacchetta-side",
+        "bacchetta-mini",
+        "bacchetta-mini-line",
+        "bacchetta-caster",
+        "bacchetta-cast",
+        "bacchetta-screens",
+        "bacchetta-screen",
+        "bacchetta-dot",
+        "bacchetta-offline",
+        "bacchetta-minimised",
+        "bacchetta-previewing"
+      ],
+      "files": [
+        "bacchetta.css",
+        "bacchetta.js"
+      ],
+      "docs": "docs/bacchetta.md",
+      "knobs": [
+        "--bacchetta-z",
+        "--bacchetta-key"
+      ],
+      "constructed": true
     }
   },
   "planned": [

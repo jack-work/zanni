@@ -97,6 +97,7 @@
 <!-- zanni:stilo -->
 <!-- zanni:parla -->
 <!-- zanni:filo -->
+<!-- zanni:bacchetta -->
 
 <div class="head">
   <h1>zanni · boil</h1>
@@ -227,5 +228,11 @@ Then press **Preview**. Links like https://figar.org survive.</textarea>
   <audio data-filo data-filo-title="Largo al factotum" preload="none"></audio>
 </section>
 
+<section class="card gesso" style="max-width:34rem;margin:2rem auto;padding:1.25rem">
+  <button id="bacchetta-cast" type="button">cast</button>
+</section>
+<script>
+  zanni.bacchetta.caster(document.getElementById('bacchetta-cast'), { screens: [{ id: 'here', name: 'This screen', kind: 'browser', online: true }] });
+</script>
 </body>
 </html>

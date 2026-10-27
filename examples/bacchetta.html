@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>zanni · bacchetta</title>
+<link rel="stylesheet" href="../assets/fontpack/fonts.css">
+<link rel="stylesheet" href="../assets/gesso/gesso.css">
+<link rel="stylesheet" href="../assets/fontpack/fontpack.css">
+<link rel="stylesheet" href="../assets/bacchetta/bacchetta.css">
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; padding: 24px 16px calc(var(--bacchetta-height, 0px) + 24px); font-size: 18px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 18px; }
+  .tile { aspect-ratio: 16 / 10; background: #3a2a2c; border: 2px solid #000; }
+</style>
+<body class="gesso-stage">
+<h1 style="font-family: var(--fontpack-display); font-weight: 400; margin: 0">OL overview</h1>
+<button id="cast">cast</button>
+<div class="tiles" id="tiles"></div>
+<script src="../assets/bacchetta/bacchetta.js"></script>
+<script src="bacchetta.js"></script>
+</body>
+</html>
