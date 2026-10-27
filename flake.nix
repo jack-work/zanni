@@ -14,7 +14,7 @@
       ...
     }:
     let
-      version = "0.10.0";
+      version = (builtins.fromJSON (builtins.readFile ./assets/manifest.json)).version;
     in
     {
       # One call, the way gluck-service-lib's mkPythonService is one call.
