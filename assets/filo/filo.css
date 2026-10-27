@@ -533,6 +533,173 @@
 .filo-audio .filo-help { bottom: 64px; }
 .filo-audio .filo-flag { bottom: calc(50% + 12px); }
 
+.filo-button[hidden] { display: none; }
+
+.filo-pip,
+.filo-expand,
+.filo-close { display: none; }
+
+.filo-video .filo-pip:not([hidden]) { display: inline-grid; }
+
+.filo.filo-barskin {
+  --filo-bar-h: 72px;
+  box-sizing: border-box;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  border: 0;
+  background: var(--filo-ground);
+  color: var(--filo-ink);
+  line-height: 1.2;
+  overflow: visible;
+  cursor: auto;
+}
+
+.filo.filo-docked {
+  --filo-bar-h: var(--filo-dock-height, 72px);
+  grid-template-rows: 100%;
+  padding: 0 8px 0 0;
+  border-top: 2px solid var(--filo-ink);
+}
+
+.filo.filo-barred {
+  display: grid;
+  grid-template-rows: auto calc(var(--filo-bar-h) - 2px);
+  padding: 0;
+}
+
+.filo.filo-barred:fullscreen { grid-template-rows: minmax(0, 1fr) calc(var(--filo-bar-h) - 2px); }
+
+.filo.filo-barred > video {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  width: 100%;
+  height: auto;
+  background: #000;
+  border-bottom: 2px solid var(--filo-ink);
+}
+
+.filo.filo-barred:fullscreen > video { height: 100%; min-height: 0; object-fit: contain; }
+
+.filo.filo-docked > video {
+  grid-column: 1;
+  grid-row: 1;
+  display: block;
+  width: auto;
+  height: calc(var(--filo-dock-height, 72px) - 2px);
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: #000;
+  cursor: pointer;
+}
+
+.filo.filo-barskin > audio { display: none; }
+
+.filo.filo-barskin .filo-top {
+  grid-column: 2;
+  grid-row: -2;
+  position: static;
+  min-width: 0;
+  margin: 0 0 0 8px;
+  padding: 0;
+  background: none;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.filo.filo-barred .filo-top { grid-column: 1 / 3; margin-left: 12px; }
+
+.filo.filo-barskin .filo-title {
+  font-family: var(--filo-prose);
+  font-size: 17px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.filo.filo-barskin .filo-chapter {
+  font-size: 15px;
+  min-height: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.filo.filo-barskin .filo-center { display: none; }
+
+.filo.filo-barskin .filo-chrome { display: contents; }
+
+.filo.filo-barskin .filo-track {
+  grid-area: auto;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: auto;
+  bottom: calc(var(--filo-bar-h) - var(--filo-hit) / 2 - 1px);
+  margin: 0;
+}
+
+.filo.filo-barskin .filo-rail { --filo-track: 3px; --filo-track-hot: 6px; background: color-mix(in srgb, var(--filo-ink) 22%, transparent); box-shadow: none; }
+
+.filo.filo-barskin .filo-row {
+  grid-column: 3;
+  grid-row: -2;
+  display: flex;
+  opacity: 1;
+  pointer-events: auto;
+  font-size: 18px;
+  padding-right: 8px;
+}
+
+.filo.filo-barskin .filo-button { --filo-icon: 26px; }
+
+.filo.filo-barskin .filo-play {
+  --filo-icon: 26px;
+  min-width: var(--filo-hit);
+  min-height: var(--filo-hit);
+  color: var(--filo-ground);
+  background: var(--filo-accent);
+  border: 2px solid var(--filo-ink);
+  box-shadow: none;
+}
+
+.filo.filo-barskin .filo-play,
+.filo.filo-barskin .filo-back,
+.filo.filo-barskin .filo-fwd,
+.filo.filo-barskin .filo-more { display: inline-grid; }
+
+.filo.filo-docked .filo-expand,
+.filo.filo-docked .filo-close { display: inline-grid; }
+
+.filo.filo-barskin .filo-elapsed,
+.filo.filo-barskin .filo-sep,
+.filo.filo-barskin .filo-total { display: inline-block; }
+
+.filo.filo-barskin .filo-elapsed { margin-left: 8px; }
+
+.filo.filo-barskin .filo-remaining,
+.filo.filo-barskin .filo-now,
+.filo.filo-barskin .filo-gap,
+.filo.filo-docked .filo-full { display: none; }
+
+.filo.filo-barskin .filo-menu,
+.filo.filo-barskin .filo-help {
+  bottom: calc(var(--filo-bar-h) + 8px);
+  max-height: 60vh;
+}
+
+@media (max-width: 600px) {
+  .filo.filo-barskin { --filo-bar-h: 64px; }
+  .filo.filo-docked .filo-back,
+  .filo.filo-docked .filo-fwd,
+  .filo.filo-barskin .filo-elapsed,
+  .filo.filo-barskin .filo-sep,
+  .filo.filo-barskin .filo-total,
+  .filo.filo-barskin .filo-volume,
+  .filo.filo-docked .filo-pip,
+  .filo.filo-docked .filo-more { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .filo,
   .filo .filo-top,

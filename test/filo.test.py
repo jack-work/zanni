@@ -319,6 +319,72 @@ with sync_playwright() as p:
     assert stops[0] == "filo-track" and "filo-play" in stops and "filo-full" not in stops, stops
     pause(pg)
 
+    ready(pg)
+    pg.evaluate("player.root.style.top = '5px'")
+    play(pg)
+    pg.evaluate("player.dock(true)")
+    assert pg.evaluate("player.docked") and has(pg, "filo-docked")
+    geo = pg.evaluate("""() => { const r = player.root.getBoundingClientRect(); const cs = getComputedStyle(player.root);
+      return [cs.position, Math.round(r.bottom), Math.round(r.height), getComputedStyle(document.documentElement).getPropertyValue('--filo-dock-height').trim(),
+        player.root.style.zIndex] }""")
+    assert geo == ["fixed", 760, 72, "72px", "var(--filo-dock-z, 50)"], f"docked is a 72px bar on the bottom edge, got {geo}"
+    assert events(pg, "filo:dock") == [{"on": True}]
+    t0 = now(pg)
+    pg.wait_for_timeout(700)
+    assert not pg.evaluate(f"{MEDIA}.paused") and now(pg) > t0, "docking keeps playing the same element"
+    tile = pg.evaluate(f"{MEDIA}.getBoundingClientRect().height")
+    assert 60 <= tile <= 72, f"the video is a tile in the bar, got {tile}"
+    pg.wait_for_timeout(3000)
+    assert pg.evaluate("player.shown"), "the bar never hides itself"
+    pg.evaluate("document.activeElement && document.activeElement.blur()")
+    at(pg, 100)
+    pg.keyboard.press("l")
+    settle(pg)
+    assert seeks(pg) == 0, "docked, filo takes no global keys"
+    esc = pg.evaluate("""() => { const e = new KeyboardEvent('keydown', {key: 'Escape', bubbles: true, cancelable: true});
+      document.body.dispatchEvent(e); return e.defaultPrevented }""")
+    assert esc is False, "docked, Escape is the page's"
+    pg.evaluate("player.focus()")
+    pg.keyboard.press("l")
+    settle(pg)
+    assert seeks(pg) == 1, "focus inside the bar still seeks"
+    pg.locator(".filo-expand").click()
+    pg.locator("#media").click()
+    assert len(events(pg, "filo:expand")) == 2, "expand and a tap on the tile both ask the page to expand"
+    assert not pg.evaluate(f"{MEDIA}.paused"), "a tap on the tile does not pause"
+    pg.evaluate("player.setItem({title: 'Next', chapters: []})")
+    assert pg.evaluate("player.docked"), "a new item loads in place"
+    pg.evaluate("player.dock(false)")
+    after = pg.evaluate("[player.root.style.top, player.root.style.position, getComputedStyle(document.documentElement).getPropertyValue('--filo-dock-height')]")
+    assert after == ["5px", "", ""], f"undocking restores the page's inline style, got {after}"
+    pg.evaluate("player.dock(true)")
+    pg.locator(".filo-close").click()
+    assert len(events(pg, "filo:stop")) == 1 and pg.evaluate(f"{MEDIA}.paused")
+    pg.evaluate("player.detach()")
+    assert pg.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--filo-dock-height')") == ""
+
+    ready(pg, "?kind=audio&docked=1")
+    assert pg.evaluate("player.docked"), "audio can start docked"
+    assert pg.evaluate("events.filter(e => e[0] === 'filo:dock').length") == 1
+    assert pg.evaluate("getComputedStyle(document.querySelector('.filo-play')).display") != "none"
+    assert pg.evaluate("player.root.getBoundingClientRect().height") == 72
+
+    ready(pg, "?bar=1")
+    assert has(pg, "filo-barred") and has(pg, "filo-barskin") and not has(pg, "filo-docked")
+    geo = pg.evaluate("""() => { const v = player.media.getBoundingClientRect(), r = player.root.getBoundingClientRect(),
+      row = document.querySelector('.filo-row').getBoundingClientRect(); return [Math.round(r.bottom - v.bottom), row.top >= v.bottom - 1] }""")
+    assert geo[0] in (70, 72) and geo[1], f"the watch layout puts the bar under the picture, got {geo}"
+    assert opacity(pg, ".filo-center") == 0 or pg.evaluate("getComputedStyle(document.querySelector('.filo-center')).display") == "none"
+    play(pg)
+    pg.wait_for_timeout(3000)
+    assert pg.evaluate("player.shown"), "the watch bar never hides"
+    pg.locator("#media").click()
+    pg.wait_for_function(f"{MEDIA}.paused")
+    pg.evaluate("player.dock(true)")
+    assert has(pg, "filo-docked") and not has(pg, "filo-barred")
+    pg.evaluate("player.dock(false)")
+    assert has(pg, "filo-barred"), "undocking returns to the watch layout"
+
     ctx = b.new_context(has_touch=True, viewport={"width": 390, "height": 800})
     ph = ctx.new_page()
     ready(ph, "?autohide=300")
@@ -335,6 +401,8 @@ with sync_playwright() as p:
     ph.wait_for_function(f"Math.abs({MEDIA}.currentTime - 300) < 3")
     assert ph.evaluate("seeks.length") == 1
     assert ph.evaluate("getComputedStyle(document.querySelector('.filo-track')).touchAction") == "pan-y"
+    ph.evaluate("player.dock(true)")
+    assert ph.evaluate("player.root.getBoundingClientRect().height") == 64, "a phone gets a 64px bar"
     ctx.close()
 
     assert not errors, errors

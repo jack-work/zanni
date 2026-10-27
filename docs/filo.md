@@ -58,6 +58,8 @@ and leaves the media element where it was found.
 | `step`, `big`, `fine` | 10, 30, 1 | skip sizes in seconds |
 | `boil` | true | boil the paused centre cluster when the page carries boil |
 | `fill` | false | picture fills the box, letterboxed |
+| `docked` | false | start as the bottom bar |
+| `bar` | false | the watch layout: the picture with the bar's controls under it, never hiding |
 
 The page owns the media element: its `src`, hls.js, the poster, saving the
 position, and switching quality. filo never calls `play()` unless asked:
@@ -76,16 +78,20 @@ attaching does not start anything.
 | `rate(r)` | set the speed |
 | `mute()` | toggle mute |
 | `fullscreen(bool?)` | the box goes fullscreen; iOS falls back to the video's own |
+| `dock(bool?)` | become the bottom bar, or come back |
+| `pip(bool?)` | the browser's picture in picture for the video |
+| `globalKeys(bool)` | change the key scope after attach |
 | `menu(bool?)`, `help(bool?)` | the settings menu, the key list |
 | `setItem({title, chapters, duration, kind, thumbnails, qualities, quality})` | describe a new item |
 | `setQualities(list, current)` | replace the Quality menu |
 | `focus()` | focus the scrubber, so OK and Space reach the player |
 | `detach()` | undo everything |
-| `shown`, `open`, `root`, `media` | chrome showing; a menu or help showing; the box; the element |
+| `shown`, `open`, `docked`, `root`, `media` | chrome showing; a menu or help showing; docked; the box; the element |
 
 Events bubble from the box: `filo:seek {from, to}` once per committed seek,
 `filo:bar {shown}`, `filo:quality {value}`, `filo:rate {rate}`,
-`filo:fullscreen {on}`, `filo:sleep {mode, fired}`, `filo:stop`. Position and
+`filo:fullscreen {on}`, `filo:sleep {mode, fired}`, `filo:stop`, `filo:dock {on}`,
+`filo:expand`, `filo:pip {on}`. Position and
 duration are the media element's own `timeupdate` and `durationchange`.
 
 On `filo:quality` the page switches: hls.js `currentLevel`, a rung's playlist,
@@ -111,6 +117,33 @@ Hiding is opacity with `pointer-events: none`, never `display` or
 Audio has no picture to cover, so it is a card that never hides: title,
 chapter, scrubber, elapsed and remaining, and a row of volume, -10, play, +10
 and the menu.
+
+## Docked
+
+Spotify's pattern: Gluck picked it over YouTube's corner window. `dock(true)`
+turns the box into a bar along the bottom of the viewport, 64px on a phone and
+72px elsewhere: the same `<video>` as a 16:9 tile (never re-created, so
+nothing rebuffers), title and chapter, -10, play, +10, the time, volume, ⋮,
+picture in picture, expand and close. The scrubber is a thin line along the
+bar's top edge with the usual 44px hit area, and its flag opens above the bar.
+Audio docks without a tile. Phones drop the skips, the time, volume, PiP and
+the menu.
+
+The box stays the page's element. Docking sets `position`, the insets, `height`,
+`z-index` and `display` on it through the CSSOM and puts back whatever inline
+values were there on undock, so a page's stylesheet must not use `!important`
+on its box. `--filo-dock-height` is set on `<html>` in the same task, before
+the bar paints, so a page pads its scroll containers by it without a jump.
+`--filo-dock-z` (default 50) sets the bar's stacking.
+
+Docked, filo takes no global keys: a gallery around it keeps its arrows,
+Enter, Space and Escape. Keys still work with focus inside the bar. filo binds
+no key to dock; the page decides when.
+
+Expand, or a tap on the tile, fires `filo:expand` and nothing else: the page
+routes to its watch view and calls `dock(false)`. Close is `stop()`.
+`setItem` and a new `src` leave the dock alone, so a cast into a docked player
+loads in place. The bar never hides itself.
 
 ## The scrubber
 

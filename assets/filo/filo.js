@@ -24,8 +24,12 @@
     muted: 'M6 2h1v1h-1zM5 3h2v1h-2zM4 4h3v1h-3zM0 5h7v6h-7zM9 5h1v1h-1zM13 5h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM11 7h1v1h-1zM10 8h1v1h-1zM12 8h1v1h-1zM9 9h1v1h-1zM13 9h1v1h-1zM4 11h3v1h-3zM5 12h2v1h-2zM6 13h1v1h-1z',
     more: 'M6 2h3v3h-3zM6 7h3v3h-3zM6 12h3v3h-3z',
     full: 'M1 1h5v2h-5zM10 1h5v2h-5zM1 3h2v3h-2zM13 3h2v3h-2zM1 10h2v3h-2zM13 10h2v3h-2zM1 13h5v2h-5zM10 13h5v2h-5z',
-    unfull: 'M4 1h2v3h-2zM10 1h2v3h-2zM1 4h5v2h-5zM10 4h5v2h-5zM1 10h5v2h-5zM10 10h5v2h-5zM4 12h2v3h-2zM10 12h2v3h-2z'
+    unfull: 'M4 1h2v3h-2zM10 1h2v3h-2zM1 4h5v2h-5zM10 4h5v2h-5zM1 10h5v2h-5zM10 10h5v2h-5zM4 12h2v3h-2zM10 12h2v3h-2z',
+    pip: 'M1 2h14v1h-14zM1 12h14v1h-14zM1 3h1v9h-1zM14 3h1v9h-1zM7 7h6v4h-6z',
+    expand: 'M7 4h2v1h-2zM6 5h4v1h-4zM5 6h2v1h-2zM9 6h2v1h-2zM4 7h2v1h-2zM10 7h2v1h-2zM3 8h2v1h-2zM11 8h2v1h-2zM2 9h2v1h-2zM12 9h2v1h-2zM1 10h2v1h-2zM13 10h2v1h-2z',
+    close: 'M2 2h2v1h-2zM12 2h2v1h-2zM3 3h2v1h-2zM11 3h2v1h-2zM4 4h2v1h-2zM10 4h2v1h-2zM5 5h2v1h-2zM9 5h2v1h-2zM6 6h4v1h-4zM7 7h2v1h-2zM6 8h4v1h-4zM5 9h2v1h-2zM9 9h2v1h-2zM4 10h2v1h-2zM10 10h2v1h-2zM3 11h2v1h-2zM11 11h2v1h-2zM2 12h2v1h-2zM12 12h2v1h-2z'
   };
+  var DOCK_STYLE = ['position', 'top', 'right', 'bottom', 'left', 'width', 'height', 'max-height', 'z-index', 'display'];
 
   function el(tag, cls, attrs) {
     var n = document.createElement(tag);
@@ -171,7 +175,8 @@
     };
     var qualities = opts.qualities || [], quality = opts.quality == null ? null : String(opts.quality);
     var audioMode = function () { return item.kind === 'audio'; };
-    var autohide = function () { return opts.autohide == null ? (audioMode() ? 0 : 2500) : opts.autohide; };
+    var docked = false, dockSaved = null, barSkin = !!opts.bar;
+    var autohide = function () { return docked || barSkin ? 0 : opts.autohide == null ? (audioMode() ? 0 : 2500) : opts.autohide; };
 
     var parent = media.parentElement;
     var created = !(parent && parent.hasAttribute('data-filo') && parent !== media);
@@ -235,6 +240,9 @@
       gap: el('span', 'filo-gap'),
       more: button('filo-more', 'Settings', 'more'),
       full: button('filo-full', 'Fullscreen', 'full'),
+      pip: button('filo-pip', 'Picture in picture', 'pip'),
+      expand: button('filo-expand', 'Open the player', 'expand'),
+      close: button('filo-close', 'Close', 'close'),
       menu: el('div', 'filo-menu', { role: 'menu', 'aria-label': 'Settings', hidden: '' }),
       help: el('div', 'filo-help', { role: 'dialog', 'aria-label': 'Keyboard shortcuts', hidden: '' }),
       status: el('div', 'filo-status', { role: 'status', 'aria-live': 'polite' })
@@ -253,7 +261,7 @@
     $.at.append($.ghost, $.flag);
     $.track.append($.rail, $.head, $.at);
     $.volume.append($.mute, $.level);
-    $.row.append($.play, $.back, $.fwd, $.volume, $.elapsed, $.sep, $.total, $.remaining, $.now, $.gap, $.more, $.full);
+    $.row.append($.play, $.back, $.fwd, $.volume, $.elapsed, $.sep, $.total, $.remaining, $.now, $.gap, $.more, $.pip, $.full, $.expand, $.close);
     $.chrome.append($.track, $.row);
     var built = [$.top, $.center, $.chrome, $.menu, $.help, $.status];
     built.forEach(function (n) { box.appendChild(n); });
@@ -406,6 +414,7 @@
         b.classList.toggle('boil-ui', !audio && o.boil && hasBoil());
       });
       $.full.tabIndex = audio ? -1 : 0;
+      $.pip.hidden = audio || !pipSupported();
     }
 
     function frameAt(t) {
@@ -579,6 +588,7 @@
       var isFull = fullscreenElement() === box;
       var want = v == null ? !isFull : !!v;
       if (want === isFull) return;
+      if (want && docked) dock(false);
       if (want) {
         var req = box.requestFullscreen || box.webkitRequestFullscreen;
         if (req) {
@@ -592,6 +602,74 @@
           if (q && q.catch) q.catch(function () {});
         }
       }
+    }
+
+    function pipSupported() {
+      return media.tagName === 'VIDEO' && ((document.pictureInPictureEnabled && media.requestPictureInPicture) || !!media.webkitSetPresentationMode);
+    }
+
+    function pip(v) {
+      var on = document.pictureInPictureElement === media || media.webkitPresentationMode === 'picture-in-picture';
+      var want = v == null ? !on : !!v;
+      if (want === on) return;
+      if (media.requestPictureInPicture && document.pictureInPictureEnabled) {
+        var p = want ? media.requestPictureInPicture() : document.exitPictureInPicture();
+        if (p && p.catch) p.catch(function () {});
+      } else if (media.webkitSetPresentationMode) media.webkitSetPresentationMode(want ? 'picture-in-picture' : 'inline');
+    }
+
+    function paintSkin() {
+      box.classList.toggle('filo-barskin', docked || barSkin);
+      box.classList.toggle('filo-barred', barSkin && !docked);
+    }
+
+    function dockHeight() {
+      return window.matchMedia && window.matchMedia('(max-width: 600px)').matches ? 64 : 72;
+    }
+
+    function dock(v) {
+      var want = v == null ? !docked : !!v;
+      if (want === docked) return;
+      var s = box.style;
+      if (want) {
+        document.documentElement.style.setProperty('--filo-dock-height', dockHeight() + 'px');
+        dockSaved = DOCK_STYLE.map(function (k) { return [k, s.getPropertyValue(k), s.getPropertyPriority(k)]; });
+        s.setProperty('position', 'fixed');
+        s.setProperty('top', 'auto');
+        s.setProperty('right', '0');
+        s.setProperty('bottom', '0');
+        s.setProperty('left', '0');
+        s.setProperty('width', 'auto');
+        s.setProperty('height', 'var(--filo-dock-height)');
+        s.setProperty('max-height', 'none');
+        s.setProperty('z-index', 'var(--filo-dock-z, 50)');
+        s.setProperty('display', 'grid');
+        if (fullscreenElement() === box) fullscreen(false);
+        closeMenu();
+        help(false);
+        docked = true;
+        box.classList.add('filo-docked');
+        paintSkin();
+        wake();
+      } else {
+        restoreDock();
+        armHide();
+      }
+      emit('filo:dock', { on: docked });
+    }
+
+    function restoreDock() {
+      if (!docked) return;
+      var s = box.style;
+      (dockSaved || []).forEach(function (d) {
+        if (d[1]) s.setProperty(d[0], d[1], d[2]);
+        else s.removeProperty(d[0]);
+      });
+      dockSaved = null;
+      docked = false;
+      box.classList.remove('filo-docked');
+      paintSkin();
+      document.documentElement.style.removeProperty('--filo-dock-height');
     }
 
     function mute() {
@@ -806,10 +884,14 @@
       rate: rate,
       mute: mute,
       fullscreen: fullscreen,
+      dock: dock,
+      pip: pip,
+      globalKeys: function (v) { o.globalKeys = !!v; },
       menu: menu,
       help: help,
       focus: function () { $.track.focus({ preventScroll: true }); },
       get shown() { return active; },
+      get docked() { return docked; },
       get open() { return !$.menu.hidden || !$.help.hidden; },
       get pending() { return pending; },
       get root() { return box; },
@@ -818,11 +900,12 @@
         clearTimeout(commitTimer);
         clearTimeout(hideTimer);
         clearTimeout(sleepTimer);
+        restoreDock();
         listeners.forEach(function (l) { l[0].removeEventListener(l[1], l[2], l[3]); });
         listeners = [];
         built.forEach(function (n) { n.remove(); });
         box.classList.remove('filo', 'filo-audio', 'filo-video', 'filo-active', 'filo-paused', 'filo-previewing',
-          'filo-held', 'filo-dragging', 'filo-menu-open', 'filo-help-open', 'filo-fullscreen', 'filo-muted', 'filo-framed', 'filo-fill');
+          'filo-held', 'filo-dragging', 'filo-menu-open', 'filo-help-open', 'filo-fullscreen', 'filo-muted', 'filo-framed', 'filo-fill', 'filo-barskin', 'filo-barred');
         if (hadControls) media.setAttribute('controls', '');
         if (created) {
           if (home.parent) home.parent.insertBefore(media, home.next && home.next.parentNode === home.parent ? home.next : box);
@@ -837,7 +920,7 @@
       var path = e.composedPath ? e.composedPath() : [e.target];
       if (typing(path)) return;
       var inside = path.indexOf(box) >= 0;
-      if (!o.globalKeys && !inside) return;
+      if (!(o.globalKeys && !docked) && !inside) return;
       if (e.key === 'Escape') {
         if (dismiss()) e.preventDefault();
         return;
@@ -887,7 +970,7 @@
       return false;
     }
 
-    on(o.globalKeys ? document : box, 'keydown', onKey);
+    on(document, 'keydown', onKey);
     on($.play, 'click', toggle);
     on($.bigPlay, 'click', function (e) { e.stopPropagation(); toggle(); });
     on($.back, 'click', function () { skip(-o.step); });
@@ -902,6 +985,12 @@
     });
     on($.more, 'click', function (e) { e.stopPropagation(); menu(); });
     on($.full, 'click', function () { fullscreen(); });
+    on($.pip, 'click', function () { pip(); });
+    on($.expand, 'click', function (e) { e.stopPropagation(); emit('filo:expand', {}); });
+    on($.close, 'click', function (e) { e.stopPropagation(); stop(); });
+    on(media, 'enterpictureinpicture', function () { emit('filo:pip', { on: true }); });
+    on(media, 'leavepictureinpicture', function () { emit('filo:pip', { on: false }); });
+    on(media, 'webkitpresentationmodechanged', function () { emit('filo:pip', { on: media.webkitPresentationMode === 'picture-in-picture' }); });
     on($.track, 'pointerdown', function (e) {
       if (e.button !== 0 || !duration()) return;
       dragging = true;
@@ -948,6 +1037,14 @@
       if (!media.paused && !holding() && autohide()) rest();
     });
     on(box, 'click', function (e) {
+      if (docked) {
+        if (e.target === media) emit('filo:expand', {});
+        return;
+      }
+      if (barSkin) {
+        if (e.target === media) toggle();
+        return;
+      }
       if (interactive(e.target) || audioMode()) return;
       if (swallow) { swallow = false; return; }
       if (!$.help.hidden) { help(false); return; }
@@ -956,7 +1053,7 @@
       else wake();
     });
     on(box, 'dblclick', function (e) {
-      if (interactive(e.target) || audioMode() || lastPointer !== 'mouse') return;
+      if (docked || interactive(e.target) || audioMode() || lastPointer !== 'mouse') return;
       fullscreen();
     });
     on(document, 'pointerdown', function (e) {
@@ -981,6 +1078,8 @@
     paintPlay();
     paintVolume();
     paintFull();
+    paintSkin();
+    if (opts.docked) dock(true);
     media.filo = api;
     return api;
   }

@@ -1,6 +1,6 @@
 {
   "name": "zanni",
-  "version": "0.12.1",
+  "version": "0.13.0",
   "description": "Visual components extracted from figar.org.",
   "components": {
     "boil": {
@@ -293,7 +293,13 @@
         "filo-help-title",
         "filo-help-close",
         "filo-keys",
-        "filo-status"
+        "filo-status",
+        "filo-docked",
+        "filo-barskin",
+        "filo-barred",
+        "filo-pip",
+        "filo-expand",
+        "filo-close"
       ],
       "files": [
         "filo.css",

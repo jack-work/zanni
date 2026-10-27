@@ -50,7 +50,7 @@ function vtt(img) {
   document.getElementById('stage').appendChild(media);
   window.seeks = [];
   window.events = [];
-  ['filo:seek', 'filo:quality', 'filo:rate', 'filo:bar', 'filo:fullscreen', 'filo:sleep', 'filo:stop'].forEach(function (t) {
+  ['filo:seek', 'filo:quality', 'filo:rate', 'filo:bar', 'filo:fullscreen', 'filo:sleep', 'filo:stop', 'filo:dock', 'filo:expand', 'filo:pip'].forEach(function (t) {
     document.addEventListener(t, function (e) {
       events.push([t, e.detail]);
       if (t === 'filo:seek') seeks.push(e.detail);
@@ -76,6 +76,8 @@ function vtt(img) {
   };
   if (params.get('autohide') != null) opts.autohide = Number(params.get('autohide'));
   if (params.get('boil') === 'off') opts.boil = false;
+  if (params.get('bar')) opts.bar = true;
+  if (params.get('docked')) opts.docked = true;
   var ready = params.get('thumbs') ? sprite().then(function (img) { opts.thumbnails = vtt(img); }) : Promise.resolve();
   ready.then(function () {
     window.player = zanni.filo.attach(media, opts);
