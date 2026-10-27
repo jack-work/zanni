@@ -297,10 +297,14 @@ with sync_playwright() as p:
 
     pg.goto(PAGE)
     pg.evaluate("""() => { const s = document.getElementById('stage'); s.textContent = '';
-      const box = document.createElement('section'); box.id = 'cast'; box.setAttribute('data-filo', '');
+      const box = document.createElement('section'); box.id = 'cast'; box.className = 'cast'; box.setAttribute('data-filo', '');
       const v = document.createElement('video'); box.appendChild(v); s.appendChild(box);
       window.h2 = zanni.filo.attach(v, {fill: true}); }""")
     assert pg.evaluate("h2.root.id") == "cast", "a data-filo parent is the box"
+    pg.evaluate("""() => { const st = document.createElement('style');
+      st.textContent = '#stage{height:600px} .cast{position:fixed;inset:0}'; document.head.prepend(st); }""")
+    pos = pg.evaluate("[getComputedStyle(h2.root).position, h2.media.getBoundingClientRect().top]")
+    assert pos == ["fixed", 0], f"the page's own position for its box wins over filo's, got {pos}"
     pg.evaluate("h2.detach()")
     assert pg.evaluate("document.querySelector('#cast > video') !== null && !document.querySelector('#cast').classList.contains('filo')")
 

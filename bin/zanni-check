@@ -121,6 +121,10 @@ function filo() {
   const own = (block.match(/<style[^>]*>([\s\S]*?)<\/style>/g) || []).join('\n');
   const script = (block.match(/<script[^>]*>([\s\S]*?)<\/script>/g) || []).join('\n');
   const rules = own.match(/[^{}]+\{[^{}]*\}/g) || [];
+  check('the box takes position from the page when the page gives one',
+    /:where\(\.filo\)\s*\{[^{}]*position:\s*relative/.test(own)
+      && !rules.some((r) => /(^|,)\s*\.filo\s*$/.test(r.split('{')[0].trim()) && /position\s*:/.test(r)),
+    'a page that wears data-filo on a fixed box lost it to .filo { position: relative }, and the player fell offscreen');
   check('the track keeps a visible focus ring',
     /\.filo-track:focus-visible\s+\.filo-rail\s*\{[^{}]*outline:/.test(own));
   check('hidden chrome stays focusable and takes no pointer',

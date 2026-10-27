@@ -16,12 +16,15 @@
   --filo-focus: var(--z-focus, #b8862b);
   --filo-shadow: var(--z-shadow, rgba(43, 26, 21, 0.3));
   --filo-fade: 0.25s;
-  position: relative;
-  display: block;
-  overflow-x: clip;
   color: var(--filo-ink);
   font-family: var(--filo-prose);
   -webkit-tap-highlight-color: transparent;
+}
+
+:where(.filo) {
+  position: relative;
+  display: block;
+  overflow-x: clip;
 }
 
 .filo-video {
