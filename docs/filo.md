@@ -59,7 +59,7 @@ and leaves the media element where it was found.
 | `boil` | true | boil the paused centre cluster when the page carries boil |
 | `fill` | false | picture fills the box, letterboxed |
 | `docked` | false | start as the bottom bar |
-| `bar` | false | the watch layout: the picture with the bar's controls under it, never hiding |
+| `bar` | false | theater mode: the picture with the bar's controls under it, never hiding. Fullscreen from it is the ordinary overlay player |
 
 The page owns the media element: its `src`, hls.js, the poster, saving the
 position, and switching quality. filo never calls `play()` unless asked:

@@ -385,6 +385,20 @@ with sync_playwright() as p:
     pg.evaluate("player.dock(false)")
     assert has(pg, "filo-barred"), "undocking returns to the watch layout"
 
+    ready(pg, "?bar=1&autohide=300")
+    play(pg)
+    pg.keyboard.press("f")
+    pg.wait_for_function("document.fullscreenElement === document.querySelector('.filo')", timeout=3000)
+    assert not has(pg, "filo-barred") and not has(pg, "filo-barskin"), "fullscreen from the watch layout is the overlay player"
+    assert pg.evaluate("getComputedStyle(document.querySelector('.filo-chrome')).position") == "absolute"
+    v = pg.evaluate("[player.media.getBoundingClientRect().height, innerHeight]")
+    assert v[0] == v[1], f"the picture takes the whole screen, got {v}"
+    pg.wait_for_function(f"!{ROOT}.classList.contains('filo-active')", timeout=3000)
+    pg.keyboard.press("f")
+    pg.wait_for_function("!document.fullscreenElement", timeout=3000)
+    assert has(pg, "filo-barred") and pg.evaluate("player.shown"), "leaving fullscreen returns to the watch layout, bar showing"
+    pause(pg)
+
     ctx = b.new_context(has_touch=True, viewport={"width": 390, "height": 800})
     ph = ctx.new_page()
     ready(ph, "?autohide=300")

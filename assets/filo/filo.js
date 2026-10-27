@@ -176,7 +176,8 @@
     var qualities = opts.qualities || [], quality = opts.quality == null ? null : String(opts.quality);
     var audioMode = function () { return item.kind === 'audio'; };
     var docked = false, dockSaved = null, barSkin = !!opts.bar;
-    var autohide = function () { return docked || barSkin ? 0 : opts.autohide == null ? (audioMode() ? 0 : 2500) : opts.autohide; };
+    var barred = function () { return barSkin && !docked && fullscreenElement() !== box; };
+    var autohide = function () { return docked || barred() ? 0 : opts.autohide == null ? (audioMode() ? 0 : 2500) : opts.autohide; };
 
     var parent = media.parentElement;
     var created = !(parent && parent.hasAttribute('data-filo') && parent !== media);
@@ -399,6 +400,8 @@
 
     function paintFull() {
       var full = fullscreenElement() === box;
+      paintSkin();
+      if (full) wake();
       box.classList.toggle('filo-fullscreen', full);
       setIcon($.full, full ? 'unfull' : 'full');
       var label = full ? 'Exit fullscreen' : 'Fullscreen';
@@ -619,8 +622,8 @@
     }
 
     function paintSkin() {
-      box.classList.toggle('filo-barskin', docked || barSkin);
-      box.classList.toggle('filo-barred', barSkin && !docked);
+      box.classList.toggle('filo-barskin', docked || barred());
+      box.classList.toggle('filo-barred', barred());
     }
 
     function dockHeight() {
@@ -1041,7 +1044,7 @@
         if (e.target === media) emit('filo:expand', {});
         return;
       }
-      if (barSkin) {
+      if (barred()) {
         if (e.target === media) toggle();
         return;
       }
