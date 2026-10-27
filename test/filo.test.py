@@ -116,7 +116,8 @@ with sync_playwright() as p:
     assert not pg.evaluate("document.querySelector('.filo').classList.contains('filo-hidden')"), "a seek key brings the bar back"
     settle(pg)
 
-    pg.locator(".filo-track").focus()
+    pg.evaluate("player.focus()")
+    assert pg.evaluate("document.activeElement.className") == "filo-track", "focus() lands on the one stop"
     pg.keyboard.press("ArrowDown")
     assert pg.evaluate("document.activeElement.className") == "filo-track", "hiding the bar keeps its focus"
     pg.keyboard.press("ArrowUp")

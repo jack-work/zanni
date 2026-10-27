@@ -295,6 +295,7 @@
       stop: stop,
       setItem: setItem,
       mute: function () { media.muted = !media.muted; },
+      focus: function () { $.track.focus({ preventScroll: true }); },
       get shown() { return shown; },
       get pending() { return pending; },
       detach: function () {

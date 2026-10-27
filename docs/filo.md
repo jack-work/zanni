@@ -42,6 +42,8 @@ hls.js; filo only reads and seeks it.
 | `showBar(bool)` | show or hide the bar |
 | `stop()` | pause, hide, fire `filo:stop` |
 | `setItem({title, chapters, duration})` | replace what the bar describes |
+| `focus()` | put focus on the track, so OK and Space cannot press a control left focused behind the player |
+| `shown` | whether the bar is showing; read it rather than tracking `filo:bar`, which does not fire at attach |
 | `detach()` | remove listeners and markup |
 
 Events bubble from the bar: `filo:seek {from, to}` once per committed seek,
