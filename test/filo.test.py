@@ -1,25 +1,41 @@
-"""filo in a real browser: one focus stop, the keymap, held keys that commit one
-seek, pointer and touch scrubbing that seek once on release, focus-scoped keys,
-show and hide, chapters, and that typing in a field is never a seek."""
+"""filo in a real browser. The keymap and the one-seek-per-gesture rule, the
+chrome's life (shown on pause, the bottom bar only while playing, gone on
+idle, on the pointer leaving and on focus leaving), the fill following a drag,
+the menu (speed, quality, sleep, chapters), help, fullscreen, thumbnails,
+the audio card, touch, and detach putting the media element back."""
 import os
 import sys
 
 from playwright.sync_api import sync_playwright
 
 PAGE = "file://" + os.path.abspath(sys.argv[1])
+MEDIA = "document.getElementById('media')"
+ROOT = "document.querySelector('.filo')"
 
 
 def now(pg):
-    return pg.evaluate("document.getElementById('media').currentTime")
+    return pg.evaluate(f"{MEDIA}.currentTime")
 
 
 def seeks(pg):
     return pg.evaluate("seeks.length")
 
 
+def has(pg, cls):
+    return pg.evaluate(f"{ROOT}.classList.contains('{cls}')")
+
+
+def opacity(pg, sel):
+    return float(pg.evaluate(f"getComputedStyle(document.querySelector('{sel}')).opacity"))
+
+
+def events(pg, name):
+    return pg.evaluate(f"events.filter(e => e[0] === '{name}').map(e => e[1])")
+
+
 def ready(pg, query=""):
     pg.goto(PAGE + query)
-    pg.wait_for_function("document.getElementById('media').readyState >= 1 && document.getElementById('media').duration > 500")
+    pg.wait_for_function(f"window.player && {MEDIA}.readyState >= 1 && {MEDIA}.duration > 500")
 
 
 def near(a, b, tol=0.6):
@@ -31,43 +47,58 @@ def settle(pg):
 
 
 def at(pg, t):
-    pg.evaluate(f"document.getElementById('media').currentTime = {t}")
-    pg.wait_for_function(f"Math.abs(document.getElementById('media').currentTime - {t}) < 0.5")
+    pg.evaluate(f"{MEDIA}.currentTime = {t}")
+    pg.wait_for_function(f"Math.abs({MEDIA}.currentTime - {t}) < 0.5")
     pg.evaluate("seeks.length = 0")
+
+
+def play(pg):
+    pg.evaluate("player.toggle()")
+    pg.wait_for_function(f"!{MEDIA}.paused")
+
+
+def pause(pg):
+    pg.evaluate(f"{MEDIA}.pause()")
+    pg.wait_for_function(f"{MEDIA}.paused")
 
 
 with sync_playwright() as p:
     b = p.chromium.launch(args=["--no-sandbox", "--autoplay-policy=no-user-gesture-required"])
-    pg = b.new_page()
+    pg = b.new_page(viewport={"width": 1000, "height": 760})
+    errors = []
+    pg.on("pageerror", lambda e: errors.append(str(e)))
     ready(pg)
 
-    stops = pg.evaluate("""() => [...document.querySelectorAll('.filo *')].filter(n => n.tabIndex >= 0).map(n => n.className)""")
-    assert stops == ["filo-track"], f"the bar is one focus stop, got {stops}"
+    assert pg.evaluate(f"{MEDIA}.parentElement === {ROOT}"), "attach wraps the media element"
+    assert not pg.evaluate(f"{MEDIA}.hasAttribute('controls')")
+    assert pg.evaluate(f"{MEDIA}.paused"), "attaching never plays"
+    assert has(pg, "filo-video") and has(pg, "filo-paused") and has(pg, "filo-active")
+    assert opacity(pg, ".filo-center") == 1, "paused shows the centre cluster"
+    first = pg.evaluate("""() => { const t = [...document.querySelectorAll('.filo [tabindex], .filo button, .filo input')]
+      .filter(n => n.tabIndex >= 0 && n.offsetParent); return t[0] && t[0].className }""")
+    assert "filo-track" in first, f"the scrubber is the first stop, got {first}"
     assert pg.evaluate("document.querySelector('.filo-track').getAttribute('role')") == "slider"
     text = pg.evaluate("document.querySelector('.filo-track').getAttribute('aria-valuetext')")
-    assert text == "0:00 of 10:00, Overture", text
-    assert pg.locator(".filo-tick").count() == 3, "a notch for every chapter after the first"
+    assert text == "0:00 of 10:00, Sinfonia", text
+    assert pg.locator(".filo-tick").count() == 3
 
     pg.keyboard.press("l")
     assert near(now(pg), 0), "a key previews before it seeks"
-    assert pg.evaluate("document.querySelector('.filo').classList.contains('filo-previewing')")
+    fill = pg.evaluate("document.querySelector('.filo-played').style.transform")
+    assert fill.startswith("scaleX(0.016"), f"the fill follows the held target, got {fill}"
     settle(pg)
-    assert near(now(pg), 10), now(pg)
-    assert seeks(pg) == 1
+    assert near(now(pg), 10) and seeks(pg) == 1
 
     at(pg, 100)
     for _ in range(6):
         pg.keyboard.press("l")
     settle(pg)
-    assert near(now(pg), 160), now(pg)
-    assert seeks(pg) == 1, f"six presses inside the window commit once, got {seeks(pg)}"
+    assert near(now(pg), 160) and seeks(pg) == 1, f"six presses commit once: {now(pg)}, {seeks(pg)}"
 
     for key, start, want in [
         ("h", 100, 90), ("H", 100, 70), ("L", 100, 130),
-        ("ArrowLeft", 100, 90), ("ArrowRight", 100, 110),
-        ("Shift+ArrowRight", 100, 130),
-        ("Alt+l", 100, 101), ("Alt+h", 100, 99),
-        ("Control+l", 100, 101), ("Control+h", 100, 99),
+        ("ArrowLeft", 100, 90), ("ArrowRight", 100, 110), ("Shift+ArrowRight", 100, 130),
+        ("Alt+l", 100, 101), ("Alt+h", 100, 99), ("Control+l", 100, 101), ("Control+h", 100, 99),
     ]:
         at(pg, start)
         pg.keyboard.press(key)
@@ -85,93 +116,223 @@ with sync_playwright() as p:
         assert near(now(pg), want), f"{key} from {start}: {now(pg)}, want {want}"
         assert seeks(pg) == 1
 
-    for key, start, want in [("MediaRewind", 100, 70), ("MediaFastForward", 100, 130)]:
-        at(pg, start)
+    for key, want in [("MediaRewind", 70), ("MediaFastForward", 130)]:
+        at(pg, 100)
         pg.evaluate(f"document.body.dispatchEvent(new KeyboardEvent('keydown', {{key: '{key}', bubbles: true}}))")
         settle(pg)
         assert near(now(pg), want), f"{key}: {now(pg)}"
 
     pg.keyboard.press("m")
-    assert pg.evaluate("document.getElementById('media').muted")
+    assert pg.evaluate(f"{MEDIA}.muted")
+    assert pg.evaluate("document.querySelector('.filo-mute').getAttribute('aria-label')") == "Unmute"
     pg.keyboard.press("m")
-    assert not pg.evaluate("document.getElementById('media').muted")
+    assert not pg.evaluate(f"{MEDIA}.muted")
+
+    pg.keyboard.press(">")
+    assert pg.evaluate(f"{MEDIA}.playbackRate") == 1.25
+    pg.keyboard.press("<")
+    pg.keyboard.press("<")
+    assert pg.evaluate(f"{MEDIA}.playbackRate") == 0.75
+    assert [e["rate"] for e in events(pg, "filo:rate")] == [1.25, 1, 0.75]
+    pg.evaluate("player.rate(1)")
 
     pg.keyboard.press("Space")
-    pg.wait_for_function("!document.getElementById('media').paused")
-    assert pg.evaluate("document.querySelector('.filo-play').getAttribute('aria-label')") == "Pause"
+    pg.wait_for_function(f"!{MEDIA}.paused")
+    pg.wait_for_function("document.querySelector('.filo-play').getAttribute('aria-label') === 'Pause'", timeout=2000)
     pg.keyboard.press("Space")
-    pg.wait_for_function("document.getElementById('media').paused")
-    pg.evaluate("""() => { const e = new KeyboardEvent('keydown', {key: 'Unidentified', bubbles: true}); Object.defineProperty(e, 'keyCode', {value: 179}); document.body.dispatchEvent(e); }""")
-    pg.wait_for_function("!document.getElementById('media').paused")
-    pg.evaluate("player.toggle()")
-    pg.wait_for_function("document.getElementById('media').paused")
-
-    pg.keyboard.press("ArrowDown")
-    assert pg.evaluate("document.querySelector('.filo').classList.contains('filo-hidden')")
-    pg.keyboard.press("ArrowUp")
-    assert not pg.evaluate("document.querySelector('.filo').classList.contains('filo-hidden')")
-    pg.keyboard.press("ArrowDown")
-    at(pg, 100)
-    pg.keyboard.press("l")
-    assert not pg.evaluate("document.querySelector('.filo').classList.contains('filo-hidden')"), "a seek key brings the bar back"
-    settle(pg)
-
-    pg.evaluate("player.focus()")
-    assert pg.evaluate("document.activeElement.className") == "filo-track", "focus() lands on the one stop"
-    pg.keyboard.press("ArrowDown")
-    assert pg.evaluate("document.activeElement.className") == "filo-track", "hiding the bar keeps its focus"
-    pg.keyboard.press("ArrowUp")
+    pg.wait_for_function(f"{MEDIA}.paused")
+    pg.evaluate("""() => { const e = new KeyboardEvent('keydown', {key: 'Unidentified', bubbles: true});
+      Object.defineProperty(e, 'keyCode', {value: 179}); document.body.dispatchEvent(e); }""")
+    pg.wait_for_function(f"!{MEDIA}.paused")
+    pause(pg)
 
     at(pg, 100)
     pg.locator("#field").focus()
-    pg.keyboard.type("hl5$ ")
+    pg.keyboard.type("hl5$ f?m")
     settle(pg)
     assert near(now(pg), 100) and seeks(pg) == 0, "typing in a field is never a seek"
-    assert pg.evaluate("document.getElementById('field').value") == "hl5$ "
+    assert pg.evaluate("document.getElementById('field').value") == "hl5$ f?m"
+    assert not pg.evaluate("player.open")
 
-    box = pg.locator(".filo-rail").bounding_box()
-    y = box["y"] + box["height"] / 2
+    ready(pg, "?autohide=300")
+    box = pg.locator(".filo").bounding_box()
+    pg.mouse.move(box["x"] + 200, box["y"] + 100)
+    play(pg)
+    pg.wait_for_function(f"!{ROOT}.classList.contains('filo-active')", timeout=3000)
+    pg.wait_for_timeout(400)
+    assert opacity(pg, ".filo-chrome") == 0, "idle while playing hides the chrome"
+    pg.mouse.move(box["x"] + 260, box["y"] + 140)
+    assert has(pg, "filo-active"), "the pointer brings the chrome back"
+    pg.wait_for_timeout(400)
+    assert opacity(pg, ".filo-center") == 0, "but not the centre cluster while playing"
+    pg.wait_for_function(f"!{ROOT}.classList.contains('filo-active')", timeout=3000)
+    pg.mouse.move(box["x"] + 300, box["y"] + 140)
+    assert has(pg, "filo-active")
+    pg.mouse.move(box["x"] + 300, box["y"] + box["height"] + 120)
+    assert not has(pg, "filo-active"), "the pointer leaving hides it at once"
+    pg.locator(".filo-track").focus()
+    pg.keyboard.press("l")
+    assert has(pg, "filo-active"), "a key brings it back"
+    settle(pg)
+    pg.locator("#field").focus()
+    assert not has(pg, "filo-active"), "focus leaving hides it at once"
+    pause(pg)
+    assert has(pg, "filo-active"), "pausing shows it"
+    pg.wait_for_timeout(700)
+    assert has(pg, "filo-active") and opacity(pg, ".filo-center") == 1, "and it stays while paused"
+
+    pg.evaluate("player.focus()")
+    pg.keyboard.press("ArrowDown")
+    assert not pg.evaluate("player.shown")
+    pg.keyboard.press("ArrowUp")
+    assert pg.evaluate("player.shown")
+    pg.evaluate("player.focus()")
+    pg.keyboard.press("ArrowDown")
+    assert pg.evaluate("document.activeElement.className") == "filo-track", "hiding keeps focus on the stop"
+    pg.keyboard.press("ArrowUp")
+
+    ready(pg)
+    rail = pg.locator(".filo-rail").bounding_box()
+    y = rail["y"] + rail["height"] / 2
     at(pg, 100)
-    pg.mouse.move(box["x"] + box["width"] * 0.25, y)
+    pg.mouse.move(rail["x"] + rail["width"] * 0.25, y)
     pg.mouse.down()
-    pg.mouse.move(box["x"] + box["width"] * 0.5, y, steps=5)
-    pg.mouse.move(box["x"] + box["width"] * 0.75, y, steps=5)
+    pg.mouse.move(rail["x"] + rail["width"] * 0.5, y, steps=5)
+    pg.mouse.move(rail["x"] + rail["width"] * 0.75, y, steps=5)
     assert near(now(pg), 100), "dragging previews, it does not seek"
-    flag = pg.evaluate("document.querySelector('.filo-flag-time').textContent")
-    assert flag == "7:30", flag
+    fill = pg.evaluate("document.querySelector('.filo-played').style.transform")
+    assert fill.startswith("scaleX(0.7"), f"the fill follows the drag, got {fill}"
+    assert pg.evaluate("document.querySelector('.filo-flag-time').textContent") == "7:30"
     pg.mouse.up()
-    assert near(now(pg), 450, 2), now(pg)
-    assert seeks(pg) == 1, f"one drag, one seek, got {seeks(pg)}"
+    assert near(now(pg), 450, 2) and seeks(pg) == 1, f"one drag, one seek: {now(pg)}, {seeks(pg)}"
 
-    pg.mouse.move(box["x"] + box["width"] * 0.1, y)
-    assert pg.evaluate("document.querySelector('.filo').classList.contains('filo-previewing')"), "hover shows the flag"
-    pg.mouse.move(box["x"] + box["width"] * 0.1, y - 200)
-    assert not pg.evaluate("document.querySelector('.filo').classList.contains('filo-previewing')")
+    pg.mouse.move(rail["x"] + rail["width"] * 0.1, y)
+    assert has(pg, "filo-previewing"), "hover shows the flag"
+    fill = pg.evaluate("document.querySelector('.filo-played').style.transform")
+    assert fill.startswith("scaleX(0.75"), "hover does not move the fill"
 
-    ctx = b.new_context(has_touch=True, viewport={"width": 390, "height": 800})
-    ph = ctx.new_page()
-    ready(ph)
-    box = ph.locator(".filo-rail").bounding_box()
-    ph.touchscreen.tap(box["x"] + box["width"] * 0.5, box["y"] + box["height"] / 2)
-    ph.wait_for_function("Math.abs(document.getElementById('media').currentTime - 300) < 3")
-    assert seeks(ph) == 1
-    assert ph.evaluate("getComputedStyle(document.querySelector('.filo-track')).touchAction") == "pan-y"
-    ctx.close()
+    pg.locator(".filo-more").click()
+    assert pg.evaluate("player.open")
+    items = pg.locator(".filo-menu-item").all_text_contents()
+    assert [i.split("\n")[0] for i in items][0].startswith("Speed"), items
+    assert any(i.startswith("Quality") for i in items) and any(i.startswith("Chapters") for i in items), items
+    pg.locator(".filo-menu-item", has_text="Speed").click()
+    pg.locator(".filo-menu-item", has_text="1.5").click()
+    assert pg.evaluate(f"{MEDIA}.playbackRate") == 1.5 and not pg.evaluate("player.open")
+    pg.locator(".filo-more").click()
+    pg.locator(".filo-menu-item", has_text="Quality").click()
+    pg.locator(".filo-menu-item", has_text="720p").click()
+    assert events(pg, "filo:quality") == [{"value": "720"}]
+    pg.locator(".filo-more").click()
+    pg.locator(".filo-menu-item", has_text="Quality").click()
+    assert pg.locator(".filo-menu-item[aria-checked='true']").text_content() == "720p"
+    pg.keyboard.press("Escape")
+    assert pg.evaluate("player.open"), "Escape steps back to the top of the menu first"
+    pg.keyboard.press("Escape")
+    assert not pg.evaluate("player.open")
+    pg.locator(".filo-more").click()
+    pg.locator(".filo-menu-item", has_text="Chapters").click()
+    pg.locator(".filo-menu-item", has_text="Temporale").click()
+    assert near(now(pg), 480)
+    pg.locator(".filo-more").click()
+    pg.keyboard.press("ArrowDown")
+    at_now = now(pg)
+    pg.keyboard.press("ArrowRight")
+    pg.keyboard.press("ArrowLeft")
+    assert near(now(pg), at_now), "arrows inside the menu move through it, they do not seek"
+    pg.mouse.click(box["x"] + 200, box["y"] + 100)
+    assert not pg.evaluate("player.open"), "a click outside closes the menu"
+    assert pg.evaluate(f"{MEDIA}.paused"), "and that click does not also play"
+
+    pg.keyboard.press("?")
+    assert pg.evaluate("player.open")
+    rows = pg.locator(".filo-keys dt").count()
+    assert rows == pg.evaluate("zanni.filo.shortcuts({step:10,big:30,fine:1}).length") and rows >= 12
+    assert "Fullscreen" in pg.locator(".filo-help").text_content()
+    pg.keyboard.press("Escape")
+    assert not pg.evaluate("player.open")
+
+    pg.keyboard.press("f")
+    pg.wait_for_function("document.fullscreenElement === document.querySelector('.filo')", timeout=3000)
+    assert has(pg, "filo-fullscreen")
+    assert pg.evaluate("document.querySelector('.filo-full').getAttribute('aria-label')") == "Exit fullscreen"
+    pg.keyboard.press("f")
+    pg.wait_for_function("!document.fullscreenElement", timeout=3000)
+    assert [e["on"] for e in events(pg, "filo:fullscreen")] == [True, False]
+
+    ready(pg)
+    at(pg, 118)
+    pg.locator(".filo-more").click()
+    pg.locator(".filo-menu-item", has_text="Sleep").click()
+    pg.locator(".filo-menu-item", has_text="End of chapter").click()
+    play(pg)
+    pg.wait_for_function(f"{MEDIA}.paused", timeout=6000)
+    assert now(pg) >= 120, "the sleep timer stops at the chapter's end"
+
+    ready(pg, "?thumbs=1")
+    pg.wait_for_timeout(300)
+    rail = pg.locator(".filo-rail").bounding_box()
+    pg.mouse.move(rail["x"] + rail["width"] * 0.5, rail["y"] + 2)
+    assert has(pg, "filo-framed"), "a thumbnail cue shows in the flag"
+    frame = pg.evaluate("[document.querySelector('.filo-frame').style.backgroundPosition, document.querySelector('.filo-frame').style.width]")
+    assert frame == ["0px -270px", "160px"], frame
 
     ready(pg, "?keys=focus")
     pg.keyboard.press("l")
     settle(pg)
     assert near(now(pg), 0) and seeks(pg) == 0, "without global keys the page keeps its keys"
-    pg.locator(".filo-track").focus()
+    pg.evaluate("player.focus()")
     pg.keyboard.press("l")
     settle(pg)
-    assert near(now(pg), 10), "with focus on the bar the keys seek"
+    assert near(now(pg), 10)
 
-    ready(pg, "?autohide=300")
-    pg.evaluate("player.toggle()")
-    pg.wait_for_function("document.querySelector('.filo').classList.contains('filo-hidden')", timeout=3000)
     pg.evaluate("player.stop()")
-    assert pg.evaluate("document.getElementById('media').paused")
+    assert pg.evaluate(f"{MEDIA}.paused") and not pg.evaluate("player.shown")
+    assert len(events(pg, "filo:stop")) == 1
+    parent = pg.evaluate(f"{MEDIA}.parentElement.id")
+    pg.evaluate("player.detach()")
+    assert pg.evaluate(f"{MEDIA}.parentElement.id") == "stage", "detach puts the media element back"
+    assert pg.evaluate("document.querySelectorAll('.filo, .filo-chrome').length") == 0
+    assert parent == "", parent
 
+    pg.goto(PAGE)
+    pg.evaluate("""() => { const s = document.getElementById('stage'); s.textContent = '';
+      const box = document.createElement('section'); box.id = 'cast'; box.setAttribute('data-filo', '');
+      const v = document.createElement('video'); box.appendChild(v); s.appendChild(box);
+      window.h2 = zanni.filo.attach(v, {fill: true}); }""")
+    assert pg.evaluate("h2.root.id") == "cast", "a data-filo parent is the box"
+    pg.evaluate("h2.detach()")
+    assert pg.evaluate("document.querySelector('#cast > video') !== null && !document.querySelector('#cast').classList.contains('filo')")
+
+    ready(pg, "?kind=audio")
+    assert has(pg, "filo-audio") and pg.evaluate("player.shown")
+    pg.evaluate("player.toggle()")
+    pg.wait_for_function(f"!{MEDIA}.paused")
+    pg.wait_for_timeout(3000)
+    assert pg.evaluate("player.shown"), "the audio card never hides itself"
+    stops = pg.evaluate("""() => [...document.querySelectorAll('.filo button, .filo [tabindex]')]
+      .filter(n => n.tabIndex >= 0 && n.offsetParent).map(n => n.className.replace('filo-button ', ''))""")
+    assert stops[0] == "filo-track" and "filo-play" in stops and "filo-full" not in stops, stops
+    pause(pg)
+
+    ctx = b.new_context(has_touch=True, viewport={"width": 390, "height": 800})
+    ph = ctx.new_page()
+    ready(ph, "?autohide=300")
+    ph.evaluate("player.toggle()")
+    ph.wait_for_function(f"!{MEDIA}.paused")
+    ph.wait_for_function(f"!{ROOT}.classList.contains('filo-active')", timeout=3000)
+    assert ph.evaluate("getComputedStyle(document.querySelector('.filo-chrome')).pointerEvents") == "none", "a hidden bar takes no pointer"
+    box = ph.locator(".filo").bounding_box()
+    ph.touchscreen.tap(box["x"] + 100, box["y"] + 40)
+    assert ph.evaluate(f"{ROOT}.classList.contains('filo-active')") and not ph.evaluate(f"{MEDIA}.paused"), "a tap shows the chrome and does not pause"
+    rail = ph.locator(".filo-rail").bounding_box()
+    ph.evaluate("seeks.length = 0")
+    ph.touchscreen.tap(rail["x"] + rail["width"] * 0.5, rail["y"] + rail["height"] / 2)
+    ph.wait_for_function(f"Math.abs({MEDIA}.currentTime - 300) < 3")
+    assert ph.evaluate("seeks.length") == 1
+    assert ph.evaluate("getComputedStyle(document.querySelector('.filo-track')).touchAction") == "pan-y"
+    ctx.close()
+
+    assert not errors, errors
     b.close()
 print("filo: ok")

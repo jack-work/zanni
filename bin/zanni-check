@@ -116,21 +116,37 @@ for (const name of want) {
 }
 
 function filo() {
-  console.log('[filo] the seeker');
+  console.log('[filo] the player');
+  const block = (html.match(/<!-- zanni:filo begin[\s\S]*?<!-- zanni:filo end -->/) || [''])[0];
+  const own = (block.match(/<style[^>]*>([\s\S]*?)<\/style>/g) || []).join('\n');
+  const script = (block.match(/<script[^>]*>([\s\S]*?)<\/script>/g) || []).join('\n');
+  const rules = own.match(/[^{}]+\{[^{}]*\}/g) || [];
   check('the track keeps a visible focus ring',
-    /\.filo-track:focus-visible\s+\.filo-rail\s*\{[^{}]*outline:/.test(css));
-  check('hiding the bar keeps it focusable',
-    /\.filo-hidden\s*\{[^{}]*opacity:\s*0/.test(css)
-      && !/\.filo-hidden\s*\{[^{}]*(display:\s*none|visibility:\s*hidden)/.test(css),
-    'display or visibility would drop focus off the one stop a D-pad has');
+    /\.filo-track:focus-visible\s+\.filo-rail\s*\{[^{}]*outline:/.test(own));
+  check('hidden chrome stays focusable and takes no pointer',
+    /\.filo-video \.filo-chrome\s*\{[^{}]*opacity:\s*0[^{}]*pointer-events:\s*none/.test(own)
+      && !rules.some((r) => /\.filo-chrome/.test(r.split('{')[0]) && /display:\s*none|visibility:\s*hidden/.test(r)),
+    'display or visibility would drop focus off the stop a D-pad has');
   check('a finger on the track still scrolls the page vertically',
-    /\.filo-track\s*\{[^{}]*touch-action:\s*pan-y/.test(css));
-  check('the slide-away honours reduced motion',
-    /prefers-reduced-motion[\s\S]{0,120}\.filo\s*\{[^{}]*transition:\s*none/.test(css));
-  check('the track is announced as a slider', /role: 'slider'/.test(html));
+    /\.filo-track\s*\{[^{}]*touch-action:\s*pan-y/.test(own));
+  check('the fades honour reduced motion',
+    /prefers-reduced-motion[\s\S]{0,300}\.filo \.filo-chrome[\s\S]{0,200}transition:\s*none/.test(own));
+  check('no filter in the player itself',
+    !rules.some((r) => /filter\s*:/.test(r.split('{')[1] || '')),
+    'a filter on the bar or an ancestor re-rasters it at every timeupdate');
+  check('boil lands only on the centre cluster',
+    (script.match(/'boil-ui'/g) || []).length === 1
+      && /\[\$\.bigBack, \$\.bigPlay, \$\.bigFwd\]\.forEach\(function \(b\) \{\s*b\.classList\.toggle\('boil-ui'/.test(script));
+  check('the fill and the head move by transform',
+    /\$\.played\.style\.transform/.test(script) && /\$\.head\.style\.transform/.test(script)
+      && !/\$\.(played|head|at)\.style\.(width|left)/.test(script));
+  check('nothing a strict CSP refuses',
+    !/innerHTML|outerHTML|insertAdjacentHTML|\beval\(|new Function|setAttribute\('style'|style="/.test(script));
+  check('the track is announced as a slider', /role: 'slider'/.test(script));
   check('a held key commits once, after it is let go',
-    /COMMIT_MS\s*=\s*\d+/.test(html) && /setTimeout\(function \(\) \{ commit\(pending\)/.test(html),
+    /COMMIT_MS\s*=\s*\d+/.test(script) && /setTimeout\(function \(\) \{ commit\(pending\)/.test(script),
     'without the debounce a held key is a Range request per repeat');
+  check('attaching never plays', !/\.play\(\)/.test(script.replace(/function toggle\(\) \{[\s\S]*?\n    \}/, '')));
 }
 
 function stilo() {
