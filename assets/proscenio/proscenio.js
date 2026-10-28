@@ -215,6 +215,7 @@
         d.classList.add('proscenio-drawer');
         if (!d.hasAttribute('data-side')) d.setAttribute('data-side', 'left');
         if (!d.hasAttribute('tabindex')) d.setAttribute('tabindex', '-1');
+        d.proscenioColumn = toggle.getAttribute('aria-expanded') !== 'false';
         drawers.push(d);
       }
       return d;
@@ -225,7 +226,10 @@
       var isOpen = drawer === d;
       var open = v == null ? !isOpen : !!v;
       if (!narrow() && !tv) {
-        emit('proscenio:drawer', { id: d.id, side: d.getAttribute('data-side'), open: open });
+        var shown = column(d, toggle);
+        var want = v == null ? !shown : !!v;
+        setColumn(d, toggle, want);
+        emit('proscenio:drawer', { id: d.id, side: d.getAttribute('data-side'), open: want });
         return;
       }
       if (open === isOpen) return;
@@ -246,15 +250,33 @@
         d.proscenioReturn = document.activeElement;
         var first = d.querySelector(FOCUSABLE) || d;
         first.focus({ preventScroll: true });
-      } else {
-        d.classList.remove('proscenio-drawer-open');
-        if (scrim) scrim.remove();
-        drawer = null;
-        drawerOpen = false;
-        var back = d.proscenioReturn;
-        if (d.contains(document.activeElement) && back && back.focus) back.focus({ preventScroll: true });
-      }
+      } else shut(d, t);
       emit('proscenio:drawer', { id: d.id, side: d.getAttribute('data-side'), open: open });
+    }
+
+    function shut(d, t) {
+      d.classList.remove('proscenio-drawer-open');
+      if (scrim) scrim.remove();
+      if (t) t.setAttribute('aria-expanded', narrow() || tv ? 'false' : String(column(d, t)));
+      drawer = null;
+      drawerOpen = false;
+      var back = d.proscenioReturn;
+      if (d.contains(document.activeElement) && back && back.focus) back.focus({ preventScroll: true });
+    }
+
+    function toggleOf(d) {
+      return slots['drawer-toggle'].filter(function (x) { return x.getAttribute('aria-controls') === d.id; })[0];
+    }
+
+    function column(d) {
+      if (d.proscenioColumn == null) d.proscenioColumn = true;
+      return d.proscenioColumn;
+    }
+
+    function setColumn(d, t, v) {
+      d.proscenioColumn = v;
+      t = t || toggleOf(d);
+      if (t) t.setAttribute('aria-expanded', String(v));
     }
 
     function placeFoldables() {
@@ -396,7 +418,11 @@
       menu(false);
       setHidden(false);
       header.classList.toggle('proscenio-searching', searching && narrow());
-      if (!narrow() && drawerOpen) openDrawer(drawer, false);
+      if (drawerOpen && !narrow() && !tv) shut(drawer, toggleOf(drawer));
+      slots['drawer-toggle'].forEach(function (t) {
+        var d = drawerFor(t);
+        if (d) t.setAttribute('aria-expanded', String(narrow() ? false : column(d, t)));
+      });
       placeFoldables();
       measure();
     };

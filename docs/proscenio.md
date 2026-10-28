@@ -118,8 +118,12 @@ Space belong to the drawer's content, so a panel driven by its own keys keeps
 working, on the TV too, where Escape or Back closes it. Drawers sit below the bar (`top: var(--proscenio-shown)`), not over it, and
 the scrim starts there too. Choosing a link inside the open drawer, or a
 `popstate`, closes it. On wide screens the toggle only fires
-`proscenio:drawer {id, side, open}`, and the page decides whether its column
-shows and persists the choice (keel's `paperd.tree`, `paperd.pane`). aguatv's details drawer uses the same piece from the right
+`proscenio:drawer {id, side, open}`, where `open` is the column's new state:
+proscenio tracks it per drawer, starting from the toggle's `aria-expanded`
+(absent means shown), and the page shows or hides its column and persists
+the choice (keel's `paperd.tree`, `paperd.pane`). Crossing from narrow to
+wide closes an open drawer and its scrim quietly, with no event, so a wide
+page never reads it as a toggle. aguatv's details drawer uses the same piece from the right
 (`data-side="right"`), which is the real drawer Gluck asked for.
 
 ## Keys

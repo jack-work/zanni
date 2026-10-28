@@ -46,7 +46,7 @@ with sync_playwright() as p:
     assert css(wide, "--proscenio-pad") == "0px" and css(wide, "--proscenio-shown") == "0px"
     assert css(wide, "--proscenio-height") == "46px", css(wide, "--proscenio-height")
     wide.locator("#t-tree").click()
-    assert logged(wide, "proscenio:drawer") == [{"id": "tree", "side": "left", "open": True}], "wide toggles only tell the page"
+    assert logged(wide, "proscenio:drawer") == [{"id": "tree", "side": "left", "open": False}], "wide toggles only tell the page, starting from a shown column"
     assert not wide.evaluate("document.querySelector('#tree').classList.contains('proscenio-drawer-open')")
     wide.keyboard.press("/")
     assert wide.evaluate("document.activeElement.id") == "q", "/ focuses search"
@@ -179,6 +179,22 @@ with sync_playwright() as p:
     pg.set_viewport_size({"width": 1280, "height": 700})
     pg.wait_for_timeout(100)
     assert not pg.evaluate("bar.proscenio.hidden") and not pg.evaluate("bar.proscenio.menuOpen"), "crossing 900px clears both"
+    pg.set_viewport_size({"width": 600, "height": 700})
+    pg.wait_for_timeout(100)
+    pg.locator("#t-tree").click()
+    pg.wait_for_timeout(250)
+    assert pg.evaluate("bar.proscenio.drawerOpen")
+    pg.evaluate("log.length = 0")
+    pg.set_viewport_size({"width": 1280, "height": 700})
+    pg.wait_for_timeout(150)
+    assert not pg.evaluate("bar.proscenio.drawerOpen"), "crossing to wide closes an open drawer"
+    assert pg.evaluate("document.querySelectorAll('.proscenio-scrim').length") == 0, "and takes its scrim with it"
+    assert pg.evaluate("document.elementFromPoint(640, 400).className") != "proscenio-scrim"
+    assert logged(pg, "proscenio:drawer") == [], "without telling a wide page to toggle its column"
+    assert pg.evaluate("document.getElementById('t-tree').getAttribute('aria-expanded')") == "true"
+    pg.locator("#t-tree").click()
+    pg.locator("#t-tree").click()
+    assert [e["open"] for e in logged(pg, "proscenio:drawer")] == [False, True], "wide events carry the column's state"
     pg.evaluate("bar.proscenio.destroy()")
     assert pg.evaluate("document.querySelectorAll('.proscenio-row, .proscenio-scrim').length") == 0
     assert pg.evaluate("document.getElementById('cast').parentElement.id") == "bar"
