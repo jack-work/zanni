@@ -53,7 +53,7 @@ or `zanni.proscenio.attach(header, opts)` with the same pieces as elements.
 | slot | meaning | wide | narrow | tv |
 |---|---|---|---|---|
 | `drawer-toggle` | opens the page's drawer | inline | inline, first | absent |
-| `mark` | the site's wordmark, links home | Jacquard | Jacquard, smaller | Jacquard, large |
+| `mark` | the site's wordmark: a link, or a plain span where a link would leave a fenced app | Jacquard | Jacquard, smaller | Jacquard, large |
 | `identity` | where you are: crumbs or "admin · TV" | takes the free space, ellipsises | second line under the mark, or ellipsised | inline |
 | `nav` | sibling pages | inline tabs | in the ⋯ panel | inline, D-pad stops |
 | `search` | the page's own input | inline, grows on focus | a magnifier that opens the field across the whole bar, with ✕ | not rendered |
@@ -62,6 +62,9 @@ or `zanni.proscenio.attach(header, opts)` with the same pieces as elements.
 | `action` | primary controls (cast, reload, comments) | inline | stay in the bar, as icons where they carry one | inline, D-pad stops |
 
 Order is fixed by the component, not by source order, so pages cannot drift.
+Slotted elements are moved, never cloned, so their listeners survive (aguatv's
+cast action is bacchetta's wrapped button). Every slot is optional; a bar with
+only a mark is valid.
 
 ## Modes
 
@@ -71,9 +74,9 @@ Order is fixed by the component, not by source order, so pages cannot drift.
 | ⋯ panel | below 900px | never |
 | search | yes | never |
 | hide on scroll | below 900px | never |
-| type | 1x | `--proscenio-scale` (default 1.5) |
+| type | 1x | `--proscenio-scale` (default 1.5; a page whose root font is already viewport-sized sets 1) |
 | hover and tap affordances | yes | none: no hover colours, no pressed states |
-| focus | Tab order | D-pad: ← → move between stops, ↓ leaves to the page (`proscenio:leave`), ↑ from the page enters at the last stop |
+| focus | Tab order | D-pad: ← → move between stops, ↓ leaves to the page (`proscenio:leave`). Entry is explicit: the page calls `enter()` when its own focus model says so; with no stops it is a no-op |
 | focus ring | after a key, never after a tap (zanni's modality rule) | always |
 
 ## Drawer
@@ -81,7 +84,9 @@ Order is fixed by the component, not by source order, so pages cannot drift.
 `drawer-toggle` names the drawer by `aria-controls`. On narrow screens
 proscenio turns that element into a left drawer over a scrim: width
 min(85vw, 340px), focus moves in and is held there, Escape or the scrim closes
-it and focus returns to the toggle, a swipe left closes it. On wide screens the
+it and focus returns to the toggle, a swipe left closes it. The trap holds Tab only: arrows, Enter and
+Space belong to the drawer's content, so a panel driven by its own keys keeps
+working, on the TV too, where Escape or Back closes it. On wide screens the
 toggle only fires `proscenio:drawer {open}`, and the page decides whether its
 column shows. aguatv's details drawer uses the same piece from the right
 (`data-side="right"`), which is the real drawer Gluck asked for.
@@ -102,9 +107,12 @@ passes `keys: { search: false }`.
 
 `--proscenio-height` on `<html>` is the bar's height. `--proscenio-shown` is
 the same, or 0 while hidden on scroll; use it for sticky offsets and
-`scroll-margin-top`. Events bubble from the header: `proscenio:menu {open}`,
+`scroll-margin-top`. Hide on scroll watches `opts.scroller`: an element, the
+window, or by default any scroll in the document. Its rules run only while the
+header is rendered: a page that hides its header (aguatv's watch and details
+views) is never overridden, and the top-edge tap does nothing then. Events bubble from the header: `proscenio:menu {open}`,
 `proscenio:drawer {open}`, `proscenio:search {open}`, `proscenio:hidden {on}`,
-`proscenio:leave`. The handle: `open(what)`, `close()`, `show()`,
+`proscenio:leave`. The handle: `open(what)`, `close()`, `show()`, `enter()`,
 `setIdentity(nodeOrText)`, `destroy()`.
 
 ## Look
@@ -127,5 +135,12 @@ filter on the bar: it repaints on scroll.
 
 - keel's comments pane is a bottom sheet on phones. Is that a second drawer
   side (`data-side="bottom"`), or does it stay keel's?
-- Does identity go on a second line on phones, or ellipsise on one? keel
-  ellipsises; aguatv's "admin · TV" is short. One line until someone needs two.
+- Identity: one line, ellipsised. Agreed with aguatv.
+
+## Reviews
+
+- aguatv (Ministro de TV IV): accepted with the changes now folded in:
+  explicit `enter()`, a plain-span mark, scale 1 on the receiver, `scroller`,
+  never forcing a hidden header visible, the Tab-only trap, slots moved not
+  cloned.
+- keel (El Taller VI): asked, not yet answered.
