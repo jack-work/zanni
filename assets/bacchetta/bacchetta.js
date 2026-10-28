@@ -24,6 +24,8 @@
     next: 'M12 3h2v10h-2zM4 3h1v10h-1zM5 4h1v8h-1zM6 5h1v6h-1zM7 6h1v4h-1zM8 7h1v2h-1z',
     shrink: 'M1 5h2v1h-2zM13 5h2v1h-2zM2 6h2v1h-2zM12 6h2v1h-2zM3 7h2v1h-2zM11 7h2v1h-2zM4 8h2v1h-2zM10 8h2v1h-2zM5 9h2v1h-2zM9 9h2v1h-2zM6 10h4v1h-4zM7 11h2v1h-2z',
     grow: 'M7 4h2v1h-2zM6 5h4v1h-4zM5 6h2v1h-2zM9 6h2v1h-2zM4 7h2v1h-2zM10 7h2v1h-2zM3 8h2v1h-2zM11 8h2v1h-2zM2 9h2v1h-2zM12 9h2v1h-2zM1 10h2v1h-2zM13 10h2v1h-2z',
+    home: 'M7 1h2v1h-2zM6 2h4v1h-4zM5 3h2v1h-2zM9 3h2v1h-2zM4 4h2v1h-2zM10 4h2v1h-2zM3 5h2v1h-2zM11 5h2v1h-2zM2 6h2v1h-2zM12 6h2v1h-2zM1 7h2v1h-2zM13 7h2v1h-2zM2 8h1v5h-1zM13 8h1v5h-1zM6 9h4v1h-4zM6 10h1v3h-1zM9 10h1v3h-1zM2 13h12v1h-12z',
+    ret: 'M5 1h1v1h-1zM4 2h2v1h-2zM3 3h9v1h-9zM2 4h10v1h-10zM3 5h2v1h-2zM11 5h2v1h-2zM4 6h1v1h-1zM12 6h2v3h-2zM11 9h2v1h-2zM2 10h9v1h-9zM2 11h8v1h-8z',
     close: 'M2 2h2v1h-2zM12 2h2v1h-2zM3 3h2v1h-2zM11 3h2v1h-2zM4 4h2v1h-2zM10 4h2v1h-2zM5 5h2v1h-2zM9 5h2v1h-2zM6 6h4v1h-4zM7 7h2v1h-2zM6 8h4v1h-4zM5 9h2v1h-2zM9 9h2v1h-2zM4 10h2v1h-2zM10 10h2v1h-2zM3 11h2v1h-2zM11 11h2v1h-2zM2 12h2v1h-2zM12 12h2v1h-2z'
   };
 
@@ -203,6 +205,8 @@
       bigFwd: ring('bacchetta-big-fwd', 1, o.big),
       mid: el('div', 'bacchetta-mid'),
       pad: el('div', 'bacchetta-pad', { role: 'group', 'aria-label': 'Direction pad' }),
+      goBack: key('bacchetta-goback', 'Back', 'ret'),
+      home: key('bacchetta-home', 'Home', 'home'),
       up: key('bacchetta-up', 'Up', 'up'),
       left: key('bacchetta-left', 'Left', 'left'),
       ok: key('bacchetta-ok', 'OK', null, 'OK'),
@@ -211,7 +215,7 @@
       side: el('div', 'bacchetta-side'),
       prev: key('bacchetta-wide bacchetta-prev', 'Previous chapter', 'prev', 'chapter'),
       next: key('bacchetta-wide bacchetta-next', 'Next chapter', 'next', 'chapter'),
-      bar: key('bacchetta-wide bacchetta-bar', 'Show or hide the controls on the screen', null, 'bar'),
+      bar: key('bacchetta-wide bacchetta-bar', 'Show or hide the controls on the screen', null, 'controls'),
       stop: key('bacchetta-wide bacchetta-stop', 'Stop', null, 'stop'),
       more: el('details', 'bacchetta-more'),
       summary: el('summary', null, null, 'more'),
@@ -236,7 +240,7 @@
     $.times.append($.elapsed, $.remaining);
     $.now.append($.title, $.chapter, $.track, $.times);
     $.transport.append($.bigBack, $.back, $.play, $.fwd, $.bigFwd);
-    $.pad.append($.up, $.left, $.ok, $.right, $.down);
+    $.pad.append($.goBack, $.up, $.home, $.left, $.ok, $.right, $.down);
     $.side.append($.prev, $.next, $.bar, $.stop);
     $.mid.append($.pad, $.side);
     $.form.append($.path, $.send);
@@ -380,6 +384,8 @@
     on($.prev, 'click', function () { control('chapter', -1); });
     on($.next, 'click', function () { control('chapter', 1); });
     on($.bar, 'click', function () { control('bar'); });
+    on($.goBack, 'click', function () { control('back'); });
+    on($.home, 'click', function () { control('home'); });
     on($.stop, 'click', function () { control('stop'); });
     [['up', 'ArrowUp'], ['down', 'ArrowDown'], ['left', 'ArrowLeft'], ['right', 'ArrowRight'], ['ok', 'Enter']].forEach(function (k) {
       on($[k[0]], 'click', function () { control('key', k[1]); });

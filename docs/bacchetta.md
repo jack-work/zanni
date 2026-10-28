@@ -51,7 +51,9 @@ fill run on from the last one.
 
 Events bubble from `root`. `bacchetta:control {action, value, screen}`, with
 action one of `toggle`, `skip` (±seconds), `seekTo` (seconds), `chapter`
-(±1), `bar`, `stop`, or `key` (`ArrowUp`, `ArrowDown`, `ArrowLeft`,
+(±1), `bar` (labelled controls: show or hide the player's controls on the
+screen), `back` and `home` (the two keys in the D-pad's top corners: a page
+back, and the gallery), `stop`, or `key` (`ArrowUp`, `ArrowDown`, `ArrowLeft`,
 `ArrowRight`, `Enter`, from the D-pad). These are filo's handle names, so a
 browser screen maps them straight across. `bacchetta:path {path, screen}`
 from the folded field. `bacchetta:boil {on}` for the page to persist.

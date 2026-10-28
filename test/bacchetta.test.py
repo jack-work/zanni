@@ -58,6 +58,7 @@ with sync_playwright() as p:
         (".bacchetta-big-back", ["skip", -30]), (".bacchetta-big-fwd", ["skip", 30]),
         (".bacchetta-prev", ["chapter", -1]), (".bacchetta-next", ["chapter", 1]),
         (".bacchetta-bar", ["bar", None]), (".bacchetta-stop", ["stop", None]),
+        (".bacchetta-goback", ["back", None]), (".bacchetta-home", ["home", None]),
         (".bacchetta-up", ["key", "ArrowUp"]), (".bacchetta-left", ["key", "ArrowLeft"]),
         (".bacchetta-ok", ["key", "Enter"]), (".bacchetta-right", ["key", "ArrowRight"]),
         (".bacchetta-down", ["key", "ArrowDown"]),

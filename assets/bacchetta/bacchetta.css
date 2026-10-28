@@ -202,7 +202,9 @@
   gap: 3px;
 }
 
+.bacchetta-goback { grid-area: 1 / 1; }
 .bacchetta-up { grid-area: 1 / 2; }
+.bacchetta-home { grid-area: 1 / 3; }
 .bacchetta-left { grid-area: 2 / 1; }
 .bacchetta-ok { grid-area: 2 / 2; font: 26px var(--bacchetta-display); color: var(--bacchetta-on-accent); background: var(--bacchetta-accent); }
 .bacchetta-right { grid-area: 2 / 3; }
