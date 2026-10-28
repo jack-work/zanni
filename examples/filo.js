@@ -42,7 +42,7 @@ function vtt(img) {
 (function () {
   var params = new URLSearchParams(location.search);
   var kind = params.get('kind') || 'video';
-  var media = document.createElement(kind === 'audio' ? 'audio' : 'video');
+  var media = document.createElement(kind === 'audio' && params.get('tag') !== 'video' ? 'audio' : 'video');
   media.id = 'media';
   media.preload = 'auto';
   if (params.get('poster')) media.poster = params.get('poster');
@@ -58,6 +58,7 @@ function vtt(img) {
   });
   var opts = {
     globalKeys: params.get('keys') !== 'focus',
+    kind: kind === 'audio' ? 'audio' : undefined,
     title: params.get('title') || 'Il barbiere di Siviglia',
     chapters: [
       { start: 0, title: 'Sinfonia' },

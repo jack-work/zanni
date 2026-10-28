@@ -606,7 +606,8 @@
   cursor: pointer;
 }
 
-.filo.filo-barskin > audio { display: none; }
+.filo.filo-barskin > audio,
+.filo.filo-barskin.filo-audio > video { display: none; }
 
 .filo.filo-barskin .filo-top {
   grid-column: 2;

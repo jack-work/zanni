@@ -376,6 +376,8 @@ with sync_playwright() as p:
     pg.evaluate("player.detach()")
     assert pg.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--filo-dock-height')") == ""
 
+    ready(pg, "?kind=audio&tag=video&docked=1")
+    assert pg.evaluate(f"getComputedStyle({MEDIA}).display") == "none", "docked audio in a <video> element draws no tile"
     ready(pg, "?kind=audio&docked=1")
     assert pg.evaluate("player.docked"), "audio can start docked"
     assert pg.evaluate("events.filter(e => e[0] === 'filo:dock').length") == 1
