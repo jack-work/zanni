@@ -134,7 +134,9 @@ with sync_playwright() as p:
     pg.wait_for_timeout(300)
     top = pg.evaluate("Math.round(document.getElementById('tree').getBoundingClientRect().top)")
     assert top == int(css(pg, "--proscenio-shown")[:-2]), f"the drawer sits below the bar, top {top}"
-    assert pg.evaluate("document.activeElement.textContent") == "alpha.go", "focus moves into the drawer"
+    assert pg.evaluate("document.activeElement.id") == "tree", "a tap focuses the drawer itself, so no keyboard rises"
+    pg.keyboard.press("Tab")
+    assert pg.evaluate("document.activeElement.textContent") == "alpha.go", "and Tab enters it"
     pg.keyboard.press("Shift+Tab")
     assert pg.evaluate("document.activeElement.id") == "tree-btn", "Tab wraps inside the drawer"
     pg.keyboard.press("Tab")
@@ -146,6 +148,10 @@ with sync_playwright() as p:
     assert not pg.evaluate("bar.proscenio.hidden"), "an open drawer holds the bar"
     pg.keyboard.press("Escape")
     assert not pg.evaluate("bar.proscenio.drawerOpen") and pg.evaluate("document.activeElement.id") == "t-tree", "Escape closes and returns focus"
+    pg.keyboard.press("Enter")
+    pg.wait_for_timeout(250)
+    assert pg.evaluate("document.activeElement.textContent") == "alpha.go", "opened from the keyboard, focus goes to the first control"
+    pg.keyboard.press("Escape")
     pg.locator("#t-tree").click()
     pg.locator("#tree a").first.click()
     assert not pg.evaluate("bar.proscenio.drawerOpen"), "choosing a link closes the drawer"

@@ -247,7 +247,7 @@
         drawer = d;
         drawerOpen = true;
         d.proscenioReturn = document.activeElement;
-        var first = d.querySelector(FOCUSABLE) || d;
+        var first = html.classList.contains('zanni-pointing') ? d : d.querySelector(FOCUSABLE) || d;
         first.focus({ preventScroll: true });
       } else shut(d, t);
       emit('proscenio:drawer', { id: d.id, side: d.getAttribute('data-side'), open: open });

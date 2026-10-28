@@ -111,7 +111,7 @@ Any number of `drawer-toggle`s, each naming its drawer by `aria-controls`;
 the drawer's `data-side` is `left`, `right` or `bottom` (a 55vh sheet). Only
 one is open at a time. On narrow screens
 proscenio turns that element into a left drawer over a scrim: width
-min(85vw, 340px), focus moves in and is held there, Escape or the scrim closes
+min(85vw, 340px), focus moves in (to the drawer itself when opened by a tap or click, so no phone keyboard rises over a search field; to its first control when opened from the keyboard) and is held there, Escape or the scrim closes
 it and focus returns to the toggle, a swipe toward its side closes it (new for keel: the trap, Escape and
 the swipe). The trap holds Tab only: arrows, Enter and
 Space belong to the drawer's content, so a panel driven by its own keys keeps
