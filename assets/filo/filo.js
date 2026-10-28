@@ -225,6 +225,8 @@
       chrome: el('div', 'filo-chrome'),
       track: el('div', 'filo-track', { role: 'slider', tabindex: '0', 'aria-label': 'Seek', 'aria-valuemin': '0' }),
       rail: el('div', 'filo-rail'),
+      wave: el('canvas', 'filo-wave', { 'aria-hidden': 'true' }),
+      waveLit: el('canvas', 'filo-wave filo-wave-lit', { 'aria-hidden': 'true' }),
       buffers: el('div', 'filo-buffers'),
       played: el('div', 'filo-played'),
       ticks: el('div', 'filo-ticks'),
@@ -269,7 +271,7 @@
     $.top.append($.title, $.chapter);
     $.center.append($.bigBack, $.bigPlay, $.bigFwd);
     $.flag.append($.frame, $.flagTime, $.flagChapter);
-    $.rail.append($.buffers, $.played, $.ticks);
+    $.rail.append($.buffers, $.played, $.wave, $.waveLit, $.ticks);
     $.head.append($.thumb);
     $.at.append($.ghost, $.flag);
     $.track.append($.rail, $.head, $.at);
@@ -284,7 +286,7 @@
     var pending = null, commitTimer = null, hideTimer = null, sleepTimer = null;
     var dragging = false, active = true, lastPointer = 'mouse', swallow = false;
     var sleepMode = 'off', chapterIndex = -2, lastSecond = -1, lastDuration = -1;
-    var thumbs = [], thumbsUrl = null, menuView = null, menuReturn = null;
+    var thumbs = [], thumbsUrl = null, menuView = null, menuReturn = null, wave = null, waveObserver = null;
     var listeners = [];
 
     function on(target, type, fn, options) {
@@ -325,6 +327,39 @@
     function placeFill(f) {
       $.played.style.transform = 'scaleX(' + f + ')';
       $.head.style.transform = 'translateX(' + (f * 100) + '%)';
+      if (wave) $.waveLit.style.clipPath = 'inset(0 ' + ((1 - f) * 100) + '% 0 0)';
+    }
+
+    function drawWave() {
+      if (!wave || !box.classList.contains('filo-waved')) return;
+      var w = $.rail.clientWidth, h = $.rail.clientHeight;
+      if (!w || !h) return;
+      var dpr = window.devicePixelRatio || 1;
+      var cs = getComputedStyle($.wave), lit = getComputedStyle($.waveLit);
+      [[$.wave, cs.color], [$.waveLit, lit.color]].forEach(function (pair) {
+        var c = pair[0];
+        c.width = Math.round(w * dpr);
+        c.height = Math.round(h * dpr);
+        var g = c.getContext('2d');
+        g.setTransform(dpr, 0, 0, dpr, 0, 0);
+        g.clearRect(0, 0, w, h);
+        g.fillStyle = pair[1];
+        var step = 4, bars = Math.max(1, Math.floor(w / step));
+        for (var k = 0; k < bars; k++) {
+          var a = Math.floor(k * wave.length / bars), z = Math.max(a + 1, Math.floor((k + 1) * wave.length / bars));
+          var v = 0;
+          for (var j = a; j < z; j++) if (wave[j] > v) v = wave[j];
+          var bh = Math.max(1, Math.round(Math.sqrt(v / 255) * h));
+          g.fillRect(k * step, Math.round((h - bh) / 2), step - 1, bh);
+        }
+      });
+      placeFill(frac(pending != null ? pending : media.currentTime || 0));
+    }
+
+    function setWave(list) {
+      wave = Array.isArray(list) && list.length ? list.map(function (v) { return Math.max(0, Math.min(255, Number(v) || 0)); }) : null;
+      box.classList.toggle('filo-waved', !!wave);
+      if (wave) drawWave();
     }
 
     function paintTicks() {
@@ -870,6 +905,7 @@
       item.duration = next.duration || 0;
       if (next.kind) item.kind = next.kind;
       if ('thumbnails' in next) loadThumbnails(next.thumbnails);
+      if ('waveform' in next) setWave(next.waveform);
       if ('qualities' in next) { qualities = next.qualities || []; quality = next.quality == null ? null : String(next.quality); }
       $.title.textContent = item.title;
       chapterIndex = -2;
@@ -916,11 +952,12 @@
         clearTimeout(hideTimer);
         clearTimeout(sleepTimer);
         restoreDock();
+        if (waveObserver) waveObserver.disconnect();
         listeners.forEach(function (l) { l[0].removeEventListener(l[1], l[2], l[3]); });
         listeners = [];
         built.forEach(function (n) { n.remove(); });
         box.classList.remove('filo', 'filo-audio', 'filo-video', 'filo-active', 'filo-paused', 'filo-previewing',
-          'filo-held', 'filo-dragging', 'filo-menu-open', 'filo-help-open', 'filo-fullscreen', 'filo-muted', 'filo-framed', 'filo-fill', 'filo-barskin', 'filo-barred');
+          'filo-held', 'filo-dragging', 'filo-menu-open', 'filo-help-open', 'filo-fullscreen', 'filo-muted', 'filo-framed', 'filo-fill', 'filo-barskin', 'filo-barred', 'filo-waved');
         if (hadControls) media.setAttribute('controls', '');
         if (created) {
           if (home.parent) home.parent.insertBefore(media, home.next && home.next.parentNode === home.parent ? home.next : box);
@@ -1096,6 +1133,11 @@
     paintVolume();
     paintFull();
     paintSkin();
+    if (typeof ResizeObserver === 'function') {
+      waveObserver = new ResizeObserver(function () { drawWave(); });
+      waveObserver.observe($.rail);
+    }
+    if (opts.waveform) setWave(opts.waveform);
     if (opts.docked) dock(true);
     media.filo = api;
     return api;

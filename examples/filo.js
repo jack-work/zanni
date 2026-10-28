@@ -78,6 +78,11 @@ function vtt(img) {
   if (params.get('autohide') != null) opts.autohide = Number(params.get('autohide'));
   if (params.get('boil') === 'off') opts.boil = false;
   if (params.get('bar')) opts.bar = true;
+  if (params.get('wave')) {
+    var w = [];
+    for (var i = 0; i < 1024; i++) w.push(Math.round(255 * Math.abs(Math.sin(i / 23)) * (0.4 + 0.6 * Math.abs(Math.sin(i / 157)))));
+    opts.waveform = w;
+  }
   if (params.get('docked')) opts.docked = true;
   var ready = params.get('thumbs') ? sprite().then(function (img) { opts.thumbnails = vtt(img); }) : Promise.resolve();
   ready.then(function () {

@@ -1,6 +1,6 @@
 {
   "name": "zanni",
-  "version": "0.15.4",
+  "version": "0.16.0",
   "description": "Visual components extracted from figar.org.",
   "components": {
     "boil": {
@@ -301,7 +301,10 @@
         "filo-expand",
         "filo-close",
         "filo-back-big",
-        "filo-fwd-big"
+        "filo-fwd-big",
+        "filo-wave",
+        "filo-wave-lit",
+        "filo-waved"
       ],
       "files": [
         "filo.css",
@@ -318,7 +321,8 @@
         "--filo-face",
         "--filo-prose",
         "--filo-display",
-        "--filo-fade"
+        "--filo-fade",
+        "--filo-wave-h"
       ],
       "constructed": true,
       "activator": "data-filo"

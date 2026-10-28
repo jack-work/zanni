@@ -717,6 +717,47 @@
   .filo.filo-docked .filo-more { display: none; }
 }
 
+.filo-wave {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  color: var(--filo-ink);
+  opacity: 0.32;
+}
+
+.filo-wave-lit { color: var(--filo-accent); opacity: 1; }
+
+.filo.filo-waved:not(.filo-barskin) { --filo-wave-h: 40px; }
+.filo.filo-audio.filo-waved:not(.filo-barskin) { --filo-wave-h: 48px; }
+
+.filo.filo-waved:not(.filo-barskin) .filo-wave { display: block; }
+
+.filo.filo-waved:not(.filo-barskin) .filo-track { height: calc(var(--filo-wave-h) + 12px); }
+
+.filo.filo-waved:not(.filo-barskin) .filo-rail,
+.filo.filo-waved:not(.filo-barskin) .filo-track:hover .filo-rail,
+.filo.filo-waved.filo-held:not(.filo-barskin) .filo-rail,
+.filo.filo-waved:not(.filo-barskin) .filo-track:focus-visible .filo-rail {
+  height: var(--filo-wave-h);
+  background: none;
+  box-shadow: none;
+}
+
+.filo.filo-waved:not(.filo-barskin) .filo-played,
+.filo.filo-waved:not(.filo-barskin) .filo-buffers { display: none; }
+
+.filo.filo-waved:not(.filo-barskin) .filo-thumb {
+  width: 3px;
+  height: calc(var(--filo-wave-h) + 8px);
+  background: var(--filo-ink);
+  border: 0;
+  opacity: 1;
+}
+
+.filo.filo-waved:not(.filo-barskin) .filo-ghost { height: calc(var(--filo-wave-h) + 8px); }
+
 @media (prefers-reduced-motion: reduce) {
   .filo,
   .filo .filo-top,

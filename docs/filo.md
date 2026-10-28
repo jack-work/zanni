@@ -59,6 +59,7 @@ and leaves the media element where it was found.
 | `boil` | true | boil the paused centre cluster when the page carries boil |
 | `fill` | false | picture fills the box, letterboxed |
 | `docked` | false | start as the bottom bar |
+| `waveform` | none | 1024 integers 0..255, the loudest sample per slice of the duration; the scrubber becomes the waveform |
 | `bar` | false | theater mode: the picture with the bar's controls under it, never hiding. Fullscreen from it is the ordinary overlay player |
 
 The page owns the media element: its `src`, hls.js, the poster, saving the
@@ -82,7 +83,7 @@ attaching does not start anything.
 | `pip(bool?)` | the browser's picture in picture for the video |
 | `globalKeys(bool)` | change the key scope after attach |
 | `menu(bool?)`, `help(bool?)` | the settings menu, the key list |
-| `setItem({title, chapters, duration, kind, thumbnails, qualities, quality})` | describe a new item |
+| `setItem({title, chapters, duration, kind, thumbnails, qualities, quality, waveform})` | describe a new item |
 | `setQualities(list, current)` | replace the Quality menu |
 | `focus()` | focus the scrubber, so OK and Space reach the player |
 | `detach()` | undo everything |
@@ -117,6 +118,19 @@ Hiding is opacity with `pointer-events: none`, never `display` or
 Audio has no picture to cover, so it is a card that never hides: title,
 chapter, scrubber, elapsed and remaining, and a row of volume, -10, play, +10
 and the menu.
+
+## Waveform
+
+With `waveform`, the scrubber is the sound: 3px pixel bars with 1px gaps,
+each the loudest of its share of the bins, scaled by the square root so quiet
+speech still shows. Played bars in the accent, the rest dimmed, the head a
+3px ink line; the flag, the drag and one seek per gesture are as before. 40px
+tall over video, 48px in the audio card. The docked bar keeps its thin line,
+and theater keeps its bar until the theater audio layout lands.
+
+It is drawn on two canvases only when the size or the data changes; per tick
+only the lit canvas's clip moves. juglar computes the values at ingest and
+serves them inline as `waveform` on `/api/item`.
 
 ## Docked
 

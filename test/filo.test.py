@@ -376,6 +376,26 @@ with sync_playwright() as p:
     pg.evaluate("player.detach()")
     assert pg.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--filo-dock-height')") == ""
 
+    ready(pg, "?kind=audio&wave=1")
+    assert has(pg, "filo-waved") and pg.evaluate("getComputedStyle(document.querySelector('.filo-wave')).display") == "block"
+    ink = pg.evaluate("""() => { const c = document.querySelector('.filo-wave-lit'); const g = c.getContext('2d');
+      const d = g.getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i]) n++; return n }""")
+    assert ink > 1000, f"the waveform is drawn, {ink} lit pixels"
+    h = pg.evaluate("Math.round(document.querySelector('.filo-rail').getBoundingClientRect().height)")
+    assert h == 48, f"the audio card's waveform is 48px tall, got {h}"
+    at(pg, 300)
+    pg.wait_for_timeout(200)
+    clip = pg.evaluate("document.querySelector('.filo-wave-lit').style.clipPath")
+    assert clip.startswith("inset(0px 50%") or clip.startswith("inset(0 50%"), f"the lit half follows the time, got {clip}"
+    rail = pg.locator(".filo-rail").bounding_box()
+    pg.mouse.move(rail["x"] + rail["width"] * 0.75, rail["y"] + rail["height"] / 2)
+    assert pg.evaluate("document.querySelector('.filo-flag-time').textContent") == "7:30", "the flag reads the waveform's time"
+    pg.evaluate("player.dock(true)")
+    assert pg.evaluate("getComputedStyle(document.querySelector('.filo-wave')).display") == "none", "the docked bar keeps its line"
+    pg.evaluate("player.dock(false)")
+    pg.evaluate("player.setItem({title: 'next', waveform: null})")
+    assert not has(pg, "filo-waved"), "an item without a waveform gets the plain bar"
+
     ready(pg, "?kind=audio&tag=video&docked=1")
     assert pg.evaluate(f"getComputedStyle({MEDIA}).display") == "none", "docked audio in a <video> element draws no tile"
     ready(pg, "?kind=audio&docked=1")
