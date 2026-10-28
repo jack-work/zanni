@@ -54,6 +54,18 @@
 :root[data-scheme=light] { color-scheme: light; }
 :root[data-scheme=dark] { color-scheme: dark; }
 
+:root,
+.gesso,
+.gesso-stage {
+  scrollbar-color: var(--z-accent) var(--z-ground-2);
+}
+
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar { width: 12px; height: 12px; background: var(--z-ground-2); }
+  ::-webkit-scrollbar-thumb { background: var(--z-accent); border: 2px solid var(--z-ground-2); }
+  ::-webkit-scrollbar-corner { background: var(--z-ground-2); }
+}
+
 .gesso {
   background-color: var(--z-ground);
   background-image: repeating-conic-gradient(var(--z-grain) 0% 25%, transparent 0% 50%);

@@ -264,6 +264,8 @@ function glyphmark() {
 
 function gesso() {
   console.log('[gesso] the ground');
+  check('scrollbars wear the palette',
+    /:root,\s*\.gesso,\s*\.gesso-stage\s*\{[^{}]*scrollbar-color:\s*var\(--z-accent\)/.test(css));
   check('the dither is a conic checker, not an image',
     /repeating-conic-gradient\(\s*var\(--z-grain\)/.test(css));
   check('the checker has a cell size', /background-size:\s*var\(--gesso-cell\)/.test(css));
