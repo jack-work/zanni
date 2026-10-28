@@ -238,7 +238,6 @@
       if (t) t.setAttribute('aria-expanded', String(open));
       if (open) {
         menu(false);
-        setHidden(false);
         if (!scrim) {
           scrim = el('div', 'proscenio-scrim');
           scrim.addEventListener('click', function () { if (drawer) openDrawer(drawer, false); });

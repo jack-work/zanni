@@ -116,7 +116,9 @@ it and focus returns to the toggle, a swipe toward its side closes it (new for k
 the swipe). The trap holds Tab only: arrows, Enter and
 Space belong to the drawer's content, so a panel driven by its own keys keeps
 working, on the TV too, where Escape or Back closes it. Drawers sit below the bar (`top: var(--proscenio-shown)`), not over it, and
-the scrim starts there too. Choosing a link inside the open drawer, or a
+the scrim starts there too. Opening a drawer, from a toggle or from code, leaves the bar's
+hide state alone: keel opens its comments sheet when a selection starts a
+comment, often under the hidden bar, and a selection must never move the bar. Choosing a link inside the open drawer, or a
 `popstate`, closes it. On wide screens the toggle only fires
 `proscenio:drawer {id, side, open}`, where `open` is the column's new state:
 proscenio tracks it per drawer, starting from the toggle's `aria-expanded`

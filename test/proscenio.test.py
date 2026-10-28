@@ -164,6 +164,16 @@ with sync_playwright() as p:
     pg.locator("#send").focus()
     pg.keyboard.press("Escape")
     assert not pg.evaluate("bar.proscenio.drawerOpen")
+    scroll(pg, 0)
+    scroll(pg, 1400)
+    assert pg.evaluate("bar.proscenio.hidden")
+    pg.evaluate("bar.proscenio.open(document.getElementById('pane'))")
+    pg.wait_for_timeout(250)
+    assert pg.evaluate("bar.proscenio.drawerOpen") and pg.evaluate("bar.proscenio.hidden"), "opening a drawer from code leaves the hidden bar hidden"
+    scrim_top = pg.evaluate("Math.round(document.querySelector('.proscenio-scrim').getBoundingClientRect().top)")
+    assert scrim_top == 0, f"the scrim follows the hidden bar, top {scrim_top}"
+    pg.evaluate("bar.proscenio.close()")
+    scroll(pg, 0)
     pg.locator("#t-tree").click()
     pg.evaluate("history.pushState({}, '', '#elsewhere'); dispatchEvent(new PopStateEvent('popstate'))")
     assert not pg.evaluate("bar.proscenio.drawerOpen"), "a route change closes the drawer"
