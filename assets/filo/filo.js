@@ -153,12 +153,22 @@
     ];
   }
 
+  function watchModality() {
+    var html = document.documentElement;
+    if (html.hasAttribute('data-zanni-modality')) return;
+    html.setAttribute('data-zanni-modality', '');
+    if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) html.classList.add('zanni-pointing');
+    document.addEventListener('pointerdown', function () { html.classList.add('zanni-pointing'); }, true);
+    document.addEventListener('keydown', function () { html.classList.remove('zanni-pointing'); }, true);
+  }
+
   function hasBoil() {
     return !!document.getElementById('pixel-ui');
   }
 
   function attach(media, opts) {
     if (!media || !/^(VIDEO|AUDIO)$/.test(media.tagName)) return null;
+    watchModality();
     if (media.filo) return media.filo;
     opts = opts || {};
     var o = {
@@ -228,8 +238,10 @@
       flagChapter: el('span', 'filo-flag-chapter'),
       row: el('div', 'filo-row'),
       play: button('filo-play', 'Play', 'play'),
+      backBig: skipButton('filo-back-big', -1, o.big),
       back: skipButton('filo-back', -1, o.step),
       fwd: skipButton('filo-fwd', 1, o.step),
+      fwdBig: skipButton('filo-fwd-big', 1, o.big),
       volume: el('div', 'filo-volume'),
       mute: button('filo-mute', 'Mute', 'vol'),
       level: el('input', 'filo-level', { type: 'range', min: '0', max: '1', step: '0.05', 'aria-label': 'Volume' }),
@@ -262,7 +274,7 @@
     $.at.append($.ghost, $.flag);
     $.track.append($.rail, $.head, $.at);
     $.volume.append($.mute, $.level);
-    $.row.append($.play, $.back, $.fwd, $.volume, $.elapsed, $.sep, $.total, $.remaining, $.now, $.gap, $.more, $.pip, $.full, $.expand, $.close);
+    $.row.append($.play, $.backBig, $.back, $.fwd, $.fwdBig, $.volume, $.elapsed, $.sep, $.total, $.remaining, $.now, $.gap, $.more, $.pip, $.full, $.expand, $.close);
     $.chrome.append($.track, $.row);
     var built = [$.top, $.center, $.chrome, $.menu, $.help, $.status];
     built.forEach(function (n) { box.appendChild(n); });
@@ -977,6 +989,8 @@
     on($.play, 'click', toggle);
     on($.bigPlay, 'click', function (e) { e.stopPropagation(); toggle(); });
     on($.back, 'click', function () { skip(-o.step); });
+    on($.backBig, 'click', function () { skip(-o.big); });
+    on($.fwdBig, 'click', function () { skip(o.big); });
     on($.fwd, 'click', function () { skip(o.step); });
     on($.bigBack, 'click', function (e) { e.stopPropagation(); skip(-o.step); });
     on($.bigFwd, 'click', function (e) { e.stopPropagation(); skip(o.step); });

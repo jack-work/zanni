@@ -189,6 +189,13 @@ with sync_playwright() as p:
     pg.evaluate("player.focus()")
     pg.keyboard.press("ArrowDown")
     assert pg.evaluate("document.activeElement.className") == "filo-track", "hiding keeps focus on the stop"
+    ring = "getComputedStyle(document.querySelector('.filo-rail')).outlineStyle"
+    assert pg.evaluate(ring) == "solid", "a keyboard user sees the focus ring"
+    pg.mouse.click(5, 5)
+    pg.evaluate("player.focus()")
+    assert pg.evaluate(ring) == "none", "after a tap or click the ring stays away"
+    pg.keyboard.press("Shift")
+    assert pg.evaluate(ring) == "solid", "and a key brings it back"
     pg.keyboard.press("ArrowUp")
 
     ready(pg)
@@ -310,6 +317,12 @@ with sync_playwright() as p:
 
     ready(pg, "?kind=audio")
     assert has(pg, "filo-audio") and pg.evaluate("player.shown")
+    for sel, want in [(".filo-back-big", 70), (".filo-fwd-big", 130)]:
+        at(pg, 100)
+        assert pg.evaluate(f"getComputedStyle(document.querySelector('{sel}')).display") != "none", f"the audio card shows {sel}"
+        pg.locator(sel).click()
+        settle(pg)
+        assert near(now(pg), want), f"{sel}: {now(pg)}"
     pg.evaluate("player.toggle()")
     pg.wait_for_function(f"!{MEDIA}.paused")
     pg.wait_for_timeout(3000)

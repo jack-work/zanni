@@ -74,12 +74,22 @@
     return h ? h + ':' + mm + ':' + ss : mm + ':' + ss;
   }
 
+  function watchModality() {
+    var html = document.documentElement;
+    if (html.hasAttribute('data-zanni-modality')) return;
+    html.setAttribute('data-zanni-modality', '');
+    if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) html.classList.add('zanni-pointing');
+    document.addEventListener('pointerdown', function () { html.classList.add('zanni-pointing'); }, true);
+    document.addEventListener('keydown', function () { html.classList.remove('zanni-pointing'); }, true);
+  }
+
   function hasBoil() {
     return !!document.getElementById('pixel-ui');
   }
 
   function caster(button, opts) {
     opts = opts || {};
+    watchModality();
     var screens = opts.screens || [];
     var wrap = el('span', 'bacchetta-caster');
     button.parentNode.insertBefore(wrap, button);
@@ -158,6 +168,7 @@
 
   function remote(opts) {
     opts = opts || {};
+    watchModality();
     var o = { step: opts.step || 10, big: opts.big || 30 };
     var host = opts.host || document.body;
     var now = { title: '', chapter: '', position: 0, duration: 0, playing: false, at: 0 };

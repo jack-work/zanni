@@ -70,9 +70,12 @@
 
 .bacchetta-key:active { translate: 2px 2px; box-shadow: 1px 1px 0 var(--bacchetta-shadow); }
 
-.bacchetta-key:focus-visible,
-.bacchetta-track:focus-visible .bacchetta-rail,
-.bacchetta-path-input:focus-visible {
+.bacchetta-key:focus,
+.bacchetta-path-input:focus { outline: none; }
+
+:root:not(.zanni-pointing) .bacchetta-key:focus-visible,
+:root:not(.zanni-pointing) .bacchetta-track:focus-visible .bacchetta-rail,
+:root:not(.zanni-pointing) .bacchetta-path-input:focus-visible {
   outline: 3px solid var(--bacchetta-focus);
   outline-offset: 2px;
 }
