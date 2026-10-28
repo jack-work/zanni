@@ -215,6 +215,19 @@
           python3 ${./test/filo.test.py} examples/filo.html 2>&1 | tee $out
         '';
 
+        checks.proscenio = pkgs.runCommand "zanni-proscenio-test" {
+          nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.playwright ])) ];
+          PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
+          PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+          FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
+        } ''
+          set -o pipefail
+          export HOME=$TMPDIR
+          cp -r ${./assets} assets
+          cp -r ${./examples} examples
+          python3 ${./test/proscenio.test.py} examples/proscenio.html 2>&1 | tee $out
+        '';
+
         checks.bacchetta = pkgs.runCommand "zanni-bacchetta-test" {
           nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.playwright ])) ];
           PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;

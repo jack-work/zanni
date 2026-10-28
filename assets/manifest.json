@@ -1,6 +1,6 @@
 {
   "name": "zanni",
-  "version": "0.14.3",
+  "version": "0.15.0",
   "description": "Visual components extracted from figar.org.",
   "components": {
     "boil": {
@@ -362,6 +362,56 @@
         "--bacchetta-key"
       ],
       "constructed": true
+    },
+    "proscenio": {
+      "summary": "The shared header: the page hands it slots (drawer toggles, mark, identity, nav, search, status, tools, actions) and it owns the layout, the 900px fold, hide on scroll, drawers on three sides, focus and keys. mode tv for the receiver.",
+      "marker": "<!-- zanni:proscenio -->",
+      "classes": [
+        "proscenio",
+        "proscenio-actions",
+        "proscenio-brand",
+        "proscenio-button",
+        "proscenio-drawer",
+        "proscenio-drawer-open",
+        "proscenio-drawers",
+        "proscenio-empty",
+        "proscenio-find",
+        "proscenio-fold",
+        "proscenio-hidden",
+        "proscenio-home",
+        "proscenio-icon",
+        "proscenio-lead",
+        "proscenio-menu-open",
+        "proscenio-more",
+        "proscenio-nav",
+        "proscenio-nofold",
+        "proscenio-row",
+        "proscenio-scrim",
+        "proscenio-search",
+        "proscenio-searching",
+        "proscenio-status",
+        "proscenio-tools",
+        "proscenio-trail",
+        "proscenio-unfind"
+      ],
+      "files": [
+        "proscenio.css",
+        "proscenio.js"
+      ],
+      "docs": "docs/proscenio.md",
+      "knobs": [
+        "--proscenio-ground",
+        "--proscenio-ink",
+        "--proscenio-muted",
+        "--proscenio-accent",
+        "--proscenio-focus",
+        "--proscenio-rule",
+        "--proscenio-bar",
+        "--proscenio-scale",
+        "--proscenio-z"
+      ],
+      "constructed": true,
+      "activator": "data-proscenio"
     }
   },
   "planned": [

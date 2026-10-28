@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>zanni · proscenio</title>
+<link rel="stylesheet" href="../assets/fontpack/fonts.css">
+<link rel="stylesheet" href="../assets/gesso/gesso.css">
+<link rel="stylesheet" href="../assets/fontpack/fontpack.css">
+<link rel="stylesheet" href="../assets/proscenio/proscenio.css">
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0; padding-top: var(--proscenio-pad, 0px); font-size: 18px; }
+  main { max-width: 46rem; margin: 0 auto; padding: 1rem; }
+  main p { line-height: 1.6; }
+  aside { background: var(--z-ground); border: 2px solid var(--z-ink); padding: 12px; }
+  aside a { display: block; padding: 6px 0; }
+</style>
+<body class="gesso">
+<header id="bar" data-proscenio>
+  <button data-slot="drawer-toggle" aria-controls="tree" id="t-tree">files</button>
+  <a data-slot="mark" href="#top">keel</a>
+  <span data-slot="identity" id="crumbs">jack / zanni / docs / proscenio.md</span>
+  <nav data-slot="nav"><a href="#code" aria-current="page">code</a><a href="#diffs">diffs</a></nav>
+  <input data-slot="search" type="search" placeholder="search" id="q">
+  <span data-slot="status" id="live">live</span>
+  <select data-slot="tool" id="ref"><option>master</option><option>next</option></select>
+  <button data-slot="tool" data-narrow="hide" id="split">split</button>
+  <button data-slot="action" id="cast">cast</button>
+  <button data-slot="drawer-toggle" aria-controls="pane" id="t-pane">¶</button>
+</header>
+<aside id="tree" data-side="left"><a href="#a">alpha.go</a><a href="#b">beta.go</a><button id="tree-btn">collapse all</button></aside>
+<aside id="pane" data-side="bottom"><textarea id="composer" rows="3" aria-label="Comment"></textarea><button id="send">send</button></aside>
+<main id="main"></main>
+<script src="../assets/proscenio/proscenio.js"></script>
+<script src="proscenio.js"></script>
+</body>
+</html>

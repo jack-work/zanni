@@ -24,6 +24,7 @@ silently.
 | **parla** | Figaro speaks: the pixel head and a cartoon bubble from his mouth | a tilted, outlined bubble whose tail sits at `--parla-mouth` of the head; `say`, `quip`, `interrupt` (with an *AHEM* when it cuts a quip) and `rest` on `el.parla` | CSS, JS | `--parla-head` `-mouth` `-tilt` `-outline` |
 | **filo** | the media player: chrome over a page's own video or audio, Sutro's shape in zanni's dress | pixel SVG icons, a scrubber whose fill follows a drag and commits one seek, a centre cluster on pause, a settings menu (speed, quality, sleep, chapters), key help, fullscreen, thumbnail previews from WebVTT; one keymap for keyboards, D-pads and remotes | CSS, JS | `--filo-icon` `-big` `-track` `-hit`; `autohide` `globalKeys` `qualities` `thumbnails` `boil` `fill` |
 | **bacchetta** | the phone remote for casting: a cast button with a dropdown of screens, and a remote that opens on cast | pixel keys, a tight D-pad, a scrubber that seeks once per drag; a bottom sheet on a phone, a card bottom-right on wide screens, a 60px bar minimised; every control an event the page forwards | CSS, JS | `--bacchetta-z` `--bacchetta-key`; `boil` |
+| **proscenio** | the shared header: one bar for keel, aguatv and the TV | the page hands it slots; it owns the order, the 900px fold, hide on scroll with keel's tap guards, drawers on three sides, focus and keys; `mode: 'tv'` never folds | CSS, JS | `--proscenio-ground` `-ink` `-rule` `-scale` `-bar` `-z` |
 
 ## Use
 
