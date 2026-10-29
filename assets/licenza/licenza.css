@@ -1,0 +1,166 @@
+:where(.licenza) {
+  --licenza-ground: var(--z-ground-2, #efe2d0);
+  --licenza-ink: var(--z-ink, #2b1a15);
+  --licenza-muted: var(--z-muted, #6b4a3d);
+  --licenza-line: var(--z-line, #c2a690);
+  --licenza-yes: var(--z-ok, #3d6b2a);
+  --licenza-no: var(--z-fail, #a8322a);
+  --licenza-loud: var(--z-warn, #87580f);
+  --licenza-focus: var(--z-focus, #a2762a);
+  --licenza-on-verdict: var(--z-ground, #f4ead9);
+  --licenza-prose: var(--fontpack-prose, Georgia, serif);
+  --licenza-mono: var(--fontpack-mono, ui-monospace, monospace);
+}
+
+.licenza {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 11px 12px 12px;
+  border: 1px solid var(--licenza-line);
+  background: var(--licenza-ground);
+  color: var(--licenza-ink);
+  font-family: var(--licenza-prose);
+}
+
+.licenza.licenza-suggested { border-style: dashed; background: transparent; }
+
+.licenza-summary {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.licenza-scope {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin-top: 6px;
+}
+
+.licenza-chip {
+  font: inherit;
+  font-family: var(--licenza-mono);
+  font-size: max(13px, 0.95rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  padding: 0 6px;
+  border: 1px solid var(--licenza-line);
+  background: none;
+  color: var(--licenza-ink);
+}
+
+.licenza-chip.licenza-loud { border-color: var(--licenza-loud); color: var(--licenza-loud); }
+
+button.licenza-chip { cursor: pointer; }
+button.licenza-chip[aria-pressed='false'] { color: var(--licenza-muted); border-style: dashed; text-decoration: line-through; }
+
+.licenza-resource,
+.licenza-path {
+  font-family: var(--licenza-mono);
+  font-size: max(13px, 1rem);
+  overflow-wrap: anywhere;
+}
+
+.licenza-path { color: var(--licenza-muted); }
+
+.licenza-why {
+  margin: 6px 0 0;
+  font-size: 1rem;
+  font-style: italic;
+  line-height: 1.3;
+  color: var(--licenza-muted);
+  overflow-wrap: anywhere;
+}
+
+.licenza-says {
+  font-style: normal;
+  font-family: var(--licenza-mono);
+  font-size: max(13px, 0.9rem);
+  letter-spacing: 0.06em;
+}
+
+.licenza-answer {
+  display: grid;
+  grid-template-columns: 1.15fr;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  margin-top: 10px;
+  border: 1px solid var(--licenza-line);
+}
+
+.licenza-answer[hidden] { display: none; }
+
+.licenza-choice {
+  min-height: 40px;
+  padding: 4px 0 2px;
+  border: 0;
+  background: none;
+  color: var(--licenza-ink);
+  font-family: var(--licenza-mono);
+  font-size: max(13px, 1.15rem);
+  cursor: pointer;
+}
+
+.licenza-choice + .licenza-choice { border-left: 1px solid var(--licenza-line); }
+.licenza-choice.licenza-no { color: var(--licenza-muted); }
+.licenza-choice[aria-checked='true'] { background: var(--licenza-yes); color: var(--licenza-on-verdict); }
+.licenza-choice.licenza-no[aria-checked='true'] { background: var(--licenza-no); color: var(--licenza-on-verdict); }
+
+.licenza :focus { outline: none; }
+:root:not(.zanni-pointing) .licenza :focus-visible { outline: 2px solid var(--licenza-focus); outline-offset: 2px; }
+
+.licenza-add {
+  margin-top: 10px;
+  padding: 3px 10px;
+  border: 1px solid var(--licenza-line);
+  background: none;
+  color: var(--licenza-ink);
+  font-family: var(--licenza-mono);
+  font-size: max(13px, 1rem);
+  cursor: pointer;
+}
+
+.licenza-widen {
+  margin: 10px 0 0;
+  padding: 0 0 0 10px;
+  border: 0;
+  border-left: 2px solid var(--licenza-focus);
+}
+
+.licenza-widen[hidden] { display: none; }
+
+.licenza-widen-head {
+  padding: 0;
+  font-family: var(--licenza-mono);
+  font-size: max(13px, 0.9rem);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--licenza-muted);
+}
+
+.licenza-widen-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.licenza-widen-item input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: var(--licenza-yes);
+}
+
+.licenza-widen-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 6px;
+}

@@ -1,0 +1,120 @@
+:where(.sigillo) {
+  --sigillo-ground: var(--z-ground-2, #efe2d0);
+  --sigillo-paper: var(--z-ground, #f4ead9);
+  --sigillo-ink: var(--z-ink, #2b1a15);
+  --sigillo-muted: var(--z-muted, #6b4a3d);
+  --sigillo-line: var(--z-line, #c2a690);
+  --sigillo-accent: var(--z-accent, #7d2e2e);
+  --sigillo-on-accent: var(--z-on-accent, #f6ede2);
+  --sigillo-edge: var(--z-focus, #a2762a);
+  --sigillo-fail: var(--z-fail, #a8322a);
+  --sigillo-ok: var(--z-ok, #3d6b2a);
+  --sigillo-scrim: var(--z-shadow, rgba(43, 26, 21, 0.3));
+  --sigillo-width: 34rem;
+}
+
+html.sigillo-open,
+html.sigillo-open body { overflow: hidden; }
+
+.sigillo {
+  box-sizing: border-box;
+  position: fixed;
+  inset: auto 0 0 0;
+  width: min(100%, var(--sigillo-width));
+  max-width: 100%;
+  max-height: 92dvh;
+  margin: 0 auto;
+  padding: 16px 16px max(18px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 0;
+  border-top: 2px solid var(--sigillo-edge);
+  background: var(--sigillo-ground);
+  color: var(--sigillo-ink);
+  font-family: var(--fontpack-prose, Georgia, serif);
+}
+
+.sigillo::backdrop { background: var(--sigillo-scrim); }
+
+@media (min-width: 700px) {
+  .sigillo { inset: 0; margin: auto; height: fit-content; border: 2px solid var(--sigillo-edge); }
+}
+
+.sigillo-title {
+  margin: 0;
+  font-family: var(--fontpack-display, serif);
+  font-weight: 400;
+  font-size: 2rem;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+.sigillo-receipt {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--sigillo-line);
+  background: var(--sigillo-paper);
+  font-family: var(--fontpack-mono, ui-monospace, monospace);
+  font-size: max(13px, 1.05rem);
+  line-height: 1.3;
+}
+
+.sigillo-line {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.sigillo-digest {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  font-family: var(--fontpack-mono, ui-monospace, monospace);
+  font-size: max(13px, 1.05rem);
+  letter-spacing: 0.1em;
+}
+
+.sigillo-digest-label { color: var(--sigillo-muted); }
+
+.sigillo-note {
+  margin: 10px 0 0;
+  font-size: 1rem;
+  font-style: italic;
+  line-height: 1.3;
+  color: var(--sigillo-muted);
+}
+
+.sigillo-error {
+  margin: 10px 0 0;
+  padding: 6px 10px;
+  border: 1px solid var(--sigillo-fail);
+  color: var(--sigillo-fail);
+  font-family: var(--fontpack-mono, ui-monospace, monospace);
+  font-size: max(13px, 1rem);
+}
+
+.sigillo-error[hidden] { display: none; }
+
+.sigillo-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.sigillo-seal,
+.sigillo-back {
+  min-height: 44px;
+  padding: 8px 12px;
+  font-family: var(--fontpack-mono, ui-monospace, monospace);
+  font-size: max(13px, 1.3rem);
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.sigillo-seal { border: 0; background: var(--sigillo-accent); color: var(--sigillo-on-accent); }
+.sigillo-back { border: 1px solid var(--sigillo-line); background: none; color: var(--sigillo-muted); }
+.sigillo-seal:disabled,
+.sigillo-back:disabled { cursor: default; opacity: 0.7; }
+.sigillo[data-state='sealed'] .sigillo-seal { background: var(--sigillo-ok); }
+
+.sigillo :focus { outline: none; }
+:root:not(.zanni-pointing) .sigillo :focus-visible { outline: 2px solid var(--sigillo-edge); outline-offset: 2px; }

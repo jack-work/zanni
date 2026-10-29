@@ -1,0 +1,50 @@
+:where(.clessidra) {
+  --clessidra-size: 54px;
+  --clessidra-ring: 6px;
+  --clessidra-notches: 24;
+  --clessidra-ok: var(--z-ok, #3d6b2a);
+  --clessidra-warn: var(--z-warn, #87580f);
+  --clessidra-fail: var(--z-fail, #a8322a);
+  --clessidra-empty: var(--z-line, #c2a690);
+  --clessidra-f: 1;
+  --clessidra-c: var(--clessidra-ok);
+}
+
+.clessidra {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--clessidra-size);
+  height: var(--clessidra-size);
+  font-style: normal;
+  color: var(--clessidra-c);
+}
+
+.clessidra::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(var(--clessidra-c) calc(var(--clessidra-f) * 360deg), var(--clessidra-empty) 0);
+  -webkit-mask:
+    radial-gradient(farthest-side, transparent calc(100% - var(--clessidra-ring)), #000 calc(100% - var(--clessidra-ring) + 0.5px)),
+    repeating-conic-gradient(#000 0deg calc(360deg / var(--clessidra-notches) - 3deg), transparent 0deg calc(360deg / var(--clessidra-notches)));
+  -webkit-mask-composite: source-in;
+  mask:
+    radial-gradient(farthest-side, transparent calc(100% - var(--clessidra-ring)), #000 calc(100% - var(--clessidra-ring) + 0.5px)),
+    repeating-conic-gradient(#000 0deg calc(360deg / var(--clessidra-notches) - 3deg), transparent 0deg calc(360deg / var(--clessidra-notches)));
+  mask-composite: intersect;
+}
+
+.clessidra-time {
+  position: relative;
+  font-family: var(--fontpack-mono, ui-monospace, monospace);
+  font-weight: 400;
+  font-size: calc(var(--clessidra-size) * 0.35);
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.clessidra.clessidra-spent { color: var(--clessidra-fail); }
+.clessidra.clessidra-spent::before { background: var(--clessidra-empty); }

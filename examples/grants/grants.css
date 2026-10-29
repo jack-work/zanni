@@ -1,0 +1,209 @@
+:root { color-scheme: light dark; }
+html[data-scheme='dark'] { color-scheme: dark; }
+html[data-scheme='light'] { color-scheme: light; }
+
+body {
+  margin: 0;
+  padding-top: var(--proscenio-pad, 0px);
+  font-family: var(--fontpack-prose);
+  font-size: 18px;
+}
+
+main {
+  box-sizing: border-box;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 0 14px calc(96px + env(safe-area-inset-bottom));
+}
+
+.g-loading,
+.g-error,
+.g-quiet { font-style: italic; color: var(--z-muted); }
+
+.g-error {
+  font-style: normal;
+  font-family: var(--fontpack-mono);
+  color: var(--z-fail);
+  border: 1px solid var(--z-fail);
+  padding: 6px 10px;
+}
+
+.g-who { padding: 18px 2px 4px; }
+
+.g-kind,
+.g-section {
+  font-family: var(--fontpack-mono);
+  font-size: max(13px, 0.9rem);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--z-muted);
+}
+
+.g-name {
+  margin: 0;
+  font-family: var(--fontpack-mono);
+  font-weight: 400;
+  font-size: 3.3rem;
+  line-height: 0.95;
+  color: var(--z-accent);
+  overflow-wrap: anywhere;
+}
+
+.g-id {
+  font-family: var(--fontpack-mono);
+  font-size: max(13px, 0.85rem);
+  color: var(--z-muted);
+  overflow-wrap: anywhere;
+}
+
+.g-asks { margin: 12px 0 0; font-style: italic; font-size: 1.2rem; }
+
+.g-note {
+  margin: 8px 0 0;
+  font-style: italic;
+  color: var(--z-muted);
+  overflow-wrap: anywhere;
+}
+
+.g-note b {
+  font-style: normal;
+  font-weight: 400;
+  font-family: var(--fontpack-mono);
+  font-size: max(13px, 0.9rem);
+  letter-spacing: 0.06em;
+}
+
+.g-items { display: grid; gap: 10px; margin-top: 10px; }
+
+.g-suggested {
+  margin-top: 18px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--z-line);
+}
+
+.g-suggested-why {
+  margin-left: 6px;
+  text-transform: none;
+  letter-spacing: 0.04em;
+}
+
+.g-foot {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+  padding: 12px 14px max(14px, env(safe-area-inset-bottom));
+  background: var(--z-ground);
+  border-top: 1px solid var(--z-rule);
+}
+
+.g-foot-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  max-width: calc(40rem - 28px);
+}
+
+.g-button {
+  min-height: 44px;
+  padding: 8px 12px;
+  font-family: var(--fontpack-mono);
+  font-size: max(13px, 1.15rem);
+  letter-spacing: 0.06em;
+  border: 1px solid var(--z-line);
+  background: none;
+  color: var(--z-muted);
+  cursor: pointer;
+}
+
+.g-review {
+  flex: 1;
+  border: 0;
+  background: var(--z-accent);
+  color: var(--z-on-accent);
+}
+
+.g-review:disabled {
+  border: 1px dashed var(--z-line);
+  background: none;
+  color: var(--z-muted);
+  cursor: default;
+}
+
+.g-banner {
+  margin: 14px 0 4px;
+  padding: 4px 10px;
+  font-family: var(--fontpack-mono);
+  font-size: max(13px, 1rem);
+  border: 1px solid var(--z-ok);
+  color: var(--z-ok);
+}
+
+.g-banner.g-banner-off { border-color: var(--z-muted); color: var(--z-muted); }
+
+.g-section { margin: 18px 0 2px; }
+.g-section span { margin-left: 6px; color: var(--z-ink); }
+
+.g-live {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--z-rule);
+}
+
+.g-live.g-spent { opacity: 0.6; }
+
+.g-live-summary { font-size: 1.05rem; line-height: 1.2; }
+
+.g-live-scope {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+  margin-top: 2px;
+  font-family: var(--fontpack-mono);
+  font-size: max(13px, 0.85rem);
+}
+
+.g-live-scope .g-path { color: var(--z-muted); overflow-wrap: anywhere; }
+.g-live-scope .g-act { text-transform: uppercase; letter-spacing: 0.08em; }
+
+.g-small {
+  min-height: 32px;
+  padding: 2px 8px;
+  font-size: max(13px, 0.95rem);
+}
+
+.g-pending {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  font-family: var(--fontpack-mono);
+  font-size: max(13px, 1rem);
+  border-bottom: 1px solid var(--z-rule);
+}
+
+.g-pending a {
+  color: var(--z-ink);
+  border: 1px solid var(--z-line);
+  padding: 0 8px;
+  text-decoration: none;
+}
+
+.g-pending[aria-current='page'] { color: var(--z-muted); }
+
+.g-limit { margin: 10px 0 0; font-size: 0.95rem; font-style: italic; color: var(--z-muted); }
+
+#pending-chip {
+  font-family: var(--fontpack-mono);
+  border: 1px solid var(--z-line);
+  padding: 0 7px;
+}
+
+:root:not(.zanni-pointing) main :focus-visible { outline: 2px solid var(--z-focus); outline-offset: 2px; }
