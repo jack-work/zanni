@@ -50,7 +50,7 @@ function vtt(img) {
   document.getElementById('stage').appendChild(media);
   window.seeks = [];
   window.events = [];
-  ['filo:seek', 'filo:quality', 'filo:rate', 'filo:bar', 'filo:fullscreen', 'filo:sleep', 'filo:stop', 'filo:dock', 'filo:expand', 'filo:pip'].forEach(function (t) {
+  ['filo:seek', 'filo:quality', 'filo:rate', 'filo:bar', 'filo:fullscreen', 'filo:sleep', 'filo:stop', 'filo:dock', 'filo:expand', 'filo:pip', 'filo:background'].forEach(function (t) {
     document.addEventListener(t, function (e) {
       events.push([t, e.detail]);
       if (t === 'filo:seek') seeks.push(e.detail);
@@ -84,6 +84,8 @@ function vtt(img) {
     opts.waveform = w;
   }
   if (params.get('docked')) opts.docked = true;
+  if (params.get('background')) opts.background = { src: params.get('background') === 'broken' ? 'nowhere.wav' : silence(600), type: 'audio/wav' };
+  if (params.get('session')) opts.session = true;
   var ready = params.get('thumbs') ? sprite().then(function (img) { opts.thumbnails = vtt(img); }) : Promise.resolve();
   ready.then(function () {
     window.player = zanni.filo.attach(media, opts);

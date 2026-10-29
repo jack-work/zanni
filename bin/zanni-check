@@ -150,7 +150,8 @@ function filo() {
   check('a held key commits once, after it is let go',
     /COMMIT_MS\s*=\s*\d+/.test(script) && /setTimeout\(function \(\) \{ commit\(pending\)/.test(script),
     'without the debounce a held key is a Range request per repeat');
-  check('attaching never plays', !/\.play\(\)/.test(script.replace(/function toggle\(\) \{[\s\S]*?\n    \}/, '')));
+  check('attaching never plays: only a gesture or a visibility change calls play()',
+    !/\.play\(\)/.test(script.replace(/function (toggle|unlock|toBackground|toForeground)\(\) \{[\s\S]*?\n    \}/g, '')));
 }
 
 function stilo() {

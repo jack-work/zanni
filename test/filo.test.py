@@ -475,6 +475,80 @@ with sync_playwright() as p:
     assert ph.evaluate("player.root.getBoundingClientRect().height") == 64, "a phone gets a 64px bar"
     ctx.close()
 
+    lk = b.new_page(viewport={"width": 1000, "height": 760})
+    lk.on("pageerror", lambda e: errors.append(str(e)))
+    lk.add_init_script("""
+      window.vis = 'visible';
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.vis });
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => window.vis === 'hidden' });
+      window.lockScreen = {};
+      if (navigator.mediaSession) {
+        const set = navigator.mediaSession.setActionHandler.bind(navigator.mediaSession);
+        navigator.mediaSession.setActionHandler = (a, fn) => { window.lockScreen[a] = fn; set(a, fn); };
+        window.positions = [];
+        const pos = navigator.mediaSession.setPositionState.bind(navigator.mediaSession);
+        navigator.mediaSession.setPositionState = (s) => { window.positions.push(s); pos(s); };
+      }
+    """)
+
+    def flip(page, state):
+        page.evaluate(f"window.vis = '{state}'; document.dispatchEvent(new Event('visibilitychange'))")
+
+    ready(lk, "?background=1&session=1")
+    assert lk.evaluate("navigator.mediaSession.metadata.title") == "Il barbiere di Siviglia", "the lock screen gets the title"
+    assert lk.evaluate("navigator.mediaSession.metadata.artist") == "Sinfonia", "and the chapter"
+    assert lk.evaluate("Object.keys(lockScreen).filter(a => lockScreen[a]).sort()") == sorted(
+        ["play", "pause", "seekbackward", "seekforward", "seekto", "previoustrack", "nexttrack"]), "every lock screen action is wired"
+    at(lk, 100)
+    lk.locator(".filo-play").click()
+    lk.wait_for_function(f"!{MEDIA}.paused")
+    lk.wait_for_function("navigator.mediaSession.playbackState === 'playing'", timeout=3000)
+    assert lk.evaluate("document.querySelector('audio.filo-background') && document.querySelector('audio.filo-background').paused"), \
+        "the tap that starts playback unlocks a paused background audio element"
+    lk.wait_for_timeout(400)
+    t0 = lk.evaluate(f"{MEDIA}.currentTime")
+    flip(lk, "hidden")
+    lk.wait_for_function("player.background && !player.media.paused", timeout=5000)
+    got = lk.evaluate(f"""() => ({{ tag: player.media.tagName, video: {MEDIA}.paused, at: player.media.currentTime,
+      state: navigator.mediaSession.playbackState, playing: document.querySelector('.filo').classList.contains('filo-paused') }})""")
+    assert got["tag"] == "AUDIO" and got["video"], f"hidden, the audio element plays and the video rests, got {got}"
+    assert abs(got["at"] - t0) <= 1, f"the sound picks up where the picture was, {t0} vs {got}"
+    assert got["state"] == "playing" and not got["playing"], f"one playing state through the handoff, got {got}"
+    lk.evaluate("lockScreen.seekto({ seekTime: 300 })")
+    lk.wait_for_function("Math.abs(player.media.currentTime - 300) < 1")
+    assert lk.evaluate("document.querySelector('.filo-track').getAttribute('aria-valuenow')") in ("300", "301"), "the bar follows the sound"
+    assert near(lk.evaluate("positions[positions.length - 1].position"), 300, 1.2), "the lock screen's position follows the seek"
+    lk.evaluate("lockScreen.nexttrack()")
+    lk.wait_for_function("Math.abs(player.media.currentTime - 480) < 1")
+    flip(lk, "visible")
+    lk.wait_for_function(f"!player.background && !{MEDIA}.paused", timeout=5000)
+    back = lk.evaluate(f"[{MEDIA}.currentTime, document.querySelector('audio.filo-background').paused, navigator.mediaSession.playbackState]")
+    assert abs(back[0] - 480) <= 1 and back[1] and back[2] == "playing", f"visible again, the picture resumes from the sound's place, got {back}"
+    assert [e["on"] for e in events(lk, "filo:background")] == [True, False]
+
+    lk.evaluate("lockScreen.pause()")
+    lk.wait_for_function(f"{MEDIA}.paused")
+    flip(lk, "hidden")
+    lk.wait_for_timeout(400)
+    assert not lk.evaluate("player.background"), "a paused player stays where it is when hidden"
+    flip(lk, "visible")
+
+    ready(lk, "?background=broken")
+    lk.locator(".filo-play").click()
+    lk.wait_for_function(f"!{MEDIA}.paused")
+    flip(lk, "hidden")
+    lk.wait_for_timeout(800)
+    assert not lk.evaluate("player.background") and not lk.evaluate(f"{MEDIA}.paused"), "a background that cannot play leaves the video as it was"
+    flip(lk, "visible")
+
+    ready(lk, "")
+    lk.locator(".filo-play").click()
+    flip(lk, "hidden")
+    lk.wait_for_timeout(300)
+    assert not lk.evaluate("document.querySelector('audio.filo-background')") and not lk.evaluate("player.background"), "no background, no handoff"
+    flip(lk, "visible")
+    lk.close()
+
     assert not errors, errors
     b.close()
 print("filo: ok")

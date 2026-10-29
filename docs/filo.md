@@ -60,6 +60,9 @@ and leaves the media element where it was found.
 | `fill` | false | picture fills the box, letterboxed |
 | `docked` | false | start as the bottom bar |
 | `waveform` | none | 1024 integers 0..255, the loudest sample per slice of the duration; the scrubber becomes the waveform |
+| `session` | false | drive the lock screen through Media Session |
+| `artwork` | the poster | lock screen artwork URL |
+| `background` | none | `{ src, type }`: an audio source that takes over while the page is hidden |
 | `bar` | false | theater mode: the picture with the bar's controls under it, never hiding. Fullscreen from it is the ordinary overlay player |
 
 The page owns the media element: its `src`, hls.js, the poster, saving the
@@ -133,6 +136,29 @@ the band, and `--filo-dock-height` counts it.
 It is drawn on two canvases only when the size or the data changes; per tick
 only the lit canvas's clip moves. juglar computes the values at ingest and
 serves them inline as `waveform` on `/api/item`.
+
+## Lock screen and background
+
+`session: true` hands the lock screen to filo through Media Session: title,
+chapter as the artist, artwork from `artwork` or the video's poster, and play,
+pause, seek back and forward, seek to, and previous and next chapter (when
+there are two or more), each through filo's own actions. The position state
+follows every seek, rate change and play or pause.
+
+`background: { src, type }` keeps the sound going when the page is hidden,
+which on an iPhone means locked: iOS pauses a hidden `<video>` but not an
+`<audio>`. filo owns one `<audio playsinline>` and unlocks it inside the first
+tap or key on the page (play then pause in the same gesture: iOS activates
+each element separately, and visibilitychange carries no gesture). Hidden
+while playing (or paused by the system in the last 1.5 s), filo starts the
+audio at the video's time and pauses the video; visible again, the video
+resumes from the audio's time. `pagehide` counts as hidden. One set of
+controls, events and lock screen state throughout: `player.media` is the
+element in charge, `player.background` says whether that is the audio, and
+`filo:background` reports each change with `{ on, at }`. If the audio cannot
+play, or `canPlayType` refuses `type`, nothing changes. `setItem` takes
+`background` and `artwork` too. `player.unlock()` is there for a page that
+starts playback from its own gesture.
 
 ## Docked
 

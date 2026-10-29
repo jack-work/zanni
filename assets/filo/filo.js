@@ -194,6 +194,10 @@
     var box = created ? el('div') : parent;
     var home = { parent: parent, next: media.nextSibling };
     var hadControls = media.hasAttribute('controls');
+    var own = media, audio = null, audioSrc = null, unlocked = false;
+    var background = opts.background || null, filoPaused = false, ownPausedAt = 0;
+    var session = opts.session && typeof navigator !== 'undefined' && navigator.mediaSession ? navigator.mediaSession : null;
+    var artwork = opts.artwork || null;
     if (created) {
       parent.insertBefore(box, media);
       box.appendChild(media);
@@ -407,6 +411,7 @@
       var c = i >= 0 ? item.chapters[i].title || '' : '';
       $.chapter.textContent = c;
       $.now.textContent = c;
+      sessionMeta();
     }
 
     function paint() {
@@ -433,8 +438,119 @@
         b.title = label;
       });
       box.classList.toggle('filo-paused', paused);
+      if (session) session.playbackState = paused ? 'paused' : 'playing';
+      sessionPosition();
       if (paused) wake();
       else armHide();
+    }
+
+    function sessionMeta() {
+      if (!session || typeof MediaMetadata !== 'function') return;
+      var art = artwork || own.poster;
+      var c = chapterIndex >= 0 && item.chapters[chapterIndex] ? item.chapters[chapterIndex].title || '' : '';
+      session.metadata = new MediaMetadata({
+        title: item.title,
+        artist: c,
+        artwork: art ? [{ src: new URL(art, location.href).href }] : []
+      });
+    }
+
+    function sessionPosition() {
+      if (!session || !session.setPositionState) return;
+      var d = duration(), t = media.currentTime || 0;
+      if (!(d > 0) || !isFinite(d)) return;
+      try {
+        session.setPositionState({ duration: d, playbackRate: media.playbackRate || 1, position: Math.max(0, Math.min(t, d)) });
+      } catch (e) {}
+    }
+
+    function sessionActions(clear) {
+      if (!session) return;
+      var chapters = !clear && item.chapters.length > 1;
+      var acts = {
+        play: function () { if (media.paused) toggle(); },
+        pause: function () { if (!media.paused) toggle(); },
+        seekbackward: function (d) { seekTo((media.currentTime || 0) - ((d && d.seekOffset) || o.step)); },
+        seekforward: function (d) { seekTo((media.currentTime || 0) + ((d && d.seekOffset) || o.step)); },
+        seekto: function (d) { if (d && d.seekTime != null) seekTo(d.seekTime); },
+        previoustrack: chapters ? function () { chapter(-1); } : null,
+        nexttrack: chapters ? function () { chapter(1); } : null
+      };
+      Object.keys(acts).forEach(function (a) {
+        try { session.setActionHandler(a, clear ? null : acts[a]); } catch (e) {}
+      });
+    }
+
+    function hidden() {
+      return document.visibilityState === 'hidden';
+    }
+
+    function unlock() {
+      if (!background || unlocked) return;
+      if (!audio) {
+        audio = el('audio', 'filo-background', { playsinline: '', preload: 'none', hidden: '' });
+        box.appendChild(audio);
+        follow(audio);
+      }
+      if (audioSrc !== background.src) {
+        audioSrc = background.src;
+        audio.src = audioSrc;
+      }
+      unlocked = true;
+      var p = audio.play();
+      audio.pause();
+      if (p && p.catch) p.catch(function () {});
+    }
+
+    function playingNow() {
+      return !own.paused || (!filoPaused && Date.now() - ownPausedAt < 1500);
+    }
+
+    function toBackground() {
+      if (!background || !unlocked || media !== own || !playingNow()) return;
+      if (background.type && audio.canPlayType && !audio.canPlayType(background.type)) return;
+      var t = own.currentTime || 0;
+      if (audioSrc !== background.src) {
+        audioSrc = background.src;
+        audio.src = audioSrc;
+      }
+      audio.currentTime = t;
+      audio.playbackRate = own.playbackRate;
+      audio.volume = own.volume;
+      audio.muted = own.muted;
+      var settle = function () {
+        if (Math.abs((audio.currentTime || 0) - t) > 1) audio.currentTime = t;
+      };
+      audio.addEventListener('loadedmetadata', settle, { once: true });
+      var take = function () {
+        if (!hidden()) { audio.pause(); return; }
+        media = audio;
+        own.pause();
+        lastSecond = -1;
+        paint();
+        paintPlay();
+        emit('filo:background', { on: true, at: t });
+      };
+      var p = audio.play();
+      if (p && p.then) p.then(take, function () {});
+      else take();
+    }
+
+    function toForeground() {
+      if (media !== audio || !audio) return;
+      var t = audio.currentTime || 0, wasPlaying = !audio.paused;
+      media = own;
+      audio.pause();
+      own.currentTime = t;
+      own.playbackRate = audio.playbackRate;
+      if (wasPlaying) {
+        var p = own.play();
+        if (p && p.catch) p.catch(function () { say('Tap play'); wake(); });
+      }
+      lastSecond = -1;
+      paint();
+      paintPlay();
+      emit('filo:background', { on: false, at: t });
     }
 
     function paintVolume() {
@@ -554,13 +670,17 @@
     }
 
     function toggle() {
+      unlock();
       if (media.paused) {
         var p = media.play();
         if (p && p.catch) p.catch(function (e) {
           say(e && e.name === 'NotAllowedError' ? 'Tap play' : (e && e.message) || 'Playback failed');
           wake();
         });
-      } else media.pause();
+      } else {
+        filoPaused = true;
+        media.pause();
+      }
     }
 
     function rate(r) {
@@ -584,6 +704,7 @@
     function sleepNow() {
       clearTimeout(sleepTimer);
       sleepTimer = null;
+      filoPaused = true;
       media.pause();
       sleepMode = 'off';
       say('Sleep timer stopped playback');
@@ -645,7 +766,7 @@
         if (req) {
           var p = req.call(box);
           if (p && p.catch) p.catch(function () {});
-        } else if (media.webkitEnterFullscreen) media.webkitEnterFullscreen();
+        } else if (own.webkitEnterFullscreen) own.webkitEnterFullscreen();
       } else {
         var exit = document.exitFullscreen || document.webkitExitFullscreen;
         if (exit) {
@@ -656,17 +777,17 @@
     }
 
     function pipSupported() {
-      return media.tagName === 'VIDEO' && ((document.pictureInPictureEnabled && media.requestPictureInPicture) || !!media.webkitSetPresentationMode);
+      return own.tagName === 'VIDEO' && ((document.pictureInPictureEnabled && own.requestPictureInPicture) || !!own.webkitSetPresentationMode);
     }
 
     function pip(v) {
-      var on = document.pictureInPictureElement === media || media.webkitPresentationMode === 'picture-in-picture';
+      var on = document.pictureInPictureElement === own || own.webkitPresentationMode === 'picture-in-picture';
       var want = v == null ? !on : !!v;
       if (want === on) return;
-      if (media.requestPictureInPicture && document.pictureInPictureEnabled) {
-        var p = want ? media.requestPictureInPicture() : document.exitPictureInPicture();
+      if (own.requestPictureInPicture && document.pictureInPictureEnabled) {
+        var p = want ? own.requestPictureInPicture() : document.exitPictureInPicture();
         if (p && p.catch) p.catch(function () {});
-      } else if (media.webkitSetPresentationMode) media.webkitSetPresentationMode(want ? 'picture-in-picture' : 'inline');
+      } else if (own.webkitSetPresentationMode) own.webkitSetPresentationMode(want ? 'picture-in-picture' : 'inline');
     }
 
     function paintSkin() {
@@ -885,6 +1006,7 @@
       endPreview();
       closeMenu();
       help(false);
+      filoPaused = true;
       media.pause();
       rest();
       emit('filo:stop', {});
@@ -913,12 +1035,17 @@
       if ('thumbnails' in next) loadThumbnails(next.thumbnails);
       if ('waveform' in next) setWave(next.waveform);
       if ('qualities' in next) { qualities = next.qualities || []; quality = next.quality == null ? null : String(next.quality); }
+      if ('background' in next) background = next.background || null;
+      if ('artwork' in next) artwork = next.artwork || null;
       $.title.textContent = item.title;
       chapterIndex = -2;
       lastDuration = -1;
       lastSecond = -1;
       paintKind();
       paint();
+      sessionMeta();
+      sessionActions();
+      sessionPosition();
       if (menuView) renderMenu(menuView);
     }
 
@@ -953,7 +1080,13 @@
       get pending() { return pending; },
       get root() { return box; },
       get media() { return media; },
+      get background() { return media !== own; },
+      unlock: unlock,
       detach: function () {
+        if (media !== own) { media = own; audio.pause(); }
+        sessionActions(true);
+        if (session) session.metadata = null;
+        if (audio) { audio.removeAttribute('src'); audio.remove(); }
         clearTimeout(commitTimer);
         clearTimeout(hideTimer);
         clearTimeout(sleepTimer);
@@ -964,12 +1097,12 @@
         built.forEach(function (n) { n.remove(); });
         box.classList.remove('filo', 'filo-audio', 'filo-video', 'filo-active', 'filo-paused', 'filo-previewing',
           'filo-held', 'filo-dragging', 'filo-menu-open', 'filo-help-open', 'filo-fullscreen', 'filo-muted', 'filo-framed', 'filo-fill', 'filo-barskin', 'filo-barred', 'filo-waved');
-        if (hadControls) media.setAttribute('controls', '');
+        if (hadControls) own.setAttribute('controls', '');
         if (created) {
-          if (home.parent) home.parent.insertBefore(media, home.next && home.next.parentNode === home.parent ? home.next : box);
+          if (home.parent) home.parent.insertBefore(own, home.next && home.next.parentNode === home.parent ? home.next : box);
           box.remove();
         }
-        delete media.filo;
+        delete own.filo;
       }
     };
 
@@ -1050,7 +1183,7 @@
     on($.close, 'click', function (e) { e.stopPropagation(); stop(); });
     on(media, 'enterpictureinpicture', function () { emit('filo:pip', { on: true }); });
     on(media, 'leavepictureinpicture', function () { emit('filo:pip', { on: false }); });
-    on(media, 'webkitpresentationmodechanged', function () { emit('filo:pip', { on: media.webkitPresentationMode === 'picture-in-picture' }); });
+    on(own, 'webkitpresentationmodechanged', function () { emit('filo:pip', { on: own.webkitPresentationMode === 'picture-in-picture' }); });
     on($.track, 'pointerdown', function (e) {
       if (e.button !== 0 || !duration()) return;
       dragging = true;
@@ -1098,11 +1231,11 @@
     });
     on(box, 'click', function (e) {
       if (docked) {
-        if (e.target === media) emit('filo:expand', {});
+        if (e.target === own) emit('filo:expand', {});
         return;
       }
       if (barred()) {
-        if (e.target === media) toggle();
+        if (e.target === own) toggle();
         return;
       }
       if (interactive(e.target) || audioMode()) return;
@@ -1121,15 +1254,26 @@
     });
     on(document, 'fullscreenchange', function () { paintFull(); emit('filo:fullscreen', { on: fullscreenElement() === box }); });
     on(document, 'webkitfullscreenchange', paintFull);
-    on(media, 'timeupdate', paint);
-    on(media, 'durationchange', function () { lastDuration = -1; paint(); paintBuffered(); });
-    on(media, 'loadedmetadata', function () { lastDuration = -1; paint(); });
-    on(media, 'progress', paintBuffered);
-    on(media, 'seeked', paintBuffered);
-    on(media, 'play', paintPlay);
-    on(media, 'pause', paintPlay);
-    on(media, 'volumechange', paintVolume);
-    on(media, 'ratechange', function () { if (menuView) renderMenu(menuView); });
+    function follow(m) {
+      var mine = function (fn) { return function (e) { if (e.target === media) fn(e); }; };
+      on(m, 'timeupdate', mine(paint));
+      on(m, 'durationchange', mine(function () { lastDuration = -1; paint(); paintBuffered(); sessionPosition(); }));
+      on(m, 'loadedmetadata', mine(function () { lastDuration = -1; paint(); sessionPosition(); }));
+      on(m, 'progress', mine(paintBuffered));
+      on(m, 'seeked', mine(function () { paintBuffered(); sessionPosition(); }));
+      on(m, 'play', mine(function () { filoPaused = false; paintPlay(); }));
+      on(m, 'pause', mine(paintPlay));
+      on(m, 'volumechange', mine(paintVolume));
+      on(m, 'ratechange', mine(function () { sessionPosition(); if (menuView) renderMenu(menuView); }));
+    }
+    follow(own);
+    on(own, 'pause', function () { ownPausedAt = Date.now(); });
+    on(document, 'click', unlock, true);
+    on(document, 'touchend', unlock, true);
+    on(document, 'keydown', unlock, true);
+    on(document, 'visibilitychange', function () { if (hidden()) toBackground(); else toForeground(); });
+    on(window, 'pagehide', toBackground);
+    on(window, 'pageshow', function () { if (!hidden()) toForeground(); });
 
     if (opts.rate) rate(opts.rate);
     box.classList.add('filo-active');
@@ -1145,7 +1289,7 @@
     }
     if (opts.waveform) setWave(opts.waveform);
     if (opts.docked) dock(true);
-    media.filo = api;
+    own.filo = api;
     return api;
   }
 
