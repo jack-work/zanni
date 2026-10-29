@@ -336,6 +336,7 @@
   max-width: calc(100% - 24px);
   max-height: calc(100% - var(--filo-hit) * 2 - 32px);
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 6px 0;
   box-sizing: border-box;
   background: var(--filo-ground);
@@ -555,7 +556,9 @@
 .filo-video .filo-pip:not([hidden]) { display: inline-grid; }
 
 .filo.filo-barskin {
-  --filo-bar-h: 72px;
+  --filo-bar-base: 72px;
+  --filo-band: 0px;
+  --filo-bar-h: calc(var(--filo-bar-base) + var(--filo-band));
   box-sizing: border-box;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -569,7 +572,7 @@
 }
 
 .filo.filo-docked {
-  --filo-bar-h: var(--filo-dock-height, 72px);
+  --filo-bar-h: var(--filo-dock-height, calc(var(--filo-bar-base) + var(--filo-band)));
   grid-template-rows: 100%;
   padding: 0 8px 0 0;
   border-top: 2px solid var(--filo-ink);
@@ -599,7 +602,7 @@
   grid-row: 1;
   display: block;
   width: auto;
-  height: calc(var(--filo-dock-height, 72px) - 2px);
+  height: calc(var(--filo-bar-base) - 2px);
   aspect-ratio: 16 / 9;
   object-fit: cover;
   background: #000;
@@ -702,11 +705,11 @@
 .filo.filo-barskin .filo-menu,
 .filo.filo-barskin .filo-help {
   bottom: calc(var(--filo-bar-h) + 8px);
-  max-height: 60vh;
+  max-height: 60dvh;
 }
 
 @media (max-width: 600px) {
-  .filo.filo-barskin { --filo-bar-h: 64px; }
+  .filo.filo-barskin { --filo-bar-base: 64px; }
   .filo.filo-docked .filo-back,
   .filo.filo-docked .filo-fwd,
   .filo.filo-barskin .filo-elapsed,
@@ -729,26 +732,38 @@
 
 .filo-wave-lit { color: var(--filo-accent); opacity: 1; }
 
-.filo.filo-waved:not(.filo-barskin) { --filo-wave-h: 40px; }
-.filo.filo-audio.filo-waved:not(.filo-barskin) { --filo-wave-h: 48px; }
+.filo.filo-waved { --filo-wave-h: 40px; }
+.filo.filo-audio.filo-waved { --filo-wave-h: 48px; }
+.filo.filo-barskin.filo-waved { --filo-band: 36px; --filo-wave-h: 28px; }
+.filo.filo-docked.filo-waved { --filo-band: 32px; --filo-wave-h: 20px; }
 
-.filo.filo-waved:not(.filo-barskin) .filo-wave { display: block; }
+.filo.filo-waved .filo-wave { display: block; }
 
-.filo.filo-waved:not(.filo-barskin) .filo-track { height: calc(var(--filo-wave-h) + 12px); }
+.filo.filo-waved .filo-track { height: calc(var(--filo-wave-h) + 12px); }
 
-.filo.filo-waved:not(.filo-barskin) .filo-rail,
-.filo.filo-waved:not(.filo-barskin) .filo-track:hover .filo-rail,
-.filo.filo-waved.filo-held:not(.filo-barskin) .filo-rail,
-.filo.filo-waved:not(.filo-barskin) .filo-track:focus-visible .filo-rail {
+.filo.filo-barskin.filo-waved .filo-track {
+  height: var(--filo-band);
+  bottom: calc(var(--filo-bar-h) - var(--filo-band) - 2px);
+  margin: 0 12px;
+}
+
+.filo.filo-barskin.filo-waved .filo-top,
+.filo.filo-barskin.filo-waved .filo-row,
+.filo.filo-docked.filo-waved > video { margin-top: var(--filo-band); }
+
+.filo.filo-waved .filo-rail,
+.filo.filo-waved .filo-track:hover .filo-rail,
+.filo.filo-waved.filo-held .filo-rail,
+.filo.filo-waved .filo-track:focus-visible .filo-rail {
   height: var(--filo-wave-h);
   background: none;
   box-shadow: none;
 }
 
-.filo.filo-waved:not(.filo-barskin) .filo-played,
-.filo.filo-waved:not(.filo-barskin) .filo-buffers { display: none; }
+.filo.filo-waved .filo-played,
+.filo.filo-waved .filo-buffers { display: none; }
 
-.filo.filo-waved:not(.filo-barskin) .filo-thumb {
+.filo.filo-waved .filo-thumb {
   width: 3px;
   height: calc(var(--filo-wave-h) + 8px);
   background: var(--filo-ink);
@@ -756,7 +771,7 @@
   opacity: 1;
 }
 
-.filo.filo-waved:not(.filo-barskin) .filo-ghost { height: calc(var(--filo-wave-h) + 8px); }
+.filo.filo-waved .filo-ghost { height: calc(var(--filo-wave-h) + 8px); }
 
 @media (prefers-reduced-motion: reduce) {
   .filo,

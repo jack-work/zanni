@@ -125,8 +125,10 @@ With `waveform`, the scrubber is the sound: 3px pixel bars with 1px gaps,
 each the loudest of its share of the bins, scaled by the square root so quiet
 speech still shows. Played bars in the accent, the rest dimmed, the head a
 3px ink line; the flag, the drag and one seek per gesture are as before. 40px
-tall over video, 48px in the audio card. The docked bar keeps its thin line,
-and theater keeps its bar until the theater audio layout lands.
+tall over video, 48px in the audio card. In the bar skin (theater and docked)
+it is a band along the top of the bar, above the title and the controls: 28px
+in a 36px band under theater, 20px in a 32px band when docked. The bar grows by
+the band, and `--filo-dock-height` counts it.
 
 It is drawn on two canvases only when the size or the data changes; per tick
 only the lit canvas's clip moves. juglar computes the values at ingest and
@@ -136,7 +138,7 @@ serves them inline as `waveform` on `/api/item`.
 
 Spotify's pattern: Gluck picked it over YouTube's corner window. `dock(true)`
 turns the box into a bar along the bottom of the viewport, 64px on a phone and
-72px elsewhere: the same `<video>` as a 16:9 tile (never re-created, so
+72px elsewhere, plus the waveform's band when there is one: the same `<video>` as a 16:9 tile (never re-created, so
 nothing rebuffers), title and chapter, -10, play, +10, the time, volume, ⋮,
 picture in picture, expand and close. The scrubber is a thin line along the
 bar's top edge with the usual 44px hit area, and its flag opens above the bar.

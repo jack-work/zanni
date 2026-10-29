@@ -359,6 +359,7 @@
     function setWave(list) {
       wave = Array.isArray(list) && list.length ? list.map(function (v) { return Math.max(0, Math.min(255, Number(v) || 0)); }) : null;
       box.classList.toggle('filo-waved', !!wave);
+      syncDockHeight();
       if (wave) drawWave();
     }
 
@@ -674,7 +675,12 @@
     }
 
     function dockHeight() {
-      return window.matchMedia && window.matchMedia('(max-width: 600px)').matches ? 64 : 72;
+      var base = window.matchMedia && window.matchMedia('(max-width: 600px)').matches ? 64 : 72;
+      return base + (parseFloat(getComputedStyle(box).getPropertyValue('--filo-band')) || 0);
+    }
+
+    function syncDockHeight() {
+      if (docked) document.documentElement.style.setProperty('--filo-dock-height', dockHeight() + 'px');
     }
 
     function dock(v) {
@@ -682,7 +688,6 @@
       if (want === docked) return;
       var s = box.style;
       if (want) {
-        document.documentElement.style.setProperty('--filo-dock-height', dockHeight() + 'px');
         dockSaved = DOCK_STYLE.map(function (k) { return [k, s.getPropertyValue(k), s.getPropertyPriority(k)]; });
         s.setProperty('position', 'fixed');
         s.setProperty('top', 'auto');
@@ -699,6 +704,7 @@
         help(false);
         docked = true;
         box.classList.add('filo-docked');
+        syncDockHeight();
         paintSkin();
         wake();
       } else {

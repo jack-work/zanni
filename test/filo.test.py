@@ -33,6 +33,18 @@ def events(pg, name):
     return pg.evaluate(f"events.filter(e => e[0] === '{name}').map(e => e[1])")
 
 
+def wave_shown(pg, height, what):
+    pg.wait_for_timeout(250)
+    got = pg.evaluate("""() => { const c = document.querySelector('.filo-wave-lit'), w = document.querySelector('.filo-wave');
+      const g = c.getContext('2d'), d = g.getImageData(0, 0, c.width, c.height).data; let ink = 0;
+      for (let i = 3; i < d.length; i += 4) if (d[i]) ink++;
+      const b = w.getBoundingClientRect(), r = document.querySelector('.filo-row').getBoundingClientRect();
+      return {display: getComputedStyle(w).display, h: Math.round(b.height), ink, clear: r.top >= b.bottom} }""")
+    assert got["display"] == "block" and got["h"] == height, f"{what} shows a {height}px waveform, got {got}"
+    assert got["ink"] > 200, f"{what} draws its waveform, got {got}"
+    assert got["clear"], f"{what} keeps its controls below the waveform, got {got}"
+
+
 def ready(pg, query=""):
     pg.goto(PAGE + query)
     pg.wait_for_function(f"window.player && {MEDIA}.readyState >= 1 && {MEDIA}.duration > 500")
@@ -391,8 +403,17 @@ with sync_playwright() as p:
     pg.mouse.move(rail["x"] + rail["width"] * 0.75, rail["y"] + rail["height"] / 2)
     assert pg.evaluate("document.querySelector('.filo-flag-time').textContent") == "7:30", "the flag reads the waveform's time"
     pg.evaluate("player.dock(true)")
-    assert pg.evaluate("getComputedStyle(document.querySelector('.filo-wave')).display") == "none", "the docked bar keeps its line"
+    wave_shown(pg, 20, "the docked bar")
+    dock_h = pg.evaluate("[getComputedStyle(document.documentElement).getPropertyValue('--filo-dock-height'), Math.round(player.root.getBoundingClientRect().height)]")
+    assert dock_h == ["104px", 104], f"the page pads by the docked bar's height, wave band included, got {dock_h}"
+    pg.evaluate("player.setItem({title: 'quiet', waveform: null})")
+    assert pg.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--filo-dock-height')") == "72px", "losing the waveform shrinks the docked bar back"
     pg.evaluate("player.dock(false)")
+    pg.evaluate("player.setItem({title: 'loud', waveform: Array.from({length: 1024}, (_, i) => i % 255)})")
+
+    for query, what in (("?bar=1&wave=1", "the watch page's bar"), ("?kind=audio&bar=1&wave=1", "the audio bar")):
+        ready(pg, query)
+        wave_shown(pg, 28, what)
     pg.evaluate("player.setItem({title: 'next', waveform: null})")
     assert not has(pg, "filo-waved"), "an item without a waveform gets the plain bar"
 
