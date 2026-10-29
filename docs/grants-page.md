@@ -110,3 +110,14 @@ items, foreign suggestions, stale reviews and assertions over another
 challenge or origin. It does not verify signatures: that is the service's job
 and El Inspector's review. A real browser needs a passkey for RP ID
 `localhost`; Chrome's DevTools WebAuthn panel gives one.
+
+## Enrollment, window (a) only
+
+`nix build .#grants-enroll` gives `enroll.html`, `enroll.js`, `enroll.css`
+and the assets they use. Serve it at `/enroll.html` under
+`default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self';
+connect-src 'none'; frame-ancestors 'none'; form-action 'none'; base-uri 'none'`,
+behind Authelia two_factor, and drop it in the next deploy. It makes a
+resident, user-verified passkey for its own host and prints the credential
+id, the algorithm, the COSE public key (from the authenticator data) and the
+SPKI key, all base64url. Test: `checks.grants-enroll`.

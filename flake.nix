@@ -249,6 +249,34 @@
           fi
         '';
 
+        packages.grants-enroll = pkgs.runCommand "grants-enroll-${version}" { } ''
+          mkdir -p $out/assets/fontpack
+          cp ${./examples/grants-enroll/index.html} $out/enroll.html
+          cp ${./examples/grants-enroll/enroll.js} ${./examples/grants-enroll/enroll.css} $out/
+          cp -r ${./assets}/gesso $out/assets/gesso
+          cp ${./assets/fontpack/fonts.css} ${./assets/fontpack/fontpack.css} $out/assets/fontpack/
+          cp -r ${./assets/fontpack/fonts} $out/assets/fontpack/fonts
+          if grep -nE 'innerHTML|fetch\(|XMLHttpRequest|sendBeacon|WebSocket' $out/enroll.js; then
+            echo "grants-enroll: the enrollment page must send nothing" >&2
+            exit 1
+          fi
+        '';
+
+        checks.grants-enroll = pkgs.runCommand "zanni-grants-enroll-test" {
+          nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.playwright ])) ];
+          PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
+          PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+          FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
+        } ''
+          set -o pipefail
+          export HOME=$TMPDIR
+          cp -r ${./assets} assets
+          cp -r ${./examples} examples
+          cp -r ${./test} test
+          chmod -R u+w test
+          python3 test/grants_enroll.test.py 2>&1 | tee $out
+        '';
+
         checks.grants = pkgs.runCommand "zanni-grants-test" {
           nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.playwright ])) ];
           PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
