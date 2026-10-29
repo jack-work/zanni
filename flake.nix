@@ -228,6 +228,42 @@
           python3 ${./test/proscenio.test.py} examples/proscenio.html 2>&1 | tee $out
         '';
 
+        packages.grants-page = pkgs.runCommand "grants-page-${version}" { } ''
+          mkdir -p $out/assets
+          cp ${./examples/grants/index.html} $out/index.html
+          cp ${./examples/grants/grants.js} $out/grants.js
+          cp ${./examples/grants/grants.css} $out/grants.css
+          for c in gesso proscenio licenza clessidra sigillo; do
+            cp -r ${./assets}/$c $out/assets/$c
+          done
+          mkdir -p $out/assets/fontpack
+          cp ${./assets/fontpack/fonts.css} ${./assets/fontpack/fontpack.css} $out/assets/fontpack/
+          cp -r ${./assets/fontpack/fonts} $out/assets/fontpack/fonts
+          if grep -rlE 'innerHTML|outerHTML|insertAdjacentHTML|document\.write' $out --include=*.js; then
+            echo "grants-page: a script writes markup from a string" >&2
+            exit 1
+          fi
+          if grep -n '<script>\|<style\| style=\| on[a-z]*=' $out/index.html; then
+            echo "grants-page: inline script or style would break its CSP" >&2
+            exit 1
+          fi
+        '';
+
+        checks.grants = pkgs.runCommand "zanni-grants-test" {
+          nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.playwright ])) ];
+          PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
+          PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+          FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
+        } ''
+          set -o pipefail
+          export HOME=$TMPDIR
+          cp -r ${./assets} assets
+          cp -r ${./examples} examples
+          cp -r ${./test} test
+          chmod -R u+w test
+          python3 test/grants.test.py 2>&1 | tee $out
+        '';
+
         checks.bacchetta = pkgs.runCommand "zanni-bacchetta-test" {
           nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.playwright ])) ];
           PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;

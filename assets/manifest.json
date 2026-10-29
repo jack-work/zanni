@@ -416,6 +416,104 @@
       ],
       "constructed": true,
       "activator": "data-proscenio"
+    },
+    "clessidra": {
+      "summary": "A live countdown dial for anything that expires: a notched ring that empties from green through ochre to red, run down from the server's seconds remaining.",
+      "marker": "<!-- zanni:clessidra -->",
+      "classes": [
+        "clessidra",
+        "clessidra-spent",
+        "clessidra-time"
+      ],
+      "files": [
+        "clessidra.css",
+        "clessidra.js"
+      ],
+      "docs": "docs/clessidra.md",
+      "knobs": [
+        "--clessidra-size",
+        "--clessidra-ring",
+        "--clessidra-notches",
+        "--clessidra-ok",
+        "--clessidra-warn",
+        "--clessidra-fail",
+        "--clessidra-empty"
+      ],
+      "constructed": true,
+      "activator": "data-clessidra"
+    },
+    "licenza": {
+      "summary": "The \"can I do this?\" card: a requested permission, the requester's reason as quoted text, one row of answers (no or a length), narrowing by action and widening only by the server's suggestions.",
+      "marker": "<!-- zanni:licenza -->",
+      "classes": [
+        "licenza",
+        "licenza-add",
+        "licenza-answer",
+        "licenza-chip",
+        "licenza-choice",
+        "licenza-loud",
+        "licenza-no",
+        "licenza-path",
+        "licenza-resource",
+        "licenza-says",
+        "licenza-scope",
+        "licenza-suggested",
+        "licenza-summary",
+        "licenza-why",
+        "licenza-widen",
+        "licenza-widen-head",
+        "licenza-widen-item",
+        "licenza-widen-text"
+      ],
+      "files": [
+        "licenza.css",
+        "licenza.js"
+      ],
+      "docs": "docs/licenza.md",
+      "knobs": [
+        "--licenza-ground",
+        "--licenza-ink",
+        "--licenza-muted",
+        "--licenza-line",
+        "--licenza-yes",
+        "--licenza-no",
+        "--licenza-loud",
+        "--licenza-focus"
+      ],
+      "constructed": true
+    },
+    "sigillo": {
+      "summary": "The seal sheet: prints a server's lines verbatim with their digest and signs them with a WebAuthn passkey step-up.",
+      "marker": "<!-- zanni:sigillo -->",
+      "classes": [
+        "sigillo",
+        "sigillo-actions",
+        "sigillo-back",
+        "sigillo-digest",
+        "sigillo-digest-label",
+        "sigillo-error",
+        "sigillo-line",
+        "sigillo-note",
+        "sigillo-open",
+        "sigillo-receipt",
+        "sigillo-seal",
+        "sigillo-title"
+      ],
+      "files": [
+        "sigillo.css",
+        "sigillo.js"
+      ],
+      "docs": "docs/sigillo.md",
+      "knobs": [
+        "--sigillo-ground",
+        "--sigillo-paper",
+        "--sigillo-ink",
+        "--sigillo-accent",
+        "--sigillo-edge",
+        "--sigillo-scrim",
+        "--sigillo-width"
+      ],
+      "constructed": true
     }
   },
   "planned": [
