@@ -27,6 +27,7 @@
     unfull: 'M4 1h2v3h-2zM10 1h2v3h-2zM1 4h5v2h-5zM10 4h5v2h-5zM1 10h5v2h-5zM10 10h5v2h-5zM4 12h2v3h-2zM10 12h2v3h-2z',
     pip: 'M1 2h14v1h-14zM1 12h14v1h-14zM1 3h1v9h-1zM14 3h1v9h-1zM7 7h6v4h-6z',
     expand: 'M7 4h2v1h-2zM6 5h4v1h-4zM5 6h2v1h-2zM9 6h2v1h-2zM4 7h2v1h-2zM10 7h2v1h-2zM3 8h2v1h-2zM11 8h2v1h-2zM2 9h2v1h-2zM12 9h2v1h-2zM1 10h2v1h-2zM13 10h2v1h-2z',
+    collapse: 'M1 5h2v1h-2zM13 5h2v1h-2zM2 6h2v1h-2zM12 6h2v1h-2zM3 7h2v1h-2zM11 7h2v1h-2zM4 8h2v1h-2zM10 8h2v1h-2zM5 9h2v1h-2zM9 9h2v1h-2zM6 10h4v1h-4zM7 11h2v1h-2z',
     close: 'M2 2h2v1h-2zM12 2h2v1h-2zM3 3h2v1h-2zM11 3h2v1h-2zM4 4h2v1h-2zM10 4h2v1h-2zM5 5h2v1h-2zM9 5h2v1h-2zM6 6h4v1h-4zM7 7h2v1h-2zM6 8h4v1h-4zM5 9h2v1h-2zM9 9h2v1h-2zM4 10h2v1h-2zM10 10h2v1h-2zM3 11h2v1h-2zM11 11h2v1h-2zM2 12h2v1h-2zM12 12h2v1h-2z'
   };
   var DOCK_STYLE = ['position', 'top', 'right', 'bottom', 'left', 'width', 'height', 'max-height', 'z-index', 'display'];
@@ -220,6 +221,8 @@
 
     var $ = {
       top: el('div', 'filo-top'),
+      art: el('div', 'filo-art', { 'aria-hidden': 'true' }),
+      kicker: el('div', 'filo-kicker'),
       title: el('div', 'filo-title'),
       chapter: el('div', 'filo-chapter', { 'aria-live': 'polite' }),
       center: el('div', 'filo-center'),
@@ -262,6 +265,10 @@
       pip: button('filo-pip', 'Picture in picture', 'pip'),
       expand: button('filo-expand', 'Open the player', 'expand'),
       close: button('filo-close', 'Close', 'close'),
+      extras: el('div', 'filo-extras'),
+      speed: el('button', 'filo-chip filo-speed', { type: 'button' }),
+      sleep: el('button', 'filo-chip filo-sleep', { type: 'button' }),
+      collapse: button('filo-collapse', 'Minimise the player', 'collapse'),
       menu: el('div', 'filo-menu', { role: 'menu', 'aria-label': 'Settings', hidden: '' }),
       help: el('div', 'filo-help', { role: 'dialog', 'aria-label': 'Keyboard shortcuts', hidden: '' }),
       status: el('div', 'filo-status', { role: 'status', 'aria-live': 'polite' })
@@ -272,7 +279,8 @@
     $.bigBack.tabIndex = -1;
     $.bigPlay.tabIndex = -1;
     $.bigFwd.tabIndex = -1;
-    $.top.append($.title, $.chapter);
+    $.top.append($.kicker, $.title, $.chapter);
+    $.extras.append($.speed, $.sleep, $.collapse);
     $.center.append($.bigBack, $.bigPlay, $.bigFwd);
     $.flag.append($.frame, $.flagTime, $.flagChapter);
     $.rail.append($.buffers, $.played, $.wave, $.waveLit, $.ticks);
@@ -280,9 +288,9 @@
     $.at.append($.ghost, $.flag);
     $.track.append($.rail, $.head, $.at);
     $.volume.append($.mute, $.level);
-    $.row.append($.play, $.backBig, $.back, $.fwd, $.fwdBig, $.volume, $.elapsed, $.sep, $.total, $.remaining, $.now, $.gap, $.more, $.pip, $.full, $.expand, $.close);
+    $.row.append($.play, $.backBig, $.back, $.fwd, $.fwdBig, $.volume, $.elapsed, $.sep, $.total, $.remaining, $.now, $.gap, $.more, $.pip, $.full, $.expand, $.close, $.extras);
     $.chrome.append($.track, $.row);
-    var built = [$.top, $.center, $.chrome, $.menu, $.help, $.status];
+    var built = [$.art, $.top, $.center, $.chrome, $.menu, $.help, $.status];
     built.forEach(function (n) { box.appendChild(n); });
     box.classList.add('filo');
     if (opts.fill) box.classList.add('filo-fill');
@@ -363,7 +371,6 @@
     function setWave(list) {
       wave = Array.isArray(list) && list.length ? list.map(function (v) { return Math.max(0, Math.min(255, Number(v) || 0)); }) : null;
       box.classList.toggle('filo-waved', !!wave);
-      syncDockHeight();
       if (wave) drawWave();
     }
 
@@ -707,6 +714,7 @@
       filoPaused = true;
       media.pause();
       sleepMode = 'off';
+      paintChips();
       say('Sleep timer stopped playback');
       emit('filo:sleep', { mode: 'off', fired: true });
     }
@@ -716,6 +724,7 @@
       sleepTimer = null;
       sleepMode = mode;
       if (/^\d+$/.test(mode)) sleepTimer = setTimeout(sleepNow, Number(mode) * 60000);
+      paintChips();
       emit('filo:sleep', { mode: mode, fired: false });
     }
 
@@ -791,17 +800,36 @@
     }
 
     function paintSkin() {
-      box.classList.toggle('filo-barskin', docked || barred());
-      box.classList.toggle('filo-barred', barred());
+      var theater = barred() && audioMode();
+      box.classList.toggle('filo-barskin', docked || (barred() && !theater));
+      box.classList.toggle('filo-barred', barred() && !theater);
+      box.classList.toggle('filo-theater', theater);
+      if (theater && $.more.parentNode !== $.extras) $.extras.insertBefore($.more, $.collapse);
+      if (!theater && $.more.parentNode !== $.row) $.row.insertBefore($.more, $.pip);
+      if (wave) drawWave();
+    }
+
+    function paintArt() {
+      $.art.textContent = '';
+      if (artwork) {
+        $.art.append(el('img', null, { src: artwork, alt: '' }));
+        return;
+      }
+      var mark = el('span');
+      mark.textContent = (item.title.trim().split(/\s+/)[0] || '').slice(0, 3);
+      $.art.append(mark);
+    }
+
+    function paintChips() {
+      $.speed.textContent = rateLabel(media.playbackRate);
+      $.speed.setAttribute('aria-label', 'Speed ' + rateLabel(media.playbackRate));
+      var s = sleepMode === 'off' ? 'off' : sleepMode === 'chapter' ? 'chapter' : sleepMode + 'm';
+      $.sleep.textContent = 'sleep \u00b7 ' + s;
+      $.sleep.setAttribute('aria-label', 'Sleep ' + sleepLabel());
     }
 
     function dockHeight() {
-      var base = window.matchMedia && window.matchMedia('(max-width: 600px)').matches ? 64 : 72;
-      return base + (parseFloat(getComputedStyle(box).getPropertyValue('--filo-band')) || 0);
-    }
-
-    function syncDockHeight() {
-      if (docked) document.documentElement.style.setProperty('--filo-dock-height', dockHeight() + 'px');
+      return window.matchMedia && window.matchMedia('(max-width: 600px)').matches ? 64 : 72;
     }
 
     function dock(v) {
@@ -809,6 +837,7 @@
       if (want === docked) return;
       var s = box.style;
       if (want) {
+        document.documentElement.style.setProperty('--filo-dock-height', dockHeight() + 'px');
         dockSaved = DOCK_STYLE.map(function (k) { return [k, s.getPropertyValue(k), s.getPropertyPriority(k)]; });
         s.setProperty('position', 'fixed');
         s.setProperty('top', 'auto');
@@ -825,7 +854,6 @@
         help(false);
         docked = true;
         box.classList.add('filo-docked');
-        syncDockHeight();
         paintSkin();
         wake();
       } else {
@@ -1037,11 +1065,16 @@
       if ('qualities' in next) { qualities = next.qualities || []; quality = next.quality == null ? null : String(next.quality); }
       if ('background' in next) background = next.background || null;
       if ('artwork' in next) artwork = next.artwork || null;
+      item.kicker = next.kicker || '';
+      $.kicker.textContent = item.kicker;
       $.title.textContent = item.title;
+      paintArt();
+      paintChips();
       chapterIndex = -2;
       lastDuration = -1;
       lastSecond = -1;
       paintKind();
+      paintSkin();
       paint();
       sessionMeta();
       sessionActions();
@@ -1096,7 +1129,7 @@
         listeners = [];
         built.forEach(function (n) { n.remove(); });
         box.classList.remove('filo', 'filo-audio', 'filo-video', 'filo-active', 'filo-paused', 'filo-previewing',
-          'filo-held', 'filo-dragging', 'filo-menu-open', 'filo-help-open', 'filo-fullscreen', 'filo-muted', 'filo-framed', 'filo-fill', 'filo-barskin', 'filo-barred', 'filo-waved');
+          'filo-held', 'filo-dragging', 'filo-menu-open', 'filo-help-open', 'filo-fullscreen', 'filo-muted', 'filo-framed', 'filo-fill', 'filo-barskin', 'filo-barred', 'filo-waved', 'filo-theater');
         if (hadControls) own.setAttribute('controls', '');
         if (created) {
           if (home.parent) home.parent.insertBefore(own, home.next && home.next.parentNode === home.parent ? home.next : box);
@@ -1181,6 +1214,9 @@
     on($.pip, 'click', function () { pip(); });
     on($.expand, 'click', function (e) { e.stopPropagation(); emit('filo:expand', {}); });
     on($.close, 'click', function (e) { e.stopPropagation(); stop(); });
+    on($.collapse, 'click', function (e) { e.stopPropagation(); dock(true); });
+    on($.speed, 'click', function (e) { e.stopPropagation(); menu(true); openView('rate'); });
+    on($.sleep, 'click', function (e) { e.stopPropagation(); menu(true); openView('sleep'); });
     on(media, 'enterpictureinpicture', function () { emit('filo:pip', { on: true }); });
     on(media, 'leavepictureinpicture', function () { emit('filo:pip', { on: false }); });
     on(own, 'webkitpresentationmodechanged', function () { emit('filo:pip', { on: own.webkitPresentationMode === 'picture-in-picture' }); });
@@ -1264,7 +1300,7 @@
       on(m, 'play', mine(function () { filoPaused = false; paintPlay(); }));
       on(m, 'pause', mine(paintPlay));
       on(m, 'volumechange', mine(paintVolume));
-      on(m, 'ratechange', mine(function () { sessionPosition(); if (menuView) renderMenu(menuView); }));
+      on(m, 'ratechange', mine(function () { sessionPosition(); paintChips(); if (menuView) renderMenu(menuView); }));
     }
     follow(own);
     on(own, 'pause', function () { ownPausedAt = Date.now(); });
@@ -1277,7 +1313,7 @@
 
     if (opts.rate) rate(opts.rate);
     box.classList.add('filo-active');
-    setItem({ title: item.title, chapters: item.chapters, duration: item.duration, kind: item.kind, thumbnails: opts.thumbnails });
+    setItem({ title: item.title, chapters: item.chapters, duration: item.duration, kind: item.kind, thumbnails: opts.thumbnails, kicker: opts.kicker });
     paintBuffered();
     paintPlay();
     paintVolume();

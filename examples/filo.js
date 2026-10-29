@@ -86,6 +86,7 @@ function vtt(img) {
   if (params.get('docked')) opts.docked = true;
   if (params.get('background')) opts.background = { src: params.get('background') === 'broken' ? 'nowhere.wav' : silence(600), type: 'audio/wav' };
   if (params.get('session')) opts.session = true;
+  if (params.get('kicker')) opts.kicker = params.get('kicker');
   var ready = params.get('thumbs') ? sprite().then(function (img) { opts.thumbnails = vtt(img); }) : Promise.resolve();
   ready.then(function () {
     window.player = zanni.filo.attach(media, opts);

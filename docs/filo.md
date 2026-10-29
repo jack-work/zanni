@@ -61,7 +61,8 @@ and leaves the media element where it was found.
 | `docked` | false | start as the bottom bar |
 | `waveform` | none | 1024 integers 0..255, the loudest sample per slice of the duration; the scrubber becomes the waveform |
 | `session` | false | drive the lock screen through Media Session |
-| `artwork` | the poster | lock screen artwork URL |
+| `artwork` | the poster | artwork URL: the theater's square and the lock screen |
+| `kicker` | none | a line above the theater's title, such as the show |
 | `background` | none | `{ src, type }`: an audio source that takes over while the page is hidden |
 | `bar` | false | theater mode: the picture with the bar's controls under it, never hiding. Fullscreen from it is the ordinary overlay player |
 
@@ -122,16 +123,25 @@ Audio has no picture to cover, so it is a card that never hides: title,
 chapter, scrubber, elapsed and remaining, and a row of volume, -10, play, +10
 and the menu.
 
+## Theater
+
+Audio with `bar: true` is the theater: a panel in the page, laid out as
+Gluck's mockup (files.kelliher.info/7d/zanni/filo-theater-mockup.png). A 220px
+square of artwork on the left, then the kicker (`kicker`, mono, muted), the
+title in the display face, the chapter, the waveform as the scrubber, elapsed
+and remaining, -30 -10 play +10 +30, and a row of chips: speed, sleep, the
+menu, and collapse, which docks. On a phone the artwork is 140px and sits on
+top. Without `artwork` the square carries the title's first word as a mark.
+Video with `bar: true` keeps the bar under the picture.
+
 ## Waveform
 
 With `waveform`, the scrubber is the sound: 3px pixel bars with 1px gaps,
 each the loudest of its share of the bins, scaled by the square root so quiet
 speech still shows. Played bars in the accent, the rest dimmed, the head a
-3px ink line; the flag, the drag and one seek per gesture are as before. 40px
-tall over video, 48px in the audio card. In the bar skin (theater and docked)
-it is a band along the top of the bar, above the title and the controls: 28px
-in a 36px band under theater, 20px in a 32px band when docked. The bar grows by
-the band, and `--filo-dock-height` counts it.
+3px ink line; the flag, the drag and one seek per gesture are as before. Audio
+only: 48px in the audio card, 72px in the theater (56px on a phone). Video
+never shows it, and the docked bar keeps its thin line.
 
 It is drawn on two canvases only when the size or the data changes; per tick
 only the lit canvas's clip moves. juglar computes the values at ingest and
@@ -164,7 +174,7 @@ starts playback from its own gesture.
 
 Spotify's pattern: Gluck picked it over YouTube's corner window. `dock(true)`
 turns the box into a bar along the bottom of the viewport, 64px on a phone and
-72px elsewhere, plus the waveform's band when there is one: the same `<video>` as a 16:9 tile (never re-created, so
+72px elsewhere: the same `<video>` as a 16:9 tile (never re-created, so
 nothing rebuffers), title and chapter, -10, play, +10, the time, volume, ⋮,
 picture in picture, expand and close. The scrubber is a thin line along the
 bar's top edge with the usual 44px hit area, and its flag opens above the bar.

@@ -38,7 +38,7 @@ def wave_shown(pg, height, what):
     got = pg.evaluate("""() => { const c = document.querySelector('.filo-wave-lit'), w = document.querySelector('.filo-wave');
       const g = c.getContext('2d'), d = g.getImageData(0, 0, c.width, c.height).data; let ink = 0;
       for (let i = 3; i < d.length; i += 4) if (d[i]) ink++;
-      const b = w.getBoundingClientRect(), r = document.querySelector('.filo-row').getBoundingClientRect();
+      const b = w.getBoundingClientRect(), r = document.querySelector('.filo-play').getBoundingClientRect();
       return {display: getComputedStyle(w).display, h: Math.round(b.height), ink, clear: r.top >= b.bottom} }""")
     assert got["display"] == "block" and got["h"] == height, f"{what} shows a {height}px waveform, got {got}"
     assert got["ink"] > 200, f"{what} draws its waveform, got {got}"
@@ -403,17 +403,50 @@ with sync_playwright() as p:
     pg.mouse.move(rail["x"] + rail["width"] * 0.75, rail["y"] + rail["height"] / 2)
     assert pg.evaluate("document.querySelector('.filo-flag-time').textContent") == "7:30", "the flag reads the waveform's time"
     pg.evaluate("player.dock(true)")
-    wave_shown(pg, 20, "the docked bar")
-    dock_h = pg.evaluate("[getComputedStyle(document.documentElement).getPropertyValue('--filo-dock-height'), Math.round(player.root.getBoundingClientRect().height)]")
-    assert dock_h == ["104px", 104], f"the page pads by the docked bar's height, wave band included, got {dock_h}"
-    pg.evaluate("player.setItem({title: 'quiet', waveform: null})")
-    assert pg.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--filo-dock-height')") == "72px", "losing the waveform shrinks the docked bar back"
+    pg.wait_for_timeout(250)
+    assert pg.evaluate("getComputedStyle(document.querySelector('.filo-wave')).display") == "none", "the docked bar keeps its thin line"
+    assert pg.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--filo-dock-height')") == "72px"
     pg.evaluate("player.dock(false)")
-    pg.evaluate("player.setItem({title: 'loud', waveform: Array.from({length: 1024}, (_, i) => i % 255)})")
 
-    for query, what in (("?bar=1&wave=1", "the watch page's bar"), ("?kind=audio&bar=1&wave=1", "the audio bar")):
-        ready(pg, query)
-        wave_shown(pg, 28, what)
+    ready(pg, "?bar=1&wave=1")
+    assert pg.evaluate("getComputedStyle(document.querySelector('.filo-wave')).display") == "none", "video never shows the waveform"
+    assert not has(pg, "filo-theater") and has(pg, "filo-barred"), "video keeps its bar"
+
+    ready(pg, "?kind=audio&bar=1&wave=1&kicker=cs7641&title=OL%20overview")
+    assert has(pg, "filo-theater") and not has(pg, "filo-barskin"), "audio under bar: true is the theater panel, not a bar"
+    wave_shown(pg, 72, "the theater")
+    lay = pg.evaluate("""() => { const r = s => document.querySelector(s).getBoundingClientRect();
+      const art = r('.filo-art'), title = r('.filo-title'), wave = r('.filo-wave'), play = r('.filo-play'), chips = r('.filo-extras');
+      return { artLeft: art.right <= title.left, artSquare: Math.round(art.width) === Math.round(art.height) && Math.round(art.width) === 220,
+        order: title.bottom <= wave.top && wave.bottom <= play.top && play.bottom <= chips.top,
+        playCentered: Math.abs((play.left + play.right) / 2 - (wave.left + wave.right) / 2) < 3,
+        kicker: document.querySelector('.filo-kicker').textContent, face: getComputedStyle(document.querySelector('.filo-title')).fontFamily,
+        speed: document.querySelector('.filo-speed').textContent, sleep: document.querySelector('.filo-sleep').textContent,
+        more: document.querySelector('.filo-more').parentElement.className, mark: document.querySelector('.filo-art').textContent } }""")
+    assert lay["artLeft"] and lay["artSquare"], f"a 220px square of artwork sits left of the text, got {lay}"
+    assert lay["order"] and lay["playCentered"], f"title, waveform, transport, chips stack in order, play under the waveform's middle, got {lay}"
+    assert lay["kicker"] == "cs7641" and "Jacquard" in lay["face"] and lay["mark"] == "OL", f"kicker, display title, and a mark without artwork, got {lay}"
+    assert lay["speed"] == "1\u00d7" and lay["sleep"] == "sleep \u00b7 off" and lay["more"] == "filo-extras", f"speed and sleep chips, then the menu, got {lay}"
+    pg.locator(".filo-speed").click()
+    assert pg.evaluate("player.open") and "Speed" in pg.evaluate("document.querySelector('.filo-menu').textContent"), "the speed chip opens the speed list"
+    pg.keyboard.press("Escape")
+    pg.evaluate("player.rate(1.25)")
+    pg.wait_for_function("document.querySelector('.filo-speed').textContent === '1.25\u00d7'", timeout=3000)
+    pg.locator(".filo-collapse").click()
+    assert pg.evaluate("player.docked") and not has(pg, "filo-theater"), "the collapse button docks the player"
+    assert pg.evaluate("getComputedStyle(document.querySelector('.filo-wave')).display") == "none", "and the docked bar has no waveform"
+    assert pg.evaluate("document.querySelector('.filo-more').parentElement.className") == "filo-row", "the menu goes back to the bar"
+    pg.evaluate("player.dock(false)")
+    assert has(pg, "filo-theater"), "undocked, the theater returns"
+
+    ph2 = b.new_page(viewport={"width": 390, "height": 800})
+    ready(ph2, "?kind=audio&bar=1&wave=1&title=OL%20overview")
+    ph2.wait_for_timeout(250)
+    narrow = ph2.evaluate("""() => { const r = s => document.querySelector(s).getBoundingClientRect(); const box = r('.filo');
+      return { art: Math.round(r('.filo-art').width), above: r('.filo-art').bottom <= r('.filo-title').top, h: Math.round(r('.filo-wave').height),
+        inside: [...document.querySelectorAll('.filo-wave, .filo-remaining, .filo-fwd-big, .filo-extras')].every(n => { const q = n.getBoundingClientRect(); return q.right <= box.right + 0.5 && q.left >= box.left - 0.5 }) } }""")
+    assert narrow == {"art": 140, "above": True, "h": 56, "inside": True}, f"a phone stacks a 140px art over the text and fits the box, got {narrow}"
+    ph2.close()
     pg.evaluate("player.setItem({title: 'next', waveform: null})")
     assert not has(pg, "filo-waved"), "an item without a waveform gets the plain bar"
 
