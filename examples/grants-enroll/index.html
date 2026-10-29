@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="referrer" content="no-referrer">
+<title>grants · enroll a passkey</title>
+<link rel="stylesheet" href="/assets/fontpack/fonts.css">
+<link rel="stylesheet" href="/assets/fontpack/fontpack.css">
+<link rel="stylesheet" href="/assets/gesso/gesso.css">
+<link rel="stylesheet" href="/enroll.css">
+<script src="/enroll.js" defer></script>
+</head>
+<body class="gesso">
+<main>
+  <h1>grants</h1>
+  <p class="lede">Make the passkey that seals grants. This page sends nothing anywhere: it prints the new passkey's public half, and you copy it into the Nix change that pins it.</p>
+  <dl class="facts">
+    <dt>for</dt><dd id="rp"></dd>
+  </dl>
+  <button type="button" id="make">make a passkey</button>
+  <p id="error" class="error" role="alert" hidden></p>
+  <section id="out" hidden>
+    <h2>Copy these into the pin</h2>
+    <dl class="facts">
+      <dt>credential id</dt><dd><output id="cred-id"></output></dd>
+      <dt>algorithm</dt><dd><output id="alg"></output></dd>
+      <dt>public key, COSE</dt><dd><output id="cose"></output></dd>
+      <dt>public key, SPKI</dt><dd><output id="spki"></output></dd>
+      <dt>authenticator</dt><dd><output id="aaguid"></output></dd>
+    </dl>
+    <p class="lede">Nothing here is secret. The private half never leaves your device.</p>
+  </section>
+</main>
+</body>
+</html>

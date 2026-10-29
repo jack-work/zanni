@@ -22,12 +22,15 @@ from urllib.parse import unquote
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PAGE = os.path.join(ROOT, "examples", "grants")
 ASSETS = os.path.join(ROOT, "assets")
+ENROLL = os.path.join(ROOT, "examples", "grants-enroll")
 
 CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; "
        "connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'")
 TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
          ".css": "text/css; charset=utf-8", ".woff2": "font/woff2", ".png": "image/png"}
 LENGTHS = (900, 3600, 86400, 604800)
+ENROLL_CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'none'; "
+              "frame-ancestors 'none'; form-action 'none'; base-uri 'none'")
 CHALLENGE_TTL = 60
 
 BOX0 = {"id": "sandbox:box0@grants", "kind": "sandbox", "edge_name": "box0"}
@@ -232,6 +235,8 @@ class Store:
         return self.issue({"kind": "revoke", "payload": payload}, lines_for_revoke(payload))
 
     def issue(self, review, lines):
+        if any(c < " " for line in lines for c in line):
+            raise Refused(400, "a field holds a newline or control character")
         digest = hashlib.sha256("\n".join(lines).encode()).digest()
         review_id = "v-" + b64url(secrets.token_bytes(6))
         review.update(lines=lines, challenge=b64url(digest), issued=time.time(), used=False)
@@ -299,13 +304,13 @@ def handler_for(store):
             self.end_headers()
             self.wfile.write(data)
 
-        def file(self, path):
+        def file(self, path, csp=CSP):
             if not os.path.isfile(path):
                 return self.send(404, {"error": "not found"})
             ext = os.path.splitext(path)[1]
             with open(path, "rb") as f:
                 body = f.read()
-            extra = {"Content-Security-Policy": CSP, "Referrer-Policy": "no-referrer"} if ext == ".html" else None
+            extra = {"Content-Security-Policy": csp, "Referrer-Policy": "no-referrer"} if ext == ".html" else None
             self.send(200, body, TYPES.get(ext, "application/octet-stream"), extra)
 
         def body(self):
@@ -331,6 +336,10 @@ def handler_for(store):
                 return self.file(os.path.join(PAGE, "index.html"))
             if parts[0] == "assets" and ".." not in parts:
                 return self.file(os.path.join(ASSETS, *parts[1:]))
+            if parts == ["enroll.html"]:
+                return self.file(os.path.join(ENROLL, "index.html"), ENROLL_CSP)
+            if len(parts) == 1 and parts[0] in ("enroll.js", "enroll.css"):
+                return self.file(os.path.join(ENROLL, parts[0]))
             if len(parts) == 1 and parts[0] in ("grants.js", "grants.css"):
                 return self.file(os.path.join(PAGE, parts[0]))
             self.send(404, {"error": "not found"})
