@@ -35,7 +35,8 @@ zanni.sigillo.open({
 
 `zanni.sigillo.assert(publicKey)` takes the server's options with base64url
 strings (`challenge`, `allowCredentials[].id`), calls
-`navigator.credentials.get` with `userVerification: 'required'` by default,
+`navigator.credentials.get` with `userVerification: 'required'` whatever the
+server sent,
 and returns the assertion as base64url JSON (`id`, `rawId`, `type`,
 `response.clientDataJSON`, `authenticatorData`, `signature`, `userHandle`).
 Each seal is a new assertion; nothing is cached.

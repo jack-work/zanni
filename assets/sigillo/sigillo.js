@@ -38,7 +38,7 @@
       challenge: fromB64url(publicKey.challenge),
       rpId: publicKey.rpId,
       timeout: publicKey.timeout || 60000,
-      userVerification: publicKey.userVerification || 'required',
+      userVerification: 'required',
       allowCredentials: (publicKey.allowCredentials || []).map(function (c) {
         return { type: c.type || 'public-key', id: fromB64url(c.id), transports: c.transports };
       })
