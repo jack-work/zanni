@@ -1,0 +1,290 @@
+{
+ "band-light": {
+  "background": "#E7D4C4",
+  "font": "\"Grenze\", \"EB Garamond\", Georgia, serif",
+  "title": {
+   "color": "#1A0D0F",
+   "fontSize": 19,
+   "font": "\"Grenze\", \"EB Garamond\", Georgia, serif",
+   "fontWeight": 700
+  },
+  "axis": {
+   "domainColor": "#A5887B",
+   "gridColor": "#CDB39F",
+   "tickColor": "#A5887B",
+   "labelColor": "#694B3F",
+   "titleColor": "#1A0D0F",
+   "labelFontSize": 12,
+   "titleFontSize": 13
+  },
+  "legend": {
+   "labelColor": "#694B3F",
+   "titleColor": "#1A0D0F",
+   "labelFontSize": 12,
+   "titleFontSize": 13
+  },
+  "view": {
+   "stroke": "#CDB39F"
+  },
+  "range": {
+   "category": [
+    "#7E1F22",
+    "#7A5A1E",
+    "#3A6B2E",
+    "#3F5480",
+    "#6B3A6E",
+    "#1F6672",
+    "#5E4A42",
+    "#A8452A"
+   ],
+   "ramp": [
+    "#E0C6AC",
+    "#CAA892",
+    "#B48A78",
+    "#9D6D60",
+    "#875148",
+    "#713631",
+    "#5A1A1C"
+   ],
+   "diverging": [
+    "#1F6672",
+    "#557D82",
+    "#819591",
+    "#ADACA0",
+    "#D9C4AF",
+    "#CC9F8A",
+    "#BC7A66",
+    "#AB5542",
+    "#972C1D"
+   ],
+   "heatmap": [
+    "#E0C6AC",
+    "#CAA892",
+    "#B48A78",
+    "#9D6D60",
+    "#875148",
+    "#713631",
+    "#5A1A1C"
+   ]
+  },
+  "mark": {
+   "color": "#7E1F22"
+  }
+ },
+ "band-dark": {
+  "background": "#1A0D0F",
+  "font": "\"Grenze\", \"EB Garamond\", Georgia, serif",
+  "title": {
+   "color": "#E7D4C4",
+   "fontSize": 19,
+   "font": "\"Grenze\", \"EB Garamond\", Georgia, serif",
+   "fontWeight": 700
+  },
+  "axis": {
+   "domainColor": "#7A584A",
+   "gridColor": "#3B2620",
+   "tickColor": "#7A584A",
+   "labelColor": "#A5887B",
+   "titleColor": "#E7D4C4",
+   "labelFontSize": 12,
+   "titleFontSize": 13
+  },
+  "legend": {
+   "labelColor": "#A5887B",
+   "titleColor": "#E7D4C4",
+   "labelFontSize": 12,
+   "titleFontSize": 13
+  },
+  "view": {
+   "stroke": "#3B2620"
+  },
+  "range": {
+   "category": [
+    "#D9787A",
+    "#C9A25F",
+    "#8FC27A",
+    "#93A6D8",
+    "#C08AC4",
+    "#6FB8C2",
+    "#B7A397",
+    "#E58A5A"
+   ],
+   "ramp": [
+    "#3D2722",
+    "#583E30",
+    "#75573E",
+    "#92714D",
+    "#B18B5D",
+    "#D1A76C",
+    "#F2C47C"
+   ],
+   "diverging": [
+    "#6FB8C2",
+    "#679297",
+    "#5C6E6F",
+    "#4E4B49",
+    "#3E2A25",
+    "#653F35",
+    "#8E5446",
+    "#BA6B58",
+    "#E8826A"
+   ],
+   "heatmap": [
+    "#3D2722",
+    "#583E30",
+    "#75573E",
+    "#92714D",
+    "#B18B5D",
+    "#D1A76C",
+    "#F2C47C"
+   ]
+  },
+  "mark": {
+   "color": "#D9787A"
+  }
+ },
+ "figaro-light": {
+  "background": "#E7D4C4",
+  "font": "\"Grenze\", \"EB Garamond\", Georgia, serif",
+  "title": {
+   "color": "#2B1A15",
+   "fontSize": 21,
+   "font": "\"Grenze\", \"EB Garamond\", Georgia, serif",
+   "fontWeight": 700
+  },
+  "axis": {
+   "domainColor": "#C2A690",
+   "gridColor": "#CDB39F",
+   "tickColor": "#C2A690",
+   "labelColor": "#6B4A3D",
+   "titleColor": "#2B1A15",
+   "labelFontSize": 13,
+   "titleFontSize": 14
+  },
+  "legend": {
+   "labelColor": "#6B4A3D",
+   "titleColor": "#2B1A15",
+   "labelFontSize": 13,
+   "titleFontSize": 14
+  },
+  "view": {
+   "stroke": "#CDB39F"
+  },
+  "range": {
+   "category": [
+    "#7E1F22",
+    "#7A5A1E",
+    "#3A6B2E",
+    "#3F5480",
+    "#6B3A6E",
+    "#1F6672",
+    "#5E4A42",
+    "#A8452A"
+   ],
+   "ramp": [
+    "#E0C6AC",
+    "#CAA892",
+    "#B48A78",
+    "#9D6D60",
+    "#875148",
+    "#713631",
+    "#5A1A1C"
+   ],
+   "diverging": [
+    "#1F6672",
+    "#557D82",
+    "#819591",
+    "#ADACA0",
+    "#D9C4AF",
+    "#CC9F8A",
+    "#BC7A66",
+    "#AB5542",
+    "#972C1D"
+   ],
+   "heatmap": [
+    "#E0C6AC",
+    "#CAA892",
+    "#B48A78",
+    "#9D6D60",
+    "#875148",
+    "#713631",
+    "#5A1A1C"
+   ]
+  },
+  "mark": {
+   "color": "#7E1F22"
+  }
+ },
+ "figaro-dark": {
+  "background": "#1A0D0F",
+  "font": "\"Grenze\", \"EB Garamond\", Georgia, serif",
+  "title": {
+   "color": "#F0DFC8",
+   "fontSize": 21,
+   "font": "\"Grenze\", \"EB Garamond\", Georgia, serif",
+   "fontWeight": 700
+  },
+  "axis": {
+   "domainColor": "#4A2B2C",
+   "gridColor": "#3B2620",
+   "tickColor": "#4A2B2C",
+   "labelColor": "#A5887B",
+   "titleColor": "#F0DFC8",
+   "labelFontSize": 13,
+   "titleFontSize": 14
+  },
+  "legend": {
+   "labelColor": "#A5887B",
+   "titleColor": "#F0DFC8",
+   "labelFontSize": 13,
+   "titleFontSize": 14
+  },
+  "view": {
+   "stroke": "#3B2620"
+  },
+  "range": {
+   "category": [
+    "#D9787A",
+    "#C9A25F",
+    "#8FC27A",
+    "#93A6D8",
+    "#C08AC4",
+    "#6FB8C2",
+    "#B7A397",
+    "#E58A5A"
+   ],
+   "ramp": [
+    "#3D2722",
+    "#583E30",
+    "#75573E",
+    "#92714D",
+    "#B18B5D",
+    "#D1A76C",
+    "#F2C47C"
+   ],
+   "diverging": [
+    "#6FB8C2",
+    "#679297",
+    "#5C6E6F",
+    "#4E4B49",
+    "#3E2A25",
+    "#653F35",
+    "#8E5446",
+    "#BA6B58",
+    "#E8826A"
+   ],
+   "heatmap": [
+    "#3D2722",
+    "#583E30",
+    "#75573E",
+    "#92714D",
+    "#B18B5D",
+    "#D1A76C",
+    "#F2C47C"
+   ]
+  },
+  "mark": {
+   "color": "#D9787A"
+  }
+ }
+}
