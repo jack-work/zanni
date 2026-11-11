@@ -1,0 +1,68 @@
+<!doctype html>
+<!-- zanni2 example: open in a browser, no build step. Toggle the theme and scheme in the masthead. -->
+<html lang="en" data-theme="band">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>zanni2: the band's building blocks</title>
+<link rel="stylesheet" href="../assets/v2/z2-tokens.css">
+<link rel="stylesheet" href="../assets/v2/z2.css">
+<style>:root { color-scheme: light dark; }</style>
+</head>
+<body class="z2-shell">
+<header class="z2-main" style="padding-bottom:0">
+  <h1 style="margin:0">zanni2</h1>
+  <p class="z2-stamp">theme <a href="#" id="t-band">band</a> · <a href="#" id="t-figaro">figaro</a> · scheme <a href="#" id="s-light">light</a> · <a href="#" id="s-dark">dark</a></p>
+</header>
+<main class="z2-main">
+  <section class="z2-panel" id="kpis">
+    <header><h2>the fleet now</h2><p class="z2-stamp">live · a sample</p></header>
+    <div class="z2-kpis" id="k"></div>
+  </section>
+  <section class="z2-panel" id="table">
+    <header><h2>nodes</h2><p class="z2-stamp">click a heading to sort; the order is in the URL (?nodes=...)</p></header>
+    <div class="z2-scroll"><table class="z2-table" id="nodes">
+      <thead><tr><th data-sort="node">node</th><th data-sort="load" class="num">load / core</th><th data-sort="disk" class="num">disk free GiB</th><th>trend</th><th>note</th></tr></thead>
+      <tbody>
+        <tr><td>barr</td><td class="num">0.31</td><td class="num">252</td><td data-spark="3,4,4,6,5,7,9,8"></td><td></td></tr>
+        <tr><td>leob</td><td class="num">0.12</td><td class="num">734</td><td data-spark="2,2,,,3,2,2,1"></td><td>a gap stays a gap</td></tr>
+        <tr><td>ross</td><td class="num">1.40</td><td class="num">892</td><td data-spark="5,8,12,14,13,15,16,18"></td><td></td></tr>
+        <tr><td>gioco</td><td class="num">—</td><td class="num">—</td><td></td><td>no source: sorts last</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+  <section class="z2-panel" id="palette">
+    <header><h2>palette</h2><p class="z2-stamp">series 1-8, sequential, diverging: z2-build --check proves the contrast</p></header>
+    <div id="sw"></div>
+  </section>
+  <section class="z2-panel" id="type">
+    <header><h2>type scale</h2></header>
+    <div id="ty"></div>
+  </section>
+</main>
+<script src="../assets/v2/z2.js"></script>
+<script>
+  const k = document.getElementById("k");
+  z2.kpi(k, { label: "workers up", value: "6/6", note: "reporting" });
+  z2.kpi(k, { label: "hottest load", value: "1.40", note: "/core · ross · line 1.0", cls: "warn" });
+  z2.kpi(k, { label: "oldest ready", value: "25.8 h", note: "gate.change", cls: "bad" });
+  z2.kpi(k, { label: "no answer", value: null, note: "a dash, never a zero" });
+  for (const td of document.querySelectorAll("td[data-spark]"))
+    td.append(z2.spark(td.dataset.spark.split(",").map((v) => (v === "" ? null : +v)), { ref: 10 }));
+  z2.sortable(document.getElementById("nodes"), { key: "nodes" });
+  const sw = document.getElementById("sw");
+  const row = (name, n) => { const d = document.createElement("div"); d.style.cssText = "display:flex;flex-wrap:wrap;gap:3px;margin:3px 0;align-items:center";
+    const l = document.createElement("span"); l.textContent = name; l.style.cssText = "width:5rem;font-size:var(--z-fs-xs);color:var(--z-muted)"; d.append(l);
+    for (let i = 1; i <= n; i++) { const c = document.createElement("span"); c.title = `--z-${name}-${i}`; c.style.cssText = `width:2.4rem;height:1.4rem;background:var(--z-${name}-${i})`; d.append(c); }
+    sw.append(d); };
+  row("series", 8); row("seq", 7); row("div", 9);
+  const ty = document.getElementById("ty");
+  for (const s of ["xs", "sm", "base", "md", "lg", "xl", "2xl", "3xl"]) { const p = document.createElement("p"); p.style.cssText = `margin:0;font-size:var(--z-fs-${s})`; p.textContent = `${s}: a programme for the fleet`; ty.append(p); }
+  const set = (a, v) => (e) => { e.preventDefault(); document.documentElement.setAttribute(a, v); };
+  document.getElementById("t-band").onclick = set("data-theme", "band");
+  document.getElementById("t-figaro").onclick = set("data-theme", "figaro");
+  document.getElementById("s-light").onclick = set("data-scheme", "light");
+  document.getElementById("s-dark").onclick = set("data-scheme", "dark");
+</script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+/* zanni2 · z2.css — the band's building blocks, over the zanni2 tokens (z2-tokens.css). v1 stays frozen beside it.
+ * Every colour is a --z-* token, every size a --z-fs-* / --z-space-* step: retheme with data-theme, rescheme with
+ * data-scheme, and nothing here changes. Components answer their CONTAINER, never the viewport (z2-panel is one).
+ *
+ *   .z2-shell     page ground + .z2-main; the HEADER is proscenio's (one implementation per concern: wear proscenio)
+ *   .z2-panel     a section: container named z2-panel, heading row, optional .z2-stamp status line
+ *   .z2-kpis      a strip of .z2-kpi tiles: label, value, note; .warn / .bad colour the tile only past its line
+ *   .z2-table     a data table: tabular figures, sticky head, sortable (z2.js), scrolls in its own .z2-scroll box
+ *   .z2-spark     an inline sparkline (z2.js draws it): line, area, dashed reference, gaps stay gaps
+ */
+.z2-shell, .z2-shell *, .z2-shell *::before, .z2-shell *::after, .z2-panel, .z2-panel * { box-sizing: border-box; }
+.z2-shell { margin: 0; min-height: 100vh; display: flex; flex-direction: column; background: var(--z-ground); color: var(--z-ink);
+  font: var(--z-fs-base)/var(--z-leading-body) var(--z-font); }
+.z2-shell a { color: var(--z-focus); text-underline-offset: 0.15em; }
+.z2-shell a:hover { color: var(--z-ink); }
+.z2-main { flex: 1; width: 100%; max-width: 1500px; margin: 0 auto; display: grid; gap: var(--z-space-5);
+  padding: var(--z-space-5) clamp(var(--z-space-3), 3vw, 40px); }
+
+.z2-panel { container: z2-panel / inline-size; background: var(--z-ground-2); border: 1px solid var(--z-rule);
+  padding: var(--z-space-4) var(--z-space-5); display: grid; gap: var(--z-space-3); min-width: 0; }
+.z2-panel > header { display: flex; align-items: baseline; justify-content: space-between; gap: var(--z-space-3); flex-wrap: wrap; }
+.z2-panel h2 { margin: 0; font-size: var(--z-fs-xl); line-height: var(--z-leading-tight); }
+.z2-stamp { margin: 0; font-size: var(--z-fs-sm); color: var(--z-muted); overflow-wrap: anywhere; }
+.z2-panel p { max-inline-size: var(--z-measure); }
+
+.z2-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 3px; }
+.z2-kpi { background: var(--z-ground); border-left: 3px solid var(--z-line); padding: var(--z-space-1) var(--z-space-3);
+  display: grid; grid-template-columns: auto 1fr; grid-template-areas: "l l" "v n"; align-items: baseline; column-gap: 0.35em; min-width: 0; }
+.z2-kpi .z2-kl { grid-area: l; font-size: var(--z-fs-xs); color: var(--z-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.z2-kpi .z2-kv { grid-area: v; font-size: var(--z-fs-2xl); font-weight: 700; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.z2-kpi .z2-kn { grid-area: n; font-size: var(--z-fs-xs); color: var(--z-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.z2-kpi.warn { border-left-color: var(--z-warn); } .z2-kpi.warn .z2-kv { color: var(--z-warn); }
+.z2-kpi.bad { border-left-color: var(--z-fail); } .z2-kpi.bad .z2-kv { color: var(--z-fail); }
+@container z2-panel (max-width: 520px) { .z2-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .z2-kpi .z2-kv { font-size: var(--z-fs-xl); } }
+
+.z2-scroll { overflow-x: auto; overscroll-behavior-x: contain; max-width: 100%; }
+.z2-table { width: 100%; border-collapse: collapse; font-size: var(--z-fs-sm); font-variant-numeric: tabular-nums; }
+.z2-table th, .z2-table td { text-align: left; padding: var(--z-space-1) var(--z-space-3); border-bottom: 1px solid var(--z-rule); vertical-align: baseline; }
+.z2-table th, .z2-table td:not(:last-child) { white-space: nowrap; }
+.z2-table td.num, .z2-table th.num { text-align: right; }
+.z2-table thead th { position: sticky; top: 0; background: var(--z-ground-2); color: var(--z-muted); font-weight: 400;
+  font-size: var(--z-fs-xs); text-transform: uppercase; letter-spacing: 0.08em; }
+.z2-table th[aria-sort] { cursor: pointer; user-select: none; }
+.z2-table th[aria-sort]::after { content: " \2195"; color: var(--z-line); }
+.z2-table th[aria-sort="ascending"]::after { content: " \2191"; color: var(--z-focus); }
+.z2-table th[aria-sort="descending"]::after { content: " \2193"; color: var(--z-focus); }
+.z2-table th[aria-sort]:focus-visible { outline: 2px solid var(--z-focus); outline-offset: -2px; }
+.z2-table tbody tr:hover { background: var(--z-tint); }
+
+.z2-spark { display: block; width: 100%; height: 24px; overflow: visible; color: var(--z-series-1); }
+.z2-spark .z2-line { fill: none; stroke: currentColor; stroke-width: 1.6; }
+.z2-spark .z2-area { fill: currentColor; opacity: 0.13; stroke: none; }
+.z2-spark .z2-ref { fill: none; stroke: var(--z-fail); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.9; }

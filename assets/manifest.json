@@ -416,6 +416,43 @@
       ],
       "constructed": true,
       "activator": "data-proscenio"
+    },
+    "v2": {
+      "summary": "zanni2: the band's readable, data-dense layer beside the frozen v1. Tokens from one JSON source (bin/z2-build: z2-tokens.css + a Vega-Lite theme, contrast-checked in both schemes and themes), page ground (header: proscenio), panel, KPI tiles, data table with URL-synced sort, sparkline, deep-link state.",
+      "files": [
+        "v2/tokens.json",
+        "v2/z2-tokens.css",
+        "v2/z2-vega-theme.json",
+        "v2/z2.css",
+        "v2/z2.js"
+      ],
+      "classes": [
+        "z2-shell",
+        "z2-main",
+        "z2-panel",
+        "z2-stamp",
+        "z2-kpis",
+        "z2-kpi",
+        "z2-scroll",
+        "z2-table",
+        "z2-spark"
+      ],
+      "tokens": [
+        "--z-fs-*",
+        "--z-space-*",
+        "--z-series-1..8",
+        "--z-seq-1..7",
+        "--z-div-1..9",
+        "--z-measure",
+        "--z-leading-*",
+        "--z-radius-*"
+      ],
+      "themes": [
+        "band",
+        "figaro"
+      ],
+      "docs": "docs/v2.md",
+      "example": "examples/v2.html"
     }
   },
   "planned": [
