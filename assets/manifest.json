@@ -453,6 +453,23 @@
       ],
       "docs": "docs/v2.md",
       "example": "examples/v2.html"
+    },
+    "rotolo": {
+      "summary": "Thin scrollbars on the page and every scroll container under it: a dark track and an accent thumb that lights on hover, Firefox and Chromium alike.",
+      "marker": "<!-- zanni:rotolo -->",
+      "classes": [
+        "rotolo"
+      ],
+      "files": [
+        "rotolo.css"
+      ],
+      "docs": "docs/rotolo.md",
+      "knobs": [
+        "--rotolo-thumb",
+        "--rotolo-thumb-hover",
+        "--rotolo-track",
+        "--rotolo-size"
+      ]
     }
   },
   "planned": [

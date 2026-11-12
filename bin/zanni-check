@@ -107,6 +107,7 @@ for (const name of want) {
   if (name === 'boil') boil();
   if (name === 'gesso') gesso();
   if (name === 'phosphor') phosphor();
+  if (name === 'rotolo') rotolo();
   if (name === 'fontpack') fontpack();
   if (name === 'glyphmark') glyphmark();
   if (name === 'heft') heft();
@@ -263,10 +264,23 @@ function glyphmark() {
     'image-rendering: pixelated does nothing to a large photo — see docs/glyphmark.md');
 }
 
+function rotolo() {
+  console.log('[rotolo] the scrollbars');
+  const block = (html.match(/<!-- zanni:rotolo begin[\s\S]*?<!-- zanni:rotolo end -->/) || [''])[0];
+  const own = (block.match(/<style[^>]*>([\s\S]*?)<\/style>/g) || []).join('\n');
+  const firefox = (own.match(/@supports not selector\(::-webkit-scrollbar\)\s*\{([\s\S]*?\n)\}/) || ['', ''])[1];
+  check('scrollbar-width reaches every container, not only the root',
+    /\.rotolo \*[^{}]*\{[^{}]*scrollbar-width:\s*thin/.test(firefox),
+    'scrollbar-width is not inherited, so a rule on .rotolo alone leaves every panel wide');
+  check('scrollbar-color stays out of engines that read the webkit pseudos',
+    !/scrollbar-color/.test(own.replace(firefox, '')),
+    'Chromium 121+ ignores ::-webkit-scrollbar once scrollbar-color is set, and the thumb loses its hover');
+  check('the thumb has a hover state',
+    /\.rotolo ::-webkit-scrollbar-thumb:hover\s*\{[^{}]*background:\s*var\(--rotolo-thumb-hover/.test(own));
+}
+
 function gesso() {
   console.log('[gesso] the ground');
-  check('scrollbars wear the palette',
-    /:root,\s*\.gesso,\s*\.gesso-stage\s*\{[^{}]*scrollbar-color:\s*var\(--z-accent\)/.test(css));
   check('the dither is a conic checker, not an image',
     /repeating-conic-gradient\(\s*var\(--z-grain\)/.test(css));
   check('the checker has a cell size', /background-size:\s*var\(--gesso-cell\)/.test(css));

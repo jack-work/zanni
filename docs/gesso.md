@@ -64,6 +64,9 @@ moves to the `--z-*` tokens.
 
 `light-dark()` needs Chrome 123, Firefox 120 or Safari 17.5.
 
+Scrollbars are not gesso's. Wear [rotolo](rotolo.md) on `<html>` and they
+take `--z-accent` on `--z-ground-2` from these tokens.
+
 ## What it costs
 
 One paint of a repeating gradient, no animation, no layer. It is the cheapest

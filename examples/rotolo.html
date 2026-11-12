@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en" class="rotolo" data-scheme="dark">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>zanni · rotolo</title>
+<link rel="stylesheet" href="../assets/gesso/gesso.css">
+<link rel="stylesheet" href="../assets/rotolo/rotolo.css">
+<style>
+  body { margin: 0; padding: 2rem; font: 15px/1.5 serif; }
+  #panel { width: 320px; height: 200px; overflow: auto; border: 1px solid var(--z-rule); }
+  #panel p { width: 520px; margin: 0 0 1rem; }
+  .tall { height: 1600px; }
+</style>
+<body class="gesso">
+<div id="panel">
+  <p>A scroll container well inside the page. scrollbar-width is not inherited, so this box only turns thin because rotolo's rule reaches it, not because the root wears the class.</p>
+  <p>It scrolls both ways, so the corner where the bars meet is painted too.</p>
+  <div class="tall"></div>
+</div>
+<div class="tall"></div>
+</body>

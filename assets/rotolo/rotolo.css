@@ -1,0 +1,31 @@
+@supports not selector(::-webkit-scrollbar) {
+  .rotolo,
+  .rotolo * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--rotolo-thumb, var(--z-accent)) var(--rotolo-track, var(--z-ground-2));
+  }
+}
+
+@supports selector(::-webkit-scrollbar) {
+  .rotolo::-webkit-scrollbar,
+  .rotolo ::-webkit-scrollbar {
+    width: var(--rotolo-size, 12px);
+    height: var(--rotolo-size, 12px);
+    background: var(--rotolo-track, var(--z-ground-2));
+  }
+  .rotolo::-webkit-scrollbar-track,
+  .rotolo ::-webkit-scrollbar-track,
+  .rotolo::-webkit-scrollbar-corner,
+  .rotolo ::-webkit-scrollbar-corner {
+    background: var(--rotolo-track, var(--z-ground-2));
+  }
+  .rotolo::-webkit-scrollbar-thumb,
+  .rotolo ::-webkit-scrollbar-thumb {
+    background: var(--rotolo-thumb, var(--z-accent));
+    border: 2px solid var(--rotolo-track, var(--z-ground-2));
+  }
+  .rotolo::-webkit-scrollbar-thumb:hover,
+  .rotolo ::-webkit-scrollbar-thumb:hover {
+    background: var(--rotolo-thumb-hover, color-mix(in srgb, var(--z-accent) 65%, var(--z-ink)));
+  }
+}
