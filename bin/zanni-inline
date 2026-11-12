@@ -57,7 +57,7 @@ function die(msg) { process.stderr.write('zanni-inline: ' + msg + '\n'); process
 if (input === null) usage(2);
 
 const manifest = JSON.parse(fs.readFileSync(path.join(assets, 'manifest.json'), 'utf8'));
-if (components.length === 0) components = Object.keys(manifest.components);
+if (components.length === 0) components = Object.keys(manifest.components).filter((n) => manifest.components[n].marker);
 
 let html = fs.readFileSync(input === '-' ? 0 : input, 'utf8');
 
@@ -71,6 +71,7 @@ for (const k of Object.keys(sets)) {
 for (const name of components) {
   const c = manifest.components[name];
   if (!c) die('no such component: ' + name + ' (have: ' + Object.keys(manifest.components).join(', ') + ')');
+  if (!c.marker) die(name + ' is linked as files, not inlined: it has no marker');
   if (!html.includes(c.marker)) {
     die('marker ' + c.marker + ' not found in ' + input +
         ' — nothing would have been injected, so this is an error, not a warning');
