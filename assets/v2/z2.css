@@ -7,6 +7,16 @@
  *   .z2-kpis      a strip of .z2-kpi tiles: label, value, note; .warn / .bad colour the tile only past its line
  *   .z2-table     a data table: tabular figures, sticky head, sortable (z2.js), scrolls in its own .z2-scroll box
  *   .z2-spark     an inline sparkline (z2.js draws it): line, area, dashed reference, gaps stay gaps
+ *   .z2-chart     z2.chart (z2-chart.js): toggles, summary, legend, stacked bars, a pinnable tip
+ *
+ * The programme layout (a page of many panels; the regiment dashboards wear it):
+ *   .z2-wide      the page column: the full viewport less a gutter, no reading-width cap (prose inside keeps --z-measure)
+ *   .z2-flow      a grid of panels in DOM order: each spans the row, except a .z2-major followed by a .z2-minor, which
+ *                 share it at phi : 1 (a .z2-minor first then .z2-major: 1 : phi) once the flow is >= 76rem wide
+ *   .z2-seps      a separator between consecutive children: a hairline that fades at both ends, a lozenge in the middle
+ *   .z2-cards     each child is a card on the ground: solid --z-ground-2, a rule border, an accent top edge
+ *   .z2-textured  the page ground as linen: a fine weave and a grain, both from --z-ink at a few percent (any scheme)
+ *   .z2-golden    inside a panel: two columns at phi : 1 (.z2-golden-rev: 1 : phi), stacked below 56rem of panel
  */
 .z2-shell, .z2-shell *, .z2-shell *::before, .z2-shell *::after, .z2-panel, .z2-panel * { box-sizing: border-box; }
 .z2-shell { margin: 0; min-height: 100vh; display: flex; flex-direction: column; background: var(--z-ground); color: var(--z-ink);
@@ -51,3 +61,89 @@
 .z2-spark .z2-line { fill: none; stroke: currentColor; stroke-width: 1.6; }
 .z2-spark .z2-area { fill: currentColor; opacity: 0.13; stroke: none; }
 .z2-spark .z2-ref { fill: none; stroke: var(--z-fail); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.9; }
+
+/* ---- z2.chart ---- */
+.z2-chart { display: grid; gap: var(--z-space-3); min-width: 0; }
+.z2-chart-title { margin: 0; font-size: var(--z-fs-md); font-weight: 600; }
+.z2-chart-ctl { display: flex; flex-wrap: wrap; gap: var(--z-space-3) var(--z-space-6); align-items: center; }
+.z2-ctl { display: inline-flex; align-items: center; gap: var(--z-space-3); }
+.z2-ctl-l { font-size: var(--z-fs-xs); color: var(--z-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.z2-seg { display: inline-flex; border: 1px solid var(--z-line); background: var(--z-ground); }
+.z2-seg-b { font: inherit; font-size: var(--z-fs-sm); color: var(--z-ink); background: none; border: 0; border-left: 1px solid var(--z-rule);
+  padding: var(--z-space-1) var(--z-space-4); cursor: pointer; min-height: 1.9rem; }
+.z2-seg-b:first-child { border-left: 0; }
+.z2-seg-b:hover:not(:disabled) { background: var(--z-tint); }
+.z2-seg-b[aria-checked="true"] { background: var(--z-accent); color: var(--z-on-accent); }
+.z2-seg-b:disabled { color: var(--z-muted); cursor: not-allowed; text-decoration: line-through; text-decoration-color: var(--z-line); }
+.z2-seg-b:focus-visible, .z2-legend-b:focus-visible { outline: 2px solid var(--z-focus); outline-offset: 1px; position: relative; z-index: 1; }
+.z2-chart-sum { margin: 0; font-size: var(--z-fs-sm); color: var(--z-muted); }
+.z2-chart-sum b { color: var(--z-ink); font-size: var(--z-fs-md); }
+.z2-legend { display: flex; flex-wrap: wrap; gap: var(--z-space-2) var(--z-space-3); }
+.z2-legend[hidden] { display: none; }
+.z2-legend-b { font: inherit; font-size: var(--z-fs-sm); color: var(--z-ink); background: var(--z-ground); border: 1px solid var(--z-rule);
+  padding: var(--z-space-1) var(--z-space-3); cursor: pointer; display: inline-flex; align-items: center; gap: var(--z-space-2); }
+.z2-legend-b[aria-pressed="false"] { color: var(--z-muted); text-decoration: line-through; }
+.z2-legend-b[aria-pressed="false"] .z2-sw { opacity: 0.25; }
+.z2-legend-all { font-style: italic; }
+.z2-sw { display: inline-block; width: 0.8em; height: 0.8em; flex: none; }
+.z2-chart-plot { position: relative; min-width: 0; outline: none; }
+.z2-chart-plot:focus-visible { outline: 2px solid var(--z-focus); outline-offset: 2px; }
+.z2-chart-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.z2-chart-svg .z2-grid line { stroke: var(--z-rule); stroke-width: 1; }
+.z2-chart-svg .z2-base { stroke: var(--z-line); stroke-width: 1; }
+.z2-chart-svg .z2-ax { font: var(--z-fs-xs) var(--z-font); fill: var(--z-muted); font-variant-numeric: tabular-nums; }
+.z2-chart-svg .z2-bar { shape-rendering: crispEdges; }
+.z2-chart-svg .z2-partial { opacity: 0.6; }
+.z2-chart-svg .z2-refl line { stroke: var(--z-fail); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.z2-chart-svg .z2-ref-t { fill: var(--z-fail); }
+.z2-chart-tip { position: absolute; top: var(--z-space-3); z-index: 5; min-width: 12rem; max-width: min(22rem, 90%); background: var(--z-ground);
+  color: var(--z-ink); border: 1px solid var(--z-line); border-top: 3px solid var(--z-accent); padding: var(--z-space-3) var(--z-space-4);
+  box-shadow: 0 0.4rem 1rem -0.4rem var(--z-shadow); font-size: var(--z-fs-sm); pointer-events: none; }
+.z2-chart-tip.z2-pinned { pointer-events: auto; border-top-color: var(--z-focus); }
+.z2-chart-tip[hidden] { display: none; }
+.z2-chart-tip p { margin: 0; }
+.z2-tip-v { font-size: var(--z-fs-md); font-weight: 600; font-variant-numeric: tabular-nums; }
+.z2-tip-l { list-style: none; margin: var(--z-space-2) 0 0; padding: 0; display: grid; gap: 1px; }
+.z2-tip-l li { display: flex; align-items: center; gap: var(--z-space-2); }
+.z2-tip-l li b { margin-left: auto; font-variant-numeric: tabular-nums; }
+.z2-tip-e { margin-top: var(--z-space-2) !important; color: var(--z-muted); overflow-wrap: anywhere; }
+.z2-tip-e a { color: var(--z-focus); }
+.z2-tip-k { margin-top: var(--z-space-2) !important; color: var(--z-muted); font-style: italic; font-size: var(--z-fs-xs); }
+.z2-empty { margin: 0; font-style: italic; color: var(--z-muted); }
+.z2-empty[hidden] { display: none; }
+
+/* ---- the programme layout ---- */
+.z2-wide { width: calc(100% - 2 * var(--z-gutter, clamp(12px, 2.4vw, 48px))); max-width: none; margin-inline: auto; }
+/* three tracks 1 : 1/phi : 1, so major+minor = (1 + 1/phi) : 1 = phi : 1 and minor+major = 1 : phi, one template for both.
+   The flow is its own container: the query places its children, never restyles the flow (a container cannot query itself). */
+.z2-flow { container: z2-flow / inline-size; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.618fr) minmax(0, 1fr);
+  gap: var(--z-flow-gap, var(--z-space-6)); align-items: start; }
+.z2-flow > * { min-width: 0; grid-column: 1 / -1; }
+@container z2-flow (min-width: 76rem) {
+  .z2-flow > .z2-major:has(+ .z2-minor) { grid-column: 1 / 3; }
+  .z2-flow > .z2-major + .z2-minor { grid-column: 3 / 4; }
+  .z2-flow > .z2-minor:has(+ .z2-major) { grid-column: 1 / 2; }
+  .z2-flow > .z2-minor + .z2-major { grid-column: 2 / 4; }
+}
+.z2-seps > * { position: relative; }
+.z2-seps > * + *::before { content: ""; position: absolute; left: 0; right: 0; top: calc(-0.5 * var(--z-flow-gap, var(--z-space-6)) - 0.5px); height: 1px;
+  background: linear-gradient(90deg, transparent, var(--z-line) 14%, var(--z-line) 86%, transparent); pointer-events: none; }
+.z2-seps > * + *::after { content: ""; position: absolute; left: calc(50% - 4px); top: calc(-0.5 * var(--z-flow-gap, var(--z-space-6)) - 4px); width: 8px; height: 8px;
+  transform: rotate(45deg); background: var(--z-ground); border: 1px solid var(--z-accent); pointer-events: none; }
+.z2-cards > * { background: var(--z-ground-2); border: 1px solid var(--z-rule); border-top: 3px solid var(--z-accent);
+  padding: var(--z-space-5) clamp(var(--z-space-4), 2vw, var(--z-space-7)); box-shadow: 0 0.3rem 0.9rem -0.6rem var(--z-shadow); }
+.z2-textured { background-color: var(--z-ground);
+  background-image:
+    radial-gradient(color-mix(in oklab, var(--z-ink) 7%, transparent) 0.55px, transparent 0.9px),
+    repeating-linear-gradient(45deg, color-mix(in oklab, var(--z-ink) 3%, transparent) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(-45deg, color-mix(in oklab, var(--z-ink) 2.5%, transparent) 0 1px, transparent 1px 6px);
+  background-size: 5px 5px, auto, auto; background-attachment: fixed; }
+.z2-golden { container: z2-golden / inline-size; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.618fr) minmax(0, 1fr);
+  gap: var(--z-space-5) var(--z-space-7); align-items: start; }
+.z2-golden > * { min-width: 0; grid-column: 1 / -1; }
+@container z2-golden (min-width: 56rem) {
+  .z2-golden > :first-child:not(:only-child) { grid-column: 1 / 3; }
+  .z2-golden > :nth-child(2) { grid-column: 3 / 4; }
+  .z2-golden.z2-golden-rev > :first-child:not(:only-child) { grid-column: 1 / 2; }
+  .z2-golden.z2-golden-rev > :nth-child(2) { grid-column: 2 / 4; }
+}

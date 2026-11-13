@@ -9,17 +9,21 @@
 <link rel="stylesheet" href="../assets/v2/z2.css">
 <style>:root { color-scheme: light dark; }</style>
 </head>
-<body class="z2-shell">
+<body class="z2-shell z2-textured">
 <header class="z2-main" style="padding-bottom:0">
   <h1 style="margin:0">zanni2</h1>
   <p class="z2-stamp">theme <a href="#" id="t-band">band</a> · <a href="#" id="t-figaro">figaro</a> · scheme <a href="#" id="s-light">light</a> · <a href="#" id="s-dark">dark</a></p>
 </header>
-<main class="z2-main">
-  <section class="z2-panel" id="kpis">
+<main class="z2-main z2-wide z2-flow z2-seps">
+  <section class="z2-panel" id="chart">
+    <header><h2>merged per day</h2><p class="z2-stamp">z2.chart: pick the unit, the interval, the range and the split; hover, arrow keys, click to pin. State is in the URL.</p></header>
+    <div id="c"></div>
+  </section>
+  <section class="z2-panel z2-major" id="kpis">
     <header><h2>the fleet now</h2><p class="z2-stamp">live · a sample</p></header>
     <div class="z2-kpis" id="k"></div>
   </section>
-  <section class="z2-panel" id="table">
+  <section class="z2-panel z2-minor" id="table">
     <header><h2>nodes</h2><p class="z2-stamp">click a heading to sort; the order is in the URL (?nodes=...)</p></header>
     <div class="z2-scroll"><table class="z2-table" id="nodes">
       <thead><tr><th data-sort="node">node</th><th data-sort="load" class="num">load / core</th><th data-sort="disk" class="num">disk free GiB</th><th>trend</th><th>note</th></tr></thead>
@@ -41,6 +45,7 @@
   </section>
 </main>
 <script src="../assets/v2/z2.js"></script>
+<script src="../assets/v2/z2-chart.js"></script>
 <script>
   const k = document.getElementById("k");
   z2.kpi(k, { label: "workers up", value: "6/6", note: "reporting" });
@@ -50,6 +55,19 @@
   for (const td of document.querySelectorAll("td[data-spark]"))
     td.append(z2.spark(td.dataset.spark.split(",").map((v) => (v === "" ? null : +v)), { ref: 10 }));
   z2.sortable(document.getElementById("nodes"), { key: "nodes" });
+  // a fortnight of synthetic merges: one row per PR
+  const now = Date.now(), H = 3600e3, D = 24 * H, rows = [];
+  let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 160; i++) rows.push({ t: now - rnd() * 14 * D, n: 4000 + i, lines: Math.round(20 + rnd() ** 3 * 900),
+    files: 1 + Math.floor(rnd() * 12), stack: ["LEDGER", "CACHE", "OTHER"][Math.floor(rnd() * 3)], who: rnd() < 0.7 ? "ours" : "theirs" });
+  z2.chart(document.getElementById("c"), {
+    id: "merged", rows, now, title: "merged pull requests",
+    units: [{ key: "lines", label: "lines changed", of: (r) => r.lines }, { key: "prs", label: "PRs", of: () => 1 }, { key: "files", label: "files", of: (r) => r.files }],
+    intervals: [{ key: "1h", label: "hour", ms: H }, { key: "6h", label: "6 h", ms: 6 * H }, { key: "d", label: "day", ms: D }, { key: "w", label: "week", ms: 7 * D }],
+    ranges: [{ key: "24h", label: "24 h", ms: D }, { key: "7d", label: "7 days", ms: 7 * D }, { key: "14d", label: "14 days", ms: 14 * D }],
+    splits: [{ key: "stack", label: "stack", of: (r) => r.stack }, { key: "who", label: "author", of: (r) => r.who }],
+    interval: "d", range: "14d", rowLabel: (r) => "#" + r.n, ref: (u, ms) => (u === "prs" ? 12 * ms / D : null),
+  });
   const sw = document.getElementById("sw");
   const row = (name, n) => { const d = document.createElement("div"); d.style.cssText = "display:flex;flex-wrap:wrap;gap:3px;margin:3px 0;align-items:center";
     const l = document.createElement("span"); l.textContent = name; l.style.cssText = "width:5rem;font-size:var(--z-fs-xs);color:var(--z-muted)"; d.append(l);

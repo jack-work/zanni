@@ -418,13 +418,14 @@
       "activator": "data-proscenio"
     },
     "v2": {
-      "summary": "zanni2: the band's readable, data-dense layer beside the frozen v1. Tokens from one JSON source (bin/z2-build: z2-tokens.css + a Vega-Lite theme, contrast-checked in both schemes and themes), page ground (header: proscenio), panel, KPI tiles, data table with URL-synced sort, sparkline, deep-link state.",
+      "summary": "zanni2: the band's readable, data-dense layer beside the frozen v1. Tokens from one JSON source (bin/z2-build: z2-tokens.css + a Vega-Lite theme, contrast-checked in both schemes and themes), page ground (header: proscenio), panel, KPI tiles, data table with URL-synced sort, sparkline, deep-link state; an interactive event chart (z2.chart: unit/interval/range/split toggles, pinnable tip) and the programme layout (wide golden-ratio flow, separators, cards, textured ground).",
       "files": [
         "v2/tokens.json",
         "v2/z2-tokens.css",
         "v2/z2-vega-theme.json",
         "v2/z2.css",
-        "v2/z2.js"
+        "v2/z2.js",
+        "v2/z2-chart.js"
       ],
       "classes": [
         "z2-shell",
@@ -435,7 +436,20 @@
         "z2-kpi",
         "z2-scroll",
         "z2-table",
-        "z2-spark"
+        "z2-spark",
+        "z2-chart",
+        "z2-legend",
+        "z2-seg",
+        "z2-wide",
+        "z2-flow",
+        "z2-major",
+        "z2-minor",
+        "z2-seps",
+        "z2-cards",
+        "z2-textured",
+        "z2-golden",
+        "z2-golden-rev",
+        "z2-empty"
       ],
       "tokens": [
         "--z-fs-*",

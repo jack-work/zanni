@@ -128,5 +128,5 @@
     return { apply: apply };
   }
 
-  root.z2 = { state: state, kpi: kpi, spark: spark, sortable: sortable, _cellKey: cellKey, _compare: compare };
+  root.z2 = Object.assign(root.z2 || {}, { state: state, kpi: kpi, spark: spark, sortable: sortable, _cellKey: cellKey, _compare: compare });
 })(typeof window !== "undefined" ? window : globalThis);
