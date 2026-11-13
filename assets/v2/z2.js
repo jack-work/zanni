@@ -6,7 +6,7 @@
  *   z2.spark(values, {ref, cls})                   an <svg class="z2-spark">: null breaks the line (a gap stays a gap)
  *   z2.sortable(table, {key})                      click/Enter on a th[data-sort] sorts tbody rows (numbers by value,
  *                                                  "—"/"" last); the order lives in the URL under `key` ("col" or "-col")
- *   z2.dash(grid, {key, head})                     cap the .z2-cap cards of a .z2-dash: head stays, body scrolls, an
+ *   z2.dash(grid, {key, head, onToggle})           cap the .z2-cap cards of a .z2-dash: head stays, body scrolls, an
  *                                                  expand toggle (in the URL under `key`) takes the full row
  */
 (function (root) {
@@ -130,10 +130,11 @@
     return { apply: apply };
   }
 
-  // z2.dash(grid, {key, head}): every .z2-cap child of the grid keeps its head (its first heading, then the run of
+  // z2.dash(grid, {key, head, onToggle}): every .z2-cap child of the grid keeps its head (its first heading, then the run of
   // siblings matching `head`, default ".takeaway, .date, .z2-keep") and moves the rest into a .z2-card-body that scrolls
   // inside the cap. An "expand" button (shown only when the body overflows, or while expanded) toggles .z2-expanded:
-  // the full row, no cap. Expanded card ids live in the URL under `key` (default "x"), comma-separated.
+  // the full row, no cap. Expanded card ids live in the URL under `key` (default "x"), comma-separated. onToggle(card, on)
+  // runs after each toggle (a page whose charts lay out on window resize re-renders them there).
   function dash(grid, opt) {
     opt = opt || {};
     var key = opt.key || "x", head = opt.head || ".takeaway, .date, .z2-keep";
@@ -155,6 +156,7 @@
       if (card.id) { if (on) open.add(card.id); else open.delete(card.id); }
       var o = {}; o[key] = Array.from(open).join(","); state.set(o);
       fit(card);
+      if (opt.onToggle) opt.onToggle(card, on);
     }
     cards.forEach(function (card) {
       if (card.querySelector(":scope > .z2-card-body")) return;
