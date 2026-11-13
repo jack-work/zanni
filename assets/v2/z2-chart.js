@@ -18,7 +18,7 @@
  *     color(seriesKey, i) -> CSS colour (default var(--z-series-<i+1>)), order(keys) -> keys (stack order, bottom first)
  *     rowLabel(row) -> string, rowHref(row) -> url        the events listed in the tooltip of a bin (up to 8)
  *     ref(unitKey, intervalMs, splitKey) -> number | null a dashed per-bin reference line (a target), labelled "target"
- *     title, empty: "words when the window holds nothing", emptyClass: extra placard class
+ *     title (shown above the toggles), label (the plot's accessible name; default title), empty: "words when the window holds nothing", emptyClass: extra placard class
  *   }) -> { render(), set({unit, interval, range, split, mode}), destroy() }
  *
  * Interaction: the toggles are radiogroups (arrow keys move, Enter/Space pick); a toggle that cannot apply to the current
@@ -337,7 +337,7 @@
       var n = data.bins.length, slot = pw / Math.max(1, n), bw = Math.max(1, slot / PHI);
       var y = function (v) { return T + ph - (v / top) * ph; };
       var svg = sv("svg", { viewBox: "0 0 " + W + " " + H, width: W, height: H, class: "z2-chart-svg", role: "img",
-        "aria-label": (opt.title || "chart") + ": " + f(data.total) + " " + U.label + " in " + n + " bins of one " + I.label });
+        "aria-label": (opt.label || opt.title || "chart") + ": " + f(data.total) + " " + U.label + " in " + n + " bins of one " + I.label });
       // grid + y labels
       var grid = sv("g", { class: "z2-grid", "aria-label": "grid" });
       tk.forEach(function (v) {
@@ -397,7 +397,7 @@
       cur.setAttribute("fill", "transparent");
       svg.insertBefore(cur, marks);
       plot.insertBefore(svg, tip);
-      plot.setAttribute("aria-label", (opt.title || "chart") + ". Left and Right read one " + I.label + " at a time; Enter pins it.");
+      plot.setAttribute("aria-label", (opt.label || opt.title || "chart") + ". Left and Right read one " + I.label + " at a time; Enter pins it.");
       geo.cur = cur;
       if (active >= n) active = n - 1;
       if (active >= 0) show(active, pinned); else hideTip();
