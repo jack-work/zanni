@@ -10,12 +10,14 @@
  *     intervals: [{key, label, ms}]                                         bin widths; "w" aligns to Monday, "d" to
  *                                                                           local midnight, smaller to the local hour
  *     ranges:    [{key, label, ms}]                                         how far back from now
- *     splits:    [{key, label, of(row) -> series key}]                      what one colour is
+ *     splits:    [{key, label, of(row) -> series key, keep?(row) -> bool}] what one colour is; keep narrows the rows
+ *                                                                           (e.g. "by stack" counts ours only, "by
+ *                                                                           author" adds theirs to compare)
  *     modes:     default [per interval, running total]
  *     unit, interval, range, split, mode: default keys
  *     color(seriesKey, i) -> CSS colour (default var(--z-series-<i+1>)), order(keys) -> keys (stack order, bottom first)
  *     rowLabel(row) -> string, rowHref(row) -> url        the events listed in the tooltip of a bin (up to 8)
- *     ref(unitKey, intervalMs) -> number | null           a dashed per-bin reference line (a target), labelled "target"
+ *     ref(unitKey, intervalMs, splitKey) -> number | null a dashed per-bin reference line (a target), labelled "target"
  *     title, empty: "words when the window holds nothing", emptyClass: extra placard class
  *   }) -> { render(), set({unit, interval, range, split, mode}), destroy() }
  *
@@ -280,7 +282,7 @@
         });
       });
       var U = pick(units, st.u), I = pick(intervals, st.i), R = pick(ranges, st.r), SP = pick(splits, st.s);
-      data = bin(rows, { now: now, rangeMs: R.ms, intervalMs: I.ms, value: U.of, series: SP.of, hidden: st.h, cumulative: st.m === "run" });
+      data = bin(SP.keep ? rows.filter(SP.keep) : rows, { now: now, rangeMs: R.ms, intervalMs: I.ms, value: U.of, series: SP.of, hidden: st.h, cumulative: st.m === "run" });
       var keys = opt.order ? opt.order(data.keys.slice()) : data.keys;
       data.keys = keys;
       var f = U.fmt || fmt;
@@ -314,7 +316,7 @@
       sum.replaceChildren(el("b", null, f(data.total) + " " + U.label), " in the last " + R.label);
       if (!run && nb) sum.append(" \u00b7 " + f(data.total / nb) + " a " + I.label + " on average");
       if (peak) sum.append(" \u00b7 peak " + f(peak.total) + " (" + label(peak, I.ms, true) + ")");
-      var refV = opt.ref && !run ? opt.ref(U.key, I.ms) : null;
+      var refV = opt.ref && !run ? opt.ref(U.key, I.ms, SP.key) : null;
       if (refV != null && isFinite(refV)) sum.append(" \u00b7 target " + f(refV) + " a " + I.label);
       draw(U, I, f, refV);
     }
