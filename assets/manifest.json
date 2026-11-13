@@ -1,6 +1,6 @@
 {
   "name": "zanni",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "description": "Visual components extracted from figar.org.",
   "components": {
     "boil": {
@@ -418,7 +418,7 @@
       "activator": "data-proscenio"
     },
     "v2": {
-      "summary": "zanni2: the band's readable, data-dense layer beside the frozen v1. Tokens from one JSON source (bin/z2-build: z2-tokens.css + a Vega-Lite theme, contrast-checked in both schemes and themes), page ground (header: proscenio), panel, KPI tiles, data table with URL-synced sort, sparkline, deep-link state; an interactive event chart (z2.chart: unit/interval/range/split toggles, pinnable tip) and the programme layout (wide golden-ratio flow, separators, cards, textured ground).",
+      "summary": "zanni2: the band's readable, data-dense layer beside the frozen v1. Tokens from one JSON source (bin/z2-build: z2-tokens.css + a Vega-Lite theme, contrast-checked in both schemes and themes), page ground (header: proscenio), panel, KPI tiles, data table with URL-synced sort, sparkline, deep-link state; an interactive event chart (z2.chart: unit/interval/range/split toggles, pinnable tip) and the programme layout (dense 12-column dashboard with capped, expandable cards, separators, cards, textured ground).",
       "files": [
         "v2/tokens.json",
         "v2/z2-tokens.css",
@@ -441,15 +441,18 @@
         "z2-legend",
         "z2-seg",
         "z2-wide",
-        "z2-flow",
-        "z2-major",
-        "z2-minor",
         "z2-seps",
         "z2-cards",
         "z2-textured",
         "z2-golden",
         "z2-golden-rev",
-        "z2-empty"
+        "z2-empty",
+        "z2-dash",
+        "z2-full",
+        "z2-cap",
+        "z2-card-body",
+        "z2-x",
+        "z2-expanded"
       ],
       "tokens": [
         "--z-fs-*",

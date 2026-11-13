@@ -6,6 +6,8 @@
  *   z2.spark(values, {ref, cls})                   an <svg class="z2-spark">: null breaks the line (a gap stays a gap)
  *   z2.sortable(table, {key})                      click/Enter on a th[data-sort] sorts tbody rows (numbers by value,
  *                                                  "—"/"" last); the order lives in the URL under `key` ("col" or "-col")
+ *   z2.dash(grid, {key, head})                     cap the .z2-cap cards of a .z2-dash: head stays, body scrolls, an
+ *                                                  expand toggle (in the URL under `key`) takes the full row
  */
 (function (root) {
   "use strict";
@@ -128,5 +130,57 @@
     return { apply: apply };
   }
 
-  root.z2 = Object.assign(root.z2 || {}, { state: state, kpi: kpi, spark: spark, sortable: sortable, _cellKey: cellKey, _compare: compare });
+  // z2.dash(grid, {key, head}): every .z2-cap child of the grid keeps its head (its first heading, then the run of
+  // siblings matching `head`, default ".takeaway, .date, .z2-keep") and moves the rest into a .z2-card-body that scrolls
+  // inside the cap. An "expand" button (shown only when the body overflows, or while expanded) toggles .z2-expanded:
+  // the full row, no cap. Expanded card ids live in the URL under `key` (default "x"), comma-separated.
+  function dash(grid, opt) {
+    opt = opt || {};
+    var key = opt.key || "x", head = opt.head || ".takeaway, .date, .z2-keep";
+    var open = new Set((state.get(key, "") || "").split(",").filter(Boolean));
+    var cards = Array.prototype.slice.call(grid.children).filter(function (c) { return c.classList.contains("z2-cap"); });
+    var ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(function (es) { es.forEach(function (e) { fit(e.target.closest(".z2-cap")); }); }) : null;
+    function fit(card) {
+      if (!card) return;
+      var body = card.querySelector(":scope > .z2-card-body"), btn = card.querySelector(":scope > .z2-x");
+      if (!body || !btn) return;
+      var ex = card.classList.contains("z2-expanded");
+      btn.hidden = !ex && body.scrollHeight <= body.clientHeight + 2;
+    }
+    function set(card, on) {
+      card.classList.toggle("z2-expanded", on);
+      var btn = card.querySelector(":scope > .z2-x");
+      btn.textContent = on ? "collapse" : "expand";
+      btn.setAttribute("aria-expanded", String(on));
+      if (card.id) { if (on) open.add(card.id); else open.delete(card.id); }
+      var o = {}; o[key] = Array.from(open).join(","); state.set(o);
+      fit(card);
+    }
+    cards.forEach(function (card) {
+      if (card.querySelector(":scope > .z2-card-body")) return;
+      var kids = Array.prototype.slice.call(card.children), i = 0;
+      if (kids[0] && /^(H[1-6]|HEADER)$/.test(kids[0].tagName)) i = 1;
+      while (kids[i] && kids[i].matches(head)) i++;
+      var body = el("div", "z2-card-body");
+      kids.slice(i).forEach(function (k) { if (k.tagName !== "TEMPLATE") body.appendChild(k); });
+      card.appendChild(body);
+      var btn = el("button", "z2-x", "expand");
+      btn.type = "button";
+      btn.setAttribute("aria-expanded", "false");
+      var title = card.querySelector(":scope > h1, :scope > h2, :scope > h3");
+      btn.setAttribute("aria-label", "expand or collapse: " + (title ? title.textContent.trim() : card.id || "card"));
+      btn.addEventListener("click", function () { set(card, !card.classList.contains("z2-expanded")); if (card.classList.contains("z2-expanded")) card.scrollIntoView({ block: "nearest" }); });
+      card.insertBefore(btn, card.firstChild);
+      if (card.id && open.has(card.id)) set(card, true);
+      if (ro) { ro.observe(body); Array.prototype.slice.call(body.children).forEach(function (k) { ro.observe(k); }); }
+      fit(card);
+    });
+    state.on(function (q) {
+      open = new Set((q.get(key) || "").split(",").filter(Boolean));
+      cards.forEach(function (c) { if (c.querySelector(":scope > .z2-x")) { var on = !!c.id && open.has(c.id); c.classList.toggle("z2-expanded", on); fit(c); } });
+    });
+    return { fit: function () { cards.forEach(fit); } };
+  }
+
+  root.z2 = Object.assign(root.z2 || {}, { state: state, kpi: kpi, spark: spark, sortable: sortable, dash: dash, _cellKey: cellKey, _compare: compare });
 })(typeof window !== "undefined" ? window : globalThis);

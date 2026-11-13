@@ -14,16 +14,16 @@
   <h1 style="margin:0">zanni2</h1>
   <p class="z2-stamp">theme <a href="#" id="t-band">band</a> · <a href="#" id="t-figaro">figaro</a> · scheme <a href="#" id="s-light">light</a> · <a href="#" id="s-dark">dark</a></p>
 </header>
-<main class="z2-main z2-wide z2-flow z2-seps">
-  <section class="z2-panel" id="chart">
+<main class="z2-main z2-wide z2-dash z2-cards">
+  <section class="z2-panel" id="chart" style="--span: 8">
     <header><h2>merged per day</h2><p class="z2-stamp">z2.chart: pick the unit, the interval, the range and the split; hover, arrow keys, click to pin. State is in the URL.</p></header>
     <div id="c"></div>
   </section>
-  <section class="z2-panel z2-major" id="kpis">
+  <section class="z2-panel" id="kpis" style="--span: 4">
     <header><h2>the fleet now</h2><p class="z2-stamp">live · a sample</p></header>
     <div class="z2-kpis" id="k"></div>
   </section>
-  <section class="z2-panel z2-minor" id="table">
+  <section class="z2-panel z2-cap" id="table" style="--span: 6; --cap: 14rem">
     <header><h2>nodes</h2><p class="z2-stamp">click a heading to sort; the order is in the URL (?nodes=...)</p></header>
     <div class="z2-scroll"><table class="z2-table" id="nodes">
       <thead><tr><th data-sort="node">node</th><th data-sort="load" class="num">load / core</th><th data-sort="disk" class="num">disk free GiB</th><th>trend</th><th>note</th></tr></thead>
@@ -35,11 +35,11 @@
       </tbody>
     </table></div>
   </section>
-  <section class="z2-panel" id="palette">
+  <section class="z2-panel" id="palette" style="--span: 6">
     <header><h2>palette</h2><p class="z2-stamp">series 1-8, sequential, diverging: z2-build --check proves the contrast</p></header>
     <div id="sw"></div>
   </section>
-  <section class="z2-panel" id="type">
+  <section class="z2-panel z2-full" id="type">
     <header><h2>type scale</h2></header>
     <div id="ty"></div>
   </section>
@@ -55,6 +55,7 @@
   for (const td of document.querySelectorAll("td[data-spark]"))
     td.append(z2.spark(td.dataset.spark.split(",").map((v) => (v === "" ? null : +v)), { ref: 10 }));
   z2.sortable(document.getElementById("nodes"), { key: "nodes" });
+  z2.dash(document.querySelector("main"));
   // a fortnight of synthetic merges: one row per PR
   const now = Date.now(), H = 3600e3, D = 24 * H, rows = [];
   let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);

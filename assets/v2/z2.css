@@ -11,8 +11,8 @@
  *
  * The programme layout (a page of many panels; the regiment dashboards wear it):
  *   .z2-wide      the page column: the full viewport less a gutter, no reading-width cap (prose inside keeps --z-measure)
- *   .z2-flow      a grid of panels in DOM order: each spans the row, except a .z2-major followed by a .z2-minor, which
- *                 share it at phi : 1 (a .z2-minor first then .z2-major: 1 : phi) once the flow is >= 76rem wide
+ *   .z2-dash      a dense 12-column dashboard of cards in DOM order; a card sets --span / --span-md (columns); .z2-full
+ *                 takes the row; .z2-cap (with z2.dash) caps a card at --cap, its body scrolling inside, with an expand toggle
  *   .z2-seps      a separator between consecutive children: a hairline that fades at both ends, a lozenge in the middle
  *   .z2-cards     each child is a card on the ground: solid --z-card (default --z-ground-2), a rule border, an accent top edge
  *   .z2-textured  the page ground (--z-page, default --z-ground) as linen: a fine weave and a grain, both from --z-ink at
@@ -116,17 +116,29 @@
 
 /* ---- the programme layout ---- */
 .z2-wide { width: calc(100% - 2 * var(--z-gutter, clamp(12px, 2.4vw, 48px))); max-width: none; margin-inline: auto; }
-/* three tracks 1 : 1/phi : 1, so major+minor = (1 + 1/phi) : 1 = phi : 1 and minor+major = 1 : phi, one template for both.
-   The flow is its own container: the query places its children, never restyles the flow (a container cannot query itself). */
-.z2-flow { container: z2-flow / inline-size; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.618fr) minmax(0, 1fr);
-  gap: var(--z-flow-gap, var(--z-space-6)); align-items: start; }
-.z2-flow > * { min-width: 0; grid-column: 1 / -1; }
-@container z2-flow (min-width: 76rem) {
-  .z2-flow > .z2-major:has(+ .z2-minor) { grid-column: 1 / 3; }
-  .z2-flow > .z2-major + .z2-minor { grid-column: 3 / 4; }
-  .z2-flow > .z2-minor:has(+ .z2-major) { grid-column: 1 / 2; }
-  .z2-flow > .z2-minor + .z2-major { grid-column: 2 / 4; }
-}
+/* ---- the dashboard grid (Boss 11-13: "a proper dashboard, more dense and interactive") ----
+   12 columns, filled densely in DOM order. A card sets its width in columns with --span (wide: the grid >= 84rem) and
+   --span-md (56-84rem; default 6, half); under 56rem every card is the full row. .z2-full is always the full row.
+   Hidden siblings (templates, display:none) take no cell, so tooltip templates between sections never break the flow. */
+.z2-dash { container: z2-dash / inline-size; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-flow: row dense;
+  gap: var(--z-dash-gap, var(--z-space-5)); align-items: start; }
+.z2-dash > * { min-width: 0; grid-column: span 12; }
+@container z2-dash (min-width: 56rem) { .z2-dash > * { grid-column: span var(--span-md, 6); } }
+@container z2-dash (min-width: 84rem) { .z2-dash > * { grid-column: span var(--span, var(--span-md, 6)); } }
+.z2-dash > .z2-full, .z2-dash > .z2-expanded { grid-column: 1 / -1; }
+/* a capped card (z2.dash): its head (title + .takeaway/.date lines) stays put, its body scrolls inside at --cap; "expand"
+   takes the full row with no cap. The button shows only when the body overflows or the card is expanded. */
+.z2-cap { position: relative; display: flex; flex-direction: column; max-height: var(--cap, 46rem); }
+.z2-cap > * { flex: none; }
+.z2-cap > .z2-card-body { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.z2-cap.z2-expanded { max-height: none; }
+.z2-cap.z2-expanded > .z2-card-body { overflow: visible; }
+.z2-x { position: absolute; top: var(--z-space-3); right: var(--z-space-3); z-index: 2; font: inherit; font-size: var(--z-fs-xs); color: var(--z-focus);
+  background: var(--z-card, var(--z-ground-2)); border: 1px solid var(--z-line); padding: 0 var(--z-space-3); line-height: 1.7; cursor: pointer; }
+.z2-x:hover { color: var(--z-ink); border-color: var(--z-focus); }
+.z2-x:focus-visible { outline: 2px solid var(--z-focus); outline-offset: 1px; }
+.z2-x[hidden] { display: none; }
+.z2-card-body thead th { position: sticky; top: 0; z-index: 1; background: var(--z-card, var(--z-ground-2)); }
 .z2-seps > * { position: relative; }
 .z2-seps > * + *::before { content: ""; position: absolute; left: 0; right: 0; top: calc(-0.5 * var(--z-flow-gap, var(--z-space-6)) - 0.5px); height: 1px;
   background: linear-gradient(90deg, transparent, var(--z-line) 14%, var(--z-line) 86%, transparent); pointer-events: none; }
