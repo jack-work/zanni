@@ -314,7 +314,8 @@
       var peak = null;
       if (!run) data.bins.forEach(function (B) { if (B.total > 0 && (!peak || B.total > peak.total)) peak = B; });
       sum.replaceChildren(el("b", null, f(data.total) + " " + U.label), " in the last " + R.label);
-      if (!run && nb) sum.append(" \u00b7 " + f(data.total / nb) + " a " + I.label + " on average");
+      // the average is per whole interval of the range (a 14-day range is 14 days, however many bins its edges touch)
+      if (!run && nb) sum.append(" \u00b7 " + f(data.total / Math.max(1, R.ms / I.ms)) + " a " + I.label + " on average");
       if (peak) sum.append(" \u00b7 peak " + f(peak.total) + " (" + label(peak, I.ms, true) + ")");
       var refV = opt.ref && !run ? opt.ref(U.key, I.ms, SP.key) : null;
       if (refV != null && isFinite(refV)) sum.append(" \u00b7 target " + f(refV) + " a " + I.label);
