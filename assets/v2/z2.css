@@ -14,8 +14,10 @@
  *   .z2-flow      a grid of panels in DOM order: each spans the row, except a .z2-major followed by a .z2-minor, which
  *                 share it at phi : 1 (a .z2-minor first then .z2-major: 1 : phi) once the flow is >= 76rem wide
  *   .z2-seps      a separator between consecutive children: a hairline that fades at both ends, a lozenge in the middle
- *   .z2-cards     each child is a card on the ground: solid --z-ground-2, a rule border, an accent top edge
- *   .z2-textured  the page ground as linen: a fine weave and a grain, both from --z-ink at a few percent (any scheme)
+ *   .z2-cards     each child is a card on the ground: solid --z-card (default --z-ground-2), a rule border, an accent top edge
+ *   .z2-textured  the page ground (--z-page, default --z-ground) as linen: a fine weave and a grain, both from --z-ink at
+ *                 a few percent (any scheme). A page whose panels hold --z-ground-2 chips sets --z-card: var(--z-ground)
+ *                 and --z-page: var(--z-ground-2), so the cards read light and the chips keep their contrast
  *   .z2-golden    inside a panel: two columns at phi : 1 (.z2-golden-rev: 1 : phi), stacked below 56rem of panel
  */
 .z2-shell, .z2-shell *, .z2-shell *::before, .z2-shell *::after, .z2-panel, .z2-panel * { box-sizing: border-box; }
@@ -129,10 +131,10 @@
 .z2-seps > * + *::before { content: ""; position: absolute; left: 0; right: 0; top: calc(-0.5 * var(--z-flow-gap, var(--z-space-6)) - 0.5px); height: 1px;
   background: linear-gradient(90deg, transparent, var(--z-line) 14%, var(--z-line) 86%, transparent); pointer-events: none; }
 .z2-seps > * + *::after { content: ""; position: absolute; left: calc(50% - 4px); top: calc(-0.5 * var(--z-flow-gap, var(--z-space-6)) - 4px); width: 8px; height: 8px;
-  transform: rotate(45deg); background: var(--z-ground); border: 1px solid var(--z-accent); pointer-events: none; }
-.z2-cards > * { background: var(--z-ground-2); border: 1px solid var(--z-rule); border-top: 3px solid var(--z-accent);
+  transform: rotate(45deg); background: var(--z-page, var(--z-ground)); border: 1px solid var(--z-accent); pointer-events: none; }
+.z2-cards > * { background: var(--z-card, var(--z-ground-2)); border: 1px solid var(--z-rule); border-top: 3px solid var(--z-accent);
   padding: var(--z-space-5) clamp(var(--z-space-4), 2vw, var(--z-space-7)); box-shadow: 0 0.3rem 0.9rem -0.6rem var(--z-shadow); }
-.z2-textured { background-color: var(--z-ground);
+.z2-textured { background-color: var(--z-page, var(--z-ground));
   background-image:
     radial-gradient(color-mix(in oklab, var(--z-ink) 7%, transparent) 0.55px, transparent 0.9px),
     repeating-linear-gradient(45deg, color-mix(in oklab, var(--z-ink) 3%, transparent) 0 1px, transparent 1px 6px),
