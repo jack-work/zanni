@@ -364,6 +364,12 @@
           marks.append(r);
           acc += v;
         });
+        // the bin still filling keeps its colours (a dimmed fill reads as a series the legend lacks) and says so
+        if (Bn.partial && acc > 0) {
+          var sf = sv("text", { x: (x + bw / 2).toFixed(1), y: Math.max(11, y(acc) - 5).toFixed(1), "text-anchor": "middle", class: "z2-ax z2-sofar" });
+          sf.textContent = "so far";
+          marks.append(sf);
+        }
         geo.push({ x0: L + i * slot, x1: L + (i + 1) * slot, cx: x + bw / 2 });
       });
       svg.append(marks);

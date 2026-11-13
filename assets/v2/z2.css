@@ -95,7 +95,7 @@
 .z2-chart-svg .z2-base { stroke: var(--z-line); stroke-width: 1; }
 .z2-chart-svg .z2-ax { font: var(--z-fs-xs) var(--z-font); fill: var(--z-muted); font-variant-numeric: tabular-nums; }
 .z2-chart-svg .z2-bar { shape-rendering: crispEdges; }
-.z2-chart-svg .z2-partial { opacity: 0.6; }
+.z2-chart-svg .z2-partial { stroke: var(--z-muted); stroke-width: 1; stroke-dasharray: 3 2; }
 .z2-chart-svg .z2-refl line { stroke: var(--z-fail); stroke-width: 1.5; stroke-dasharray: 5 4; }
 .z2-chart-svg .z2-ref-t { fill: var(--z-fail); }
 .z2-chart-tip { position: absolute; top: var(--z-space-3); z-index: 5; min-width: 12rem; max-width: min(22rem, 90%); background: var(--z-ground);
