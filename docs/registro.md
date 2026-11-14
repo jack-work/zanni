@@ -1,0 +1,49 @@
+# registro
+
+The shared dashboard skin: band's data layout, figaro's gold and pixel mark in
+chrome. Wear `data-theme="registro"` on html and `z2-shell` on body. Link, in
+order, fontpack/fonts.css, v2/z2-tokens.css, v2/z2.css, proscenio/proscenio.css,
+rotolo/rotolo.css and v2/z2-registro.css. All files are same-origin.
+
+The scheme follows the reader's system unless the site supplies color-scheme
+or data-scheme. No new cookie or per-page theme toggle is introduced.
+
+## Scope navigation
+
+Both apps render the same header. It is ordinary document navigation, not
+ARIA tabs or an embedded app. Add further dashboards as links. Only the active
+app sets aria-current="page". The edge owns authentication on every path.
+
+```html
+<header class="z2-scope" data-proscenio>
+  <a data-slot="mark" href="/figscope/"><img class="z2-scope-mark" src="assets/zanni/parla/figaro-head.png" alt="">Scope</a>
+  <nav data-slot="nav" aria-label="Dashboards">
+    <a href="/figscope/" aria-current="page">figscope</a>
+    <a href="/rou2/">rou2</a>
+  </nav>
+  <span data-slot="status">Daemon telemetry</span>
+</header>
+```
+
+Load proscenio.js and attach it in the app's external script:
+`zanni.proscenio.attach(document.querySelector('[data-proscenio]'))`.
+Proscenio owns the narrow menu, Escape and focus return. Navigation remains
+available through that menu below 900px; app filters are a separate concern.
+A static header needs no new service. Each app vendors the same pinned files
+under its own prefix; relative assets stay beneath that app. The canonical
+links are /figscope/ and /rou2/ and the root redirects to /figscope/.
+
+## Capacity evidence
+
+A z2-panel can also wear z2-capacity. Inside z2-capacity-grid use three sections,
+headed Provider reported, Observed headers and Local usage. Never fold these
+into one remaining-balance number. z2-capacity-state takes data-state fresh,
+stale, error or unavailable, with a visible label. z2-capacity-value takes
+ data-available="false" for unknown values. Unknown is text, not zero. Every
+remote value shows its source, fetch time, last success and reset time if known.
+Local counts say whether their record is complete and never claim to be the
+provider's balance. z2-capacity-account is monospace; numbers never use Jacquard.
+
+Example: examples/registro.html. Browser test: test/registro.test.py, including
+keyboard opening and closing of narrow navigation and a removed-stylesheet
+negative control. checks.registro runs it in Chromium.

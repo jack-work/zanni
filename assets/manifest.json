@@ -424,6 +424,7 @@
         "v2/z2-tokens.css",
         "v2/z2-vega-theme.json",
         "v2/z2.css",
+        "v2/z2-registro.css",
         "v2/z2.js",
         "v2/z2-chart.js"
       ],
@@ -466,7 +467,8 @@
       ],
       "themes": [
         "band",
-        "figaro"
+        "figaro",
+        "registro"
       ],
       "docs": "docs/v2.md",
       "example": "examples/v2.html"

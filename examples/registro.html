@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" class="rotolo" data-theme="registro">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scope · registro</title>
+<link rel="stylesheet" href="../assets/fontpack/fonts.css">
+<link rel="stylesheet" href="../assets/v2/z2-tokens.css">
+<link rel="stylesheet" href="../assets/v2/z2.css">
+<link rel="stylesheet" href="../assets/proscenio/proscenio.css">
+<link rel="stylesheet" href="../assets/rotolo/rotolo.css">
+<link rel="stylesheet" href="../assets/v2/z2-registro.css">
+<body class="z2-shell">
+<header class="z2-scope" data-proscenio>
+  <a data-slot="mark" href="/figscope/"><img class="z2-scope-mark" src="../assets/parla/figaro-head.png" alt="">Scope</a>
+  <nav data-slot="nav" aria-label="Dashboards">
+    <a href="/figscope/">figscope</a>
+    <a href="/rou2/" aria-current="page">rou2</a>
+  </nav>
+  <span data-slot="status">Provider capacity</span>
+</header>
+<main class="z2-main">
+  <section class="z2-panel z2-capacity">
+    <header><h2>OpenAI subscription</h2><span class="z2-capacity-account">chatgpt-personal / personal</span></header>
+    <p class="z2-stamp">Synthetic example, not a live allowance. Plan label: prolite.</p>
+    <div class="z2-capacity-grid">
+      <div><h3>Provider reported</h3><span class="z2-capacity-value" data-available="false">Unavailable</span><p class="z2-capacity-source">No account-status source.</p></div>
+      <div><h3>Observed headers</h3><dl><div><dt>Weekly remaining</dt><dd class="z2-capacity-value">25%</dd></div></dl><p class="z2-capacity-state" data-state="stale">Stale</p><p class="z2-capacity-source">Observed 14 Nov 2026, 17:00 UTC<br>Resets <time datetime="2026-11-17T00:00:00Z">17 Nov 2026, 00:00 UTC</time></p></div>
+      <div><h3>Local usage</h3><dl><div><dt>Requests</dt><dd class="z2-capacity-value">3</dd></div><div><dt>Input / output tokens</dt><dd>2,000 / 300</dd></div></dl><p class="z2-capacity-source">Partial local record. Not an account balance.</p></div>
+    </div>
+  </section>
+</main>
+<script src="../assets/proscenio/proscenio.js"></script>
+<script src="registro.js"></script>
+</body>
+</html>
