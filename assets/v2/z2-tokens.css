@@ -61,6 +61,36 @@
   --z-space-6: 30px;
   --z-space-7: 40px;
 }
+[data-theme="registro"] {
+  --z-ground: light-dark(#E7D4C4, #1A0D0F);
+  --z-ground-2: light-dark(#DCC4B0, #2B1A15);
+  --z-ink: light-dark(#1A0D0F, #E7D4C4);
+  --z-muted: light-dark(#694B3F, #A5887B);
+  --z-rule: light-dark(#CDB39F, #3B2620);
+  --z-line: light-dark(#A5887B, #7A584A);
+  --z-accent: light-dark(#634A16, #D9A94E);
+  --accent-ink: light-dark(#634A16, #D9A94E);
+  --z-on-accent: light-dark(#F6EDE2, #1A0D0F);
+  --z-focus: light-dark(#634A16, #D9A94E);
+  --z-ok: light-dark(#335949, #7FA391);
+  --z-warn: light-dark(#8E3B0B, #EE8A4A);
+  --z-fail: light-dark(#972C1D, #D66551);
+  --z-fs-xs: 12px;
+  --z-fs-sm: 13px;
+  --z-fs-base: 15px;
+  --z-fs-md: 17px;
+  --z-fs-lg: 19px;
+  --z-fs-xl: 22px;
+  --z-fs-2xl: 26px;
+  --z-fs-3xl: 32px;
+  --z-space-1: 2px;
+  --z-space-2: 4px;
+  --z-space-3: 8px;
+  --z-space-4: 12px;
+  --z-space-5: 16px;
+  --z-space-6: 24px;
+  --z-space-7: 32px;
+}
 :root {
   --z-series-1: light-dark(#7E1F22, #D9787A);
   --z-series-2: light-dark(#7A5A1E, #C9A25F);
