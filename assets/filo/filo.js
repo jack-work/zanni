@@ -197,6 +197,9 @@
     var hadControls = media.hasAttribute('controls');
     var own = media, audio = null, audioSrc = null, unlocked = false;
     var background = opts.background || null, filoPaused = false, ownPausedAt = 0;
+    var subtitleItemId = null, subtitles = [], subtitleId = null, subtitleState = 'off';
+    var subtitleMode = opts.subtitleMode === 'native' ? 'native' : 'sidecar';
+    var subtitleTracks = [], subtitleNative = [], subtitleReloading = false;
     var session = opts.session && typeof navigator !== 'undefined' && navigator.mediaSession ? navigator.mediaSession : null;
     var artwork = opts.artwork || null;
     if (created) {
@@ -536,6 +539,7 @@
         lastSecond = -1;
         paint();
         paintPlay();
+        applySubtitles();
         emit('filo:background', { on: true, at: t });
       };
       var p = audio.play();
@@ -557,6 +561,7 @@
       lastSecond = -1;
       paint();
       paintPlay();
+      applySubtitles();
       emit('filo:background', { on: false, at: t });
     }
 
@@ -918,11 +923,12 @@
       if (view === 'root') {
         $.menu.append(menuItem('Speed', rateLabel(media.playbackRate), function () { openView('rate'); }, { sub: true }));
         if (qualities.length > 1) $.menu.append(menuItem('Quality', qualityLabel(), function () { openView('quality'); }, { sub: true }));
+        if (subtitles.length && !audioMode()) $.menu.append(menuItem('Subtitles', subtitleEntry(subtitleId) ? subtitleEntry(subtitleId).label : 'Off', function () { openView('subtitles'); }, { sub: true }));
         $.menu.append(menuItem('Sleep', sleepLabel(), function () { openView('sleep'); }, { sub: true }));
         if (item.chapters.length) $.menu.append(menuItem('Chapters', null, function () { openView('chapters'); }, { sub: true }));
         $.menu.append(menuItem('Keyboard shortcuts', '?', function () { help(true); }));
       } else {
-        var titles = { rate: 'Speed', quality: 'Quality', sleep: 'Sleep', chapters: 'Chapters' };
+        var titles = { rate: 'Speed', quality: 'Quality', sleep: 'Sleep', chapters: 'Chapters', subtitles: 'Subtitles' };
         var head = menuItem('\u2039 ' + titles[view], null, function () { openView('root'); });
         head.classList.add('filo-menu-back');
         $.menu.append(head);
@@ -936,6 +942,12 @@
             emit('filo:quality', { value: q.value });
             closeMenu();
           }];
+        });
+        if (view === 'subtitles') picks = [{ id: null, label: 'Off' }].concat(subtitles).map(function (s) {
+          return [s.label, s.id === subtitleId, function () {
+            if (setSubtitle(s.id)) emit('filo:subtitle', { itemId: subtitleItemId, id: s.id });
+            closeMenu();
+          }, s.language || null];
         });
         if (view === 'sleep') picks = SLEEP.filter(function (s) { return s[0] !== 'chapter' || item.chapters.length; }).map(function (s) {
           return [s[1], s[0] === sleepMode, function () { setSleep(s[0]); closeMenu(); }];
@@ -1054,6 +1066,128 @@
       }).catch(function () { if (thumbsUrl === want) thumbs = []; });
     }
 
+    function subtitleStatus(state) {
+      if (subtitleState === state) return;
+      subtitleState = state;
+      emit('filo:subtitlestate', { itemId: subtitleItemId, id: subtitleId, state: state });
+    }
+
+    function subtitleError(id, reason) {
+      say('Subtitles unavailable');
+      subtitleStatus('error');
+      emit('filo:subtitleerror', { itemId: subtitleItemId, id: id, reason: reason });
+    }
+
+    function clearSubtitleTracks() {
+      subtitleTracks.forEach(function (t) {
+        t.node.removeEventListener('load', t.load);
+        t.node.removeEventListener('error', t.error);
+        t.node.track.mode = 'disabled';
+        t.node.remove();
+      });
+      subtitleTracks = [];
+      subtitleNative.forEach(function (t) { t.track.mode = 'disabled'; });
+    }
+
+    function subtitleEntry(id) {
+      return subtitles.filter(function (s) { return s.id === id; })[0];
+    }
+
+    function nativeSubtitle(entry) {
+      if (!entry.hls || !own.textTracks) return null;
+      var matches = Array.prototype.filter.call(own.textTracks, function (t) {
+        return (t.kind === 'subtitles' || t.kind === 'captions') &&
+          !subtitleTracks.some(function (s) { return s.node.track === t; }) &&
+          t.language.toLowerCase() === entry.language.toLowerCase() && t.label === entry.hls.name;
+      });
+      return matches.length === 1 ? matches[0] : null;
+    }
+
+    function applySubtitles() {
+      var suppressed = media !== own || audioMode();
+      var chosen = subtitleEntry(subtitleId), active = null;
+      if (subtitleMode === 'native') {
+        subtitles.forEach(function (entry) {
+          var track = nativeSubtitle(entry);
+          if (!track) return;
+          if (!subtitleNative.some(function (t) { return t.track === track; })) {
+            subtitleNative.push({ track: track, mode: track.mode });
+            on(track, 'cuechange', applySubtitles);
+          }
+          if (entry === chosen) active = track;
+        });
+      }
+      subtitleNative.forEach(function (t) { t.track.mode = !suppressed && t.track === active ? 'showing' : 'disabled'; });
+      subtitleTracks.forEach(function (t) {
+        var selected = !suppressed && subtitleMode === 'sidecar' && t.id === subtitleId;
+        t.node.track.mode = selected ? 'showing' : 'disabled';
+        if (selected) active = t.node.track;
+      });
+      if (!chosen) subtitleStatus('off');
+      else if (suppressed) subtitleStatus('suppressed');
+      else if (!active && subtitleMode === 'native' && (!chosen.hls || !subtitleReloading && own.readyState >= 1)) subtitleError(subtitleId, 'native_track_unavailable');
+      else if (!active) subtitleStatus('loading');
+      else if (subtitleMode === 'native') subtitleStatus(active.cues && active.cues.length ? 'ready' : 'loading');
+      else {
+        var node = subtitleTracks.filter(function (t) { return t.id === subtitleId; })[0].node;
+        if (node.readyState === 3) subtitleError(subtitleId, 'load_failed');
+        else subtitleStatus(node.readyState === 2 ? 'ready' : 'loading');
+      }
+    }
+
+    function buildSubtitleTracks() {
+      clearSubtitleTracks();
+      if (subtitleMode === 'sidecar') subtitles.forEach(function (entry) {
+        var track = el('track', '', { kind: 'subtitles', srclang: entry.language, label: entry.label });
+        var record = { id: entry.id, node: track };
+        record.load = function () { if (subtitleTracks.indexOf(record) >= 0 && subtitleId === entry.id) applySubtitles(); };
+        record.error = function () { if (subtitleTracks.indexOf(record) >= 0 && subtitleId === entry.id) subtitleError(entry.id, 'load_failed'); };
+        track.addEventListener('load', record.load);
+        track.addEventListener('error', record.error);
+        own.appendChild(track);
+        track.track.mode = 'disabled';
+        track.src = entry.src;
+        subtitleTracks.push(record);
+      });
+      applySubtitles();
+    }
+
+    function setSubtitle(id) {
+      if (id !== null && !subtitleEntry(id)) return false;
+      subtitleId = id;
+      applySubtitles();
+      if (menuView) renderMenu(menuView);
+      return true;
+    }
+
+    function setSubtitleMode(mode) {
+      if (mode !== 'native' && mode !== 'sidecar') return false;
+      if (subtitleMode !== mode) { subtitleMode = mode; buildSubtitleTracks(); }
+      return true;
+    }
+
+    function updateSubtitles(next) {
+      var nextId = next.itemId == null ? null : String(next.itemId);
+      var changed = nextId === null || nextId !== subtitleItemId;
+      if (changed) subtitleId = null;
+      subtitleItemId = nextId;
+      if ('subtitles' in next || changed) {
+        var seen = Object.create(null);
+        subtitles = (Array.isArray(next.subtitles) ? next.subtitles : []).filter(function (s) {
+          if (!s || typeof s.id !== 'string' || !s.id || seen[s.id] || typeof s.src !== 'string' || typeof s.language !== 'string' || !s.language || typeof s.label !== 'string' || !s.label) return false;
+          try {
+            var url = new URL(s.src, location.href);
+            if (url.origin !== location.origin || !/^https?:$/.test(url.protocol) || url.username || url.password) return false;
+          } catch (_) { return false; }
+          seen[s.id] = true;
+          return true;
+        }).map(function (s) { return { id: s.id, language: s.language, label: s.label, src: s.src, hls: s.hls && typeof s.hls.name === 'string' ? { name: s.hls.name, groupId: s.hls.groupId } : null }; });
+      }
+      if (!subtitleEntry(subtitleId)) subtitleId = null;
+      if ('subtitleMode' in next) subtitleMode = next.subtitleMode === 'native' ? 'native' : 'sidecar';
+      buildSubtitleTracks();
+    }
+
     function setItem(next) {
       next = next || {};
       item.title = next.title || '';
@@ -1065,6 +1199,7 @@
       if ('qualities' in next) { qualities = next.qualities || []; quality = next.quality == null ? null : String(next.quality); }
       if ('background' in next) background = next.background || null;
       if ('artwork' in next) artwork = next.artwork || null;
+      updateSubtitles(next);
       item.kicker = next.kicker || '';
       $.kicker.textContent = item.kicker;
       $.title.textContent = item.title;
@@ -1098,6 +1233,13 @@
       stop: stop,
       setItem: setItem,
       setQualities: setQualities,
+      setSubtitle: setSubtitle,
+      setSubtitleMode: setSubtitleMode,
+      get subtitle() { return subtitleId; },
+      get subtitleState() { return subtitleState; },
+      get subtitleMode() { return subtitleMode; },
+      get itemId() { return subtitleItemId; },
+      get subtitles() { return subtitles.map(function (s) { return { id: s.id, language: s.language, label: s.label }; }); },
       rate: rate,
       mute: mute,
       fullscreen: fullscreen,
@@ -1116,6 +1258,9 @@
       get background() { return media !== own; },
       unlock: unlock,
       detach: function () {
+        clearSubtitleTracks();
+        subtitleNative.forEach(function (t) { t.track.mode = t.mode; });
+        subtitleNative = [];
         if (media !== own) { media = own; audio.pause(); }
         sessionActions(true);
         if (session) session.metadata = null;
@@ -1303,6 +1448,24 @@
       on(m, 'ratechange', mine(function () { sessionPosition(); paintChips(); if (menuView) renderMenu(menuView); }));
     }
     follow(own);
+    on(own, 'loadstart', function () { subtitleReloading = true; });
+    on(own, 'loadedmetadata', function () { subtitleReloading = false; applySubtitles(); });
+    if (own.textTracks) {
+      on(own.textTracks, 'addtrack', applySubtitles);
+      on(own.textTracks, 'change', function () {
+        if (subtitleReloading || media !== own || audioMode()) return;
+        var showing = subtitles.filter(function (s) {
+          if (subtitleMode === 'native') { var t = nativeSubtitle(s); return t && t.mode === 'showing'; }
+          return subtitleTracks.some(function (t) { return t.id === s.id && t.node.track.mode === 'showing'; });
+        });
+        if (showing.length > 1 || !showing.length && subtitleId !== null && subtitleState !== 'ready') return;
+        var id = showing.length ? showing[0].id : null;
+        if (id !== subtitleId) {
+          setSubtitle(id);
+          emit('filo:subtitle', { itemId: subtitleItemId, id: id });
+        }
+      });
+    }
     on(own, 'pause', function () { ownPausedAt = Date.now(); });
     on(document, 'click', unlock, true);
     on(document, 'touchend', unlock, true);
@@ -1313,7 +1476,7 @@
 
     if (opts.rate) rate(opts.rate);
     box.classList.add('filo-active');
-    setItem({ title: item.title, chapters: item.chapters, duration: item.duration, kind: item.kind, thumbnails: opts.thumbnails, kicker: opts.kicker });
+    setItem({ itemId: opts.itemId, subtitles: opts.subtitles, title: item.title, chapters: item.chapters, duration: item.duration, kind: item.kind, thumbnails: opts.thumbnails, kicker: opts.kicker });
     paintBuffered();
     paintPlay();
     paintVolume();

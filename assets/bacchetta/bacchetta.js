@@ -175,6 +175,7 @@
     var host = opts.host || document.body;
     var now = { title: '', chapter: '', position: 0, duration: 0, playing: false, at: 0 };
     var screen = null, minimised = false, shown = false, boiled = !!opts.boil, dragging = false, ticker = null;
+    var subtitleItemId = null, subtitleList = [], subtitleId = null, subtitleKey = '';
 
     var $ = {
       root: el('section', 'bacchetta', { role: 'dialog', 'aria-modal': 'false', 'aria-label': 'Remote', hidden: '' }),
@@ -188,6 +189,9 @@
       now: el('div', 'bacchetta-now'),
       title: el('div', 'bacchetta-title'),
       chapter: el('div', 'bacchetta-chapter'),
+      subtitleLabel: el('label', 'bacchetta-subtitles', { hidden: '' }),
+      subtitleSelect: el('select', 'bacchetta-subtitle-select', { 'aria-label': 'Subtitles on screen' }),
+      subtitleStatus: el('span', 'bacchetta-subtitle-status', { role: 'status' }),
       track: el('div', 'bacchetta-track', { role: 'slider', tabindex: '0', 'aria-label': 'Seek', 'aria-valuemin': '0' }),
       rail: el('div', 'bacchetta-rail'),
       fill: el('div', 'bacchetta-fill'),
@@ -246,7 +250,8 @@
     $.form.append($.path, $.send);
     $.boilLabel.append($.boilBox, el('span', null, null, 'Boil the remote'));
     $.more.append($.summary, $.form, $.boilLabel);
-    $.sheet.append($.grip, $.head, $.now, $.transport, $.mid, $.more);
+    $.subtitleLabel.append(el('span', null, null, 'Subtitles'), $.subtitleSelect, $.subtitleStatus);
+    $.sheet.append($.grip, $.head, $.now, $.subtitleLabel, $.transport, $.mid, $.more);
     $.miniText.append($.miniTo, $.miniNow);
     $.mini.append($.miniLine, icon('cast'), $.miniText, $.miniPlay, $.grow);
     $.root.append($.sheet, $.mini);
@@ -345,12 +350,29 @@
       if ('duration' in n) now.duration = Number(n.duration) || 0;
       if ('playing' in n) now.playing = !!n.playing;
       if ('position' in n) { now.position = Number(n.position) || 0; now.at = Date.now(); }
+      if ('itemId' in n) subtitleItemId = n.itemId || null;
+      if ('subtitle' in n) subtitleId = n.subtitle == null ? null : n.subtitle;
+      if ('subtitles' in n || 'itemId' in n) {
+        var list = Array.isArray(n.subtitles) ? n.subtitles : [];
+        var signature = JSON.stringify([subtitleItemId, list]);
+        if (signature !== subtitleKey) {
+          subtitleKey = signature;
+          subtitleList = list.filter(function (s) { return s && typeof s.id === 'string' && s.id && typeof s.label === 'string'; });
+          $.subtitleSelect.textContent = '';
+          $.subtitleSelect.appendChild(el('option', null, { value: '' }, 'Off'));
+          subtitleList.forEach(function (s) { $.subtitleSelect.appendChild(el('option', null, { value: s.id }, s.label + (s.language ? ' (' + s.language + ')' : ''))); });
+        }
+      }
+      $.subtitleLabel.hidden = !subtitleItemId || !subtitleList.length;
+      $.subtitleSelect.value = subtitleId == null ? '' : subtitleId;
+      if ('subtitleState' in n) $.subtitleStatus.textContent = ({ off: 'Off', loading: 'Loading on screen', ready: 'Loaded on screen', error: 'Unavailable on screen', suppressed: 'Hidden during audio playback' })[n.subtitleState] || '';
       $.title.textContent = now.title || 'Nothing playing';
       $.chapter.textContent = now.chapter;
       $.miniNow.textContent = now.title ? now.title + (now.chapter ? ' \u00B7 ' + now.chapter : '') : 'Nothing playing';
       paintPlay();
       paint();
       tick();
+      setHeight();
     }
 
     function boil(v) {
@@ -396,6 +418,13 @@
       if (!p) return;
       emit('bacchetta:path', { path: p, screen: screen });
       $.path.value = '';
+    });
+    on($.subtitleSelect, 'change', function () {
+      var id = $.subtitleSelect.value || null;
+      if (!subtitleItemId || id !== null && !subtitleList.some(function (s) { return s.id === id; })) return;
+      emit('bacchetta:control', { action: 'subtitle', value: id, itemId: subtitleItemId, screen: screen });
+      $.subtitleSelect.value = subtitleId == null ? '' : subtitleId;
+      $.subtitleStatus.textContent = 'Waiting for screen';
     });
     on($.boilBox, 'change', function () { boil($.boilBox.checked); });
     on($.more, 'toggle', setHeight);

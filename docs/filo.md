@@ -271,3 +271,44 @@ through the CSSOM. zanni-check asserts it.
 The only filter is boil on the paused centre cluster, a sibling of the bar,
 and only when the page carries boil and `boil` is not false. Nothing in the
 bar or its ancestors is filtered: the fill moves four times a second.
+
+## Subtitles (0.23.0)
+
+`attach(video, { itemId, subtitles, subtitleMode })` and `setItem` accept
+`subtitles: [{ id, language, label, src, hls?: { groupId, name } }]`.
+The caller supplies the source key/revision identity, not a rendition identity.
+Only same-origin HTTP(S) src URLs are accepted. Off is the initial choice,
+regardless of default/forced metadata. The thumbnail VTT parser is not used.
+
+`setSubtitle(id|null)` selects an offered track or Off and returns false for
+an unknown id. `subtitle`, `subtitles`, `itemId`, `subtitleState` and
+`subtitleMode` are readable. The public list contains ids/languages/labels,
+not URLs. A different itemId clears selection. Older callers omitting itemId
+clear subtitle state on every setItem. A same-item metadata update preserves
+selection if the track remains offered. Docking and setQualities do not change
+it. Cues keep source-time timestamps; the backend must align every rendition.
+
+Sidecar mode creates native track elements. Native mode creates none: the
+source's HLS master must publish EXT-X-MEDIA subtitle groups and each variant
+must reference them with SUBTITLES. `setSubtitleMode('native'|'sidecar')` switches
+between them without discarding selection. Native entries match language and
+hls.name against one native TextTrack; ambiguous/missing tracks are not guessed.
+Native tracks are only ready after cues are observable. Actual AVPlayer and
+FireTV rendering still need device observation; a JS menu check does not prove
+those platforms work.
+
+`filo:subtitle {itemId,id}` reports user choices, including a native chooser.
+Programmatic setSubtitle does not echo a user command. State changes emit
+`filo:subtitlestate {itemId,id,state}`: off, loading, ready, error or suppressed.
+Failed loads display an unavailable message and emit
+`filo:subtitleerror {itemId,id,reason}`. Background audio suppresses rendering,
+retaining selection for the same item; returning to video restores it. Detach
+removes filo-owned tracks and restores native track modes it changed.
+
+Cast messages carry action=subtitle, itemId, value=id|null. The receiver must
+refuse missing/stale item identity and unknown ids; it obtains descriptors from
+the trusted item's API, never from a remote-control URL. Its reported state
+contains the accepted selection and load state. The bacchetta remote accepts
+these fields through setNow and exposes Off plus the named tracks, emitting
+an item-scoped bacchetta:control. It waits for receiver state rather than
+claiming a sent command has loaded captions.

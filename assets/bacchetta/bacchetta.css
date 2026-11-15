@@ -332,3 +332,9 @@
 @media (prefers-reduced-motion: reduce) {
   .bacchetta-key:active { translate: none; }
 }
+
+.bacchetta-subtitles { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font: 16px var(--bacchetta-face); }
+.bacchetta-subtitles[hidden] { display: none; }
+.bacchetta-subtitle-select { min-height: 44px; max-width: 100%; font: 16px var(--bacchetta-prose); color: var(--bacchetta-ink); background: var(--bacchetta-ground); border: 1px solid var(--bacchetta-muted); padding: 4px 8px; }
+.bacchetta-subtitle-select:focus-visible { outline: 2px solid var(--bacchetta-accent); outline-offset: 2px; }
+.bacchetta-subtitle-status { font-size: 14px; color: var(--bacchetta-muted); }
