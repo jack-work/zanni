@@ -1106,8 +1106,15 @@
     }
 
     function subtitleError(id, reason) {
-      say('Subtitles unavailable');
+      var messages = {
+        native_track_unavailable: 'Native HLS subtitle track not registered. Try Original quality, then choose subtitles again.',
+        load_failed: 'Subtitle file failed to load. Choose Off or try the track again.',
+        empty_track: 'Subtitle file loaded but contains no readable cues.'
+      };
+      var message = messages[reason] || 'Subtitles unavailable. Choose Off or try the track again.';
+      say(message);
       subtitleStatus('error');
+      $.subtitleNotice.textContent = message;
       emit('filo:subtitleerror', { itemId: subtitleItemId, id: id, reason: reason });
     }
 
