@@ -140,7 +140,8 @@
 .filo-big { --filo-icon: var(--filo-big); }
 .filo-big-back, .filo-big-fwd { --filo-icon: calc(var(--filo-big) * 0.75); }
 
-.filo-chrome { line-height: 1.2; }
+.filo-chrome { line-height: 1.2; user-select: none; -webkit-user-select: none; }
+.filo-button, .filo-menu-item { user-select: none; -webkit-user-select: none; }
 
 .filo-track {
   position: relative;

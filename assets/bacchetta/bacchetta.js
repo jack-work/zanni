@@ -405,7 +405,7 @@
     on($.bigFwd, 'click', function () { control('skip', o.big); });
     on($.prev, 'click', function () { control('chapter', -1); });
     on($.next, 'click', function () { control('chapter', 1); });
-    on($.bar, 'click', function () { control('bar'); });
+    on($.bar, 'click', function () { control('bar', -1); });
     on($.goBack, 'click', function () { control('back'); });
     on($.home, 'click', function () { control('home'); });
     on($.stop, 'click', function () { control('stop'); });

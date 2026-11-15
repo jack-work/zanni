@@ -177,6 +177,7 @@
       big: opts.big || 30,
       fine: opts.fine || 1,
       globalKeys: !!opts.globalKeys,
+      tvKeys: !!opts.tvKeys,
       rates: opts.rates || RATES,
       boil: opts.boil !== false
     };
@@ -186,7 +187,7 @@
     };
     var qualities = opts.qualities || [], quality = opts.quality == null ? null : String(opts.quality);
     var audioMode = function () { return item.kind === 'audio'; };
-    var docked = false, dockSaved = null, barSkin = !!opts.bar;
+    var docked = false, dockSaved = null, barSkin = !!opts.bar, tvFocus = !!opts.tvKeys;
     var barred = function () { return barSkin && !docked && fullscreenElement() !== box; };
     var autohide = function () { return docked || barred() ? 0 : opts.autohide == null ? (audioMode() ? 0 : 2500) : opts.autohide; };
 
@@ -751,7 +752,7 @@
     }
 
     function holding() {
-      return dragging || pending != null || !$.menu.hidden || !$.help.hidden;
+      return dragging || pending != null || !$.menu.hidden || !$.help.hidden || tvFocus && $.chrome.contains(document.activeElement);
     }
 
     function armHide() {
@@ -764,6 +765,22 @@
     function showBar(v) {
       if (v) wake();
       else rest();
+    }
+
+    function controls(v) {
+      var shown = v == null ? !active : !!v;
+      tvFocus = shown;
+      showBar(shown);
+      if (shown) $.track.focus({ preventScroll: true });
+      else if (box.contains(document.activeElement)) document.activeElement.blur();
+    }
+
+    function remoteKey(key) {
+      if (!/^(ArrowUp|ArrowDown|ArrowLeft|ArrowRight|Enter)$/.test(key)) return false;
+      var target = box.contains(document.activeElement) ? document.activeElement : $.track;
+      var event = new KeyboardEvent('keydown', { key: key, bubbles: true, cancelable: true });
+      event.filoRemote = true;
+      return !target.dispatchEvent(event);
     }
 
     function fullscreenElement() {
@@ -1230,6 +1247,8 @@
       seekFraction: seekFraction,
       chapter: chapter,
       showBar: showBar,
+      controls: controls,
+      key: remoteKey,
       stop: stop,
       setItem: setItem,
       setQualities: setQualities,
@@ -1294,10 +1313,20 @@
         if (dismiss()) e.preventDefault();
         return;
       }
-      if (!$.menu.hidden && inside && path.indexOf($.menu) >= 0) {
-        if (menuKey(e)) e.preventDefault();
+      if (!$.help.hidden && (o.tvKeys || e.filoRemote) && /^(Arrow|Enter)/.test(e.key)) {
+        if (e.key === 'Enter') help(false);
+        else $.help.querySelector('button').focus({ preventScroll: true });
+        e.preventDefault();
         return;
       }
+      if (!$.menu.hidden && (inside && path.indexOf($.menu) >= 0 || e.filoRemote || o.tvKeys)) {
+        if (e.key === 'Enter' && (e.filoRemote || o.tvKeys)) {
+          var picked = $.menu.contains(document.activeElement) ? document.activeElement : $.menu.querySelector('.filo-menu-item');
+          if (picked) { picked.click(); e.preventDefault(); }
+        } else if (menuKey(e)) e.preventDefault();
+        return;
+      }
+      if ((o.tvKeys || e.filoRemote) && tvKey(e)) { e.preventDefault(); return; }
       if (path[0] === $.level && /^(Arrow|Home|End|Page)/.test(e.key)) return;
       var a = keyAction(e, o);
       if (!a) return;
@@ -1311,6 +1340,46 @@
       if (a[0] !== 'showBar') wake();
       if (a[0] === 'stepRate') stepRate(a[1]);
       else api[a[0]](a[1]);
+    }
+
+    function tvKey(e) {
+      if (!/^(ArrowUp|ArrowDown|ArrowLeft|ArrowRight|Enter)$/.test(e.key)) return false;
+      tvFocus = true;
+      var focused = document.activeElement;
+      var buttons = Array.prototype.filter.call($.row.querySelectorAll('button'), function (b) {
+        return !b.disabled && b.getClientRects().length && getComputedStyle(b).visibility !== 'hidden';
+      });
+      var index = buttons.indexOf(focused);
+      var seeking = focused === $.track;
+      if (!active && !audioMode() && !barred() && !docked) {
+        wake();
+        $.track.focus({ preventScroll: true });
+        if (e.key === 'Enter') toggle();
+        return true;
+      }
+      wake();
+      if (e.key === 'ArrowUp') {
+        $.track.focus({ preventScroll: true });
+        return true;
+      }
+      if (e.key === 'ArrowDown') {
+        if (seeking || index < 0) { if (buttons[0]) buttons[0].focus({ preventScroll: true }); }
+        else controls(false);
+        return true;
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        if (index >= 0) {
+          var next = index + (e.key === 'ArrowLeft' ? -1 : 1);
+          (buttons[Math.max(0, Math.min(buttons.length - 1, next))] || $.track).focus({ preventScroll: true });
+        } else {
+          $.track.focus({ preventScroll: true });
+          skip(e.key === 'ArrowLeft' ? -o.step : o.step);
+        }
+        return true;
+      }
+      if (index >= 0) focused.click();
+      else { $.track.focus({ preventScroll: true }); toggle(); }
+      return true;
     }
 
     function menuKey(e) {
@@ -1393,6 +1462,7 @@
       if (!dragging && pending == null) endPreview();
     });
     on(box, 'pointerdown', function (e) {
+      tvFocus = false;
       lastPointer = e.pointerType || 'mouse';
       swallow = false;
       if (!$.menu.hidden && !$.menu.contains(e.target) && !$.more.contains(e.target)) {

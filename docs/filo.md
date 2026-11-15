@@ -312,3 +312,19 @@ contains the accepted selection and load state. The bacchetta remote accepts
 these fields through setNow and exposes Off plus the named tracks, emitting
 an item-scoped bacchetta:control. It waits for receiver state rather than
 claiming a sent command has loaded captions.
+
+## TV control focus (0.23.1)
+
+`tvKeys: true` gives D-pad arrows a focus path: Up reaches the scrubber,
+Down enters the button row, Left/Right move between row buttons, and Enter
+activates the focused button. On the scrubber, Left/Right still seek. Down
+from the button row hides controls. Focused TV chrome stays visible until
+explicitly hidden; pointer use restores ordinary auto-hide behavior. Desktop
+keyboard shortcuts are unchanged when tvKeys is false.
+
+`controls(bool?)` shows/hides the controls (omission toggles), focuses the
+scrubber when shown, and releases its focus when hidden. `key(key)` dispatches
+a remote D-pad/Enter through the same component focus logic, including actual
+button activation rather than relying on synthetic browser default actions.
+The caller handles navigation outside the active player. Bacchetta's Controls
+button emits bar with value -1 (toggle); 0 remains explicit hide.
