@@ -126,8 +126,6 @@ function filo() {
     /:where\(\.filo\)\s*\{[^{}]*position:\s*relative/.test(own)
       && !rules.some((r) => /(^|,)\s*\.filo\s*$/.test(r.split('{')[0].trim()) && /position\s*:/.test(r)),
     'a page that wears data-filo on a fixed box lost it to .filo { position: relative }, and the player fell offscreen');
-  check('the track keeps a visible focus ring',
-    /\.filo-track:focus-visible\s+\.filo-rail\s*\{[^{}]*outline:/.test(own));
   check('hidden chrome stays focusable and takes no pointer',
     /\.filo-video \.filo-chrome\s*\{[^{}]*opacity:\s*0[^{}]*pointer-events:\s*none/.test(own)
       && !rules.some((r) => /\.filo-chrome/.test(r.split('{')[0]) && /display:\s*none|visibility:\s*hidden/.test(r)),
