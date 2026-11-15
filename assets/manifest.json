@@ -1,6 +1,6 @@
 {
   "name": "zanni",
-  "version": "0.23.5",
+  "version": "0.24.0",
   "description": "Visual components extracted from figar.org.",
   "components": {
     "boil": {
@@ -489,6 +489,21 @@
         "--rotolo-track",
         "--rotolo-size"
       ]
+    },
+    "catalogo": {
+      "summary": "Authorized media cards and shelves with real resume progress, landscape artwork fallback and stable-key D-pad focus.",
+      "files": ["catalogo/catalogo.css", "catalogo/catalogo.js"],
+      "classes": ["catalogo", "catalogo-card", "catalogo-art", "catalogo-progress"],
+      "docs": "docs/media-library.md",
+      "example": "examples/media-library.html"
+    },
+    "titolo": {
+      "summary": "A nonplaying title surface with supplied artwork, honest metadata and explicit Play, Resume or Listen.",
+      "files": ["titolo/titolo.css", "titolo/titolo.js"],
+      "classes": ["titolo", "titolo-title", "titolo-play"],
+      "requires": ["catalogo"],
+      "docs": "docs/media-library.md",
+      "example": "examples/media-library.html"
     }
   },
   "planned": [

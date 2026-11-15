@@ -1,0 +1,7 @@
+:root { color-scheme: light dark; }
+body { margin: 0; padding-top: var(--proscenio-pad, 0px); }
+main { max-width: 96rem; margin: 0 auto; padding: 24px; font: 18px/1.5 var(--fontpack-prose); }
+.demo-note { color: var(--z-muted); max-width: 68ch; }
+#library { display: grid; gap: 40px; }
+#detail[hidden], #library[hidden] { display: none; }
+#action { font-family: var(--fontpack-mono); }

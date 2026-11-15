@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en" class="rotolo">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>zanni · media components</title>
+<link rel="stylesheet" href="../assets/fontpack/fonts.css">
+<link rel="stylesheet" href="../assets/fontpack/fontpack.css">
+<link rel="stylesheet" href="../assets/gesso/gesso.css">
+<link rel="stylesheet" href="../assets/rotolo/rotolo.css">
+<link rel="stylesheet" href="../assets/proscenio/proscenio.css">
+<link rel="stylesheet" href="../assets/catalogo/catalogo.css">
+<link rel="stylesheet" href="../assets/titolo/titolo.css">
+<link rel="stylesheet" href="media-library.css">
+</head>
+<body class="gesso-stage">
+<header data-proscenio>
+  <a data-slot="mark" href="media-library.html">Media</a>
+  <span data-slot="identity">Component demo</span>
+  <select data-slot="tool" id="mode" aria-label="Input layout"><option value="desktop">Desktop</option><option value="tv">TV</option></select>
+</header>
+<main>
+  <p class="demo-note">Synthetic behavior records, not your library. No artwork is invented: these cards show the honest landscape fallback. Apps supply authorized records and navigation.</p>
+  <div id="library">
+    <div id="continue"></div>
+    <div id="catalog"></div>
+  </div>
+  <div id="detail" hidden></div>
+  <p id="action" role="status" aria-live="polite"></p>
+</main>
+<script src="../assets/proscenio/proscenio.js"></script>
+<script src="../assets/catalogo/catalogo.js"></script>
+<script src="../assets/titolo/titolo.js"></script>
+<script src="media-library.js"></script>
+</body>
+</html>
