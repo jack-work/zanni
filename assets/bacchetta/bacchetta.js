@@ -369,7 +369,8 @@
           subtitleList.forEach(function (s) { $.subtitleSelect.appendChild(el('option', null, { value: s.id }, s.label + (s.language ? ' (' + s.language + ')' : ''))); });
         }
       }
-      $.subtitleLabel.hidden = !subtitleItemId || !subtitleList.length;
+      $.subtitleLabel.hidden = !subtitleUnknown && (!subtitleItemId || !subtitleList.length);
+      $.subtitleSelect.disabled = !subtitleItemId || !subtitleList.length;
       $.subtitleSelect.value = subtitleId == null ? '' : subtitleId;
       if (subtitleUnknown) $.subtitleSelect.selectedIndex = 0;
       if ('subtitleState' in n || subtitleItemChanged) $.subtitleStatus.textContent = ({ unknown: 'Screen selection unknown', off: 'Off', loading: 'Loading on screen', ready: 'Loaded on screen', error: 'Unavailable on screen', suppressed: 'Hidden during audio playback' })[subtitleUnknown ? 'unknown' : n.subtitleState] || '';
