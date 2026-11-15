@@ -116,6 +116,7 @@
   --z-tint: light-dark(rgba(126, 31, 34, 0.06), rgba(194, 154, 91, 0.08));
   --z-shadow: light-dark(rgba(122, 88, 74, 0.25), rgba(10, 4, 5, 0.7));
   --z-measure: 68ch;
+  --z-control-hit: 44px;
   --z-leading-tight: 1.2;
   --z-leading-body: 1.5;
   --z-radius-1: 2px;

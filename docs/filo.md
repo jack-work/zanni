@@ -328,3 +328,15 @@ a remote D-pad/Enter through the same component focus logic, including actual
 button activation rather than relying on synthetic browser default actions.
 The caller handles navigation outside the active player. Bacchetta's Controls
 button emits bar with value -1 (toggle); 0 remains explicit hide.
+
+## Shared control geometry (0.23.2)
+
+Filo, bacchetta and proscenio read `--z-control-hit` (44px by default). v2's
+shared token source supplies it; v1 components use the same fallback without
+requiring a v2 stylesheet. Menus and header search no longer use smaller hit
+areas. Where v2 tokens are present, menu/key spacing uses their spacing scale.
+
+Focus is an outline, not the selected value's accent/marker. TV remote input
+explicitly shows the focused control even after pointer use; using the pointer
+removes that TV-focus mode again. Screen/subtitle pickers use the focus colour,
+while the current header destination is underlined as well as accented.

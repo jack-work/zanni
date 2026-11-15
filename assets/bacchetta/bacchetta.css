@@ -2,6 +2,7 @@
 .bacchetta-caster {
   --bacchetta-z: 60;
   --bacchetta-key: 52px;
+  --bacchetta-hit: var(--z-control-hit, 44px);
   --bacchetta-face: var(--fontpack-mono, ui-monospace, monospace);
   --bacchetta-prose: var(--fontpack-prose, Georgia, serif);
   --bacchetta-display: var(--fontpack-display, var(--fontpack-prose, Georgia, serif));
@@ -56,9 +57,9 @@
   grid-auto-flow: column;
   place-items: center;
   gap: 6px;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0 8px;
+  min-width: var(--bacchetta-hit);
+  min-height: var(--bacchetta-hit);
+  padding: 0 var(--z-space-3, 8px);
   font: 18px var(--bacchetta-face);
   color: var(--bacchetta-ink);
   background: var(--bacchetta-ground);
@@ -288,9 +289,9 @@
 .bacchetta-screen {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--z-space-3, 10px);
   width: 100%;
-  min-height: 44px;
+  min-height: var(--bacchetta-hit);
   padding: 6px 14px;
   font: 17px var(--fontpack-prose, Georgia, serif);
   color: inherit;
@@ -300,8 +301,8 @@
   cursor: pointer;
 }
 
-.bacchetta-screen:hover,
-.bacchetta-screen:focus-visible { background: color-mix(in srgb, var(--z-accent, #7d2e2e) 20%, transparent); outline: none; }
+.bacchetta-screen:hover { background: color-mix(in srgb, var(--z-accent, #7d2e2e) 20%, transparent); }
+.bacchetta-screen:focus-visible { outline: 3px solid var(--z-focus, #b8862b); outline-offset: -3px; }
 
 .bacchetta-screen .bacchetta-icon { width: 18px; height: 18px; flex: none; }
 .bacchetta-screen-name { flex: 1; }
@@ -335,6 +336,6 @@
 
 .bacchetta-subtitles { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font: 16px var(--bacchetta-face); }
 .bacchetta-subtitles[hidden] { display: none; }
-.bacchetta-subtitle-select { min-height: 44px; max-width: 100%; font: 16px var(--bacchetta-prose); color: var(--bacchetta-ink); background: var(--bacchetta-ground); border: 1px solid var(--bacchetta-muted); padding: 4px 8px; }
-.bacchetta-subtitle-select:focus-visible { outline: 2px solid var(--bacchetta-accent); outline-offset: 2px; }
+.bacchetta-subtitle-select { min-height: var(--bacchetta-hit); max-width: 100%; font: 16px var(--bacchetta-prose); color: var(--bacchetta-ink); background: var(--bacchetta-ground); border: 1px solid var(--bacchetta-muted); padding: 4px 8px; }
+.bacchetta-subtitle-select:focus-visible { outline: 3px solid var(--bacchetta-focus); outline-offset: 2px; }
 .bacchetta-subtitle-status { font-size: 14px; color: var(--bacchetta-muted); }

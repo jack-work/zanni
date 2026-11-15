@@ -2,7 +2,7 @@
   --filo-track: 4px;
   --filo-track-hot: 8px;
   --filo-thumb: 14px;
-  --filo-hit: 44px;
+  --filo-hit: var(--z-control-hit, 44px);
   --filo-icon: 32px;
   --filo-big: 64px;
   --filo-face: var(--fontpack-mono, ui-monospace, monospace);
@@ -84,7 +84,10 @@
 
 :root:not(.zanni-pointing) .filo-button:focus-visible,
 :root:not(.zanni-pointing) .filo-menu-item:focus-visible,
-:root:not(.zanni-pointing) .filo-level:focus-visible {
+:root:not(.zanni-pointing) .filo-level:focus-visible,
+.filo-tv-focus .filo-button:focus,
+.filo-tv-focus .filo-menu-item:focus,
+.filo-tv-focus .filo-level:focus {
   outline: 3px solid var(--filo-focus);
   outline-offset: -3px;
 }
@@ -169,7 +172,8 @@
 .filo-held .filo-rail,
 .filo-track:focus-visible .filo-rail { height: var(--filo-track-hot); }
 
-:root:not(.zanni-pointing) .filo-track:focus-visible .filo-rail { outline: 3px solid var(--filo-focus); outline-offset: 6px; }
+:root:not(.zanni-pointing) .filo-track:focus-visible .filo-rail,
+.filo-tv-focus .filo-track:focus .filo-rail { outline: 3px solid var(--filo-focus); outline-offset: 6px; }
 
 .filo-buffers,
 .filo-ticks,
@@ -353,10 +357,10 @@
 .filo-menu-item {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--z-space-5, 16px);
   width: 100%;
-  min-height: 40px;
-  padding: 4px 16px;
+  min-height: var(--filo-hit);
+  padding: var(--z-space-2, 4px) var(--z-space-5, 16px);
   border: 0;
   background: transparent;
   color: inherit;

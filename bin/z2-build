@@ -76,6 +76,7 @@ def css(t):
     out.append(f"  --z-tint: {ld(sh['tint'])};")
     out.append(f"  --z-shadow: {ld(sh['shadow'])};")
     out.append(f"  --z-measure: {sh['measure']};")
+    out.append(f"  --z-control-hit: {sh['control_hit']}px;")
     for k, v in sh["leading"].items():
         out.append(f"  --z-leading-{k}: {v};")
     for i, v in enumerate(sh["radius"], 1):

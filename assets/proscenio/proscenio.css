@@ -1,5 +1,6 @@
 :where(.proscenio) {
   --proscenio-bar: 44px;
+  --proscenio-hit: var(--z-control-hit, 44px);
   --proscenio-scale: 1;
   --proscenio-ground: var(--z-ground-2, var(--z-ground, #f2e6d8));
   --proscenio-ink: var(--z-ink, #2b1a15);
@@ -102,7 +103,7 @@
   text-decoration: none;
 }
 
-.proscenio [data-slot="nav"] [aria-current="page"] { color: var(--proscenio-accent); }
+.proscenio [data-slot="nav"] [aria-current="page"] { color: var(--proscenio-accent); text-decoration: underline; text-underline-offset: 0.25em; }
 
 .proscenio [data-slot="status"] {
   font: calc(17px * var(--proscenio-scale)) / 1.1 var(--proscenio-face);
@@ -115,8 +116,8 @@
 .proscenio-button {
   display: inline-grid;
   place-items: center;
-  min-width: 40px;
-  min-height: 40px;
+  min-width: var(--proscenio-hit);
+  min-height: var(--proscenio-hit);
   padding: 0;
   color: inherit;
   background: none;
@@ -131,8 +132,8 @@
 
 .proscenio [data-slot="search"] {
   width: 14em;
-  min-height: 32px;
-  padding: 0 10px;
+  min-height: var(--proscenio-hit);
+  padding: 0 var(--z-space-3, 10px);
   font: 16px var(--proscenio-face);
   color: var(--proscenio-ink);
   background: transparent;

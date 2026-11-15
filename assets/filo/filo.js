@@ -770,6 +770,7 @@
     function controls(v) {
       var shown = v == null ? !active : !!v;
       tvFocus = shown;
+      box.classList.toggle('filo-tv-focus', shown);
       showBar(shown);
       if (shown) $.track.focus({ preventScroll: true });
       else if (box.contains(document.activeElement)) document.activeElement.blur();
@@ -780,6 +781,7 @@
       var target = box.contains(document.activeElement) ? document.activeElement : $.track;
       var event = new KeyboardEvent('keydown', { key: key, bubbles: true, cancelable: true });
       event.filoRemote = true;
+      box.classList.add('filo-tv-focus');
       return !target.dispatchEvent(event);
     }
 
@@ -1293,7 +1295,7 @@
         listeners = [];
         built.forEach(function (n) { n.remove(); });
         box.classList.remove('filo', 'filo-audio', 'filo-video', 'filo-active', 'filo-paused', 'filo-previewing',
-          'filo-held', 'filo-dragging', 'filo-menu-open', 'filo-help-open', 'filo-fullscreen', 'filo-muted', 'filo-framed', 'filo-fill', 'filo-barskin', 'filo-barred', 'filo-waved', 'filo-theater');
+          'filo-held', 'filo-dragging', 'filo-menu-open', 'filo-help-open', 'filo-tv-focus', 'filo-fullscreen', 'filo-muted', 'filo-framed', 'filo-fill', 'filo-barskin', 'filo-barred', 'filo-waved', 'filo-theater');
         if (hadControls) own.setAttribute('controls', '');
         if (created) {
           if (home.parent) home.parent.insertBefore(own, home.next && home.next.parentNode === home.parent ? home.next : box);
@@ -1345,6 +1347,8 @@
     function tvKey(e) {
       if (!/^(ArrowUp|ArrowDown|ArrowLeft|ArrowRight|Enter)$/.test(e.key)) return false;
       tvFocus = true;
+      box.classList.add('filo-tv-focus');
+      document.documentElement.classList.remove('zanni-pointing');
       var focused = document.activeElement;
       var buttons = Array.prototype.filter.call($.row.querySelectorAll('button'), function (b) {
         return !b.disabled && b.getClientRects().length && getComputedStyle(b).visibility !== 'hidden';
@@ -1463,6 +1467,7 @@
     });
     on(box, 'pointerdown', function (e) {
       tvFocus = false;
+      box.classList.remove('filo-tv-focus');
       lastPointer = e.pointerType || 'mouse';
       swallow = false;
       if (!$.menu.hidden && !$.menu.contains(e.target) && !$.more.contains(e.target)) {
