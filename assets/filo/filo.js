@@ -200,7 +200,7 @@
     var background = opts.background || null, filoPaused = false, ownPausedAt = 0;
     var subtitleItemId = null, subtitles = [], subtitleId = null, subtitleState = 'off';
     var subtitleMode = opts.subtitleMode === 'native' ? 'native' : 'sidecar';
-    var subtitleTracks = [], subtitleNative = [], subtitleReloading = false;
+    var subtitleTracks = [], subtitleNative = [], subtitleReloading = false, subtitlePositions = [];
     var session = opts.session && typeof navigator !== 'undefined' && navigator.mediaSession ? navigator.mediaSession : null;
     var artwork = opts.artwork || null;
     if (created) {
@@ -741,6 +741,7 @@
         emit('filo:bar', { shown: true });
       }
       armHide();
+      positionSubtitles();
     }
 
     function rest() {
@@ -748,6 +749,7 @@
       if (!active) return;
       active = false;
       box.classList.remove('filo-active');
+      positionSubtitles();
       emit('filo:bar', { shown: false });
     }
 
@@ -884,6 +886,7 @@
         restoreDock();
         armHide();
       }
+      positionSubtitles();
       emit('filo:dock', { on: docked });
     }
 
@@ -1097,10 +1100,52 @@
       emit('filo:subtitleerror', { itemId: subtitleItemId, id: id, reason: reason });
     }
 
+    function restoreSubtitlePositions() {
+      var positions = subtitlePositions;
+      subtitlePositions = [];
+      positions.forEach(function (s) {
+        s.cue.line = s.line;
+        s.cue.snapToLines = s.snapToLines;
+        s.cue.lineAlign = s.lineAlign;
+      });
+    }
+
+    function positionSubtitles() {
+      if (!active || media !== own || audioMode() || own.webkitDisplayingFullscreen || own.webkitPresentationMode === 'fullscreen') { restoreSubtitlePositions(); return; }
+      var picture = own.getBoundingClientRect(), chrome = $.chrome.getBoundingClientRect();
+      if (!picture.height || !chrome.height || chrome.top >= picture.bottom || chrome.bottom <= picture.top) { restoreSubtitlePositions(); return; }
+      var bottom = Math.max(picture.top, chrome.top - 8);
+      var line = Math.round(Math.max(0, Math.min(100, (bottom - picture.top) / picture.height * 100)) * 100) / 100;
+      var tracks = subtitleTracks.map(function (t) { return t.node.track; }).concat(subtitleNative.map(function (t) { return t.track; }));
+      var cues = [];
+      tracks.forEach(function (track) {
+        if (track.mode === 'showing' && track.activeCues) cues = cues.concat(Array.prototype.slice.call(track.activeCues));
+      });
+      subtitlePositions = subtitlePositions.filter(function (s) {
+        if (cues.indexOf(s.cue) >= 0) return true;
+        s.cue.line = s.line;
+        s.cue.snapToLines = s.snapToLines;
+        s.cue.lineAlign = s.lineAlign;
+        return false;
+      });
+      cues.forEach(function (cue) {
+        var saved = subtitlePositions.some(function (s) { return s.cue === cue; });
+        if (!saved) {
+          if (cue.line !== 'auto' || cue.vertical || cue.region) return;
+          subtitlePositions.push({ cue: cue, line: cue.line, snapToLines: cue.snapToLines, lineAlign: cue.lineAlign });
+        }
+        if (cue.snapToLines) cue.snapToLines = false;
+        if (cue.lineAlign !== 'end') cue.lineAlign = 'end';
+        if (cue.line !== line) cue.line = line;
+      });
+    }
+
     function clearSubtitleTracks() {
+      restoreSubtitlePositions();
       subtitleTracks.forEach(function (t) {
         t.node.removeEventListener('load', t.load);
         t.node.removeEventListener('error', t.error);
+        t.node.track.removeEventListener('cuechange', positionSubtitles);
         t.node.track.mode = 'disabled';
         t.node.remove();
       });
@@ -1152,6 +1197,7 @@
         if (node.readyState === 3) subtitleError(subtitleId, 'load_failed');
         else subtitleStatus(node.readyState === 2 ? 'ready' : 'loading');
       }
+      positionSubtitles();
     }
 
     function buildSubtitleTracks() {
@@ -1163,6 +1209,7 @@
         record.error = function () { if (subtitleTracks.indexOf(record) >= 0 && subtitleId === entry.id) subtitleError(entry.id, 'load_failed'); };
         track.addEventListener('load', record.load);
         track.addEventListener('error', record.error);
+        track.track.addEventListener('cuechange', positionSubtitles);
         own.appendChild(track);
         track.track.mode = 'disabled';
         track.src = entry.src;
@@ -1508,7 +1555,7 @@
     on(document, 'pointerdown', function (e) {
       if (!$.menu.hidden && !box.contains(e.target)) closeMenu();
     });
-    on(document, 'fullscreenchange', function () { paintFull(); emit('filo:fullscreen', { on: fullscreenElement() === box }); });
+    on(document, 'fullscreenchange', function () { paintFull(); positionSubtitles(); emit('filo:fullscreen', { on: fullscreenElement() === box }); });
     on(document, 'webkitfullscreenchange', paintFull);
     function follow(m) {
       var mine = function (fn) { return function (e) { if (e.target === media) fn(e); }; };
@@ -1561,6 +1608,10 @@
       waveObserver = new ResizeObserver(function () { drawWave(); });
       waveObserver.observe($.rail);
     }
+    on(window, 'resize', positionSubtitles);
+    on(own, 'webkitpresentationmodechanged', positionSubtitles);
+    on(own, 'webkitbeginfullscreen', positionSubtitles);
+    on(own, 'webkitendfullscreen', positionSubtitles);
     if (opts.waveform) setWave(opts.waveform);
     if (opts.docked) dock(true);
     own.filo = api;

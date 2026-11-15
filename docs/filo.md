@@ -340,3 +340,14 @@ Focus is an outline, not the selected value's accent/marker. TV remote input
 explicitly shows the focused control even after pointer use; using the pointer
 removes that TV-focus mode again. Screen/subtitle pickers use the focus colour,
 while the current header destination is underlined as well as accented.
+
+## Native captions and custom chrome (0.23.4)
+
+Auto-positioned horizontal cues move above the custom control chrome while it
+actually overlaps the video. This changes native VTTCue layout, not caption
+text, cue timing or the renderer. Hiding chrome restores the original auto
+position. Explicit cue lines, vertical cues and regions are left alone. Leaving
+video for background audio, changing track mode or detaching restores changes.
+Native iOS fullscreen is excluded from custom-chrome clearance because its
+controls belong to AVPlayer, not filo. Local Chromium sidecar pixels verify
+clearance; native iOS/HLS behavior still needs observation on that client.
