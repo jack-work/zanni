@@ -870,3 +870,17 @@
   .filo .filo-thumb,
   .filo .filo-level { transition: none; }
 }
+
+.filo-subtitle-notice {
+  position: absolute;
+  inset: 12px 16px auto;
+  z-index: 4;
+  padding: 8px 12px;
+  border: 1px solid var(--filo-accent);
+  background: var(--filo-ground);
+  color: var(--filo-ink);
+  font: 16px/1.4 var(--filo-prose);
+  pointer-events: none;
+  user-select: none;
+}
+.filo-subtitle-notice[hidden] { display: none; }

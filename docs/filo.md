@@ -351,3 +351,13 @@ video for background audio, changing track mode or detaching restores changes.
 Native iOS fullscreen is excluded from custom-chrome clearance because its
 controls belong to AVPlayer, not filo. Local Chromium sidecar pixels verify
 clearance; native iOS/HLS behavior still needs observation on that client.
+
+## Subtitle failure visibility (0.23.5)
+
+Selected does not mean loaded. The settings summary marks loading, unavailable
+or audio-only state. A load error has a visible notice independent of the
+screen-reader status region; choosing Off clears it. A fully parsed empty flat
+VTT is an error, not ready. Selecting the same failed sidecar again retries on
+that explicit user action, never in a background retry loop. Native HLS tracks
+with no discovered cues remain loading because an early segment may be empty.
+This is failure presentation, not a fix for a blocked or obsolete resource URL.

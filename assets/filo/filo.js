@@ -275,6 +275,7 @@
       collapse: button('filo-collapse', 'Minimise the player', 'collapse'),
       menu: el('div', 'filo-menu', { role: 'menu', 'aria-label': 'Settings', hidden: '' }),
       help: el('div', 'filo-help', { role: 'dialog', 'aria-label': 'Keyboard shortcuts', hidden: '' }),
+      subtitleNotice: el('div', 'filo-subtitle-notice', { hidden: '', 'aria-hidden': 'true' }),
       status: el('div', 'filo-status', { role: 'status', 'aria-live': 'polite' })
     };
     $.more.setAttribute('aria-haspopup', 'menu');
@@ -294,7 +295,7 @@
     $.volume.append($.mute, $.level);
     $.row.append($.play, $.backBig, $.back, $.fwd, $.fwdBig, $.volume, $.elapsed, $.sep, $.total, $.remaining, $.now, $.gap, $.more, $.pip, $.full, $.expand, $.close, $.extras);
     $.chrome.append($.track, $.row);
-    var built = [$.art, $.top, $.center, $.chrome, $.menu, $.help, $.status];
+    var built = [$.art, $.top, $.center, $.chrome, $.menu, $.help, $.subtitleNotice, $.status];
     built.forEach(function (n) { box.appendChild(n); });
     box.classList.add('filo');
     if (opts.fill) box.classList.add('filo-fill');
@@ -945,7 +946,7 @@
       if (view === 'root') {
         $.menu.append(menuItem('Speed', rateLabel(media.playbackRate), function () { openView('rate'); }, { sub: true }));
         if (qualities.length > 1) $.menu.append(menuItem('Quality', qualityLabel(), function () { openView('quality'); }, { sub: true }));
-        if (subtitles.length && !audioMode()) $.menu.append(menuItem('Subtitles', subtitleEntry(subtitleId) ? subtitleEntry(subtitleId).label : 'Off', function () { openView('subtitles'); }, { sub: true }));
+        if (subtitles.length && !audioMode()) $.menu.append(menuItem('Subtitles', subtitleLabel(), function () { openView('subtitles'); }, { sub: true }));
         $.menu.append(menuItem('Sleep', sleepLabel(), function () { openView('sleep'); }, { sub: true }));
         if (item.chapters.length) $.menu.append(menuItem('Chapters', null, function () { openView('chapters'); }, { sub: true }));
         $.menu.append(menuItem('Keyboard shortcuts', '?', function () { help(true); }));
@@ -1088,9 +1089,19 @@
       }).catch(function () { if (thumbsUrl === want) thumbs = []; });
     }
 
+    function subtitleLabel() {
+      var entry = subtitleEntry(subtitleId);
+      if (!entry) return 'Off';
+      var suffix = { loading: 'loading', error: 'unavailable', suppressed: 'audio only' }[subtitleState];
+      return entry.label + (suffix ? ' (' + suffix + ')' : '');
+    }
+
     function subtitleStatus(state) {
       if (subtitleState === state) return;
       subtitleState = state;
+      $.subtitleNotice.hidden = state !== 'error';
+      $.subtitleNotice.textContent = state === 'error' ? 'Subtitles unavailable. Choose Off or try the track again.' : '';
+      if (menuView) renderMenu(menuView);
       emit('filo:subtitlestate', { itemId: subtitleItemId, id: subtitleId, state: state });
     }
 
@@ -1195,6 +1206,7 @@
       else {
         var node = subtitleTracks.filter(function (t) { return t.id === subtitleId; })[0].node;
         if (node.readyState === 3) subtitleError(subtitleId, 'load_failed');
+        else if (node.readyState === 2 && (!node.track.cues || !node.track.cues.length)) subtitleError(subtitleId, 'empty_track');
         else subtitleStatus(node.readyState === 2 ? 'ready' : 'loading');
       }
       positionSubtitles();
@@ -1220,8 +1232,10 @@
 
     function setSubtitle(id) {
       if (id !== null && !subtitleEntry(id)) return false;
+      var retry = id !== null && id === subtitleId && subtitleState === 'error' && subtitleMode === 'sidecar';
       subtitleId = id;
-      applySubtitles();
+      if (retry) buildSubtitleTracks();
+      else applySubtitles();
       if (menuView) renderMenu(menuView);
       return true;
     }
