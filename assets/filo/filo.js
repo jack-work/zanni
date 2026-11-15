@@ -69,6 +69,62 @@
     return String(r).replace(/^0\./, '.') + '\u00D7';
   }
 
+  var PREFERENCES_KEY = 'zanni.playback.v1';
+
+  function cleanPreferences(value) {
+    value = value || {};
+    var validNumber = function (n, min, max) { return typeof n === 'number' && isFinite(n) && n >= min && n <= max; };
+    return {
+      version: 1,
+      volume: validNumber(value.volume, 0, 1) ? value.volume : 1,
+      muted: value.muted === true,
+      rate: validNumber(value.rate, 0.25, 4) ? value.rate : 1,
+      qualityCap: validNumber(value.qualityCap, 1, 16384) ? value.qualityCap : null,
+      captionsEnabled: value.captionsEnabled === true,
+      captionLanguage: typeof value.captionLanguage === 'string' && value.captionLanguage.length <= 35 && /^[a-z]{2,8}(?:-[a-z0-9]{1,8})*$/i.test(value.captionLanguage) ? value.captionLanguage.toLowerCase() : ''
+    };
+  }
+
+  function readPreferences() {
+    try {
+      var raw = localStorage.getItem(PREFERENCES_KEY);
+      if (raw !== null) {
+        var parsed = JSON.parse(raw);
+        return cleanPreferences(parsed && parsed.version === 1 ? parsed : null);
+      }
+      var oldQuality = localStorage.getItem('juglar.quality') || '';
+      var cap = /^(?:v)?([1-9][0-9]{2,4})$/.exec(oldQuality);
+      return cleanPreferences({ rate: Number(localStorage.getItem('juglar.speed')) || 1, qualityCap: cap ? Number(cap[1]) : null });
+    } catch (_) { return cleanPreferences(); }
+  }
+
+  function writePreferences(patch) {
+    var value = readPreferences();
+    ['volume', 'muted', 'rate', 'qualityCap', 'captionsEnabled', 'captionLanguage'].forEach(function (key) {
+      if (patch && Object.prototype.hasOwnProperty.call(patch, key)) value[key] = patch[key];
+    });
+    value = cleanPreferences(value);
+    var stored = false;
+    try { localStorage.setItem(PREFERENCES_KEY, JSON.stringify(value)); stored = true; } catch (_) {}
+    return { preferences: value, stored: stored };
+  }
+
+  function preferredQuality(list) {
+    list = Array.isArray(list) ? list : [];
+    var cap = readPreferences().qualityCap;
+    var auto = list.filter(function (q) { return String(q.value) === 'auto'; })[0];
+    var eligible = cap === null ? [] : list.filter(function (q) { return typeof q.height === 'number' && isFinite(q.height) && q.height > 0 && q.height <= cap; });
+    eligible.sort(function (a, b) { return b.height - a.height; });
+    return eligible.length ? eligible[0].value : auto ? auto.value : list.length ? list[0].value : null;
+  }
+
+  function preferredCaption(list) {
+    var prefs = readPreferences();
+    if (!prefs.captionsEnabled || !prefs.captionLanguage) return null;
+    var matches = (Array.isArray(list) ? list : []).filter(function (s) { return typeof s.language === 'string' && s.language.toLowerCase() === prefs.captionLanguage; });
+    return matches.length === 1 ? matches[0].id : null;
+  }
+
   function vttTime(s) {
     var p = s.trim().split(':').map(Number);
     return p.reduce(function (a, b) { return a * 60 + b; }, 0);
@@ -200,7 +256,7 @@
     var background = opts.background || null, filoPaused = false, ownPausedAt = 0;
     var subtitleItemId = null, subtitles = [], subtitleId = null, subtitleState = 'off';
     var subtitleMode = opts.subtitleMode === 'native' ? 'native' : 'sidecar';
-    var subtitleTracks = [], subtitleNative = [], subtitleReloading = false, subtitlePositions = [];
+    var subtitleTracks = [], subtitleNative = [], subtitleReloading = false, subtitlePositions = [], preferencesRestored = false;
     var session = opts.session && typeof navigator !== 'undefined' && navigator.mediaSession ? navigator.mediaSession : null;
     var artwork = opts.artwork || null;
     if (created) {
@@ -697,13 +753,21 @@
       }
     }
 
-    function rate(r) {
+    function rememberPreferences(patch) {
+      if (opts.preferences === false) return null;
+      var saved = writePreferences(patch);
+      emit('filo:preferences', { source: 'user', preferences: saved.preferences, stored: saved.stored });
+      return saved;
+    }
+
+    function rate(r, source) {
       r = Number(r);
       if (!(r > 0)) return media.playbackRate;
       media.playbackRate = r;
       media.defaultPlaybackRate = r;
       if (menuView) renderMenu(menuView);
-      emit('filo:rate', { rate: r });
+      if (source === 'user') rememberPreferences({ rate: r });
+      emit('filo:rate', { rate: r, source: source || 'programmatic' });
       return r;
     }
 
@@ -711,7 +775,7 @@
       var i = o.rates.indexOf(media.playbackRate);
       if (i < 0) i = o.rates.indexOf(1);
       var next = o.rates[Math.max(0, Math.min(o.rates.length - 1, i + dir))];
-      rate(next);
+      rate(next, 'user');
       say(rateLabel(next));
     }
 
@@ -905,12 +969,13 @@
       document.documentElement.style.removeProperty('--filo-dock-height');
     }
 
-    function mute() {
+    function mute(source) {
       if (media.muted || media.volume === 0) {
         media.muted = false;
         if (media.volume === 0) media.volume = 1;
       } else media.muted = true;
       paintVolume();
+      if (source === 'user') rememberPreferences({ volume: media.volume, muted: media.muted });
     }
 
     function menuItem(label, value, onPick, opts2) {
@@ -957,18 +1022,23 @@
         $.menu.append(head);
         var picks = [];
         if (view === 'rate') picks = o.rates.map(function (r) {
-          return [rateLabel(r), r === media.playbackRate, function () { rate(r); closeMenu(); }];
+          return [rateLabel(r), r === media.playbackRate, function () { rate(r, 'user'); closeMenu(); }];
         });
         if (view === 'quality') picks = qualities.map(function (q) {
           return [q.label, String(q.value) === (quality == null ? String(qualities[0].value) : quality), function () {
             quality = String(q.value);
+            if (quality === 'auto') rememberPreferences({ qualityCap: null });
+            else if (typeof q.height === 'number' && isFinite(q.height) && q.height > 0) rememberPreferences({ qualityCap: q.height });
             emit('filo:quality', { value: q.value });
             closeMenu();
           }];
         });
         if (view === 'subtitles') picks = [{ id: null, label: 'Off' }].concat(subtitles).map(function (s) {
           return [s.label, s.id === subtitleId, function () {
-            if (setSubtitle(s.id)) emit('filo:subtitle', { itemId: subtitleItemId, id: s.id });
+            if (setSubtitle(s.id)) {
+              rememberPreferences(s.id === null ? { captionsEnabled: false } : { captionsEnabled: true, captionLanguage: s.language });
+              emit('filo:subtitle', { itemId: subtitleItemId, id: s.id, source: 'user' });
+            }
             closeMenu();
           }, s.language || null];
         });
@@ -1264,8 +1334,24 @@
         }).map(function (s) { return { id: s.id, language: s.language, label: s.label, src: s.src, hls: s.hls && typeof s.hls.name === 'string' ? { name: s.hls.name, groupId: s.hls.groupId } : null }; });
       }
       if (!subtitleEntry(subtitleId)) subtitleId = null;
+      if (changed && preferencesRestored && opts.preferences !== false) subtitleId = preferredCaption(subtitles);
       if ('subtitleMode' in next) subtitleMode = next.subtitleMode === 'native' ? 'native' : 'sidecar';
       buildSubtitleTracks();
+    }
+
+    function restorePreferences() {
+      if (opts.preferences === false) return null;
+      preferencesRestored = true;
+      var prefs = readPreferences();
+      own.volume = prefs.volume;
+      own.muted = prefs.muted;
+      media.volume = prefs.volume;
+      media.muted = prefs.muted;
+      rate(prefs.rate, 'restore');
+      setSubtitle(preferredCaption(subtitles));
+      var result = { preferences: prefs, quality: preferredQuality(qualities) };
+      emit('filo:preferences', { source: 'restore', preferences: prefs, quality: result.quality });
+      return result;
     }
 
     function setItem(next) {
@@ -1317,6 +1403,8 @@
       setQualities: setQualities,
       setSubtitle: setSubtitle,
       setSubtitleMode: setSubtitleMode,
+      restorePreferences: restorePreferences,
+      rememberPreferences: rememberPreferences,
       get subtitle() { return subtitleId; },
       get subtitleState() { return subtitleState; },
       get subtitleMode() { return subtitleMode; },
@@ -1402,6 +1490,7 @@
       e.preventDefault();
       if (a[0] !== 'showBar') wake();
       if (a[0] === 'stepRate') stepRate(a[1]);
+      else if (a[0] === 'mute') mute('user');
       else api[a[0]](a[1]);
     }
 
@@ -1482,11 +1571,12 @@
     on($.fwd, 'click', function () { skip(o.step); });
     on($.bigBack, 'click', function (e) { e.stopPropagation(); skip(-o.step); });
     on($.bigFwd, 'click', function (e) { e.stopPropagation(); skip(o.step); });
-    on($.mute, 'click', mute);
+    on($.mute, 'click', function () { mute('user'); });
     on($.level, 'input', function () {
       var v = Number($.level.value);
       media.volume = v;
       media.muted = v === 0;
+      rememberPreferences({ volume: media.volume, muted: media.muted });
     });
     on($.more, 'click', function (e) { e.stopPropagation(); menu(); });
     on($.full, 'click', function () { fullscreen(); });
@@ -1598,7 +1688,9 @@
         var id = showing.length ? showing[0].id : null;
         if (id !== subtitleId) {
           setSubtitle(id);
-          emit('filo:subtitle', { itemId: subtitleItemId, id: id });
+          var selected = subtitleEntry(id);
+          rememberPreferences(selected ? { captionsEnabled: true, captionLanguage: selected.language } : { captionsEnabled: false });
+          emit('filo:subtitle', { itemId: subtitleItemId, id: id, source: 'user' });
         }
       });
     }
@@ -1653,5 +1745,5 @@
     else boot();
   }
 
-  return { attach: attach, clock: clock, parseVtt: parseVtt, shortcuts: shortcuts };
+  return { attach: attach, clock: clock, parseVtt: parseVtt, shortcuts: shortcuts, preferences: { read: readPreferences, write: writePreferences, quality: preferredQuality, caption: preferredCaption } };
 }));
