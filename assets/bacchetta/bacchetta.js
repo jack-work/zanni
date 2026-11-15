@@ -175,7 +175,7 @@
     var host = opts.host || document.body;
     var now = { title: '', chapter: '', position: 0, duration: 0, playing: false, at: 0 };
     var screen = null, minimised = false, shown = false, boiled = !!opts.boil, dragging = false, ticker = null;
-    var subtitleItemId = null, subtitleList = [], subtitleId = null, subtitleKey = '';
+    var subtitleItemId = null, subtitleList = [], subtitleId = null, subtitleKey = '', subtitleUnknown = false;
 
     var $ = {
       root: el('section', 'bacchetta', { role: 'dialog', 'aria-modal': 'false', 'aria-label': 'Remote', hidden: '' }),
@@ -185,7 +185,7 @@
       to: el('div', 'bacchetta-to'),
       toName: el('span', 'bacchetta-to-name'),
       shrink: key('bacchetta-plain bacchetta-shrink', 'Minimise', 'shrink'),
-      close: key('bacchetta-plain bacchetta-close', 'Stop and close', 'close'),
+      close: key('bacchetta-plain bacchetta-close', 'Close remote', 'close'),
       now: el('div', 'bacchetta-now'),
       title: el('div', 'bacchetta-title'),
       chapter: el('div', 'bacchetta-chapter'),
@@ -219,7 +219,7 @@
       side: el('div', 'bacchetta-side'),
       prev: key('bacchetta-wide bacchetta-prev', 'Previous chapter', 'prev', 'chapter'),
       next: key('bacchetta-wide bacchetta-next', 'Next chapter', 'next', 'chapter'),
-      bar: key('bacchetta-wide bacchetta-bar', 'Show or hide the controls on the screen', null, 'controls'),
+      bar: key('bacchetta-wide bacchetta-bar', 'Show controls on the screen', null, 'show controls'),
       stop: key('bacchetta-wide bacchetta-stop', 'Stop', null, 'stop'),
       more: el('details', 'bacchetta-more'),
       summary: el('summary', null, null, 'more'),
@@ -317,6 +317,7 @@
     }
 
     function show(s) {
+      if (s && (!screen || screen.id !== s.id)) setNow({ itemId: null, subtitles: [], subtitle: null, subtitleState: 'unknown' });
       if (s) screen = s;
       $.toName.textContent = screen ? screen.name || screen.id : '';
       $.miniTo.textContent = $.toName.textContent;
@@ -350,22 +351,28 @@
       if ('duration' in n) now.duration = Number(n.duration) || 0;
       if ('playing' in n) now.playing = !!n.playing;
       if ('position' in n) { now.position = Number(n.position) || 0; now.at = Date.now(); }
+      var subtitleItemChanged = 'itemId' in n && (n.itemId || null) !== subtitleItemId;
+      if (subtitleItemChanged) { subtitleId = null; subtitleUnknown = true; }
       if ('itemId' in n) subtitleItemId = n.itemId || null;
       if ('subtitle' in n) subtitleId = n.subtitle == null ? null : n.subtitle;
-      if ('subtitles' in n || 'itemId' in n) {
-        var list = Array.isArray(n.subtitles) ? n.subtitles : [];
-        var signature = JSON.stringify([subtitleItemId, list]);
+      if ('subtitleState' in n) subtitleUnknown = n.subtitleState === 'unknown';
+      if ('subtitles' in n || 'itemId' in n || 'subtitleState' in n) {
+        var list = 'subtitles' in n ? Array.isArray(n.subtitles) ? n.subtitles : [] : subtitleItemChanged ? [] : subtitleList;
+        if (subtitleId !== null && !list.some(function (s) { return s && s.id === subtitleId; })) subtitleUnknown = true;
+        var signature = JSON.stringify([subtitleItemId, list, subtitleUnknown]);
         if (signature !== subtitleKey) {
           subtitleKey = signature;
           subtitleList = list.filter(function (s) { return s && typeof s.id === 'string' && s.id && typeof s.label === 'string'; });
           $.subtitleSelect.textContent = '';
+          if (subtitleUnknown) $.subtitleSelect.appendChild(el('option', null, { value: '', disabled: '' }, 'Unknown on screen'));
           $.subtitleSelect.appendChild(el('option', null, { value: '' }, 'Off'));
           subtitleList.forEach(function (s) { $.subtitleSelect.appendChild(el('option', null, { value: s.id }, s.label + (s.language ? ' (' + s.language + ')' : ''))); });
         }
       }
       $.subtitleLabel.hidden = !subtitleItemId || !subtitleList.length;
       $.subtitleSelect.value = subtitleId == null ? '' : subtitleId;
-      if ('subtitleState' in n) $.subtitleStatus.textContent = ({ off: 'Off', loading: 'Loading on screen', ready: 'Loaded on screen', error: 'Unavailable on screen', suppressed: 'Hidden during audio playback' })[n.subtitleState] || '';
+      if (subtitleUnknown) $.subtitleSelect.selectedIndex = 0;
+      if ('subtitleState' in n || subtitleItemChanged) $.subtitleStatus.textContent = ({ unknown: 'Screen selection unknown', off: 'Off', loading: 'Loading on screen', ready: 'Loaded on screen', error: 'Unavailable on screen', suppressed: 'Hidden during audio playback' })[subtitleUnknown ? 'unknown' : n.subtitleState] || '';
       $.title.textContent = now.title || 'Nothing playing';
       $.chapter.textContent = now.chapter;
       $.miniNow.textContent = now.title ? now.title + (now.chapter ? ' \u00B7 ' + now.chapter : '') : 'Nothing playing';
@@ -396,7 +403,7 @@
 
     on($.shrink, 'click', function () { minimise(true); });
     on($.grow, 'click', function () { minimise(false); });
-    on($.close, 'click', function () { control('stop'); hide(); });
+    on($.close, 'click', hide);
     on($.play, 'click', function () { control('toggle'); });
     on($.miniPlay, 'click', function () { control('toggle'); });
     on($.back, 'click', function () { control('skip', -o.step); });
@@ -405,7 +412,7 @@
     on($.bigFwd, 'click', function () { control('skip', o.big); });
     on($.prev, 'click', function () { control('chapter', -1); });
     on($.next, 'click', function () { control('chapter', 1); });
-    on($.bar, 'click', function () { control('bar', -1); });
+    on($.bar, 'click', function () { control('bar', 1); });
     on($.goBack, 'click', function () { control('back'); });
     on($.home, 'click', function () { control('home'); });
     on($.stop, 'click', function () { control('stop'); });
@@ -420,10 +427,12 @@
       $.path.value = '';
     });
     on($.subtitleSelect, 'change', function () {
+      if ($.subtitleSelect.selectedOptions[0] && $.subtitleSelect.selectedOptions[0].disabled) return;
       var id = $.subtitleSelect.value || null;
       if (!subtitleItemId || id !== null && !subtitleList.some(function (s) { return s.id === id; })) return;
       emit('bacchetta:control', { action: 'subtitle', value: id, itemId: subtitleItemId, screen: screen });
       $.subtitleSelect.value = subtitleId == null ? '' : subtitleId;
+      if (subtitleUnknown) $.subtitleSelect.selectedIndex = 0;
       $.subtitleStatus.textContent = 'Waiting for screen';
     });
     on($.boilBox, 'change', function () { boil($.boilBox.checked); });

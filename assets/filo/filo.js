@@ -201,6 +201,7 @@
     var subtitleItemId = null, subtitles = [], subtitleId = null, subtitleState = 'off';
     var subtitleMode = opts.subtitleMode === 'native' ? 'native' : 'sidecar';
     var subtitleTracks = [], subtitleNative = [], subtitleReloading = false, subtitlePositions = [];
+    var subtitleFallbackTimer = null, subtitleFallbackAttempts = Object.create(null), applyingSubtitles = false;
     var session = opts.session && typeof navigator !== 'undefined' && navigator.mediaSession ? navigator.mediaSession : null;
     var artwork = opts.artwork || null;
     if (created) {
@@ -772,6 +773,8 @@
 
     function controls(v) {
       var shown = v == null ? !active : !!v;
+      closeMenu();
+      help(false);
       tvFocus = shown;
       box.classList.toggle('filo-tv-focus', shown);
       showBar(shown);
@@ -781,11 +784,19 @@
 
     function remoteKey(key) {
       if (!/^(ArrowUp|ArrowDown|ArrowLeft|ArrowRight|Enter)$/.test(key)) return false;
-      var target = box.contains(document.activeElement) ? document.activeElement : $.track;
+      if (!box.contains(document.activeElement)) $.track.focus({ preventScroll: true });
+      var target = document.activeElement;
       var event = new KeyboardEvent('keydown', { key: key, bubbles: true, cancelable: true });
       event.filoRemote = true;
+      event.filoOwned = true;
       box.classList.add('filo-tv-focus');
       return !target.dispatchEvent(event);
+    }
+
+    function back() {
+      if (dismiss()) return true;
+      if (active && tvFocus) { controls(false); return true; }
+      return false;
     }
 
     function fullscreenElement() {
@@ -1108,6 +1119,7 @@
     function subtitleError(id, reason) {
       var messages = {
         native_track_unavailable: 'Native HLS subtitle track not registered. Try Original quality, then choose subtitles again.',
+        native_track_conflict: 'Another native subtitle track is active. Turn it off in the native player or use Original quality.',
         load_failed: 'Subtitle file failed to load. Choose Off or try the track again.',
         empty_track: 'Subtitle file loaded but contains no readable cues.'
       };
@@ -1158,16 +1170,29 @@
       });
     }
 
-    function clearSubtitleTracks() {
+    function cancelSubtitleFallback() {
+      clearTimeout(subtitleFallbackTimer);
+      subtitleFallbackTimer = null;
+    }
+
+    function removeSubtitleTracks() {
+      if (!subtitleTracks.length) return;
       restoreSubtitlePositions();
-      subtitleTracks.forEach(function (t) {
+      var tracks = subtitleTracks;
+      subtitleTracks = [];
+      tracks.forEach(function (t) {
         t.node.removeEventListener('load', t.load);
         t.node.removeEventListener('error', t.error);
         t.node.track.removeEventListener('cuechange', positionSubtitles);
         t.node.track.mode = 'disabled';
         t.node.remove();
       });
-      subtitleTracks = [];
+    }
+
+    function clearSubtitleTracks() {
+      cancelSubtitleFallback();
+      restoreSubtitlePositions();
+      removeSubtitleTracks();
       subtitleNative.forEach(function (t) { t.track.mode = 'disabled'; });
     }
 
@@ -1175,70 +1200,126 @@
       return subtitles.filter(function (s) { return s.id === id; })[0];
     }
 
-    function nativeSubtitle(entry) {
-      if (!entry.hls || !own.textTracks) return null;
-      var matches = Array.prototype.filter.call(own.textTracks, function (t) {
-        return (t.kind === 'subtitles' || t.kind === 'captions') &&
-          !subtitleTracks.some(function (s) { return s.node.track === t; }) &&
-          t.language.toLowerCase() === entry.language.toLowerCase() && t.label === entry.hls.name;
+    function nativeSubtitleTracks() {
+      return Array.prototype.filter.call(own.textTracks || [], function (t) {
+        return (t.kind === 'subtitles' || t.kind === 'captions') && !subtitleTracks.some(function (s) { return s.node.track === t; });
       });
-      return matches.length === 1 ? matches[0] : null;
+    }
+
+    function subtitleLanguage(value) { return String(value || '').toLowerCase().replace(/_/g, '-'); }
+    function subtitleName(value) { return String(value || '').trim().toLowerCase(); }
+
+    function nativeSubtitle(entry) {
+      if (!entry || !entry.hls) return null;
+      var tracks = nativeSubtitleTracks();
+      var language = subtitleLanguage(entry.language), name = subtitleName(entry.hls.name);
+      var exact = tracks.filter(function (t) { return subtitleLanguage(t.language) === language && subtitleName(t.label) === name; });
+      if (exact.length) return exact.length === 1 ? exact[0] : null;
+      var named = tracks.filter(function (t) { return subtitleName(t.label) === name && (!t.language || subtitleLanguage(t.language).split('-')[0] === language.split('-')[0]); });
+      var namedOffers = subtitles.filter(function (s) { return s.hls && subtitleName(s.hls.name) === name; });
+      if (named.length === 1 && namedOffers.length === 1) return named[0];
+      var sameLanguage = function (s) { return subtitleLanguage(s.language).split('-')[0] === language.split('-')[0]; };
+      var languageTracks = tracks.filter(sameLanguage), languageOffers = subtitles.filter(function (s) { return s.hls && sameLanguage(s); });
+      return languageTracks.length === 1 && languageOffers.length === 1 ? languageTracks[0] : null;
+    }
+
+    function unknownNativeSubtitlesShowing() {
+      return nativeSubtitleTracks().some(function (track) {
+        return track.mode === 'showing' && !subtitles.some(function (entry) { return nativeSubtitle(entry) === track; });
+      });
+    }
+
+    function addSubtitleTrack(entry) {
+      var existing = subtitleTracks.filter(function (t) { return t.id === entry.id && t.src === entry.src; })[0];
+      if (existing) return existing;
+      var track = el('track', '', { kind: 'subtitles', srclang: entry.language, label: entry.label });
+      var record = { id: entry.id, src: entry.src, node: track };
+      record.load = function () { if (subtitleTracks.indexOf(record) >= 0 && subtitleId === entry.id) applySubtitles(); };
+      record.error = function () { if (subtitleTracks.indexOf(record) >= 0 && subtitleId === entry.id) subtitleError(entry.id, 'load_failed'); };
+      track.addEventListener('load', record.load);
+      track.addEventListener('error', record.error);
+      track.track.addEventListener('cuechange', positionSubtitles);
+      track.track.mode = 'disabled';
+      subtitleTracks.push(record);
+      own.appendChild(track);
+      track.src = entry.src;
+      return record;
+    }
+
+    function scheduleSubtitleFallback(entry) {
+      var key = JSON.stringify([entry.id, entry.src]);
+      if (subtitleFallbackTimer !== null || subtitleFallbackAttempts[key] || subtitleReloading || own.readyState < 1) return;
+      var itemId = subtitleItemId;
+      subtitleFallbackTimer = setTimeout(function () {
+        subtitleFallbackTimer = null;
+        var current = subtitleEntry(subtitleId);
+        if (subtitleMode !== 'native' || subtitleReloading || media !== own || itemId !== subtitleItemId || !current || current.id !== entry.id || current.src !== entry.src) return;
+        if (nativeSubtitle(current) || unknownNativeSubtitlesShowing()) { applySubtitles(); return; }
+        subtitleFallbackAttempts[key] = true;
+        addSubtitleTrack(current);
+        applySubtitles();
+      }, 1000);
     }
 
     function applySubtitles() {
-      var suppressed = media !== own || audioMode();
-      var chosen = subtitleEntry(subtitleId), active = null;
-      if (subtitleMode === 'native') {
-        subtitles.forEach(function (entry) {
-          var track = nativeSubtitle(entry);
-          if (!track) return;
-          if (!subtitleNative.some(function (t) { return t.track === track; })) {
-            subtitleNative.push({ track: track, mode: track.mode });
-            on(track, 'cuechange', applySubtitles);
+      if (applyingSubtitles) return;
+      applyingSubtitles = true;
+      try {
+        var suppressed = media !== own || audioMode();
+        var chosen = subtitleEntry(subtitleId), active = null, sidecar = null;
+        if (subtitleMode === 'native') {
+          subtitles.forEach(function (entry) {
+            var track = nativeSubtitle(entry);
+            if (!track) return;
+            if (!subtitleNative.some(function (t) { return t.track === track; })) {
+              subtitleNative.push({ track: track, mode: track.mode });
+              on(track, 'cuechange', applySubtitles);
+            }
+            if (entry === chosen) active = track;
+          });
+          if (unknownNativeSubtitlesShowing()) {
+            cancelSubtitleFallback();
+            restoreSubtitlePositions();
+            subtitleNative.forEach(function (t) { if (t.track.mode !== 'disabled') t.track.mode = 'disabled'; });
+            subtitleTracks.forEach(function (t) { if (t.node.track.mode !== 'disabled') t.node.track.mode = 'disabled'; });
+            subtitleError(subtitleId, 'native_track_conflict');
+            return;
           }
-          if (entry === chosen) active = track;
+          if (active) { cancelSubtitleFallback(); removeSubtitleTracks(); }
+          else if (chosen && !suppressed) scheduleSubtitleFallback(chosen);
+        }
+        if (!chosen || suppressed) cancelSubtitleFallback();
+        subtitleNative.forEach(function (t) {
+          var mode = !suppressed && t.track === active ? 'showing' : 'disabled';
+          if (t.track.mode !== mode) t.track.mode = mode;
         });
-      }
-      subtitleNative.forEach(function (t) { t.track.mode = !suppressed && t.track === active ? 'showing' : 'disabled'; });
-      subtitleTracks.forEach(function (t) {
-        var selected = !suppressed && subtitleMode === 'sidecar' && t.id === subtitleId;
-        t.node.track.mode = selected ? 'showing' : 'disabled';
-        if (selected) active = t.node.track;
-      });
-      if (!chosen) subtitleStatus('off');
-      else if (suppressed) subtitleStatus('suppressed');
-      else if (!active && subtitleMode === 'native' && (!chosen.hls || !subtitleReloading && own.readyState >= 1)) subtitleError(subtitleId, 'native_track_unavailable');
-      else if (!active) subtitleStatus('loading');
-      else if (subtitleMode === 'native') subtitleStatus(active.cues && active.cues.length ? 'ready' : 'loading');
-      else {
-        var node = subtitleTracks.filter(function (t) { return t.id === subtitleId; })[0].node;
-        if (node.readyState === 3) subtitleError(subtitleId, 'load_failed');
-        else if (node.readyState === 2 && (!node.track.cues || !node.track.cues.length)) subtitleError(subtitleId, 'empty_track');
-        else subtitleStatus(node.readyState === 2 ? 'ready' : 'loading');
-      }
-      positionSubtitles();
+        subtitleTracks.forEach(function (t) {
+          var selected = !suppressed && t.id === subtitleId && (subtitleMode === 'sidecar' || !active);
+          var mode = selected ? 'showing' : 'disabled';
+          if (t.node.track.mode !== mode) t.node.track.mode = mode;
+          if (selected) { active = t.node.track; sidecar = t.node; }
+        });
+        if (!chosen) subtitleStatus('off');
+        else if (suppressed) subtitleStatus('suppressed');
+        else if (!active) subtitleStatus('loading');
+        else if (sidecar) {
+          if (sidecar.readyState === 3) subtitleError(subtitleId, 'load_failed');
+          else if (sidecar.readyState === 2 && (!sidecar.track.cues || !sidecar.track.cues.length)) subtitleError(subtitleId, 'empty_track');
+          else subtitleStatus(sidecar.readyState === 2 ? 'ready' : 'loading');
+        } else subtitleStatus(active.cues && active.cues.length ? 'ready' : 'loading');
+        positionSubtitles();
+      } finally { applyingSubtitles = false; }
     }
 
     function buildSubtitleTracks() {
       clearSubtitleTracks();
-      if (subtitleMode === 'sidecar') subtitles.forEach(function (entry) {
-        var track = el('track', '', { kind: 'subtitles', srclang: entry.language, label: entry.label });
-        var record = { id: entry.id, node: track };
-        record.load = function () { if (subtitleTracks.indexOf(record) >= 0 && subtitleId === entry.id) applySubtitles(); };
-        record.error = function () { if (subtitleTracks.indexOf(record) >= 0 && subtitleId === entry.id) subtitleError(entry.id, 'load_failed'); };
-        track.addEventListener('load', record.load);
-        track.addEventListener('error', record.error);
-        track.track.addEventListener('cuechange', positionSubtitles);
-        own.appendChild(track);
-        track.track.mode = 'disabled';
-        track.src = entry.src;
-        subtitleTracks.push(record);
-      });
+      if (subtitleMode === 'sidecar') subtitles.forEach(addSubtitleTrack);
       applySubtitles();
     }
 
     function setSubtitle(id) {
       if (id !== null && !subtitleEntry(id)) return false;
+      if (id !== subtitleId) cancelSubtitleFallback();
       var retry = id !== null && id === subtitleId && subtitleState === 'error' && subtitleMode === 'sidecar';
       subtitleId = id;
       if (retry) buildSubtitleTracks();
@@ -1249,14 +1330,14 @@
 
     function setSubtitleMode(mode) {
       if (mode !== 'native' && mode !== 'sidecar') return false;
-      if (subtitleMode !== mode) { subtitleMode = mode; buildSubtitleTracks(); }
+      if (subtitleMode !== mode) { subtitleMode = mode; subtitleFallbackAttempts = Object.create(null); buildSubtitleTracks(); }
       return true;
     }
 
     function updateSubtitles(next) {
       var nextId = next.itemId == null ? null : String(next.itemId);
       var changed = nextId === null || nextId !== subtitleItemId;
-      if (changed) subtitleId = null;
+      if (changed) { subtitleId = null; subtitleFallbackAttempts = Object.create(null); }
       subtitleItemId = nextId;
       if ('subtitles' in next || changed) {
         var seen = Object.create(null);
@@ -1319,6 +1400,7 @@
       showBar: showBar,
       controls: controls,
       key: remoteKey,
+      back: back,
       stop: stop,
       setItem: setItem,
       setQualities: setQualities,
@@ -1327,6 +1409,11 @@
       get subtitle() { return subtitleId; },
       get subtitleState() { return subtitleState; },
       get subtitleMode() { return subtitleMode; },
+      get subtitleTransport() {
+        if (subtitleTracks.some(function (t) { return t.id === subtitleId && t.node.track.mode === 'showing'; })) return 'sidecar';
+        var track = nativeSubtitle(subtitleEntry(subtitleId));
+        return track && track.mode === 'showing' ? 'native' : null;
+      },
       get itemId() { return subtitleItemId; },
       get subtitles() { return subtitles.map(function (s) { return { id: s.id, language: s.language, label: s.label }; }); },
       rate: rate,
@@ -1376,8 +1463,9 @@
     function onKey(e) {
       if (e.defaultPrevented) return;
       var path = e.composedPath ? e.composedPath() : [e.target];
-      if (typing(path)) return;
       var inside = path.indexOf(box) >= 0;
+      if (inside) e.filoOwned = true;
+      if (typing(path)) return;
       if (!(o.globalKeys && !docked) && !inside) return;
       if (e.key === 'Escape') {
         if (dismiss()) e.preventDefault();
@@ -1480,6 +1568,7 @@
       return false;
     }
 
+    on(box, 'keydown', onKey, true);
     on(document, 'keydown', onKey);
     on($.play, 'click', toggle);
     on($.bigPlay, 'click', function (e) { e.stopPropagation(); toggle(); });
@@ -1591,14 +1680,15 @@
       on(m, 'ratechange', mine(function () { sessionPosition(); paintChips(); if (menuView) renderMenu(menuView); }));
     }
     follow(own);
-    on(own, 'loadstart', function () { subtitleReloading = true; });
+    on(own, 'loadstart', function () { subtitleReloading = true; cancelSubtitleFallback(); });
     on(own, 'loadedmetadata', function () { subtitleReloading = false; applySubtitles(); });
     if (own.textTracks) {
       on(own.textTracks, 'addtrack', applySubtitles);
       on(own.textTracks, 'change', function () {
-        if (subtitleReloading || media !== own || audioMode()) return;
-        var showing = subtitles.filter(function (s) {
-          if (subtitleMode === 'native') { var t = nativeSubtitle(s); return t && t.mode === 'showing'; }
+        if (applyingSubtitles || subtitleReloading || media !== own || audioMode()) return;
+        if (subtitleMode === 'native' && unknownNativeSubtitlesShowing()) { applySubtitles(); return; }
+        var nativeShowing = subtitleMode === 'native' ? subtitles.filter(function (s) { var t = nativeSubtitle(s); return t && t.mode === 'showing'; }) : [];
+        var showing = nativeShowing.length ? nativeShowing : subtitles.filter(function (s) {
           return subtitleTracks.some(function (t) { return t.id === s.id && t.node.track.mode === 'showing'; });
         });
         if (showing.length > 1 || !showing.length && subtitleId !== null && subtitleState !== 'ready') return;
@@ -1606,7 +1696,7 @@
         if (id !== subtitleId) {
           setSubtitle(id);
           emit('filo:subtitle', { itemId: subtitleItemId, id: id });
-        }
+        } else applySubtitles();
       });
     }
     on(own, 'pause', function () { ownPausedAt = Date.now(); });

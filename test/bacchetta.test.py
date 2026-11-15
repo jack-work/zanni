@@ -113,7 +113,6 @@ with sync_playwright() as p:
 
     pg.evaluate("log.length = 0")
     pg.locator(".bacchetta-close").click()
-    assert controls(pg) == [["stop", None]] and not pg.evaluate("remote.shown")
     assert pg.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--bacchetta-height')") == ""
 
     pg.evaluate("document.documentElement.style.setProperty('--filo-dock-height', '72px')")

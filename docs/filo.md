@@ -327,7 +327,9 @@ scrubber when shown, and releases its focus when hidden. `key(key)` dispatches
 a remote D-pad/Enter through the same component focus logic, including actual
 button activation rather than relying on synthetic browser default actions.
 The caller handles navigation outside the active player. Bacchetta's Controls
-button emits bar with value -1 (toggle); 0 remains explicit hide.
+button emits bar with value 1 (reveal and enter focus), never a visibility toggle;
+0 remains explicit hide. `back()` dismisses a player menu or focused controls
+and returns true when handled, so the app can navigate only after that boundary.
 
 ## Shared control geometry (0.23.2)
 
@@ -361,3 +363,35 @@ VTT is an error, not ready. Selecting the same failed sidecar again retries on
 that explicit user action, never in a background retry loop. Native HLS tracks
 with no discovered cues remain loading because an early segment may be empty.
 This is failure presentation, not a fix for a blocked or obsolete resource URL.
+
+## Native registration and authorized fallback (0.23.7)
+
+Native binding first uses normalized name and language. A unique name may
+match an empty native language; a unique offered/native base language may
+match a browser label variant. Ambiguous registrations are never guessed.
+If the selected offered track has not registered after a single one-second
+metadata grace period, filo may add one native HTML track from that same
+CURRENT validated same-origin src. No caption text overlay or arbitrary URL
+is accepted. Attempt state is bounded to the item/offer and clears on an
+explicit engine-mode change or new item; Off, changed selection and detach
+cancel a pending attempt. No retry loop is started on failure.
+
+Unknown showing native caption tracks block fallback, with a visible conflict
+message, so filo cannot double-render an unmanaged track. When a uniquely
+matched native track arrives late, filo removes its fallback and hands the
+same selection over. `subtitleTransport` reports native, sidecar or null,
+separately from the requested subtitleMode. Local fallback uses real VTT/cue
+rendering; simulated track registration is not Safari/AVPlayer proof.
+
+Player-owned key events mark the local DOM event filoOwned; remote keys also
+carry filoRemote. App gallery handlers must leave both alone. Root capture
+handles the player before gallery bubbling, while normal button Enter retains
+its browser default. key() focuses the REAL scrubber before dispatch when
+focus is outside. Revealing controls always enters it, even if chrome was
+already visible. Application routing remains outside the component.
+
+Bacchetta accepts subtitleState unknown only as unknown, with a disabled
+Unknown on screen placeholder, not Off. Current authorized offers plus itemId
+may still enable explicit commands; sent commands remain Waiting for screen
+until a receiver report. New target/item clears stale selection/offers.
+Closing the remote dismisses only; its separate Stop action stops playback.
