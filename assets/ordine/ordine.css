@@ -114,15 +114,16 @@
 .ordine-node:hover { border-color: var(--ordine-accent); }
 .ordine-node[aria-pressed=true] { outline: 2px solid var(--ordine-accent); outline-offset: 2px; }
 .ordine-node.ordine-match { box-shadow: 0 0 0 4px var(--ordine-line); }
-.ordine-root { background: var(--ordine-accent); color: var(--z-on-accent, #f6ede2); }
-.ordine-name { font-size: 19px; line-height: 1.1; font-weight: 600; }
+.ordine-node.ordine-root { background: var(--ordine-accent); color: var(--z-on-accent, #f6ede2); border-color: var(--ordine-accent); }
+.ordine-name { font-size: 19px; line-height: 1.1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ordine-root .ordine-name { font-family: var(--fontpack-display, Georgia, serif); font-size: 27px; font-weight: 400; }
 .ordine-small .ordine-name { font-size: 18px; }
-.ordine-rank { line-height: 1.1; color: var(--ordine-muted); }
-.ordine-root .ordine-rank { color: inherit; }
-.ordine-summary { font-size: 15px; line-height: 1.15; }
+.ordine-rank { line-height: 1.1; color: var(--ordine-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ordine-root .ordine-rank { color: inherit; opacity: .88; }
+.ordine-summary { font-size: 15px; line-height: 1.18; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.ordine-root .ordine-summary { -webkit-line-clamp: 1; }
 .ordine-small .ordine-summary { font-size: 14px; }
-.ordine-count { color: var(--ordine-ui); margin-top: auto; }
+.ordine-count { color: var(--ordine-ui); margin-top: auto; white-space: nowrap; }
 .ordine-root .ordine-count { color: inherit; }
 .ordine-legend {
   display: flex;
