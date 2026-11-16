@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en" data-scheme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Ordine · synthetic component specimen</title>
+<link rel="stylesheet" href="../assets/gesso/gesso.css">
+<link rel="stylesheet" href="../assets/fontpack/fonts.css">
+<link rel="stylesheet" href="../assets/fontpack/fontpack.css">
+<link rel="stylesheet" href="../assets/ordine/ordine.css">
+<style>
+body{margin:0;padding:24px}header{display:flex;align-items:baseline;gap:20px;flex-wrap:wrap;margin-bottom:20px}h1{margin:0;font:400 40px var(--fontpack-display)}header p{font:18px var(--fontpack-prose);margin:0}header button{font:16px var(--fontpack-prose);min-height:44px;background:var(--z-ground-2);color:var(--z-ink);border:1px solid var(--z-line);padding:8px 14px}header button:focus-visible{outline:3px solid var(--z-focus);outline-offset:3px}@media(max-width:680px){body{padding:10px}}
+</style>
+</head>
+<body class="gesso">
+<header><h1>Ordine</h1><p>Synthetic data. No runtime binding or authorization claim.</p><button id="scheme" type="button">Change scheme</button><button id="resync" type="button">Simulate resync</button></header>
+<main id="order"></main>
+<script src="../assets/ordine/ordine.js"></script>
+<script>
+const roles = [
+  { id: 'command', title: 'Command', manager: null, summary: 'Coordination and escalation' },
+  { id: 'systems', title: 'Systems', manager: 'command', summary: 'Shared systems and evaluation' },
+  { id: 'methods', title: 'Methods', manager: 'systems', summary: 'Prediction and automation' },
+  { id: 'interface', title: 'Interface', manager: 'systems', summary: 'Shared UI and system maps' },
+  { id: 'runtime', title: 'Runtime', manager: 'command', summary: 'Tools, forms and instrumentation' },
+  { id: 'capacity', title: 'Capacity', manager: 'command', summary: 'Provider routing and observations' },
+  { id: 'audit', title: 'Audit', manager: 'command', summary: 'Coherence and security' },
+  { id: 'deploy', title: 'Deployment', manager: 'command', summary: 'Named deployment windows' },
+  { id: 'forge', title: 'Forge', manager: 'command', summary: 'CI and review capabilities' },
+  { id: 'media', title: 'Media', manager: 'command', summary: 'Backends and receivers' },
+  { id: 'editorial', title: 'Editorial', manager: 'command', summary: 'Content and publishing' }
+].map(r => ({ ...r, owns: [r.summary], boundary: 'Synthetic responsibilities, not an operational assignment.' }));
+const sample = {
+  root: 'command', expandedTeam: 'systems', roles,
+  communications: roles.filter(r => !['command', 'interface'].includes(r.id)).map(r => ({ from: r.id, to: 'interface', kind: 'ui' })).concat(roles.filter(r => !['command', 'deploy'].includes(r.id)).map(r => ({ from: r.id, to: 'deploy', kind: 'deployment' }))),
+  workers: [
+    { id: 'worker-a', title: 'Bounded investigation', manager: 'runtime', summary: 'One synthetic deliverable', lifecycle: 'Active' },
+    { id: 'worker-b', title: 'Component task', manager: 'runtime', summary: 'Another synthetic deliverable', lifecycle: 'Active' },
+    { id: 'worker-c', title: 'Nested worker', manager: 'worker-a', summary: 'A visible deeper tier', lifecycle: 'Active' }
+  ]
+};
+const order = ordine.mount(document.getElementById('order'));
+order.update({ status: 'current', model: sample });
+document.getElementById('scheme').onclick = () => { document.documentElement.dataset.scheme = document.documentElement.dataset.scheme === 'dark' ? 'light' : 'dark'; };
+let resyncing = false;
+document.getElementById('resync').onclick = () => { resyncing = !resyncing; order.update(resyncing ? { status: 'resyncing' } : { status: 'current', model: sample }); };
+</script>
+</body>
+</html>
