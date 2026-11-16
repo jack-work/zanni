@@ -57,7 +57,7 @@ function die(msg) { process.stderr.write('zanni-inline: ' + msg + '\n'); process
 if (input === null) usage(2);
 
 const manifest = JSON.parse(fs.readFileSync(path.join(assets, 'manifest.json'), 'utf8'));
-if (components.length === 0) components = Object.keys(manifest.components).filter((n) => manifest.components[n].marker);
+if (components.length === 0) components = Object.keys(manifest.components).filter((n) => manifest.components[n].marker && !manifest.components[n].standalone);
 
 let html = fs.readFileSync(input === '-' ? 0 : input, 'utf8');
 

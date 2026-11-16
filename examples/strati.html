@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en" data-scheme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Strati · Sugiyama layered graph specimen</title>
+<link rel="stylesheet" href="../assets/gesso/gesso.css">
+<link rel="stylesheet" href="../assets/fontpack/fonts.css">
+<link rel="stylesheet" href="../assets/fontpack/fontpack.css">
+<style>
+body{margin:0;padding:24px;color:var(--z-ink)}
+header{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+h1{margin:0;font:400 40px var(--fontpack-display)}
+header p{margin:0;font:18px var(--fontpack-prose);color:var(--z-muted)}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+button{font:16px var(--fontpack-prose);min-height:40px;padding:6px 12px;background:var(--z-ground-2);color:var(--z-ink);border:1px solid var(--z-line);cursor:pointer}
+button[aria-pressed="true"]{border-color:var(--z-accent);font-weight:600}
+.metrics{font:16px var(--fontpack-mono);color:var(--z-muted);margin:0 0 12px}
+.stage{overflow:auto;border:1px solid var(--z-line);background:var(--z-ground-2);padding:12px}
+svg text.label{font:600 15px var(--fontpack-prose);fill:var(--z-ink)}
+svg text.sub{font:14px var(--fontpack-mono);fill:var(--z-muted)}
+</style>
+</head>
+<body class="gesso">
+<header>
+  <h1>Strati</h1>
+  <p>Sugiyama layered graph engine: width-bounded orthogonal tracks and isotonic bundled waypoints.</p>
+</header>
+<div class="controls">
+  <button id="m-ortho" type="button" aria-pressed="true">Orthogonal (4 cols)</button>
+  <button id="m-portrait" type="button" aria-pressed="false">Portrait (3 cols)</button>
+  <button id="m-narrow" type="button" aria-pressed="false">Narrow (2 cols)</button>
+  <button id="m-bundled" type="button" aria-pressed="false">Bundled cubic</button>
+  <button id="scheme" type="button">Change scheme</button>
+</div>
+<p class="metrics" id="metrics"></p>
+<div class="stage"><svg id="canvas"></svg></div>
+<script src="../assets/strati/strati.js"></script>
+<script>
+const sample = {
+  nodes: [
+    { id: 'door', label: 'Door', sub: 'troupe auth', width: 176, height: 62, band: 0 },
+    { id: 'store', label: 'Forms Store', sub: 'versioned state', width: 176, height: 62, band: 0 },
+    { id: 'topo', label: '@topology', sub: 'hierarchy map', width: 176, height: 62, band: 0 },
+    { id: 'proj', label: 'Projector', sub: 'public allowlist', width: 176, height: 62, band: 1 },
+    { id: 'rules', label: 'Flake Rules', sub: 'ui + deploy', width: 176, height: 62, band: 1 },
+    { id: 'strati', label: 'Strati', sub: 'Sugiyama engine', width: 176, height: 62, band: 2 },
+    { id: 'ordine', label: 'Ordine', sub: 'command cards', width: 176, height: 62, band: 2 },
+    { id: 'scope', label: 'Scope', sub: 'capacity view', width: 176, height: 62, band: 2 }
+  ],
+  edges: [
+    { from: 'door', to: 'proj' },
+    { from: 'store', to: 'proj' },
+    { from: 'topo', to: 'proj' },
+    { from: 'store', to: 'scope' },
+    { from: 'proj', to: 'strati' },
+    { from: 'rules', to: 'ordine' },
+    { from: 'strati', to: 'ordine' },
+    { from: 'strati', to: 'scope' }
+  ]
+};
+const byId = new Map(sample.nodes.map(n => [n.id, n]));
+const svg = document.getElementById('canvas');
+const metrics = document.getElementById('metrics');
+const ns = 'http://www.w3.org/2000/svg';
+function el(tag, attrs) {
+  const n = document.createElementNS(ns, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  return n;
+}
+function draw(opts, activeId) {
+  for (const b of document.querySelectorAll('.controls button[id^="m-"]')) {
+    b.setAttribute('aria-pressed', String(b.id === activeId));
+  }
+  const res = strati.layout(sample, opts);
+  metrics.textContent = `${res.width}x${res.height}px · layers ${res.metrics.physicalLayers} · dummies ${res.metrics.dummyCount} · crossings ${res.metrics.crossingsBefore}->${res.metrics.crossingsAfter}`;
+  svg.setAttribute('width', res.width);
+  svg.setAttribute('height', res.height);
+  svg.setAttribute('viewBox', `0 0 ${res.width} ${res.height}`);
+  svg.replaceChildren();
+  if (opts.routing === 'bundled') {
+    for (const e of res.edges) {
+      svg.append(el('path', { d: e.d, fill: 'none', stroke: 'var(--z-ink)', 'stroke-width': '1.6', opacity: '0.75' }));
+      for (const wp of e.waypoints.slice(1, -1)) {
+        svg.append(el('circle', { cx: wp.x, cy: wp.y, r: '2.2', fill: 'var(--z-accent)' }));
+      }
+    }
+  } else {
+    for (const s of res.segments) {
+      svg.append(el('path', { d: `M${s.x1},${s.y1}L${s.x2},${s.y2}`, fill: 'none', stroke: 'var(--z-ink)', 'stroke-width': '1.6' }));
+    }
+    for (const j of res.junctions) {
+      svg.append(el('circle', { cx: j.x, cy: j.y, r: '2.4', fill: 'var(--z-ink)' }));
+    }
+  }
+  for (const n of res.nodes) {
+    const info = byId.get(n.id);
+    const g = el('g', {});
+    g.append(el('rect', { x: n.x, y: n.y, width: n.width, height: n.height, rx: '2', fill: 'var(--z-ground)', stroke: 'var(--z-line)', 'stroke-width': '1.4' }));
+    const t1 = el('text', { x: n.x + 12, y: n.y + 26, class: 'label' });
+    t1.textContent = info.label;
+    const t2 = el('text', { x: n.x + 12, y: n.y + 46, class: 'sub' });
+    t2.textContent = info.sub;
+    g.append(t1, t2);
+    svg.append(g);
+  }
+}
+document.getElementById('m-ortho').onclick = () => draw({ routing: 'orthogonal', width: 960, maxColumns: 4 }, 'm-ortho');
+document.getElementById('m-portrait').onclick = () => draw({ routing: 'orthogonal', width: 760, maxColumns: 3 }, 'm-portrait');
+document.getElementById('m-narrow').onclick = () => draw({ routing: 'orthogonal', width: 540, maxColumns: 2 }, 'm-narrow');
+document.getElementById('m-bundled').onclick = () => draw({ routing: 'bundled' }, 'm-bundled');
+document.getElementById('scheme').onclick = () => {
+  document.documentElement.dataset.scheme = document.documentElement.dataset.scheme === 'dark' ? 'light' : 'dark';
+};
+draw({ routing: 'orthogonal', width: 960, maxColumns: 4 }, 'm-ortho');
+</script>
+</body>
+</html>

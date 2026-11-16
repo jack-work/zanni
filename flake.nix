@@ -170,6 +170,16 @@
           touch $out
         '';
 
+        checks.strati = pkgs.runCommand "zanni-strati-test" {
+          nativeBuildInputs = [ pkgs.nodejs ];
+        } ''
+          cp -r ${./assets} assets
+          cp -r ${./test} test
+          node test/strati.test.js
+          node test/ordine.test.js
+          touch $out
+        '';
+
         checks.fontpack-stylesheet = pkgs.runCommand "zanni-fontpack-stylesheet" {
           nativeBuildInputs = [ pkgs.nodejs pkgs.diffutils ];
         } ''

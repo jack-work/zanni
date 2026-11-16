@@ -6,10 +6,15 @@ runtime registry. It cannot create, bind, arrange or retire a role.
 
 ## Use
 
-Load `assets/ordine/ordine.css` and `assets/ordine/ordine.js`, together with
-`gesso` and `fontpack`. They can also be injected with `zanni-inline` using the
-manifest marker. Call `ordine.mount(element)` once, then call `update` when the
-host's authorized projection changes. `detach()` removes the view and listeners.
+Load `assets/strati/strati.js`, `assets/ordine/ordine.css` and
+`assets/ordine/ordine.js`, together with `gesso` and `fontpack`. They can also
+be injected with `zanni-inline` using `--component strati --component ordine`.
+Call `ordine.mount(element)` once, then call `update` when the host's authorized
+projection changes. `detach()` removes the view and listeners.
+
+`ordine.fromForms(snapshot, options)` derives a clean `publicOrder` model from
+Figaro forms, `@topology` and `arias` (folding routing aliases and companion
+forms onto their primary seat while stripping `system.*` and `handoff` keys).
 
 ```js
 const order = ordine.mount(document.getElementById('order'));
@@ -80,9 +85,11 @@ a root, one two-person standing team on the left and direct officers on a
 three-column grid to the right. IDs, names and operational assignments are not
 baked into the component. More direct officers extend the grid downwards.
 When the authorized managed hierarchy has a different shape or deeper tiers,
-the component uses a measured tree rather than discarding or reparenting nodes.
-Transient expansion uses that same tree separately, so opening actual forks
-does not turn the accepted overview into a registry dump.
+the component uses `strati`'s width-bounded Sugiyama layered layout (dummy
+chains, barycentric crossing reduction and orthogonal channel/track routing)
+rather than discarding nodes or sprawling horizontally. Transient expansion uses
+the same width-bounded layered layout separately, so opening actual forks does
+not turn the accepted overview into a registry dump.
 
 Hierarchy segments merge only within the same supervisor's branch. Handoffs
 route orthogonally around node boxes and preserve their target direction.

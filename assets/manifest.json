@@ -473,13 +473,21 @@
       "docs": "docs/v2.md",
       "example": "examples/v2.html"
     },
+    "strati": {
+      "summary": "Reusable Sugiyama layered graph engine: DAG and feedback-cycle ranking, band grouping, width-bounded physical tiers, virtual dummy chains, alternating barycentric crossing reduction, orthogonal channel/track routing or isotonic block coordinates with bundled cubic waypoints, A* obstacle-avoiding secondary routes, and Figaro forms projection.",
+      "marker": "<!-- zanni:strati -->",
+      "standalone": true,
+      "files": ["strati.js"],
+      "docs": "docs/strati.md"
+    },
     "ordine": {
-      "summary": "Read-only command graph and ownership cards from an authorized public projection. Declared UI and deployment handoffs remain separate from hierarchy; visible transient descendants expand on demand.",
+      "summary": "Read-only command graph and ownership cards from an authorized public projection or Figaro forms snapshot, backed by strati Sugiyama layered layout for general hierarchies. Declared UI and deployment handoffs remain separate from hierarchy; visible transient descendants expand on demand.",
       "marker": "<!-- zanni:ordine -->",
+      "standalone": true,
       "classes": ["ordine", "ordine-node", "ordine-details", "ordine-branch"],
       "files": ["ordine.css", "ordine.js"],
       "docs": "docs/ordine.md",
-      "requires": ["gesso", "fontpack"],
+      "requires": ["gesso", "fontpack", "strati"],
       "constructed": true,
       "knobs": ["--ordine-ground", "--ordine-panel", "--ordine-ink", "--ordine-muted", "--ordine-line", "--ordine-accent", "--ordine-ui", "--ordine-deployment"]
     },

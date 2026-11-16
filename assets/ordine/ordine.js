@@ -1,6 +1,10 @@
 var ordine = (function () {
   'use strict';
 
+  const engine = typeof require === 'function'
+    ? require('../strati/strati.js')
+    : (typeof self !== 'undefined' ? (self.strati || (self.zanni && self.zanni.strati)) : null);
+
   function hierarchy(model) {
     const roles = new Map(model.roles.map(r => [r.id, r]));
     if (roles.size !== model.roles.length) throw new Error('Duplicate visible position');
@@ -99,10 +103,38 @@ var ordine = (function () {
     return finish(nodes, edges);
   }
 
-  function layout(model) {
+  function layeredLayout(model, options = {}) {
+    if (model && Array.isArray(model.nodes) && !model.roles) {
+      if (!engine) throw new Error('Missing strati layered engine');
+      return engine.layoutLayered(model, options);
+    }
+    hierarchy(model);
+    if (!engine) return treeLayout(model);
+    const nodes = model.roles.map((r, i) => ({
+      id: r.id,
+      width: r.width ?? 224,
+      height: r.height ?? (r.id === model.root ? 104 : 118),
+      order: i
+    }));
+    const edges = model.roles.filter(r => r.id !== model.root).map(r => ({ from: r.manager, to: r.id }));
+    const result = engine.layoutLayered({ nodes, edges }, {
+      width: options.width ?? 1160,
+      maxColumns: options.maxColumns ?? 4,
+      nodeGap: options.nodeGap ?? 36,
+      layerGap: options.layerGap ?? 68,
+      padding: options.padding ?? 28,
+      sweeps: options.sweeps ?? 24
+    });
+    return { ...result, groups: [], compact: false };
+  }
+
+  function layout(model, options = {}) {
     const { roles, children } = hierarchy(model);
+    if (options.layered) return layeredLayout(model, options);
     const team = roles.get(model.expandedTeam);
-    if (!team || team.manager !== model.root || children.get(team.id).length !== 2 || model.roles.some(r => r.id !== model.root && r.manager !== model.root && r.manager !== team.id)) return treeLayout(model);
+    if (!team || team.manager !== model.root || children.get(team.id).length !== 2 || model.roles.some(r => r.id !== model.root && r.manager !== model.root && r.manager !== team.id)) {
+      return layeredLayout(model, options);
+    }
     const staff = children.get(team.id).map(id => roles.get(id));
     const direct = model.roles.filter(r => r.manager === model.root && r.id !== team.id);
     const boxes = new Map();
@@ -441,7 +473,7 @@ var ordine = (function () {
       const data = expanded && selected ? workerBranch(model, selected) : null;
       branch.hidden = !data;
       if (!data) return;
-      const tree = treeLayout(data), byId = new Map(data.roles.map(r => [r.id, r]));
+      const tree = layeredLayout(data, { width: 880, maxColumns: 3, nodeGap: 30, layerGap: 60, padding: 24 }), byId = new Map(data.roles.map(r => [r.id, r]));
       branch.append(el('h3', 'Transient work: ' + byId.get(selected).title), el('p', 'Visible live descendants. This expansion does not add standing positions.'));
       const scroll = el('div', undefined, 'ordine-branch-scroll'), content = el('div', undefined, 'ordine-branch-scene');
       Object.assign(content.style, { width: tree.width + 'px', height: tree.height + 'px' });
@@ -561,6 +593,16 @@ var ordine = (function () {
     return api;
   }
 
-  return { layout, treeLayout, mergeSegments, junctions, handoffRoute, workerBranch, mount };
+  function fromForms(snapshot, options = {}) {
+    if (!engine) throw new Error('Missing strati layered engine');
+    return engine.fromForms(snapshot, options);
+  }
+
+  return { layout, layeredLayout, treeLayout, mergeSegments, junctions, handoffRoute, workerBranch, fromForms, mount };
 }());
+if (typeof self !== 'undefined') {
+  self.ordine = ordine;
+  self.zanni = self.zanni || {};
+  self.zanni.ordine = ordine;
+}
 if (typeof module === 'object' && module.exports) module.exports = ordine;
