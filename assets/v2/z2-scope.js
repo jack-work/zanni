@@ -396,9 +396,11 @@
     var rec = { plot: u, sig: sig, width: width, bucket: opts.bucket || 0, dragMoved: false, hoverKey: "" };
     cache[id] = rec;
 
+    var legRows = host.querySelectorAll(".u-legend .u-series");
+    var legOffset = legRows.length > seriesDefs.length ? 1 : 0;
+    if (legOffset) legRows[0].classList.add("z2-ux");
     if (opts.tipEngine && opts.seriesTips) {
-      var legRows = host.querySelectorAll(".u-legend .u-series");
-      for (var li = 1; li < legRows.length; li++) {
+      for (var li = legOffset; li < legRows.length; li++) {
         (function (rowEl, sDef) {
           if (!sDef) return;
           var info = opts.seriesTips[sDef.label] || sDef.tip;
@@ -411,7 +413,7 @@
               kv: [["Click", "Toggle series visibility"], ["Shift / Ctrl + Click", "Isolate series"]]
             };
           });
-        })(legRows[li], seriesDefs[li - 1]);
+        })(legRows[li], seriesDefs[li - legOffset]);
       }
     }
 

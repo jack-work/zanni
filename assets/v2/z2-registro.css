@@ -414,14 +414,14 @@
   user-select: none;
 }
 
-.z2-uplot .u-legend .u-series:first-child {
+.z2-uplot .u-legend .u-series.z2-ux {
   border: 0;
   background: none;
   cursor: default;
   padding-left: 0;
 }
 
-.z2-uplot .u-legend .u-series:not(:first-child):hover {
+.z2-uplot .u-legend .u-series:not(.z2-ux):hover {
   border-color: var(--z-focus);
   background: var(--z-tint);
 }
