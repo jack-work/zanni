@@ -11,6 +11,11 @@
   font-variant-numeric: lining-nums tabular-nums;
 }
 
+[data-theme="registro"] .z2-main,
+[data-theme="registro"] .z2-panel {
+  align-content: start;
+}
+
 .z2-scope {
   --proscenio-bar: 52px;
   --proscenio-display: var(--z-display);
@@ -116,6 +121,10 @@
   gap: var(--z-space-2);
   font-size: var(--z-fs-sm);
   color: var(--z-muted);
+}
+
+.z2-field[hidden] {
+  display: none;
 }
 
 .z2-field select,

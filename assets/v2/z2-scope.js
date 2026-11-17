@@ -19,6 +19,48 @@
     return n;
   }
 
+  function splitTopComma(inner) {
+    var depth = 0;
+    for (var i = 0; i < inner.length; i++) {
+      var ch = inner.charAt(i);
+      if (ch === "(") depth++;
+      else if (ch === ")") depth--;
+      else if (ch === "," && depth === 0) {
+        return [inner.slice(0, i).trim(), inner.slice(i + 1).trim()];
+      }
+    }
+    return [inner.trim(), inner.trim()];
+  }
+
+  function resolveLightDark(val, isDark) {
+    if (!val) return val;
+    var trimmed = val.trim();
+    if (trimmed.indexOf("light-dark(") === 0 && trimmed.charAt(trimmed.length - 1) === ")") {
+      var parts = splitTopComma(trimmed.slice(11, -1));
+      return isDark ? parts[1] : parts[0];
+    }
+    return trimmed;
+  }
+
+  function detectDark(cs) {
+    var bg = (cs.backgroundColor || cs.color || "").match(/\d+/g);
+    if (!bg || bg.length < 3) return false;
+    var lum = (Number(bg[0]) * 299 + Number(bg[1]) * 587 + Number(bg[2]) * 114) / 1000;
+    return cs.backgroundColor && bg.length >= 3 && !(bg.length >= 4 && Number(bg[3]) === 0) ? lum < 128 : lum >= 128;
+  }
+
+  function withAlpha(color, alpha) {
+    if (!color) return color;
+    var hex = color.trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
+      var r = parseInt(hex.slice(1, 3), 16);
+      var g = parseInt(hex.slice(3, 5), 16);
+      var b = parseInt(hex.slice(5, 7), 16);
+      return "rgba(" + r + ", " + g + ", " + b + ", " + alpha + ")";
+    }
+    return hex;
+  }
+
   function tokens(target) {
     var node = target || (typeof document !== "undefined" ? document.body || document.documentElement : null);
     if (!node || typeof getComputedStyle !== "function") {
@@ -27,11 +69,17 @@
         ground: "#E7D4C4", ground2: "#DCC4B0", accent: "#634A16",
         ok: "#335949", warn: "#8E3B0B", fail: "#972C1D",
         mono: "ui-monospace, monospace",
+        withAlpha: withAlpha,
         series: ["#7E1F22", "#7A5A1E", "#3A6B2E", "#3F5480", "#6B3A6E", "#1F6672", "#5E4A42", "#A8452A"]
       };
     }
-    var cs = getComputedStyle(node);
-    var pick = function (name, fb) { return (cs.getPropertyValue(name) || "").trim() || fb; };
+    var bodyNode = (typeof document !== "undefined" && document.body) || node;
+    var cs = getComputedStyle(bodyNode);
+    var isDark = detectDark(cs);
+    var pick = function (name, fb) {
+      var raw = (cs.getPropertyValue(name) || "").trim();
+      return resolveLightDark(raw, isDark) || fb;
+    };
     var series = [];
     for (var i = 1; i <= 8; i++) series.push(pick("--z-series-" + i, "#7E1F22"));
     return {
@@ -46,6 +94,7 @@
       warn: pick("--z-warn", "#8E3B0B"),
       fail: pick("--z-fail", "#972C1D"),
       mono: pick("--z-mono", "ui-monospace, monospace"),
+      withAlpha: withAlpha,
       series: series
     };
   }
