@@ -1,0 +1,284 @@
+{
+ "j24": {
+  "upm": 1290,
+  "module": 30,
+  "grid_em": 43.0,
+  "x_rows": 17.0,
+  "cap_rows": 25.0,
+  "asc_rows": 25.0,
+  "desc_rows": 6.0,
+  "x_ratio": 0.395,
+  "glyphs": 357,
+  "cmap": 331,
+  "letters": [
+   52,
+   52,
+   ""
+  ],
+  "digits": [
+   10,
+   10,
+   ""
+  ],
+  "punct": [
+   32,
+   32,
+   ""
+  ],
+  "accents": [
+   60,
+   60,
+   ""
+  ],
+  "typo": [
+   11,
+   16,
+   "→←↑↓±"
+  ],
+  "cockpit_missing": "→",
+  "pack_file_bytes": 35376,
+  "pack_cmap": 206,
+  "pack_accents": [
+   60,
+   60
+  ],
+  "pack_punct": [
+   32,
+   32
+  ]
+ },
+ "j12": {
+  "upm": 1260,
+  "module": 60,
+  "grid_em": 21.0,
+  "x_rows": 8.0,
+  "cap_rows": 12.0,
+  "asc_rows": 12.0,
+  "desc_rows": 3.0,
+  "x_ratio": 0.381,
+  "glyphs": 357,
+  "cmap": 331,
+  "letters": [
+   52,
+   52,
+   ""
+  ],
+  "digits": [
+   10,
+   10,
+   ""
+  ],
+  "punct": [
+   32,
+   32,
+   ""
+  ],
+  "accents": [
+   60,
+   60,
+   ""
+  ],
+  "typo": [
+   11,
+   16,
+   "→←↑↓±"
+  ],
+  "cockpit_missing": "→",
+  "pack_file_bytes": 29024
+ },
+ "jb9": {
+  "upm": 1040,
+  "module": 80,
+  "grid_em": 13.0,
+  "x_rows": 6.0,
+  "cap_rows": 10.0,
+  "asc_rows": 9.0,
+  "desc_rows": 3.0,
+  "x_ratio": 0.462,
+  "glyphs": 350,
+  "cmap": 331,
+  "letters": [
+   52,
+   52,
+   ""
+  ],
+  "digits": [
+   10,
+   10,
+   ""
+  ],
+  "punct": [
+   32,
+   32,
+   ""
+  ],
+  "accents": [
+   60,
+   60,
+   ""
+  ],
+  "typo": [
+   11,
+   16,
+   "→←↑↓±"
+  ],
+  "cockpit_missing": "→",
+  "pack_file_bytes": 21912
+ },
+ "nj13": {
+  "upm": 1024,
+  "module": 78.76923076923077,
+  "grid_em": 13.0,
+  "x_rows": 8.0,
+  "cap_rows": 10.0,
+  "asc_rows": 10.0,
+  "desc_rows": 3.0,
+  "x_ratio": 0.615,
+  "glyphs": 125,
+  "cmap": 122,
+  "letters": [
+   52,
+   52,
+   ""
+  ],
+  "digits": [
+   10,
+   10,
+   ""
+  ],
+  "punct": [
+   32,
+   32,
+   ""
+  ],
+  "accents": [
+   1,
+   60,
+   "àáâãäåæçèéêëìíîïñòóôõöøùúûüýÿœÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜÝŒ"
+  ],
+  "typo": [
+   3,
+   16,
+   "…–—‘’“”→←↑↓×•"
+  ],
+  "cockpit_missing": "→",
+  "pack_file_bytes": 4932
+ },
+ "nj16": {
+  "upm": 1024,
+  "module": 64,
+  "grid_em": 16.0,
+  "x_rows": 7.0,
+  "cap_rows": 9.0,
+  "asc_rows": 9.0,
+  "desc_rows": 4.0,
+  "x_ratio": 0.438,
+  "glyphs": 311,
+  "cmap": 308,
+  "letters": [
+   52,
+   52,
+   ""
+  ],
+  "digits": [
+   10,
+   10,
+   ""
+  ],
+  "punct": [
+   32,
+   32,
+   ""
+  ],
+  "accents": [
+   60,
+   60,
+   ""
+  ],
+  "typo": [
+   4,
+   16,
+   "…–—‘’“”→←↑↓•"
+  ],
+  "cockpit_missing": "→",
+  "pack_file_bytes": 6936
+ },
+ "oegp": {
+  "upm": 2000,
+  "module": 100,
+  "grid_em": 20.0,
+  "x_rows": 10.0,
+  "cap_rows": 15.0,
+  "asc_rows": 15.0,
+  "desc_rows": 5.0,
+  "x_ratio": 0.5,
+  "glyphs": 85,
+  "cmap": 84,
+  "letters": [
+   52,
+   52,
+   ""
+  ],
+  "digits": [
+   10,
+   10,
+   ""
+  ],
+  "punct": [
+   17,
+   32,
+   "/:;<=>[\\]^`{|}~"
+  ],
+  "accents": [
+   0,
+   60,
+   "àáâãäåæçèéêëìíîïñòóôõöøùúûüýÿœßÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜÝŒ"
+  ],
+  "typo": [
+   4,
+   16,
+   "·…–—→←↑↓×±°•"
+  ],
+  "cockpit_missing": "/:·→",
+  "pack_file_bytes": 3632
+ },
+ "pxc": {
+  "upm": 1000,
+  "module": 20,
+  "grid_em": 50.0,
+  "x_rows": 26.0,
+  "cap_rows": 40.0,
+  "asc_rows": 40.0,
+  "desc_rows": 10.0,
+  "x_ratio": 0.52,
+  "glyphs": 68,
+  "cmap": 65,
+  "letters": [
+   52,
+   52,
+   ""
+  ],
+  "digits": [
+   0,
+   10,
+   "0123456789"
+  ],
+  "punct": [
+   2,
+   32,
+   "\"#$%&'()*+-./:;<=>?@[\\]^_`{|}~"
+  ],
+  "accents": [
+   6,
+   60,
+   "àáâãåæçèéêëìíîïñòóôõøùúûýÿœßÀÁÂÃÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕØÙÚÛÝŒ"
+  ],
+  "typo": [
+   0,
+   16,
+   "·…–—‘’“”→←↑↓×±°•"
+  ],
+  "cockpit_missing": "#$%()+-./0123456789:·→",
+  "pack_file_bytes": 12160
+ }
+}

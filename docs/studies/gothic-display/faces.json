@@ -1,0 +1,74 @@
+[
+ {
+  "id": "j24",
+  "name": "Jacquard 24",
+  "family": "Jacquard 24",
+  "file": "fonts/jacquard-24-fontpack.woff2",
+  "full": "fonts/jacquard-24-full.woff2",
+  "baseline": true,
+  "designer": "Sarah Cadigan-Fried (Soft Type)",
+  "license": "OFL 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/jacquard24",
+  "native": 43
+ },
+ {
+  "id": "j12",
+  "name": "Jacquard 12",
+  "family": "Jacquard 12",
+  "file": "fonts/jacquard-12.woff2",
+  "designer": "Sarah Cadigan-Fried (Soft Type)",
+  "license": "OFL 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/jacquard12",
+  "native": 21
+ },
+ {
+  "id": "jb9",
+  "name": "Jacquarda Bastarda 9",
+  "family": "Jacquarda Bastarda 9",
+  "file": "fonts/jacquarda-bastarda-9.woff2",
+  "designer": "Sarah Cadigan-Fried (Soft Type)",
+  "license": "OFL 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/jacquardabastarda9",
+  "native": 13
+ },
+ {
+  "id": "nj13",
+  "name": "Not Jam Blackletter 13",
+  "family": "Not Jam Blackletter 13",
+  "file": "fonts/not-jam-blackletter-13.woff2",
+  "designer": "Not Jam",
+  "license": "CC0 1.0",
+  "source": "https://not-jam.itch.io/not-jam-blackletter-13",
+  "native": 13
+ },
+ {
+  "id": "nj16",
+  "name": "Not Jam Blackletter 16",
+  "family": "Not Jam Blackletter 16",
+  "file": "fonts/not-jam-blackletter-16.woff2",
+  "designer": "Not Jam",
+  "license": "CC0 1.0",
+  "source": "https://not-jam.itch.io/not-jam-blackletter-13",
+  "native": 16
+ },
+ {
+  "id": "oegp",
+  "name": "Old English Gothic Pixel",
+  "family": "Old English Gothic Pixel",
+  "file": "fonts/old-english-gothic-pixel.woff2",
+  "designer": "ColorSwitchFan25 (FontStruct)",
+  "license": "OFL 1.1 (per font name table and FontStruct)",
+  "source": "https://fontstruct.com/fontstructions/show/1535174/old-english-gothic-pixel",
+  "native": 20
+ },
+ {
+  "id": "pxc",
+  "name": "Pixelcastle",
+  "family": "Pixelcastle",
+  "file": "fonts/pixelcastle.woff2",
+  "designer": "Leonhard Katschner (Brave Type)",
+  "license": "OFL 1.1, Reserved Font Name",
+  "source": "https://bravetype.de/pixelcastle-ofl/",
+  "native": 50
+ }
+]
