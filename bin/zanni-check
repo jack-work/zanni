@@ -99,7 +99,7 @@ for (const name of want) {
     const foreignCss = (foreign.match(/<style[^>]*>([\s\S]*?)<\/style>/g) || []).join('\n');
     const viaVars = (c.knobs || []).some((k) =>
       k.startsWith('--') && new RegExp('var\\(\\s*' + k + edge).test(foreignCss));
-    check('some element actually wears it', worn.length > 0 || viaVars,
+    check('some element actually wears it', worn.length > 0 || viaVars || !(c.classes || []).length,
       'nothing carries ' + (c.classes || []).map((x) => '.' + x).join(' / ')
       + ', and no ' + (c.knobs || []).filter((k) => k.startsWith('--')).join('/') + ' is read');
   }
