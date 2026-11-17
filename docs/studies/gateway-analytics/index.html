@@ -1,0 +1,137 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gateway analytics study</title><style>body{font:16px/1.55 system-ui,sans-serif;max-width:1080px;margin:2rem auto;padding:0 1.2rem;color:#1c1c1e;background:#fbfbfa}
+h1{font-size:1.7rem;line-height:1.2}h2{margin-top:2.2rem;border-bottom:1px solid #ddd;padding-bottom:.2rem}
+table{border-collapse:collapse;width:100%;font-size:.82rem;margin:1rem 0}th,td{border:1px solid #d8d8d4;padding:.4rem .5rem;vertical-align:top;text-align:left}th{background:#efefea}
+tbody tr:nth-child(even){background:#f5f5f1}code{background:#eeeeea;padding:0 .25em;border-radius:3px;font-size:.9em}
+figure{margin:1.4rem 0}figure img{max-width:100%;border:1px solid #d8d8d4;border-radius:4px}figcaption{font-size:.85rem;color:#555;margin-top:.3rem}
+a{color:#1a56b0}@media(prefers-color-scheme:dark){body{background:#161618;color:#e6e6e3}th{background:#252528}td,th{border-color:#3a3a3e}tbody tr:nth-child(even){background:#1d1d20}code{background:#26262a}figure img{border-color:#3a3a3e}h2{border-color:#3a3a3e}a{color:#7fb0ff}figcaption{color:#aaa}}</style></head><body><h1>Gateway and LLM observability dashboards: what leads, what we should lead with</h1>
+<p>Study of OpenRouter, Portkey, Helicone, LiteLLM, Cloudflare AI Gateway, Langfuse and Braintrust. Sources are public docs, vendor blog posts and the vendors' own published screenshots. No accounts were opened, so &quot;first screen&quot; means what the docs and published images show, not a live tenant. Date of study: 2026-11-17.</p>
+<h2>Findings</h2>
+<ol>
+<li><strong>No product leads with TTFT.</strong> In all seven, spend, requests and tokens come first (Braintrust slips total latency in as its second tile). Latency is one tile or one chart (total or mean duration, usually with a p50/p95 toggle). TTFT exists in most of them (OpenRouter generation detail, LiteLLM Prometheus, Langfuse, Braintrust, and Helicone's requests table by a secondary source) but only as a per-request field or an opt-in metric, never a headline. Gluck's suspicion holds: two TTFT-flavoured tiles in a KPI row of eight, plus a full-width TTFT waterfall, is more TTFT weight than any peer gives it.</li>
+<li><strong>Cost leads, and it leads first.</strong> OpenRouter: total spend is the first card. Portkey: Cost is the top-left chart. Helicone: Requests then Costs. LiteLLM: Total Spend is the page heading. Langfuse: counts, then cost charts dominate. Braintrust is the most latency-forward: spans, then a p50/p95 total-latency chart, then cost (second tile of six, and still total duration, not TTFT). Cloudflare lists requests, tokens, cost, errors, cache.</li>
+<li><strong>Volume and cost are ranked, not latency.</strong> Every &quot;top N&quot; card ranks by spend, tokens or requests: top API keys, top apps, top models, top users, top use cases. Nobody ranks by latency on the default screen. Portkey is the one place latency appears as a sortable column (Summary tab, avg latency per group).</li>
+<li><strong>Cache is a first-class KPI at only one vendor.</strong> OpenRouter puts cache hit rate in the top row (fourth of five). Portkey gives cache its own tab (hits, hit rate, speedup, savings). Cloudflare lists cached-response percentage as one of five metrics. Helicone, Langfuse and Braintrust fold cached tokens into token and cost breakdowns (Langfuse shows <code>input_cached_tokens</code> as its own cost line per trace). LiteLLM exposes cache reads only in Prometheus.</li>
+<li><strong>Errors are always present.</strong> Helicone has an error donut, LiteLLM has a Failed Requests card, Portkey has an Errors tab with rescued-by-fallback counts, Cloudflare lists errors. Our row has errors, which is right.</li>
+<li><strong>Blended unit cost is the quiet standout.</strong> OpenRouter's fifth card is blended $ per 1M tokens, with a sparkline and a delta against the prior period on every card. That normalises cost against volume, and we have no equivalent.</li>
+<li><strong>Limits are settings, not a first-screen gauge.</strong> Rate limits and budgets live in config (LiteLLM tpm/rpm/budgets per key, user and team; Helicone request, cost and property limits; Cloudflare fixed or sliding request limits; OpenRouter credits and free-tier caps) and in alerts (Helicone, Braintrust, Langfuse). None puts remaining headroom in the top row.</li>
+<li><strong>Breakdowns are one dropdown, not a card per dimension.</strong> OpenRouter Explore takes a metric plus up to two group-by dimensions (model, provider, key, app, user, workspace, session...) with a rank-by and limit. Portkey Summary and Braintrust take any metadata field. Click-through from any chart to the logs behind it is standard.</li>
+</ol>
+<p>Caveat on fit: these are fleet and billing tools for many apps and users. Scope is a single-operator cockpit for interactive agent turns, where felt latency matters more than it does on a billing page. That argues for keeping one latency tile prominent, and for keeping the TTFT-by-layer waterfall (no peer has layer attribution, it is our differentiator), but behind a click rather than as the second screen-wide band.</p>
+<h2>Comparison</h2>
+<table>
+<thead>
+<tr>
+<th>Product</th>
+<th>Top row / first screen</th>
+<th>Ranked or sorted by</th>
+<th>Latency shown</th>
+<th>Cache</th>
+<th>Limits and plan</th>
+<th>Per-model / per-key</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OpenRouter Activity</td>
+<td>Total spend, requests, token volume, cache hit rate, blended $/1M (sparkline and prior-period delta each)</td>
+<td>Top API keys, top apps by tokens; Trends tab ranks by movement; Explore has rank-by and limit</td>
+<td>Explore only: latency and throughput at p50/p90/p99. TTFT only in per-generation detail</td>
+<td>Hit rate in top row; prompt caching chart; cache savings in generation cost</td>
+<td>Credits, free-tier caps (20 rpm, 50 to 1000 per day), workspace budgets; separate pages</td>
+<td>Group by model, provider, key, app, user, workspace, session (two at a time)</td>
+</tr>
+<tr>
+<td>Portkey</td>
+<td>Cost, tokens used, mean latency (p50 toggle), requests, unique users</td>
+<td>Top models and top users by requests; Summary tab sorts by any column</td>
+<td>Mean latency tile with a percentile dropdown (P50 shown). No TTFT in the analytics docs</td>
+<td>Own tab: hit rate, simple vs semantic, speedup, savings</td>
+<td>Not checked</td>
+<td>Summary groups by service, model, any metadata key: requests, cost, avg latency, success rate, avg tokens</td>
+</tr>
+<tr>
+<td>Helicone</td>
+<td>Requests (success vs error), costs, errors donut, top models, top countries, latency (s/req)</td>
+<td>Top models by requests, top countries</td>
+<td>One latency tile, total seconds per request. TTFT per request in the requests table (secondary source)</td>
+<td>Provider prompt caching supported; no cache tile in the hero image</td>
+<td>Request, cost and property rate limits; alerts; weekly reports</td>
+<td>Top models; custom properties for any slice; sessions</td>
+</tr>
+<tr>
+<td>LiteLLM Usage</td>
+<td>Total spend heading, then monthly spend bars; customer view adds requests, success, failed, tokens</td>
+<td>Top API keys and top models by spend</td>
+<td>Not on the Usage page. Prometheus has total, LLM API, TTFT and overhead latency histograms</td>
+<td>Prometheus only (provider cache reads vs LiteLLM response cache hits)</td>
+<td>tpm, rpm, parallel limits and budgets per key, user, team; dynamic allocation</td>
+<td>Tabs: global, organization, team, customer, tag, end user. Cost vs Activity toggle</td>
+</tr>
+<tr>
+<td>Cloudflare AI Gateway</td>
+<td>Requests, tokens, cost, errors, cached percentage (docs list; no public screenshot found)</td>
+<td>Not documented; GraphQL orders by cost or time</td>
+<td>None in the analytics list. Log rows carry duration</td>
+<td>Cached responses percentage</td>
+<td>Fixed or sliding request limits, spend limits (beta)</td>
+<td>Filter by provider, model, cost, tokens, one metadata key</td>
+</tr>
+<tr>
+<td>Langfuse Home</td>
+<td>Home defaults to: traces, model cost, latency percentiles, scores, model usage. Curated cost dashboard opens with trace and observation counts, total cost, cost by model and environment</td>
+<td>Top 20 users, use cases and observations by cost</td>
+<td>Latency dashboard; percentile widgets. TTFT supported via <code>completionStartTime</code>, not top row</td>
+<td>Cached token cost lines per trace</td>
+<td>Alerts on spend thresholds; no gateway limits in the dashboard</td>
+<td>By model, user, trace name, environment, prompt version</td>
+</tr>
+<tr>
+<td>Braintrust Cost and quality</td>
+<td>Spans, latency (p50, p95 lines), total LLM cost, token count, tool executions, topics</td>
+<td>Group by any metadata field</td>
+<td>One latency chart, p50 and p95. TTFT listed as an available metric</td>
+<td>Prompt tokens shown as uncached; cache tokens priced in the cost chart</td>
+<td>Alerts on error rate, latency, daily cost</td>
+<td>Group by model, environment, user, metadata</td>
+</tr>
+</tbody>
+</table>
+<h2>Screenshots</h2>
+<p>Vendor-published images, saved beside this note. Cloudflare publishes no dashboard image in its docs, so it has none here.</p>
+<ul>
+<li><code>openrouter-activity-docs.png</code>: OpenRouter Activity Overview, the real first screen.</li>
+<li><code>portkey-analytics.jpg</code>: Portkey analytics from its docs (stylised backdrop, real tiles).</li>
+<li><code>helicone-dashboard.png</code>: Helicone hero image from its docs. A marketing render, so tile choice is real but proportions are not.</li>
+<li><code>litellm-admin-ui-spend.png</code> and <code>litellm-customer-usage.png</code>: LiteLLM Usage tab (2024 build) and Customer Usage (late 2025).</li>
+<li><code>langfuse-cost-dashboard.png</code> and <code>langfuse-costs-usage.png</code>: Langfuse curated cost dashboard, and a trace with latency and cost breakdown.</li>
+<li><code>braintrust-cost-quality.png</code>: Braintrust built-in Cost and quality dashboard.</li>
+</ul>
+<h2>What Scope should lead with, ranked</h2>
+<ol>
+<li><strong>List-price cost, with blended $ per 1M tokens beside it.</strong> Nearly every peer leads here. Add a sparkline and a delta against the prior window to each KPI card, as OpenRouter does.</li>
+<li><strong>Turns and rounds.</strong> Our request volume. Keep.</li>
+<li><strong>Tokens, with the cache split.</strong> Input, output and cached on one tile instead of output tokens alone.</li>
+<li><strong>Cache hit.</strong> Keep in the top row. Only OpenRouter does, and for an agent loop with a large prefix it is the cost lever.</li>
+<li><strong>One latency tile: turn p50 with p90 beneath.</strong> Total duration, the thing every peer shows. A small TTFT toggle on this tile is enough.</li>
+<li><strong>Errors.</strong> Keep.</li>
+<li><strong>Provider cards, then a ranked table with a group-by dropdown</strong> (model, provider, aria, key) in place of a card per dimension. Rows clickable into the turns table.</li>
+</ol>
+<h2>What to demote</h2>
+<ol>
+<li><strong>TTFT p50 out of the KPI row.</strong> It is the clearest overweight. Fold it into the latency tile.</li>
+<li><strong>The full-width TTFT-by-layer waterfall below the fold, or behind a click on the latency tile.</strong> Keep it. It is the one view no peer has.</li>
+<li><strong>Prefill, TPOT, inter-token latency and tokens/s into a &quot;streaming detail&quot; group, collapsed by default.</strong> Peers keep these in per-request detail or Prometheus, not on the landing view.</li>
+<li><strong>Throughput and latency p50/p90 as two separate sections.</strong> Merge into the single latency tile plus its detail.</li>
+<li><strong>Tools, events and daemon at the bottom, as now.</strong> No peer shows them on the landing page, and the low placement matches Braintrust's tool executions sitting after cost and tokens.</li>
+</ol>
+<h2>Sources</h2>
+<ul>
+<li>OpenRouter: openrouter.ai/docs/guides/features/activity, openrouter.ai/blog/announcements/activity-dashboard/</li>
+<li>Portkey: portkey.ai/docs/product/observability/analytics</li>
+<li>Helicone: docs.helicone.ai (cost-tracking, custom-rate-limits, alerts, reports, prompt-caching)</li>
+<li>LiteLLM: docs.litellm.ai/docs/proxy (cost_tracking, customer_usage, prometheus, users)</li>
+<li>Cloudflare: developers.cloudflare.com/ai-gateway (observability/analytics, costs, features/rate-limiting)</li>
+<li>Langfuse: langfuse.com/docs/metrics (overview, custom-dashboards), token-and-cost-tracking</li>
+<li>Braintrust: braintrust.dev/docs/observe/dashboards, docs/deploy/monitor, blog/monitor</li>
+</ul>
+<section class="shots"><h2>Screenshots in full</h2><figure><a href="openrouter-activity-docs.png"><img src="openrouter-activity-docs.png" alt="OpenRouter Activity Overview: spend, requests, token volume, cache hit rate, blended $/1M. No latency tile." loading="lazy"></a><figcaption>OpenRouter Activity Overview: spend, requests, token volume, cache hit rate, blended $/1M. No latency tile.</figcaption></figure><figure><a href="portkey-analytics.jpg"><img src="portkey-analytics.jpg" alt="Portkey analytics: cost, tokens, mean latency (P50 dropdown), requests, unique users." loading="lazy"></a><figcaption>Portkey analytics: cost, tokens, mean latency (P50 dropdown), requests, unique users.</figcaption></figure><figure><a href="helicone-dashboard.png"><img src="helicone-dashboard.png" alt="Helicone docs hero: requests, costs, errors, top models, countries, latency in s/req (marketing render)." loading="lazy"></a><figcaption>Helicone docs hero: requests, costs, errors, top models, countries, latency in s/req (marketing render).</figcaption></figure><figure><a href="litellm-admin-ui-spend.png"><img src="litellm-admin-ui-spend.png" alt="LiteLLM Usage tab, 2024 build: total spend, monthly spend, top keys, top models." loading="lazy"></a><figcaption>LiteLLM Usage tab, 2024 build: total spend, monthly spend, top keys, top models.</figcaption></figure><figure><a href="litellm-customer-usage.png"><img src="litellm-customer-usage.png" alt="LiteLLM Customer Usage: spend, requests, success, failed, tokens." loading="lazy"></a><figcaption>LiteLLM Customer Usage: spend, requests, success, failed, tokens.</figcaption></figure><figure><a href="langfuse-cost-dashboard.png"><img src="langfuse-cost-dashboard.png" alt="Langfuse curated cost dashboard: counts, total cost, cost by model, environment, top users and use cases." loading="lazy"></a><figcaption>Langfuse curated cost dashboard: counts, total cost, cost by model, environment, top users and use cases.</figcaption></figure><figure><a href="langfuse-costs-usage.png"><img src="langfuse-costs-usage.png" alt="Langfuse trace view: latency, total cost, token counts, cost breakdown with cached input tokens." loading="lazy"></a><figcaption>Langfuse trace view: latency, total cost, token counts, cost breakdown with cached input tokens.</figcaption></figure><figure><a href="braintrust-cost-quality.png"><img src="braintrust-cost-quality.png" alt="Braintrust Cost and quality: spans, latency p50/p95, total LLM cost, tokens, tool executions, topics." loading="lazy"></a><figcaption>Braintrust Cost and quality: spans, latency p50/p95, total LLM cost, tokens, tool executions, topics.</figcaption></figure></section></body></html>
