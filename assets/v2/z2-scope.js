@@ -340,7 +340,11 @@
       scheme: tk.ground
     });
     var existing = cache[id];
-    if (existing && existing.sig === sig && Math.abs(existing.width - width) < 4) {
+    if (existing && existing.sig === sig) {
+      if (Math.abs(existing.width - width) >= 4 && typeof existing.plot.setSize === "function") {
+        existing.plot.setSize({ width: width, height: height });
+        existing.width = width;
+      }
       existing.plot.setData(data);
       existing.bucket = opts.bucket || 0;
       return existing.plot;
@@ -357,12 +361,28 @@
       Object.assign({}, axisBase, opts.categorical ? { values: function (u, vals) { return vals.map(function (i) { return (opts.labels || [])[i] || ""; }); } } : {}),
       Object.assign({}, axisBase, { size: 58, values: function (u, vals) { return vals.map(opts.yfmt || function (v) { return v == null ? "" : String(v); }); } })
     ];
+    var canZoom = Boolean(!opts.categorical && opts.onZoom);
     var conf = {
       width: width,
       height: height,
-      cursor: { drag: { x: false, y: false } },
+      cursor: { drag: { x: canZoom, y: false, setScale: false } },
       scales: Object.assign({ x: { time: !opts.categorical } }, opts.scales || {}),
       axes: axes,
+      hooks: {
+        setSelect: [
+          function (uInst) {
+            if (!canZoom) return;
+            var sel = uInst.select;
+            if (!sel || sel.width < 8) return;
+            var t0 = uInst.posToVal(sel.left, "x") * 1000;
+            var t1 = uInst.posToVal(sel.left + sel.width, "x") * 1000;
+            uInst.setSelect({ left: 0, width: 0 }, false);
+            if (Number.isFinite(t0) && Number.isFinite(t1) && t1 > t0 + 1000) {
+              opts.onZoom(Math.round(t0), Math.round(t1));
+            }
+          }
+        ]
+      },
       series: [
         {
           value: opts.categorical
@@ -373,16 +393,504 @@
       legend: { live: true }
     };
     var u = new uPlot(conf, data, host);
-    var rec = { plot: u, sig: sig, width: width, bucket: opts.bucket || 0 };
+    var rec = { plot: u, sig: sig, width: width, bucket: opts.bucket || 0, dragMoved: false, hoverKey: "" };
     cache[id] = rec;
+
+    if (opts.tipEngine && opts.seriesTips) {
+      var legRows = host.querySelectorAll(".u-legend .u-series");
+      for (var li = 1; li < legRows.length; li++) {
+        (function (rowEl, sDef) {
+          if (!sDef) return;
+          var info = opts.seriesTips[sDef.label] || sDef.tip;
+          if (!info) return;
+          rowEl.setAttribute("data-tip-text", sDef.label);
+          opts.tipEngine.bind(rowEl, function () {
+            return {
+              title: sDef.label,
+              body: typeof info === "string" ? info : info.body,
+              kv: [["Click", "Toggle series visibility"], ["Shift / Ctrl + Click", "Isolate series"]]
+            };
+          });
+        })(legRows[li], seriesDefs[li - 1]);
+      }
+    }
+
+    var downX = 0;
+    u.over.addEventListener("pointerdown", function (ev) { downX = ev.clientX; rec.dragMoved = false; });
+    u.over.addEventListener("pointermove", function (ev) {
+      if (ev.buttons && Math.abs(ev.clientX - downX) >= 8) rec.dragMoved = true;
+      if (!opts.tipEngine || ev.buttons) return;
+      var idx = u.cursor.idx;
+      if (idx == null || !u.data[0] || u.data[0][idx] == null) {
+        if (rec.hoverKey) { opts.tipEngine.leaveKey(rec.hoverKey); rec.hoverKey = ""; }
+        return;
+      }
+      var xVal = u.data[0][idx];
+      var key = "uplot:" + id + ":" + idx;
+      rec.hoverKey = key;
+      var overRect = u.over.getBoundingClientRect();
+      var cx = overRect.left + (u.cursor.left || 0);
+      var cy = overRect.top + (u.cursor.top || 24);
+      var kv = [];
+      for (var si = 0; si < seriesDefs.length; si++) {
+        var sMeta = u.series[si + 1];
+        if (sMeta && sMeta.show === false) continue;
+        var rawV = u.data[si + 1] ? u.data[si + 1][idx] : null;
+        var formatted = seriesDefs[si].value ? seriesDefs[si].value(u, rawV, si + 1, idx) : (rawV == null ? "-" : String(rawV));
+        kv.push([seriesDefs[si].label, formatted]);
+      }
+      var titleStr = opts.categorical
+        ? String((opts.labels || [])[xVal] || xVal)
+        : (opts.xfmt ? opts.xfmt(xVal * 1000) : new Date(xVal * 1000).toLocaleString());
+      opts.tipEngine.openAt({
+        key: key,
+        depth: 0,
+        anchorRect: { left: cx - 4, right: cx + 4, top: cy - 8, bottom: cy + 8 },
+        build: function () {
+          var actions = [];
+          if (!opts.categorical && opts.onPointClick) {
+            actions.push({
+              label: "Inspect nearest turn",
+              onClick: function () { opts.onPointClick(xVal * 1000, rec.bucket); }
+            });
+          }
+          return {
+            title: (opts.title ? opts.title + " · " : "") + titleStr,
+            body: canZoom ? "Drag across chart to zoom window; click legend pills to toggle series." : null,
+            kv: kv,
+            actions: actions
+          };
+        }
+      });
+    });
+    u.over.addEventListener("pointerleave", function () {
+      if (opts.tipEngine && rec.hoverKey) {
+        opts.tipEngine.leaveKey(rec.hoverKey);
+        rec.hoverKey = "";
+      }
+    });
     if (!opts.categorical && opts.onPointClick) {
       u.over.addEventListener("click", function () {
+        if (rec.dragMoved) { rec.dragMoved = false; return; }
         var idx = u.cursor.idx;
         if (idx == null || !u.data[0] || u.data[0][idx] == null) return;
         opts.onPointClick(u.data[0][idx] * 1000, rec.bucket);
       });
     }
     return u;
+  }
+
+  function createRuleManager() {
+    var sheet = null;
+    var indices = {};
+    function ensureSheet() {
+      if (sheet) return sheet;
+      if (typeof document === "undefined" || !document.styleSheets) return null;
+      for (var i = 0; i < document.styleSheets.length; i++) {
+        try {
+          var s = document.styleSheets[i];
+          if (s && s.cssRules != null) { sheet = s; return sheet; }
+        } catch (_) {}
+      }
+      return null;
+    }
+    return {
+      place: function (slotId, left, top, zIndex) {
+        var x = Math.round(left), y = Math.round(top), z = zIndex || 40;
+        var s = ensureSheet();
+        if (!s) return { left: x, top: y, zIndex: z };
+        var sel = "#" + slotId;
+        var ruleText = sel + " { left: " + x + "px; top: " + y + "px; z-index: " + z + "; }";
+        if (indices[slotId] != null && s.cssRules[indices[slotId]] && s.cssRules[indices[slotId]].selectorText === sel) {
+          var st = s.cssRules[indices[slotId]].style;
+          st.setProperty("left", x + "px");
+          st.setProperty("top", y + "px");
+          st.setProperty("z-index", String(z));
+        } else {
+          var idx = s.insertRule(ruleText, s.cssRules.length);
+          indices[slotId] = idx;
+        }
+        return { left: x, top: y, zIndex: z };
+      }
+    };
+  }
+
+  var tipSlotCounter = 0;
+
+  function tips(opts) {
+    opts = opts || {};
+    var lockDelay = opts.lockDelay != null ? opts.lockDelay : 700;
+    var hoverIntent = opts.hoverIntent != null ? opts.hoverIntent : 70;
+    var bridgeGrace = opts.bridgeGrace != null ? opts.bridgeGrace : 340;
+    var rules = createRuleManager();
+    var bindings = new WeakMap();
+    var stack = [];
+    var intentTimer = 0;
+    var pendingTarget = null;
+    var nowFn = opts.now || function () { return typeof performance !== "undefined" && performance.now ? performance.now() : Date.now(); };
+    var raf = opts.raf || (typeof requestAnimationFrame === "function" ? requestAnimationFrame : function (fn) { return setTimeout(fn, 16); });
+    var caf = opts.caf || (typeof cancelAnimationFrame === "function" ? cancelAnimationFrame : clearTimeout);
+
+    function clampPosition(rect, tipW, tipH, depth) {
+      var vw = typeof window !== "undefined" && window.innerWidth ? window.innerWidth : 1280;
+      var vh = typeof window !== "undefined" && window.innerHeight ? window.innerHeight : 800;
+      var margin = 8;
+      var left = rect.left + depth * 12;
+      var top = rect.bottom + 8;
+      if (top + tipH > vh - margin && rect.top - tipH - 8 >= margin) {
+        top = rect.top - tipH - 8;
+      }
+      if (left + tipW > vw - margin) left = vw - tipW - margin;
+      if (left < margin) left = margin;
+      if (top + tipH > vh - margin) top = Math.max(margin, vh - tipH - margin);
+      if (top < margin) top = margin;
+      return { left: left, top: top };
+    }
+
+    function cancelAncestorsLeave(upToDepth) {
+      for (var i = 0; i <= upToDepth && i < stack.length; i++) {
+        if (stack[i] && stack[i].leaveTimer) {
+          clearTimeout(stack[i].leaveTimer);
+          stack[i].leaveTimer = 0;
+        }
+      }
+    }
+
+    function closeFrom(depth) {
+      while (stack.length > depth) {
+        var entry = stack.pop();
+        if (entry.rafId) caf(entry.rafId);
+        if (entry.leaveTimer) clearTimeout(entry.leaveTimer);
+        if (entry.node && entry.node.parentNode) entry.node.parentNode.removeChild(entry.node);
+      }
+    }
+
+    function lockEntry(entry, pinHard) {
+      if (!entry) return;
+      entry.locked = true;
+      if (pinHard) entry.pinned = true;
+      entry.node.dataset.locked = "true";
+      if (entry.node.classList) entry.node.classList.toggle("z2-pinned", Boolean(entry.pinned));
+      entry.timerFill.setAttribute("width", "200");
+      entry.badge.textContent = entry.pinned ? "PINNED · Esc" : "LOCKED · Esc";
+      entry.closeBtn.hidden = false;
+    }
+
+    function scheduleLeave(entry, delay) {
+      if (!entry || entry.pinned) return;
+      if (entry.leaveTimer) clearTimeout(entry.leaveTimer);
+      entry.leaveTimer = setTimeout(function () {
+        var idx = stack.indexOf(entry);
+        if (idx < 0) return;
+        for (var k = idx + 1; k < stack.length; k++) {
+          if (stack[k].hovered || stack[k].pinned) return;
+        }
+        if (!entry.hovered) closeFrom(idx);
+      }, delay);
+    }
+
+    function buildContentFromElement(target) {
+      if (bindings.has(target)) return bindings.get(target)(target);
+      var tmplId = target.getAttribute && target.getAttribute("data-tip");
+      if (tmplId && typeof document !== "undefined" && document.getElementById) {
+        var tmpl = document.getElementById(tmplId);
+        if (tmpl) {
+          var titleAttr = target.getAttribute("data-tip-title") || tmpl.getAttribute("data-title") || "";
+          var frag = tmpl.content ? tmpl.content.cloneNode(true) : tmpl.cloneNode(true);
+          return { title: titleAttr, body: frag };
+        }
+      }
+      var text = target.getAttribute && target.getAttribute("data-tip-text");
+      if (text) {
+        return {
+          title: (target.getAttribute && target.getAttribute("data-tip-title")) || "",
+          body: text
+        };
+      }
+      return null;
+    }
+
+    function renderSpecInto(bodyHost, spec) {
+      if (spec.body) {
+        if (typeof spec.body === "string") bodyHost.appendChild(el("p", null, spec.body));
+        else bodyHost.appendChild(spec.body);
+      }
+      if (spec.kv && spec.kv.length) {
+        var dl = el("dl", "z2-tip-kv");
+        spec.kv.forEach(function (pair) {
+          if (!pair || pair[1] == null || pair[1] === "") return;
+          dl.append(el("dt", null, String(pair[0])), el("dd", null, String(pair[1])));
+        });
+        bodyHost.appendChild(dl);
+      }
+      if (spec.actions && spec.actions.length) {
+        var act = el("div", "z2-tip-actions");
+        spec.actions.forEach(function (a) {
+          var b = el("button", "z2-btn", a.label);
+          b.type = "button";
+          b.addEventListener("click", function (ev) {
+            ev.stopPropagation();
+            if (a.onClick) a.onClick();
+            if (a.closeOnRun !== false) closeFrom(0);
+          });
+          act.appendChild(b);
+        });
+        bodyHost.appendChild(act);
+      }
+    }
+
+    function openEntry(cfg) {
+      var depth = cfg.depth || 0;
+      if (stack[depth] && stack[depth].key === cfg.key) {
+        cancelAncestorsLeave(depth);
+        if (cfg.pin) lockEntry(stack[depth], true);
+        return stack[depth];
+      }
+      for (var d = depth; d < stack.length; d++) {
+        if (stack[d].pinned && !cfg.forceReplace) return stack[d];
+      }
+      closeFrom(depth);
+      cancelAncestorsLeave(depth);
+
+      var spec = cfg.spec;
+      if (!spec) return null;
+
+      var slotId = "z2-tip-slot-" + (++tipSlotCounter);
+      var tip = el("div", "z2-tip");
+      tip.id = slotId;
+      tip.setAttribute("role", "tooltip");
+      tip.dataset.depth = String(depth);
+      tip.dataset.locked = "false";
+
+      var timerSvg = svgEl("svg", { viewBox: "0 0 200 3", preserveAspectRatio: "none", class: "z2-tip-timer", "aria-hidden": "true" });
+      var timerBg = svgEl("rect", { x: 0, y: 0, width: 200, height: 3, class: "z2-tip-timer-bg" });
+      var timerFill = svgEl("rect", { x: 0, y: 0, width: 0, height: 3, class: "z2-tip-timer-fill" });
+      timerSvg.append(timerBg, timerFill);
+
+      var inner = el("div", "z2-tip-inner");
+      var head = el("div", "z2-tip-head");
+      var titleEl = el("p", "z2-tip-title", spec.title || "Details");
+      var rightHead = el("div", "z2-pager-actions");
+      var badge = el("span", "z2-tip-badge", "Hold to lock");
+      var closeBtn = el("button", "z2-tip-close", "x");
+      closeBtn.type = "button";
+      closeBtn.setAttribute("aria-label", "Close tooltip");
+      closeBtn.hidden = true;
+      rightHead.append(badge, closeBtn);
+      head.append(titleEl, rightHead);
+
+      var bodyHost = el("div", "z2-tip-body");
+      renderSpecInto(bodyHost, spec);
+      inner.append(head, bodyHost);
+      tip.append(timerSvg, inner);
+
+      var hostRoot = (typeof document !== "undefined" && document.body) || opts.mount;
+      if (hostRoot) hostRoot.appendChild(tip);
+
+      var entry = {
+        key: cfg.key,
+        depth: depth,
+        anchor: cfg.anchor || null,
+        anchorRect: cfg.anchorRect,
+        node: tip,
+        slotId: slotId,
+        timerFill: timerFill,
+        badge: badge,
+        closeBtn: closeBtn,
+        locked: false,
+        pinned: false,
+        hovered: false,
+        start: nowFn(),
+        rafId: 0,
+        leaveTimer: 0,
+        coords: { left: 8, top: 8 }
+      };
+
+      closeBtn.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        var idx = stack.indexOf(entry);
+        if (idx >= 0) closeFrom(idx);
+      });
+
+      tip.addEventListener("pointerenter", function () {
+        entry.hovered = true;
+        cancelAncestorsLeave(entry.depth);
+      });
+      tip.addEventListener("pointerleave", function () {
+        entry.hovered = false;
+        scheduleLeave(entry, 240);
+      });
+      tip.addEventListener("mousedown", function (ev) {
+        if (ev.button === 1) {
+          ev.preventDefault();
+          lockEntry(entry, true);
+        }
+      });
+
+      var tipRect = tip.getBoundingClientRect ? tip.getBoundingClientRect() : { width: 280, height: 140 };
+      var placed = clampPosition(cfg.anchorRect || { left: 24, top: 24, bottom: 44, right: 120 }, tipRect.width || 280, tipRect.height || 140, depth);
+      entry.coords = rules.place(slotId, placed.left, placed.top, 40 + depth);
+
+      stack.push(entry);
+
+      if (cfg.pin || lockDelay <= 0) {
+        lockEntry(entry, Boolean(cfg.pin));
+      } else {
+        var tick = function () {
+          if (stack.indexOf(entry) < 0 || entry.locked) return;
+          var elapsed = nowFn() - entry.start;
+          var pct = Math.max(0, Math.min(1, elapsed / lockDelay));
+          timerFill.setAttribute("width", (200 * pct).toFixed(1));
+          if (pct >= 1) {
+            lockEntry(entry, false);
+            return;
+          }
+          entry.rafId = raf(tick);
+        };
+        entry.rafId = raf(tick);
+      }
+      return entry;
+    }
+
+    function findTrigger(target) {
+      var cur = target;
+      while (cur && cur !== document) {
+        if (bindings.has(cur)) return cur;
+        if (cur.getAttribute && (cur.getAttribute("data-tip") || cur.getAttribute("data-tip-text"))) return cur;
+        cur = cur.parentNode;
+      }
+      return null;
+    }
+
+    function depthForTrigger(trigger) {
+      var cur = trigger;
+      while (cur && cur !== document) {
+        if (cur.classList && cur.classList.contains("z2-tip") && cur.dataset && cur.dataset.depth != null) {
+          return Number(cur.dataset.depth) + 1;
+        }
+        cur = cur.parentNode;
+      }
+      return 0;
+    }
+
+    function triggerEnter(trigger, pinImmediate) {
+      var depth = depthForTrigger(trigger);
+      if (depth > 0 && stack[depth - 1] && !stack[depth - 1].locked) return null;
+      var spec = buildContentFromElement(trigger);
+      if (!spec) return null;
+      var rect = trigger.getBoundingClientRect ? trigger.getBoundingClientRect() : { left: 20, top: 20, bottom: 40, right: 100 };
+      return openEntry({
+        key: trigger,
+        depth: depth,
+        anchor: trigger,
+        anchorRect: rect,
+        spec: spec,
+        pin: pinImmediate,
+        forceReplace: pinImmediate
+      });
+    }
+
+    if (typeof document !== "undefined" && document.addEventListener) {
+      document.addEventListener("pointerover", function (e) {
+        var trig = findTrigger(e.target);
+        if (!trig) return;
+        if (pendingTarget === trig) return;
+        clearTimeout(intentTimer);
+        pendingTarget = trig;
+        intentTimer = setTimeout(function () {
+          pendingTarget = null;
+          triggerEnter(trig, false);
+        }, hoverIntent);
+      });
+
+      document.addEventListener("pointerout", function (e) {
+        var trig = findTrigger(e.target);
+        if (!trig) return;
+        if (e.relatedTarget && trig.contains && trig.contains(e.relatedTarget)) return;
+        if (pendingTarget === trig) {
+          clearTimeout(intentTimer);
+          pendingTarget = null;
+        }
+        for (var i = 0; i < stack.length; i++) {
+          if (stack[i].anchor === trig) {
+            scheduleLeave(stack[i], stack[i].locked ? bridgeGrace : 120);
+          }
+        }
+      });
+
+      document.addEventListener("auxclick", function (e) {
+        if (e.button !== 1) return;
+        var trig = findTrigger(e.target);
+        if (!trig) return;
+        e.preventDefault();
+        triggerEnter(trig, true);
+      });
+
+      document.addEventListener("click", function (e) {
+        var insideTip = e.target && e.target.closest && e.target.closest(".z2-tip");
+        if (insideTip) return;
+        var trig = findTrigger(e.target);
+        if (trig && trig.classList && trig.classList.contains("z2-term")) {
+          e.preventDefault();
+          triggerEnter(trig, true);
+          return;
+        }
+        if (stack.length) closeFrom(0);
+      });
+
+      document.addEventListener("focusin", function (e) {
+        var trig = findTrigger(e.target);
+        if (trig) triggerEnter(trig, false);
+      });
+
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && stack.length) {
+          e.stopPropagation();
+          closeFrom(stack.length - 1);
+        }
+      });
+
+      if (typeof window !== "undefined" && window.addEventListener) {
+        var reclamp = function () {
+          stack.forEach(function (entry) {
+            if (entry.anchor && entry.anchor.getBoundingClientRect) {
+              entry.anchorRect = entry.anchor.getBoundingClientRect();
+            }
+            var r = entry.node.getBoundingClientRect ? entry.node.getBoundingClientRect() : { width: 280, height: 140 };
+            var p = clampPosition(entry.anchorRect || { left: 24, top: 24, bottom: 44, right: 120 }, r.width || 280, r.height || 140, entry.depth);
+            entry.coords = rules.place(entry.slotId, p.left, p.top, 40 + entry.depth);
+          });
+        };
+        window.addEventListener("resize", reclamp);
+        window.addEventListener("scroll", reclamp, true);
+      }
+    }
+
+    return {
+      bind: function (node, fn) {
+        if (node && typeof fn === "function") bindings.set(node, fn);
+      },
+      openAt: function (cfg) {
+        return openEntry({
+          key: cfg.key,
+          depth: cfg.depth || 0,
+          anchor: cfg.anchor || null,
+          anchorRect: cfg.anchorRect,
+          spec: typeof cfg.build === "function" ? cfg.build() : cfg.spec,
+          pin: Boolean(cfg.pin),
+          forceReplace: Boolean(cfg.forceReplace)
+        });
+      },
+      leaveKey: function (key) {
+        for (var i = 0; i < stack.length; i++) {
+          if (stack[i].key === key) scheduleLeave(stack[i], stack[i].locked ? bridgeGrace : 120);
+        }
+      },
+      closeAll: function () { closeFrom(0); },
+      _stack: stack,
+      _triggerEnter: triggerEnter,
+      _clampPosition: clampPosition
+    };
   }
 
   root.z2 = Object.assign(root.z2 || {}, {
@@ -393,6 +901,7 @@
     waterfallSVG: waterfallSVG,
     copyChip: copyChip,
     logList: logList,
-    uplotSync: uplotSync
+    uplotSync: uplotSync,
+    tips: tips
   });
 })(typeof window !== "undefined" ? window : globalThis);

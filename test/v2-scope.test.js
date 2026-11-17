@@ -24,8 +24,9 @@ class FakeNode {
   getAttribute(k) { return this.attrs[k] ?? null; }
   appendChild(child) {
     if (child && child.tagName === "FRAGMENT") {
-      child.children.forEach(c => this.children.push(c));
+      child.children.forEach(c => { c.parentNode = this; this.children.push(c); });
     } else if (child) {
+      child.parentNode = this;
       this.children.push(child);
     }
     return child;
@@ -110,5 +111,55 @@ assert.equal(firstDl.hidden, false);
 
 logs.prepend([{ id: "4", t: 4000, severity: "INFO", host: "gluck", body: "tick", attrs: {} }]);
 assert.equal(listNode.children.length, 3);
+
+let fakeNow = 1000;
+let pendingRaf = null;
+const mountBox = new FakeNode("div");
+const tipCtl = z2.tips({
+  lockDelay: 600,
+  hoverIntent: 0,
+  mount: mountBox,
+  now: () => fakeNow,
+  raf: fn => { pendingRaf = fn; return 1; },
+  caf: () => { pendingRaf = null; }
+});
+
+const clamped = tipCtl._clampPosition({ left: 1240, top: 760, bottom: 785, right: 1270 }, 260, 140, 0);
+assert.ok(clamped.left + 260 <= 1280 - 8, "clamped inside right viewport edge");
+assert.ok(clamped.top >= 8 && clamped.top + 140 <= 800 - 8, "flipped above bottom viewport edge");
+
+const entry0 = tipCtl.openAt({
+  key: "bar-1",
+  depth: 0,
+  anchorRect: { left: 100, top: 100, bottom: 120, right: 140 },
+  spec: { title: "Turn 14", body: "TTFT breakdown", kv: [["prefill", "220ms"]] }
+});
+assert.equal(entry0.locked, false);
+assert.equal(entry0.node.dataset.locked, "false");
+checkNoInlineStyle(entry0.node);
+
+fakeNow = 1300;
+if (pendingRaf) pendingRaf();
+assert.equal(entry0.locked, false);
+assert.equal(entry0.timerFill.getAttribute("width"), "100.0");
+
+fakeNow = 1650;
+if (pendingRaf) pendingRaf();
+assert.equal(entry0.locked, true);
+assert.equal(entry0.node.dataset.locked, "true");
+assert.equal(entry0.timerFill.getAttribute("width"), "200");
+
+const entry1 = tipCtl.openAt({
+  key: "nested-prefill",
+  depth: 1,
+  anchorRect: { left: 140, top: 150, bottom: 168, right: 200 },
+  spec: { title: "Prefill", body: "Headers to first token" }
+});
+assert.equal(tipCtl._stack.length, 2);
+assert.equal(entry1.node.dataset.depth, "1");
+checkNoInlineStyle(entry1.node);
+
+tipCtl.closeAll();
+assert.equal(tipCtl._stack.length, 0);
 
 console.log("v2-scope.test: ok");
