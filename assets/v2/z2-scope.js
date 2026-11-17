@@ -339,7 +339,8 @@
     host.classList.add("z2-uplot");
     var tk = tokens(host);
     var width = Math.max(220, host.clientWidth || 480);
-    var height = opts.height || 200;
+    var fill = host.classList.contains("z2-fill");
+    var height = fill ? Math.max(opts.height || 200, host.clientHeight - 44) : (opts.height || 200);
     var sig = JSON.stringify({
       s: seriesDefs.map(function (s) { return s.label + ":" + (s.scale || ""); }),
       cat: Boolean(opts.categorical),
@@ -348,15 +349,17 @@
     });
     var existing = cache[id];
     if (existing && existing.sig === sig) {
-      if (Math.abs(existing.width - width) >= 4 && typeof existing.plot.setSize === "function") {
+      if ((Math.abs(existing.width - width) >= 4 || Math.abs(existing.height - height) >= 4) && typeof existing.plot.setSize === "function") {
         existing.plot.setSize({ width: width, height: height });
         existing.width = width;
+        existing.height = height;
       }
       existing.plot.setData(data);
       existing.bucket = opts.bucket || 0;
       return existing.plot;
     }
     if (existing && existing.plot) existing.plot.destroy();
+    if (existing && existing.ro) existing.ro.disconnect();
     host.replaceChildren();
     var axisBase = {
       stroke: tk.muted,
@@ -372,7 +375,7 @@
     var conf = {
       width: width,
       height: height,
-      cursor: { drag: { x: canZoom, y: false, setScale: false } },
+      cursor: Object.assign({ drag: { x: canZoom, y: false, setScale: false } }, opts.syncKey && !opts.categorical ? { sync: { key: opts.syncKey } } : {}),
       scales: Object.assign({ x: { time: !opts.categorical } }, opts.scales || {}),
       axes: axes,
       hooks: {
@@ -388,11 +391,6 @@
               opts.onZoom(Math.round(t0), Math.round(t1));
             }
           }
-        ],
-        setLegend: [
-          function (uInst) {
-            host.classList.toggle("z2-idle", uInst.cursor.idx == null);
-          }
         ]
       },
       series: [
@@ -402,11 +400,28 @@
             : function (u, v) { return v == null ? "" : (opts.xfmt ? opts.xfmt(v * 1000) : new Date(v * 1000).toLocaleTimeString()); }
         }
       ].concat(seriesDefs),
-      legend: { live: true }
+      legend: { live: false }
     };
     var u = new uPlot(conf, data, host);
-    var rec = { plot: u, sig: sig, width: width, bucket: opts.bucket || 0, dragMoved: false, hoverKey: "" };
+    var rec = { plot: u, sig: sig, width: width, height: height, bucket: opts.bucket || 0, dragMoved: false, hoverKey: "", ro: null, frame: 0 };
     cache[id] = rec;
+    if (typeof ResizeObserver !== "undefined") {
+      rec.ro = new ResizeObserver(function () {
+        if (rec.frame) return;
+        rec.frame = requestAnimationFrame(function () {
+          rec.frame = 0;
+          if (host.closest && host.closest(".z2-moving")) return;
+          var w = Math.max(220, host.clientWidth || 0);
+          var leg = u.root.querySelector(".u-legend");
+          var hh = host.classList.contains("z2-fill") ? Math.max(opts.height || 200, host.clientHeight - (leg ? leg.offsetHeight : 0) - 8) : (opts.height || 200);
+          if (!w || (Math.abs(w - rec.width) < 4 && Math.abs(hh - rec.height) < 4)) return;
+          rec.width = w;
+          rec.height = hh;
+          u.setSize({ width: w, height: hh });
+        });
+      });
+      rec.ro.observe(host);
+    }
 
     var legRows = host.querySelectorAll(".u-legend .u-series");
     var legOffset = legRows.length > seriesDefs.length ? 1 : 0;
@@ -492,6 +507,34 @@
       });
     }
     return u;
+  }
+
+  function flip(els, mutate, opts) {
+    opts = opts || {};
+    var list = Array.prototype.slice.call(els || []);
+    var before = list.map(function (el) { return el.getBoundingClientRect(); });
+    mutate();
+    var reduce = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce || typeof Element === "undefined" || !Element.prototype.animate) return Promise.resolve();
+    var duration = opts.duration || 280;
+    var easing = opts.easing || "cubic-bezier(.2,.75,.25,1)";
+    var runs = [];
+    list.forEach(function (el, i) {
+      var a = before[i], b = el.getBoundingClientRect();
+      if (!b.width || !b.height) return;
+      var dx = a.left - b.left, dy = a.top - b.top;
+      var dw = b.width - a.width, dh = b.height - a.height;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1 && Math.abs(dw) < 1 && Math.abs(dh) < 1) return;
+      var from = { transform: "translate(" + dx + "px," + dy + "px)" };
+      var to = { transform: "translate(0,0)" };
+      if (dw > 0 || dh > 0) {
+        from.clipPath = "inset(0 " + Math.max(0, dw) + "px " + Math.max(0, dh) + "px 0)";
+        to.clipPath = "inset(0 0 0 0)";
+      }
+      if (!a.width || !a.height) { from.opacity = 0; to.opacity = 1; }
+      runs.push(el.animate([from, to], { duration: duration, easing: easing }).finished.catch(function () {}));
+    });
+    return Promise.all(runs).then(function () {});
   }
 
   function createRuleManager() {
@@ -916,6 +959,7 @@
     copyChip: copyChip,
     logList: logList,
     uplotSync: uplotSync,
+    flip: flip,
     tips: tips
   });
 })(typeof window !== "undefined" ? window : globalThis);

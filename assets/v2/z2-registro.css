@@ -436,15 +436,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.z2-uplot.z2-idle .u-legend .u-series.z2-ux,
-.z2-uplot.z2-idle .u-legend .u-value {
-  display: none;
-}
-
-.z2-uplot.z2-idle .u-legend .u-series th::after {
-  content: none;
-}
-
 .z2-uplot .u-select {
   background: var(--z-tint);
   border-left: 1px solid var(--z-focus);
