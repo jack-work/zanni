@@ -473,6 +473,8 @@
         : (opts.xfmt ? opts.xfmt(xVal * 1000) : new Date(xVal * 1000).toLocaleString());
       opts.tipEngine.openAt({
         key: key,
+        group: "uplot:" + id,
+        lockDelay: 900,
         depth: 0,
         anchorRect: { left: cx - 4, right: cx + 4, top: cy - 8, bottom: cy + 8 },
         build: function () {
@@ -493,8 +495,9 @@
       });
     });
     u.over.addEventListener("pointerleave", function () {
-      if (opts.tipEngine && rec.hoverKey) {
-        opts.tipEngine.leaveKey(rec.hoverKey);
+      if (opts.tipEngine) {
+        if (opts.tipEngine.leaveGroup) opts.tipEngine.leaveGroup("uplot:" + id);
+        else if (rec.hoverKey) opts.tipEngine.leaveKey(rec.hoverKey);
         rec.hoverKey = "";
       }
     });
@@ -577,8 +580,13 @@
   function tips(opts) {
     opts = opts || {};
     var lockDelay = opts.lockDelay != null ? opts.lockDelay : 700;
-    var hoverIntent = opts.hoverIntent != null ? opts.hoverIntent : 70;
+    var hoverIntent = opts.hoverIntent != null ? opts.hoverIntent : 110;
     var bridgeGrace = opts.bridgeGrace != null ? opts.bridgeGrace : 340;
+    var swapGrace = opts.swapGrace != null ? opts.swapGrace : 320;
+    var storeKey = opts.storeKey || "z2.tips";
+    var enabled = opts.enabled !== false;
+    try { if (typeof localStorage !== "undefined" && localStorage.getItem(storeKey) === "off") enabled = false; } catch (_) {}
+    var held = 0;
     var rules = createRuleManager();
     var bindings = new WeakMap();
     var stack = [];
@@ -618,6 +626,7 @@
         var entry = stack.pop();
         if (entry.rafId) caf(entry.rafId);
         if (entry.leaveTimer) clearTimeout(entry.leaveTimer);
+        if (entry.swapTimer) clearTimeout(entry.swapTimer);
         if (entry.node && entry.node.parentNode) entry.node.parentNode.removeChild(entry.node);
       }
     }
@@ -629,7 +638,7 @@
       entry.node.dataset.locked = "true";
       if (entry.node.classList) entry.node.classList.toggle("z2-pinned", Boolean(entry.pinned));
       entry.timerFill.setAttribute("width", "200");
-      entry.badge.textContent = entry.pinned ? "PINNED · Esc" : "LOCKED · Esc";
+      entry.badge.textContent = entry.pinned ? "PINNED · Esc" : "LOCKED · drag · Esc";
       entry.closeBtn.hidden = false;
     }
 
@@ -696,21 +705,85 @@
       }
     }
 
+    function specOf(cfg) {
+      if (cfg.spec) return cfg.spec;
+      if (typeof cfg.build === "function") return cfg.build();
+      return null;
+    }
+
+    function startTimer(entry) {
+      if (entry.rafId) caf(entry.rafId);
+      entry.rafId = 0;
+      entry.start = nowFn();
+      entry.timerFill.setAttribute("width", "0");
+      var delay = entry.lockDelay;
+      if (delay <= 0) { lockEntry(entry, false); return; }
+      var tick = function () {
+        if (stack.indexOf(entry) < 0 || entry.locked) return;
+        var pct = Math.max(0, Math.min(1, (nowFn() - entry.start) / delay));
+        entry.timerFill.setAttribute("width", (200 * pct).toFixed(1));
+        if (pct >= 1) { lockEntry(entry, false); return; }
+        entry.rafId = raf(tick);
+      };
+      entry.rafId = raf(tick);
+    }
+
+    function placeEntry(entry) {
+      var r = entry.node.getBoundingClientRect ? entry.node.getBoundingClientRect() : { width: 280, height: 140 };
+      var p = clampPosition(entry.anchorRect || { left: 24, top: 24, bottom: 44, right: 120 }, r.width || 280, r.height || 140, entry.depth);
+      entry.coords = rules.place(entry.slotId, p.left, p.top, 40 + entry.depth);
+    }
+
+    function refill(entry, cfg, spec) {
+      entry.key = cfg.key;
+      entry.anchor = cfg.anchor || null;
+      entry.anchorRect = cfg.anchorRect;
+      entry.titleEl.textContent = spec.title || "Details";
+      entry.bodyHost.replaceChildren();
+      renderSpecInto(entry.bodyHost, spec);
+      placeEntry(entry);
+    }
+
     function openEntry(cfg) {
       var depth = cfg.depth || 0;
-      if (stack[depth] && stack[depth].key === cfg.key) {
+      var cur = stack[depth];
+      if (cur && cur.key === cfg.key) {
         cancelAncestorsLeave(depth);
-        if (cfg.pin) lockEntry(stack[depth], true);
-        return stack[depth];
+        if (cur.swapTimer) { clearTimeout(cur.swapTimer); cur.swapTimer = 0; cur.pendingSwap = null; }
+        if (cfg.pin) lockEntry(cur, true);
+        return cur;
+      }
+      if (cur && cfg.group && cur.group === cfg.group && !cfg.pin) {
+        if (!cur.locked) {
+          var fresh = specOf(cfg);
+          if (!fresh) return cur;
+          closeFrom(depth + 1);
+          cancelAncestorsLeave(depth);
+          refill(cur, cfg, fresh);
+          startTimer(cur);
+          return cur;
+        }
+        if (cur.pinned || cur.hovered) return cur;
+        cur.pendingSwap = cfg;
+        if (!cur.swapTimer) {
+          cur.swapTimer = setTimeout(function () {
+            cur.swapTimer = 0;
+            var next = cur.pendingSwap;
+            cur.pendingSwap = null;
+            if (!next || cur.hovered || cur.pinned || stack.indexOf(cur) < 0) return;
+            closeFrom(depth);
+            openEntry(next);
+          }, swapGrace);
+        }
+        return cur;
       }
       for (var d = depth; d < stack.length; d++) {
         if (stack[d].pinned && !cfg.forceReplace) return stack[d];
       }
+      var spec = specOf(cfg);
+      if (!spec) return null;
       closeFrom(depth);
       cancelAncestorsLeave(depth);
-
-      var spec = cfg.spec;
-      if (!spec) return null;
 
       var slotId = "z2-tip-slot-" + (++tipSlotCounter);
       var tip = el("div", "z2-tip");
@@ -728,7 +801,7 @@
       var head = el("div", "z2-tip-head");
       var titleEl = el("p", "z2-tip-title", spec.title || "Details");
       var rightHead = el("div", "z2-pager-actions");
-      var badge = el("span", "z2-tip-badge", "Hold to lock");
+      var badge = el("span", "z2-tip-badge", "Rest to lock");
       var closeBtn = el("button", "z2-tip-close", "x");
       closeBtn.type = "button";
       closeBtn.setAttribute("aria-label", "Close tooltip");
@@ -746,6 +819,14 @@
 
       var entry = {
         key: cfg.key,
+        group: cfg.group || "",
+        lockDelay: cfg.lockDelay != null ? cfg.lockDelay : lockDelay,
+        titleEl: titleEl,
+        bodyHost: bodyHost,
+        head: head,
+        swapTimer: 0,
+        pendingSwap: null,
+        dragged: false,
         depth: depth,
         anchor: cfg.anchor || null,
         anchorRect: cfg.anchorRect,
@@ -772,6 +853,38 @@
       tip.addEventListener("pointerenter", function () {
         entry.hovered = true;
         cancelAncestorsLeave(entry.depth);
+        if (entry.swapTimer) { clearTimeout(entry.swapTimer); entry.swapTimer = 0; entry.pendingSwap = null; }
+      });
+      head.addEventListener("pointerdown", function (ev) {
+        if (!entry.locked || ev.button !== 0 || (ev.target.closest && ev.target.closest(".z2-tip-close"))) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        var sx = ev.clientX, sy = ev.clientY, ox = entry.coords.left, oy = entry.coords.top, frame = 0, lx = sx, ly = sy;
+        if (head.setPointerCapture) head.setPointerCapture(ev.pointerId);
+        tip.classList.add("z2-dragging");
+        lockEntry(entry, true);
+        var move = function (mv) {
+          lx = mv.clientX; ly = mv.clientY;
+          if (frame) return;
+          frame = raf(function () {
+            frame = 0;
+            var r = tip.getBoundingClientRect();
+            var vw = window.innerWidth, vh = window.innerHeight;
+            var nx = Math.max(4 - r.width + 60, Math.min(vw - 60, ox + lx - sx));
+            var ny = Math.max(4, Math.min(vh - 28, oy + ly - sy));
+            entry.coords = rules.place(entry.slotId, nx, ny, 40 + entry.depth);
+            entry.dragged = true;
+          });
+        };
+        var up = function () {
+          head.removeEventListener("pointermove", move);
+          head.removeEventListener("pointerup", up);
+          head.removeEventListener("pointercancel", up);
+          tip.classList.remove("z2-dragging");
+        };
+        head.addEventListener("pointermove", move);
+        head.addEventListener("pointerup", up);
+        head.addEventListener("pointercancel", up);
       });
       tip.addEventListener("pointerleave", function () {
         entry.hovered = false;
@@ -790,22 +903,8 @@
 
       stack.push(entry);
 
-      if (cfg.pin || lockDelay <= 0) {
-        lockEntry(entry, Boolean(cfg.pin));
-      } else {
-        var tick = function () {
-          if (stack.indexOf(entry) < 0 || entry.locked) return;
-          var elapsed = nowFn() - entry.start;
-          var pct = Math.max(0, Math.min(1, elapsed / lockDelay));
-          timerFill.setAttribute("width", (200 * pct).toFixed(1));
-          if (pct >= 1) {
-            lockEntry(entry, false);
-            return;
-          }
-          entry.rafId = raf(tick);
-        };
-        entry.rafId = raf(tick);
-      }
+      if (cfg.pin) lockEntry(entry, true);
+      else startTimer(entry);
       return entry;
     }
 
@@ -831,6 +930,7 @@
     }
 
     function triggerEnter(trigger, pinImmediate) {
+      if (!enabled && !pinImmediate) return null;
       var depth = depthForTrigger(trigger);
       if (depth > 0 && stack[depth - 1] && !stack[depth - 1].locked) return null;
       var spec = buildContentFromElement(trigger);
@@ -848,7 +948,21 @@
     }
 
     if (typeof document !== "undefined" && document.addEventListener) {
+      document.addEventListener("pointerdown", function (e) {
+        held = e.buttons || 1;
+        if (e.target && e.target.closest && e.target.closest(".z2-tip")) return;
+        for (var i = stack.length - 1; i >= 0; i--) {
+          if (!stack[i].locked) closeFrom(i);
+        }
+        clearTimeout(intentTimer);
+        pendingTarget = null;
+      }, true);
+      document.addEventListener("pointerup", function (e) { held = e.buttons || 0; }, true);
+      document.addEventListener("pointercancel", function () { held = 0; }, true);
+      document.addEventListener("contextmenu", function () { held = 0; }, true);
+
       document.addEventListener("pointerover", function (e) {
+        if (!enabled || e.buttons || held) return;
         var trig = findTrigger(e.target);
         if (!trig) return;
         if (pendingTarget === trig) return;
@@ -856,6 +970,7 @@
         pendingTarget = trig;
         intentTimer = setTimeout(function () {
           pendingTarget = null;
+          if (held || !enabled) return;
           triggerEnter(trig, false);
         }, hoverIntent);
       });
@@ -892,10 +1007,13 @@
           triggerEnter(trig, true);
           return;
         }
-        if (stack.length) closeFrom(0);
+        for (var ci = stack.length - 1; ci >= 0; ci--) {
+          if (!stack[ci].pinned) closeFrom(ci);
+        }
       });
 
       document.addEventListener("focusin", function (e) {
+        if (!enabled || held) return;
         var trig = findTrigger(e.target);
         if (trig) triggerEnter(trig, false);
       });
@@ -910,6 +1028,7 @@
       if (typeof window !== "undefined" && window.addEventListener) {
         var reclamp = function () {
           stack.forEach(function (entry) {
+            if (entry.dragged) return;
             if (entry.anchor && entry.anchor.getBoundingClientRect) {
               entry.anchorRect = entry.anchor.getBoundingClientRect();
             }
@@ -928,19 +1047,40 @@
         if (node && typeof fn === "function") bindings.set(node, fn);
       },
       openAt: function (cfg) {
+        if ((!enabled || held) && !cfg.pin) return null;
         return openEntry({
           key: cfg.key,
+          group: cfg.group || "",
+          lockDelay: cfg.lockDelay,
           depth: cfg.depth || 0,
           anchor: cfg.anchor || null,
           anchorRect: cfg.anchorRect,
-          spec: typeof cfg.build === "function" ? cfg.build() : cfg.spec,
+          spec: cfg.spec,
+          build: cfg.build,
           pin: Boolean(cfg.pin),
           forceReplace: Boolean(cfg.forceReplace)
         });
       },
+      enabled: function () { return enabled; },
+      setEnabled: function (on) {
+        enabled = Boolean(on);
+        try { if (typeof localStorage !== "undefined") localStorage.setItem(storeKey, enabled ? "on" : "off"); } catch (_) {}
+        if (!enabled) {
+          for (var i = stack.length - 1; i >= 0; i--) if (!stack[i].pinned) closeFrom(i);
+        }
+        return enabled;
+      },
       leaveKey: function (key) {
         for (var i = 0; i < stack.length; i++) {
           if (stack[i].key === key) scheduleLeave(stack[i], stack[i].locked ? bridgeGrace : 120);
+        }
+      },
+      leaveGroup: function (group) {
+        for (var i = 0; i < stack.length; i++) {
+          if (stack[i].group === group) {
+            if (stack[i].swapTimer) { clearTimeout(stack[i].swapTimer); stack[i].swapTimer = 0; stack[i].pendingSwap = null; }
+            scheduleLeave(stack[i], stack[i].locked ? bridgeGrace : 120);
+          }
         }
       },
       closeAll: function () { closeFrom(0); },

@@ -733,6 +733,21 @@ tr[data-tip-text] td:first-child,
   color: var(--z-focus);
 }
 
+.z2-tip[data-locked="true"] .z2-tip-head {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.z2-tip.z2-dragging,
+.z2-tip.z2-dragging .z2-tip-head {
+  cursor: grabbing;
+}
+
+.z2-tip.z2-dragging {
+  box-shadow: 0 14px 36px var(--z-shadow);
+}
+
 .z2-tip-close {
   font: inherit;
   font-family: var(--z-mono);
