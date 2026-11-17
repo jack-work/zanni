@@ -242,6 +242,13 @@
       var sevEl = el("span", "z2-sev", sev);
       sevEl.dataset.sev = sev;
       var timeEl = el("span", "z2-log-time", fmtTime(entry.t));
+      if (entry.t) {
+        var at = new Date(entry.t);
+        if (!isNaN(at.getTime())) {
+          timeEl.setAttribute("data-tip-title", "Observed");
+          timeEl.setAttribute("data-tip-text", at.toLocaleString() + " (" + at.toISOString() + ")");
+        }
+      }
       var hostEl = el("span", "z2-log-host", entry.host || "local");
       var msgEl = el("span", "z2-log-msg", entry.body || "");
       head.append(timeEl, sevEl, hostEl, msgEl);
