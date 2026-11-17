@@ -426,6 +426,12 @@
     var legRows = host.querySelectorAll(".u-legend .u-series");
     var legOffset = legRows.length > seriesDefs.length ? 1 : 0;
     if (legOffset) legRows[0].classList.add("z2-ux");
+    for (var lr = legOffset; lr < legRows.length; lr++) {
+      var sd = seriesDefs[lr - legOffset];
+      if (sd && !legRows[lr].hasAttribute("data-tip-text")) legRows[lr].setAttribute("data-tip-text", sd.label);
+    }
+    var legEl = host.querySelector(".u-legend");
+    if (legEl && opts.compactLegend !== false) compactLegend(legEl);
     if (opts.tipEngine && opts.seriesTips) {
       for (var li = legOffset; li < legRows.length; li++) {
         (function (rowEl, sDef) {
@@ -510,6 +516,113 @@
       });
     }
     return u;
+  }
+
+  function scrollableAt(node) {
+    for (var cur = node; cur && cur.nodeType === 1; cur = cur.parentElement) {
+      if (cur === document.body || cur === document.documentElement) break;
+      var cs = getComputedStyle(cur);
+      var y = /(auto|scroll)/.test(cs.overflowY) && cur.scrollHeight > cur.clientHeight + 1;
+      var x = /(auto|scroll)/.test(cs.overflowX) && cur.scrollWidth > cur.clientWidth + 1;
+      if (y || x) return cur;
+    }
+    return document.scrollingElement || document.documentElement;
+  }
+
+  var guardsOn = false;
+  function holdGuards(opts) {
+    if (guardsOn || typeof document === "undefined") return;
+    guardsOn = true;
+    opts = opts || {};
+    var swallowAfter = opts.swallowAfter != null ? opts.swallowAfter : 500;
+    var down = null, swallow = 0, lock = null;
+    var now = function () { return typeof performance !== "undefined" ? performance.now() : Date.now(); };
+    function release() {
+      if (lock && lock.classList) lock.classList.remove("z2-scroll-lock");
+      lock = null;
+      document.documentElement.classList.remove("z2-rhold");
+    }
+    document.addEventListener("pointerdown", function (e) {
+      down = { t: now(), button: e.button };
+      if (e.button === 2) {
+        release();
+        lock = scrollableAt(e.target);
+        if (lock !== document.scrollingElement && lock !== document.documentElement) lock.classList.add("z2-scroll-lock");
+        document.documentElement.classList.add("z2-rhold");
+      }
+    }, true);
+    function up(e) {
+      if (down && now() - down.t >= swallowAfter) swallow = now();
+      down = null;
+      if (!e.buttons || !(e.buttons & 2)) release();
+    }
+    document.addEventListener("pointerup", up, true);
+    document.addEventListener("mouseup", function (e) { if (down) up(e); }, true);
+    document.addEventListener("pointercancel", function () { down = null; release(); }, true);
+    window.addEventListener("blur", function () { down = null; release(); });
+    ["click", "auxclick", "contextmenu"].forEach(function (type) {
+      document.addEventListener(type, function (e) {
+        if (swallow && now() - swallow < 120) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          if (type !== "contextmenu") swallow = 0;
+        }
+      }, true);
+    });
+    document.addEventListener("wheel", function (e) {
+      if (!lock) return;
+      e.preventDefault();
+      var unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? (lock.clientHeight || window.innerHeight) : 1;
+      lock.scrollBy({ left: e.deltaX * unit, top: e.deltaY * unit, behavior: "auto" });
+    }, { capture: true, passive: false });
+  }
+
+  function compactLegend(legend, opts) {
+    if (!legend || !legend.parentNode) return null;
+    opts = opts || {};
+    var shell = legend.parentNode.classList && legend.parentNode.classList.contains("z2-legend-shell") ? legend.parentNode : null;
+    if (!shell) {
+      shell = el("div", "z2-legend-shell");
+      legend.parentNode.insertBefore(shell, legend);
+      shell.appendChild(legend);
+    }
+    legend.classList.add("z2-legend-compact");
+    var more = shell.querySelector(":scope > .z2-legend-more");
+    if (!more) {
+      more = el("button", "z2-legend-more", "more");
+      more.type = "button";
+      more.setAttribute("aria-expanded", "false");
+      more.setAttribute("data-tip-text", "Show every legend entry in full; the row grows to fit.");
+      shell.appendChild(more);
+      more.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        var open = !shell.classList.contains("z2-open");
+        shell.classList.toggle("z2-open", open);
+        more.setAttribute("aria-expanded", String(open));
+        measure();
+        if (opts.onToggle) opts.onToggle(open);
+      });
+    }
+    function measure() {
+      var open = shell.classList.contains("z2-open");
+      if (open) { more.hidden = false; more.textContent = "less"; return; }
+      var labels = legend.querySelectorAll(".u-label, .z2-lbl");
+      var body = legend.querySelector(":scope > tbody");
+      var cut = legend.scrollWidth > legend.clientWidth + 1 || Boolean(body && body.scrollWidth > body.clientWidth + 1);
+      for (var i = 0; !cut && i < labels.length; i++) if (labels[i].scrollWidth > labels[i].clientWidth + 1) cut = true;
+      more.hidden = !cut;
+      more.textContent = "more";
+    }
+    if (typeof ResizeObserver !== "undefined" && !shell._z2ro) {
+      var frame = 0;
+      shell._z2ro = new ResizeObserver(function () {
+        if (frame) return;
+        frame = requestAnimationFrame(function () { frame = 0; measure(); });
+      });
+      shell._z2ro.observe(legend);
+    }
+    requestAnimationFrame(measure);
+    return { measure: measure };
   }
 
   function flip(els, mutate, opts) {
@@ -1100,6 +1213,8 @@
     logList: logList,
     uplotSync: uplotSync,
     flip: flip,
+    holdGuards: holdGuards,
+    compactLegend: compactLegend,
     tips: tips
   });
 })(typeof window !== "undefined" ? window : globalThis);

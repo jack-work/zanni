@@ -801,3 +801,99 @@ tr[data-tip-text] td:first-child,
     width: 100%;
   }
 }
+
+.z2-uplot .uplot {
+  display: block;
+  width: auto;
+  max-width: 100%;
+}
+
+.z2-legend-shell {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--z-space-2);
+  min-width: 0;
+}
+
+.z2-legend-shell > .z2-legend-compact {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.z2-legend-compact,
+.z2-legend-compact > tbody {
+  display: flex;
+  flex-wrap: nowrap !important;
+  gap: var(--z-space-1) var(--z-space-2);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.z2-legend-compact > tbody {
+  flex: 1 1 auto;
+}
+
+.z2-legend-compact > *:not(tbody),
+.z2-legend-compact .u-series {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.z2-legend-compact .u-series > th,
+.z2-legend-compact .z2-legend-b {
+  display: flex;
+  align-items: center;
+  gap: var(--z-space-1);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.z2-legend-compact .u-label,
+.z2-legend-compact .z2-lbl {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.z2-legend-compact .u-marker,
+.z2-legend-compact .scope-swatch,
+.z2-legend-compact .z2-sw {
+  flex: none;
+}
+
+.z2-legend-shell.z2-open > .z2-legend-compact,
+.z2-legend-shell.z2-open > .z2-legend-compact > tbody {
+  flex-wrap: wrap !important;
+  overflow: visible;
+}
+
+.z2-legend-shell.z2-open .u-label,
+.z2-legend-shell.z2-open .z2-lbl {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.z2-legend-more {
+  flex: none;
+  margin-top: var(--z-space-2);
+  padding: 1px var(--z-space-2);
+  border: 1px dashed var(--z-line);
+  background: none;
+  color: var(--z-muted);
+  font: var(--z-fs-xs) var(--z-mono);
+  cursor: pointer;
+}
+
+.z2-legend-more:hover { color: var(--z-ink); border-color: var(--z-focus); }
+.z2-legend-more:focus-visible { outline: 2px solid var(--z-focus); outline-offset: 1px; }
+.z2-legend-more[hidden] { display: none; }
+
+.z2-scroll-lock {
+  outline: 1px dashed var(--z-focus);
+  outline-offset: -1px;
+}
+
+html.z2-rhold .z2-tip:not([data-locked="true"]) {
+  display: none;
+}
