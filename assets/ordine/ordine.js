@@ -598,7 +598,81 @@ var ordine = (function () {
     return engine.fromForms(snapshot, options);
   }
 
-  return { layout, layeredLayout, treeLayout, mergeSegments, junctions, handoffRoute, workerBranch, fromForms, mount };
+  const REFUSALS = { 401: 'signedout', 403: 'denied', 503: 'unavailable' };
+
+  function feed(view, options = {}) {
+    if (!view || typeof view.update !== 'function') throw new Error('Order feed requires a mounted view');
+    const fetchFn = options.fetch || (typeof fetch === 'function' ? fetch.bind(globalThis) : null);
+    if (!fetchFn) throw new Error('Order feed requires fetch');
+    const url = options.url || 'hierarchy';
+    const project = { uiOwner: options.uiOwner, deploymentOwner: options.deploymentOwner, includeInactive: Boolean(options.includeInactive), communications: options.communications };
+    let generation = 0, timer = 0, closed = false, orders = [], selected = options.root || '', last = 'loading';
+    function show(state) {
+      last = state.status;
+      view.update(state);
+      if (options.onState) options.onState(state.status, orders.map(o => o.root));
+      return state.status;
+    }
+    function current() {
+      if (!orders.length) return null;
+      return orders.find(o => o.root === selected) || orders[0];
+    }
+    function render(observedAt) {
+      const order = current();
+      if (!order) return show({ status: 'empty' });
+      let model;
+      try { model = fromForms(order, { ...project, root: order.root }); } catch (_) { return show({ status: 'unavailable' }); }
+      if (!model.roles.length) return show({ status: 'empty' });
+      return show({ status: 'current', model, observedAt });
+    }
+    let observed = '';
+    async function refresh(quiet) {
+      if (closed) return 'closed';
+      const mine = ++generation;
+      if (!(quiet === true && last === 'current')) {
+        orders = [];
+        show({ status: last === 'loading' ? 'loading' : 'resyncing' });
+      }
+      let res, body;
+      try {
+        res = await fetchFn(url, { headers: options.headers || {}, credentials: 'same-origin', cache: 'no-store' });
+      } catch (_) {
+        return mine === generation && !closed ? show({ status: 'unavailable' }) : 'superseded';
+      }
+      if (mine !== generation || closed) return 'superseded';
+      if (res.status !== 200) return show({ status: REFUSALS[res.status] || 'unavailable' });
+      try { body = await res.json(); } catch (_) { body = null; }
+      if (mine !== generation || closed) return 'superseded';
+      if (!body || typeof body !== 'object') return show({ status: 'unavailable' });
+      if (body.status === 'empty') return show({ status: 'empty' });
+      if (body.status !== 'current' || !Array.isArray(body.orders)) return show({ status: 'unavailable' });
+      if (body.orders.some(o => !o || typeof o.root !== 'string' || !Array.isArray(o.forms))) return show({ status: 'unavailable' });
+      orders = body.orders;
+      observed = typeof body.observed_at === 'string' ? body.observed_at : '';
+      return render(observed);
+    }
+    function select(root) {
+      selected = root || '';
+      return orders.length ? render(observed) : last;
+    }
+    function withdraw() {
+      generation++;
+      orders = [];
+      return show({ status: 'signedout' });
+    }
+    function close() {
+      closed = true;
+      generation++;
+      orders = [];
+      if (timer) clearInterval(timer);
+      timer = 0;
+    }
+    if (options.interval > 0) timer = setInterval(() => { refresh(true); }, options.interval);
+    if (options.immediate !== false) refresh();
+    return { refresh: () => refresh(false), poll: () => refresh(true), select, withdraw, close, roots: () => orders.map(o => o.root), status: () => last };
+  }
+
+  return { layout, layeredLayout, treeLayout, mergeSegments, junctions, handoffRoute, workerBranch, fromForms, feed, mount };
 }());
 if (typeof self !== 'undefined') {
   self.ordine = ordine;

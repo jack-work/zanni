@@ -32,6 +32,39 @@ On logout or principal change, destroy the old transport and projection caches,
 then detach the view. An open connection alone never justifies `current`.
 Wait for the current generation's authorized seed and freshness contract.
 
+## Binding to the hierarchy projection
+
+`ordine.feed(view, options)` binds a mounted view to figaro-forms'
+`GET /hierarchy` (branch fix/authorized-refresh, README "Hierarchy
+projection"). The host serves that endpoint same-origin, behind its own login,
+and the server reads the hierarchy with the caller's authority. The browser
+never holds a bridge token and never selects keys.
+
+```js
+const view = ordine.mount(document.getElementById('order'));
+const feed = ordine.feed(view, {
+  url: 'hierarchy',
+  uiOwner: '@flypaper-atlas',
+  deploymentOwner: '@frosting-pushup',
+  interval: 30000
+});
+```
+
+Replies map onto view states: `200 current` renders the selected order through
+`ordine.fromForms`; `200 empty`, or a `current` reply with no orders, shows
+"No owned orders"; 401, 403 and 503 show signed out, denied and unavailable;
+any other status, a malformed body or a network failure shows unavailable.
+Only `current` carries nodes.
+
+`refresh()` drops to resyncing with no nodes before it asks. Interval polls
+keep the current tree until their reply arrives, and any refusal or failure
+then withdraws it. A reply from an older request is ignored, so a late success
+never restores a withdrawn tree. `select(root)` switches between the orders a
+caller can see, `roots()` lists them, `withdraw()` clears the view on logout
+and `close()` stops polling. `uiOwner` and `deploymentOwner` name the declared
+handoff targets until the flake supplies communication rules; a
+`communications` option passes those rules through unchanged.
+
 ## Public model
 
 ```js
