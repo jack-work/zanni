@@ -388,6 +388,11 @@
               opts.onZoom(Math.round(t0), Math.round(t1));
             }
           }
+        ],
+        setLegend: [
+          function (uInst) {
+            host.classList.toggle("z2-idle", uInst.cursor.idx == null);
+          }
         ]
       },
       series: [
