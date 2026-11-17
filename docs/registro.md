@@ -47,3 +47,17 @@ provider's balance. z2-capacity-account is monospace; numbers never use Jacquard
 Example: examples/registro.html. Browser test: test/registro.test.py, including
 keyboard opening and closing of narrow navigation and a removed-stylesheet
 negative control. checks.registro runs it in Chromium.
+
+## Scope helpers (v2/z2-scope.js)
+
+Link `v2/z2-scope.js` after `v2/z2.js` for thin-client Scope views:
+- `z2.tokens(el)` and `z2.onSchemeChange(fn)`: read resolved `--z-*` tokens at
+  paint time and re-render canvas or uPlot surfaces when scheme changes.
+- `z2.uplotSync(cache, id, host, series, data, opts)`: updates uPlot via
+  `setData` when series and width match rather than rebuilding DOM on each poll.
+- `z2.waterfallSVG(rows, opts)` and `z2.meterSVG(percent, state, opts)`: pure
+  SVG bars without inline style attributes so `style-src 'self'` stays strict.
+- `z2.logList(host, opts)`: structured log stream with severity pills, wrapped
+  messages, expandable `<dl>` attributes, delta `prepend` and cursor `append`.
+- `z2.relTime(isoOrMs, nowMs)` and `z2.copyChip(command)`: relative horizon
+  text and clipboard command chip.

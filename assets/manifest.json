@@ -426,7 +426,8 @@
         "v2/z2.css",
         "v2/z2-registro.css",
         "v2/z2.js",
-        "v2/z2-chart.js"
+        "v2/z2-chart.js",
+        "v2/z2-scope.js"
       ],
       "classes": [
         "z2-shell",
