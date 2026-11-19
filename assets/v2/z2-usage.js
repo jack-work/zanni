@@ -204,7 +204,8 @@
     band.setAttribute("aria-busy", "true");
     band.setAttribute("aria-label", opts.title || "Plans and usage");
     var head = el("header", "z2-usage-head");
-    head.appendChild(el("h2", null, opts.title || "Usage"));
+    var title = el("h2", null, opts.title || "Usage");
+    head.appendChild(title);
     var stamp = el("p", "z2-usage-stamp");
     head.appendChild(stamp);
     var sum = el("div", "z2-usage-sum");
@@ -312,13 +313,17 @@
 
     function resetText(w) {
       var reset = Date.parse(w.reset_at);
-      return Number.isFinite(reset) ? "in " + span(reset - now()) : "";
+      return Number.isFinite(reset) ? "resets in " + span(reset - now()) : "";
     }
 
     function resetTip(n, w) {
       var reset = Date.parse(w.reset_at);
       tipText(n, "Window reset", Number.isFinite(reset) ? "Resets " + localTime(reset) + ", in " + span(reset - now()) + " (" + new Date(reset).toISOString() + " UTC), " +
         (w.source === "provider_reported" ? "reported by the provider." : "from response headers.") : "");
+    }
+
+    function leftOf(w) {
+      return Math.max(0, 100 - Math.round(w.used_percent));
     }
 
     function staleWords(st) {
@@ -339,7 +344,7 @@
       off(n, !lead);
       if (!lead) return;
       var st = windowState(lead.w);
-      var left = Math.max(0, 100 - Math.round(lead.w.used_percent));
+      var left = leftOf(lead.w);
       var name = planFullName(pv, lead.pl, seat, " ");
       setText(s.val, left);
       setMeter(s.meter, left, name + " " + windowName(lead.w.window) + " left", left + "% left" + (st.stale ? ", stale" : ""));
@@ -383,7 +388,7 @@
       s.meter = meter();
       s.pct = el("b", "z2-usage-pct");
       s.pctVal = el("span", "z2-usage-val");
-      s.pctUnit = el("span", "z2-usage-unit", "%");
+      s.pctUnit = el("span", "z2-usage-unit", "% left");
       s.pct.appendChild(s.pctVal); s.pct.appendChild(s.pctUnit);
       s.notes = el("span", "z2-usage-notes");
       s.stale = el("span", "z2-usage-stale");
@@ -404,24 +409,26 @@
 
     function windowTip(n, w, st) {
       var reset = Date.parse(w.reset_at);
-      tipText(n, windowName(w.window) + " window", [w.status ? "status " + w.status.replace(/_/g, " ") : "", Number.isFinite(reset) ? "resets " + localTime(reset) : "",
+      tipText(n, windowName(w.window) + " window", [Number.isFinite(w.used_percent) ? Math.round(w.used_percent) + "% used" : "", w.status ? "status " + w.status.replace(/_/g, " ") : "", Number.isFinite(reset) ? "resets " + localTime(reset) : "",
         w.source === "provider_reported" ? "reported by the provider" : "seen in response headers", st.age != null ? span(st.age) + " old" : ""].filter(Boolean).join(" \u00b7 "));
     }
 
     function makeOther() {
       var n = el("span", "z2-usage-other");
-      var s = n._s = { name: el("span", "z2-usage-win"), meter: meter(), val: el("span", "z2-usage-val"), notes: el("span", "z2-usage-notes"),
+      var s = n._s = { name: el("span", "z2-usage-win"), meter: meter(), pct: el("span", "z2-usage-pct"), val: el("span", "z2-usage-val"), notes: el("span", "z2-usage-notes"),
         stale: el("span", "z2-usage-stale"), state: el("span", "z2-usage-state"), reset: el("span", "z2-usage-reset") };
+      s.pct.appendChild(s.val); s.pct.appendChild(el("span", "z2-usage-unit", "% left"));
       s.notes.appendChild(s.stale); s.notes.appendChild(s.state); s.notes.appendChild(s.reset);
-      n.appendChild(s.name); n.appendChild(s.meter); n.appendChild(s.val); n.appendChild(s.notes);
+      n.appendChild(s.name); n.appendChild(s.meter); n.appendChild(s.pct); n.appendChild(s.notes);
       return n;
     }
 
     function fillOther(n, it) {
       var w = it.w, st = windowState(w), s = n._s;
       setText(s.name, windowName(w.window));
-      setMeter(s.meter, w.used_percent, it.plan + " " + windowName(w.window) + " used", Math.round(w.used_percent) + "% used" + (st.stale ? ", stale" : ""));
-      setText(s.val, Math.round(w.used_percent) + "%");
+      var left = leftOf(w);
+      setMeter(s.meter, left, it.plan + " " + windowName(w.window) + " left", left + "% left" + (st.stale ? ", stale" : ""));
+      setText(s.val, left);
       setData(n, "tone", st.tone);
       setData(n, "age", st.stale && st.age != null ? ageTier(st.age) : null);
       setText(s.state, st.stale ? "" : stateText(st));
@@ -471,10 +478,10 @@
       off(s.meter, !lead); off(s.pct, !lead); off(s.win, !lead);
       if (lead) {
         var st = windowState(lead);
-        var pct = Math.round(lead.used_percent);
+        var pct = leftOf(lead);
         setText(s.win, windowName(lead.window));
-        setMeter(s.meter, lead.used_percent, planName + " " + windowName(lead.window) + " used",
-          pct + "% used" + (STATUS_WORDS[st.status] ? ", " + STATUS_WORDS[st.status] : "") + (st.stale ? ", stale" : ""));
+        setMeter(s.meter, pct, planName + " " + windowName(lead.window) + " left",
+          pct + "% left" + (STATUS_WORDS[st.status] ? ", " + STATUS_WORDS[st.status] : "") + (st.stale ? ", stale" : ""));
         setText(s.pctVal, pct);
         setData(n, "tone", st.tone);
         setData(n, "age", st.stale && st.age != null ? ageTier(st.age) : null);
@@ -579,6 +586,7 @@
         var paths = allAccess(pv);
         var gws = paths.map(function (a) { return a.gateway === "rou2" ? "via rou2" : "direct"; }).filter(function (g, i, l) { return l.indexOf(g) === i; });
         setText(s.where, (pv.plans || []).map(function (pl) { return planLabel(pv, pl) + " " + pl.plan; }).join(", ") + (gws.length ? " \u00b7 " + gws.join(" + ") : ""));
+        tipText(s.label, pv.label || pv.provider, "Pay as you go: " + s.where.textContent + ".");
         fillNumbers(s.nums, all);
         n.setAttribute("aria-label", n.textContent.replace(/\s+/g, " ").trim());
         return;
@@ -622,6 +630,7 @@
       var bad = ((d && d.sources && d.sources.enrichment) || []).filter(function (e) { return e.status && e.status !== "ok"; });
       setText(stamp, d ? [rangeText(d), Number.isFinite(gen) ? "as of " + clock.format(gen) : "",
         bad.map(function (e) { return e.name + " evidence " + e.status; }).join(", ")].filter(Boolean).join(" \u00b7 ") : "");
+      tipText(title, opts.title || "Usage", d ? "How much of each plan is left, and what each provider carried: " + stamp.textContent + "." : "");
       setData(stamp, "tone", bad.length ? "warn" : null);
       var lead = null;
       provs.forEach(function (pv) {
@@ -760,7 +769,7 @@
         return;
       }
       if (!t || !t._ref) return;
-      if (narrow() && !viaDrill && (t.classList.contains("z2-usage-plan") || t.classList.contains("z2-usage-quiet"))) { toggle(t); return; }
+      if (t.classList.contains("z2-usage-quiet") || (narrow() && !viaDrill && t.classList.contains("z2-usage-plan"))) { toggle(t); return; }
       if (opts.onOpen) opts.onOpen(t._ref, t);
     }
 
