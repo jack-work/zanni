@@ -686,6 +686,10 @@ tr[data-tip-text] td:first-child,
   display: none;
 }
 
+@media (max-width: 520px) {
+  .z2-tip { width: calc(100vw - 16px); min-width: 0; max-width: none; }
+}
+
 .z2-tip-timer {
   display: block;
   width: 100%;

@@ -98,6 +98,13 @@
     return svg;
   }
 
+  function tipText(n, title, text) {
+    if (!text) { n.removeAttribute("data-tip-text"); n.removeAttribute("data-tip-title"); return; }
+    if (n.getAttribute("data-tip-text") !== text) n.setAttribute("data-tip-text", text);
+    if (title) { if (n.getAttribute("data-tip-title") !== title) n.setAttribute("data-tip-title", title); }
+    else n.removeAttribute("data-tip-title");
+  }
+
   function off(n, yes) {
     if (yes) n.setAttribute("data-off", ""); else n.removeAttribute("data-off");
   }
@@ -132,6 +139,9 @@
     var now = opts.now || Date.now;
     var planLabel = opts.planLabel || function (pv, pl) { return pl.label || pl.plan; };
     var data = null;
+    var openPlans = {};
+    var lastPointer = "mouse";
+    var NARROW = opts.narrowWidth || 760;
     var clock = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23", timeZone: opts.timeZone });
     var day = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: opts.timeZone });
     var dayKey = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: opts.timeZone });
@@ -191,18 +201,18 @@
     }
 
     function fillNumbers(s, a) {
-      var set = function (c, v, label) {
+      var set = function (c, v, title, label) {
         setText(c.val, v === "" ? "-" : v);
         setData(c.cell, "blank", v === "" ? "true" : null);
-        if (label) c.cell.title = label;
+        tipText(c.cell, title, label || "");
       };
-      set(s.req, fmtInt(a.requests));
-      set(s.tok, fmtCompact(a.tokens), fmtInt(a.tokens) + " tokens: " + fmtInt(a.input_tokens) + " uncached in, " + fmtInt(a.output_tokens) + " out, " +
+      set(s.req, fmtInt(a.requests), "Requests", fmtInt(a.requests) + " requests in the range" + (a.priced_requests != null ? ", " + fmtInt(a.priced_requests) + " priced" : ""));
+      set(s.tok, fmtCompact(a.tokens), "Tokens", fmtInt(a.tokens) + " tokens: " + fmtInt(a.input_tokens) + " uncached in, " + fmtInt(a.output_tokens) + " out, " +
         fmtInt(a.cache_read_tokens) + " cache read, " + fmtInt(a.cache_write_tokens) + " cache write");
-      set(s.cache, Number.isFinite(a.cache_read_share) && a.tokens > 0 ? Math.round(a.cache_read_share * 100) + "%" : "", "cache read share of prompt tokens");
-      set(s.cost, a.list_cost_usd == null ? "" : fmtUSD(a.list_cost_usd), "list-price equivalent, not a bill");
+      set(s.cache, Number.isFinite(a.cache_read_share) && a.tokens > 0 ? Math.round(a.cache_read_share * 100) + "%" : "", "Cache read share", "Share of prompt tokens read from the provider's cache.");
+      set(s.cost, a.list_cost_usd == null ? "" : fmtUSD(a.list_cost_usd), "List price", "What these requests would cost at list price. Not a bill.");
       var seen = Date.parse(a.last_seen);
-      set(s.last, Number.isFinite(seen) ? span(now() - seen) + " ago" : "", Number.isFinite(seen) ? new Date(seen).toISOString() : "not seen in 8 days");
+      set(s.last, Number.isFinite(seen) ? span(now() - seen) + " ago" : "", "Last seen", Number.isFinite(seen) ? new Date(seen).toISOString() + " UTC" : "Not seen in 8 days.");
     }
 
     function sumAccess(list) {
@@ -252,8 +262,13 @@
       s.detail = el("div", "z2-usage-detail");
       s.reset = el("span", "z2-usage-reset");
       s.others = el("span", "z2-usage-others");
-      s.detail.appendChild(s.reset); s.detail.appendChild(s.others);
-      n.appendChild(name); n.appendChild(s.win); n.appendChild(s.meter); n.appendChild(s.pct); n.appendChild(s.state); n.appendChild(s.detail);
+      s.drill = el("span", "z2-usage-drill-link", "details");
+      s.drill.tabIndex = 0;
+      s.drill.setAttribute("role", "button");
+      s.detail.appendChild(s.reset); s.detail.appendChild(s.others); s.detail.appendChild(s.drill);
+      s.more = el("span", "z2-usage-more");
+      s.more.setAttribute("aria-hidden", "true");
+      n.appendChild(name); n.appendChild(s.win); n.appendChild(s.meter); n.appendChild(s.pct); n.appendChild(s.state); n.appendChild(s.more); n.appendChild(s.detail);
       return n;
     }
 
@@ -279,16 +294,19 @@
         setData(n, "age", null);
       }
       var reset = Date.parse(w.reset_at);
-      n.title = [windowName(w.window), w.status ? "status " + w.status.replace(/_/g, " ") : "", Number.isFinite(reset) ? "resets " + localTime(reset) : "",
-        w.source === "provider_reported" ? "reported by the provider" : "seen in response headers", st.age != null ? span(st.age) + " old" : ""].filter(Boolean).join(" \u00b7 ");
+      tipText(n, windowName(w.window) + " window", [w.status ? "status " + w.status.replace(/_/g, " ") : "", Number.isFinite(reset) ? "resets " + localTime(reset) : "",
+        w.source === "provider_reported" ? "reported by the provider" : "seen in response headers", st.age != null ? span(st.age) + " old" : ""].filter(Boolean).join(" \u00b7 "));
     }
 
     function fillPlan(n, it) {
       var pv = it.pv, pl = it.pl, s = n._s;
+      var open = !!openPlans[pv.provider + ":" + pl.plan];
+      setData(n, "open", open ? "true" : "false");
+      n.setAttribute("aria-expanded", String(open));
       setText(s.label, planLabel(pv, pl));
       setText(s.account, pl.account || "");
       off(s.account, !pl.account);
-      s.account.title = pl.account ? "account " + pl.account : "";
+      tipText(s.account, "Account", pl.account ? pl.account + " \u00b7 upstream " + pl.plan : "");
       var wins = pl.windows || [];
       var metered = wins.filter(function (w) { return Number.isFinite(w.used_percent); });
       var lead = metered.filter(function (w) { return w.window === pl.binding; })[0] ||
@@ -309,7 +327,7 @@
         setText(s.state, st.stale ? (st.age != null ? span(st.age) + " old" : "stale") + (word ? ", was " + word : "") : word);
         var reset = Date.parse(lead.reset_at);
         setText(s.reset, Number.isFinite(reset) ? "resets " + localTime(reset) + " \u00b7 in " + span(reset - now()) : "");
-        s.reset.title = Number.isFinite(reset) ? new Date(reset).toISOString() : "";
+        tipText(s.reset, "Window reset", Number.isFinite(reset) ? new Date(reset).toISOString() + " UTC, " + (lead.source === "provider_reported" ? "reported by the provider" : "from response headers") : "");
       } else {
         var seen = sumAccess(pl.access || []).last_seen;
         var sub = !/pay as you go/i.test(pl.label || "");
@@ -350,10 +368,11 @@
 
     function fillAccess(n, it) {
       var a = it.a, s = n._s;
+      setData(n, "open", openPlans[it.pv.provider + ":" + it.pl.plan] ? "true" : "false");
       setData(n, "gateway", a.gateway);
       setText(s.gw, a.gateway === "rou2" ? "rou2" : "direct");
       setText(s.where, a.gateway === "rou2" ? a.host + " \u00b7 " + a.via : "figaro@" + a.host);
-      s.gw.title = a.gateway === "rou2" ? "proxied by the rou2 gateway" : "sent straight to the provider by a figaro host";
+      tipText(s.gw, a.gateway === "rou2" ? "Via rou2" : "Direct", a.gateway === "rou2" ? "Proxied by the rou2 gateway on " + a.host + " through upstream " + a.via + "." : "Sent straight to the provider by figaro on " + a.host + ".");
       fillNumbers(s.nums, Object.assign({ tokens: tokensOf(a) }, a));
       var d = disagreement(it.pl, a);
       setText(s.seen, d);
@@ -394,6 +413,8 @@
       n._ref = { kind: "provider", provider: pv.provider };
       var all = sumAccess(allAccess(pv));
       if (it.kind === "quiet") {
+        setData(n, "open", openPlans[pv.provider + ":"] ? "true" : "false");
+        n.setAttribute("aria-expanded", String(!!openPlans[pv.provider + ":"]));
         setText(s.label, pv.label || pv.provider);
         var paths = allAccess(pv);
         var gws = paths.map(function (a) { return a.gateway === "rou2" ? "via rou2" : "direct"; }).filter(function (g, i, l) { return l.indexOf(g) === i; });
@@ -525,19 +546,39 @@
     }
 
     function focusables() {
-      return Array.prototype.slice.call(band.querySelectorAll("[tabindex]"));
+      return Array.prototype.slice.call(band.querySelectorAll("[tabindex]")).filter(function (n) { return n.offsetParent !== null; });
     }
 
+    function narrow() {
+      return band.getBoundingClientRect().width <= NARROW;
+    }
+
+    function toggle(t) {
+      var ref = t._ref;
+      var key = ref.provider + ":" + (ref.kind === "plan" ? ref.plan : "");
+      if (openPlans[key]) delete openPlans[key]; else openPlans[key] = true;
+      if (data) paint();
+    }
+
+    function act(t, viaDrill) {
+      if (!t || !t._ref) return;
+      if (narrow() && !viaDrill && (t.classList.contains("z2-usage-plan") || t.classList.contains("z2-usage-quiet"))) { toggle(t); return; }
+      if (opts.onOpen) opts.onOpen(t._ref, t);
+    }
+
+    band.addEventListener("pointerdown", function (e) { lastPointer = e.pointerType || "mouse"; }, true);
     band.addEventListener("click", function (e) {
+      var drill = e.target.closest(".z2-usage-drill-link");
       var t = e.target.closest(".z2-usage-plan, .z2-usage-access, .z2-usage-quiet");
-      if (t && t._ref && opts.onOpen) opts.onOpen(t._ref, t);
+      if (!drill && lastPointer === "touch" && e.target.closest("[data-tip-text]") && e.target.closest("[data-tip-text]") !== t) return;
+      act(t, !!drill);
     });
     band.addEventListener("keydown", function (e) {
       var t = e.target;
-      if (!t._ref) return;
+      if (!t._ref && !t.classList.contains("z2-usage-drill-link")) return;
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
-        if (opts.onOpen) opts.onOpen(t._ref, t);
+        act(t.closest(".z2-usage-plan, .z2-usage-access, .z2-usage-quiet, .z2-usage-prov") || t, t.classList.contains("z2-usage-drill-link"));
       } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         var list = focusables();
         var next = list[list.indexOf(t) + (e.key === "ArrowDown" ? 1 : -1)];

@@ -135,6 +135,19 @@ with sync_playwright() as p:
     assert kic.locator(".z2-usage-name").bounding_box()["y"] < kic.locator("> .z2-usage-meter").bounding_box()["y"], "narrow: the name sits above its meter"
     m, st = mx.locator("> .z2-usage-meter").bounding_box(), mx.locator(".z2-usage-state").bounding_box()
     assert abs((m["y"] + m["height"] / 2) - (st["y"] + st["height"] / 2)) < 12, "narrow: the warning sits on the meter line"
+    mx_paths = page.locator(".z2-usage-access[data-key^='a:anthropic-max:']")
+    assert mx_paths.first.is_hidden() and mx.locator(".z2-usage-detail").is_hidden(), "narrow: access lines and detail start collapsed"
+    opened = page.evaluate("USAGE_OPENED.length")
+    mx.click(position={"x": 20, "y": 10})
+    assert mx.get_attribute("data-open") == "true" and mx.get_attribute("aria-expanded") == "true"
+    assert mx_paths.first.is_visible() and mx.locator(".z2-usage-detail").is_visible(), "narrow: a tap on the plan expands it"
+    assert page.evaluate("USAGE_OPENED.length") == opened, "narrow: expanding is not opening the drawer"
+    mx.locator(".z2-usage-drill-link").click()
+    assert page.evaluate("USAGE_OPENED.length") == opened + 1, "narrow: details opens the drawer"
+    via_req = page.locator(".z2-usage-access[data-key='a:anthropic-max:rou2:spain:anthropic-max'] [data-col=req]")
+    assert via_req.get_attribute("data-tip-title") == "Requests" and via_req.get_attribute("title") is None, "tips, not title attributes, so they work on touch"
+    mx.click(position={"x": 20, "y": 10})
+    assert mx_paths.first.is_hidden(), "negative control: a second tap collapses it"
     page.set_viewport_size({"width": 1280, "height": 900})
     page.locator("link[href$='z2-usage.css']").evaluate("e => e.remove()")
     assert len(set(page.evaluate(RIGHT_EDGES))) > 1, "negative control: the aligned number columns belong to z2-usage.css"

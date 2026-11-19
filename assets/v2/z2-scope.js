@@ -700,6 +700,7 @@
     var enabled = opts.enabled !== false;
     try { if (typeof localStorage !== "undefined" && localStorage.getItem(storeKey) === "off") enabled = false; } catch (_) {}
     var held = 0;
+    var lastPointer = "mouse";
     var rules = createRuleManager();
     var bindings = new WeakMap();
     var stack = [];
@@ -1063,6 +1064,7 @@
     if (typeof document !== "undefined" && document.addEventListener) {
       document.addEventListener("pointerdown", function (e) {
         held = e.buttons || 1;
+        lastPointer = e.pointerType || "mouse";
         if (e.target && e.target.closest && e.target.closest(".z2-tip")) return;
         for (var i = stack.length - 1; i >= 0; i--) {
           if (!stack[i].locked) closeFrom(i);
@@ -1089,6 +1091,7 @@
       });
 
       document.addEventListener("pointerout", function (e) {
+        if (e.pointerType === "touch") return;
         var trig = findTrigger(e.target);
         if (!trig) return;
         if (e.relatedTarget && trig.contains && trig.contains(e.relatedTarget)) return;
@@ -1115,6 +1118,17 @@
         var insideTip = e.target && e.target.closest && e.target.closest(".z2-tip");
         if (insideTip) return;
         var trig = findTrigger(e.target);
+        if (lastPointer === "touch") {
+          var open = -1;
+          for (var oi = 0; oi < stack.length; oi++) if (stack[oi].anchor === trig) open = oi;
+          if (trig && open < 0) {
+            closeFrom(depthForTrigger(trig));
+            triggerEnter(trig, true);
+          } else {
+            closeFrom(open >= 0 ? open : 0);
+          }
+          return;
+        }
         if (trig && trig.classList && trig.classList.contains("z2-term")) {
           e.preventDefault();
           triggerEnter(trig, true);
