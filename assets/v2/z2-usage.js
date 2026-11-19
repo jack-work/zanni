@@ -95,7 +95,7 @@
   function primaryOf(recent) {
     var out = {};
     ((recent && recent.providers) || []).forEach(function (pv) {
-      var best = null, total = 0;
+      var best = null, total = 0, ran = 0;
       (pv.plans || []).forEach(function (pl) {
         var req = 0, seen = 0;
         (pl.access || []).forEach(function (a) {
@@ -104,9 +104,10 @@
           if (Number.isFinite(t) && t > seen) seen = t;
         });
         total += req;
+        if (req > 0) ran++;
         if (req > 0 && (!best || req > best.requests || (req === best.requests && seen > best.seen))) best = { plan: pl.plan, requests: req, seen: seen };
       });
-      if (best) out[pv.provider] = { plan: best.plan, requests: best.requests, total: total, span: Date.parse(recent.to) - Date.parse(recent.from) };
+      if (best && ran > 1) out[pv.provider] = { plan: best.plan, requests: best.requests, total: total, span: Date.parse(recent.to) - Date.parse(recent.from) };
     });
     return out;
   }

@@ -24,6 +24,7 @@ assert.deepEqual(usagePrimary(recent([["a", [9, null]], ["b", [30, null], [11, n
   { anthropic: { plan: "b", requests: 41, total: 90, span: 3600000 } }, "a plan's access lines add up");
 assert.deepEqual(usagePrimary(recent([["a", [0, null]], ["b", [0, null]]])), {}, "an idle hour has no primary");
 assert.equal(usagePrimary(recent([["a", [5, "2026-11-19T05:10:00Z"]], ["b", [5, "2026-11-19T05:50:00Z"]]])).anthropic.plan, "b", "a tie goes to the plan seen last");
+assert.deepEqual(usagePrimary(recent([["a", [12, null]], ["b", [0, null]]])), {}, "one plan ran: nothing to choose between, no primary");
 assert.deepEqual(usagePrimary(null), {});
 
 console.log("v2-usage: ok");

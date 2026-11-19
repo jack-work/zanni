@@ -55,15 +55,16 @@ with sync_playwright() as p:
     assert page.evaluate(primary) == [], "negative control: before a last-hour answer arrives nothing is marked"
     before_primary = page.evaluate(BOXES)
     page.evaluate("usage.update(USAGE_SPAIN, USAGE_RECENT)")
-    assert page.evaluate(primary) == ["p:anthropic-kic-2", "p:gemini"], "one primary per provider: the plan with the most requests in the last hour"
+    assert page.evaluate(primary) == ["p:anthropic-kic-2"], "a primary only where two or more plans of a provider ran in the hour"
+    assert page.locator(".z2-usage-plan[data-key='p:gemini'] .z2-usage-primary").is_hidden(), "Gemini ran on one plan: no marker"
     assert page.evaluate(BOXES) == before_primary, "the marker arrives without moving a row"
     assert kic2.get_attribute("data-primary") == "true" and kic.get_attribute("data-primary") is None
     assert kic2.locator(".z2-usage-primary").get_attribute("data-tip-text") == "Carried 41 of 72 Anthropic requests in the last 60 min, more than any other plan."
     assert page.locator(".z2-usage-prov[data-key=openai_subscription] .z2-usage-primary").is_hidden(), "nothing ran in the hour: no marker"
     page.evaluate("usage.update(USAGE_SPAIN)")
-    assert page.evaluate(primary) == ["p:anthropic-kic-2", "p:gemini"], "a refresh that brings no recent answer keeps the last one"
+    assert page.evaluate(primary) == ["p:anthropic-kic-2"], "a refresh that brings no recent answer keeps the last one"
     page.evaluate("(() => { const r = structuredClone(USAGE_RECENT); r.providers[0].plans[2].access[1].requests = 400; usage.update(USAGE_SPAIN, r) })()")
-    assert page.evaluate(primary) == ["p:anthropic-max", "p:gemini"], "the marker follows the traffic"
+    assert page.evaluate(primary) == ["p:anthropic-max"], "the marker follows the traffic"
     page.evaluate("(() => { const r = structuredClone(USAGE_RECENT); r.providers.forEach(pv => pv.plans.forEach(pl => pl.access.forEach(a => { a.requests = 0 }))); usage.update(USAGE_SPAIN, r) })()")
     assert page.evaluate(primary) == [], "negative control: an idle hour marks nothing"
     page.evaluate("usage.update(USAGE_SPAIN, USAGE_RECENT)")
