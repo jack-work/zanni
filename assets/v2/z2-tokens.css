@@ -12,6 +12,7 @@
   --z-ok: light-dark(#335949, #7FA391);
   --z-warn: light-dark(#714A0F, #D49A3E);
   --z-fail: light-dark(#972C1D, #D66551);
+  --z-hot: light-dark(#972C1D, #D66551);
   --z-fs-xs: 12px;
   --z-fs-sm: 13px;
   --z-fs-base: 15px;
@@ -42,6 +43,7 @@
   --z-ok: light-dark(#30561F, #9CC47A);
   --z-warn: light-dark(#734A0C, #E2B25C);
   --z-fail: light-dark(#952A22, #EC7A64);
+  --z-hot: light-dark(#952A22, #EC7A64);
   --z-fs-xs: 13px;
   --z-fs-sm: 14px;
   --z-fs-base: 16px;
@@ -59,19 +61,20 @@
   --z-space-7: 40px;
 }
 [data-theme="registro"] {
-  --z-ground: light-dark(#E7D4C4, #1A0D0F);
-  --z-ground-2: light-dark(#DCC4B0, #271215);
+  --z-ground: light-dark(#F6EDE2, #1A0D0F);
+  --z-ground-2: light-dark(#ECDFD0, #271215);
   --z-ink: light-dark(#2B1A15, #F0DFC8);
-  --z-muted: light-dark(#6B4A3D, #A5887B);
-  --z-rule: light-dark(#C9AF9A, #3D2224);
-  --z-line: light-dark(#B0917D, #5C3A3A);
+  --z-muted: light-dark(#5A3D32, #A5887B);
+  --z-rule: light-dark(#D9C3AE, #3D2224);
+  --z-line: light-dark(#C2A690, #5C3A3A);
   --z-accent: light-dark(#7D2E2E, #D9A94E);
   --accent-ink: light-dark(#7D2E2E, #D9A94E);
   --z-on-accent: light-dark(#F6EDE2, #1A0D0F);
   --z-focus: light-dark(#7D2E2E, #D9A94E);
-  --z-ok: light-dark(#30561F, #9CC47A);
-  --z-warn: light-dark(#734A0C, #E2B25C);
-  --z-fail: light-dark(#952A22, #EC7A64);
+  --z-ok: light-dark(#3D6B2A, #9CC47A);
+  --z-warn: light-dark(#87580F, #E2B25C);
+  --z-fail: light-dark(#A8322A, #EC7A64);
+  --z-hot: light-dark(#7D2E2E, #E8826A);
   --z-fs-xs: 12px;
   --z-fs-sm: 13px;
   --z-fs-base: 15px;

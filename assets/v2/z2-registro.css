@@ -1,14 +1,15 @@
 :where(:root[data-theme="registro"]) { color-scheme: light dark; }
 
 [data-theme="registro"] {
-  --z-font: "EB Garamond", Georgia, serif;
+  --z-font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --z-display: "Jacquard 24", Georgia, serif;
-  --z-utility: "VT323", ui-monospace, monospace;
+  --z-utility: var(--z-font);
+  --z-code: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
 [data-theme="registro"] .z2-shell {
   padding-top: var(--proscenio-pad, 0px);
-  font-variant-numeric: lining-nums tabular-nums;
+  font-variant-numeric: lining-nums;
 }
 
 [data-theme="registro"] .z2-main,
@@ -64,9 +65,10 @@
 
 [data-theme="registro"] .z2-panel { border-top: 2px solid var(--z-accent); }
 [data-theme="registro"] .z2-panel h2 {
-  font-family: var(--z-display);
-  font-weight: 400;
-  color: var(--accent-ink);
+  font-family: var(--z-font);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--z-ink);
 }
 [data-theme="registro"] .z2-kpi { border-left-color: var(--z-accent); }
 [data-theme="registro"] .z2-kpi.warn { border-left-color: var(--z-warn); }
@@ -540,10 +542,10 @@
 
 .z2-drawer-head h3 {
   margin: 0;
-  font-family: var(--z-display);
-  font-weight: 400;
-  font-size: var(--z-fs-2xl);
-  color: var(--accent-ink);
+  font-family: var(--z-font);
+  font-weight: 600;
+  font-size: var(--z-fs-xl);
+  color: var(--z-ink);
 }
 
 .z2-copy {

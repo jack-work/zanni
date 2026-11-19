@@ -32,6 +32,8 @@ with sync_playwright() as p:
 
     kic = page.locator(".z2-usage-plan[data-key='p:anthropic-kic']")
     assert kic.locator(".z2-usage-name b").text_content() == "Claude Max"
+    assert kic.locator(".z2-usage-chip").text_content() == "kic"
+    assert "anthropic-kic" not in kic.text_content(), "the upstream id lives in the drawer, not the row"
     assert kic.locator(".z2-usage-win").text_content() == "5 h", "the headline is the binding window, not the first or the weekly"
     assert kic.locator(".z2-usage-pct").text_content() == "17%"
     assert kic.get_attribute("data-tone") == "allowed"
@@ -40,20 +42,24 @@ with sync_playwright() as p:
     assert kic.locator(".z2-usage-other[data-key=overage] .z2-usage-meter").is_hidden(), "a window with no percent draws no meter"
 
     mx = page.locator(".z2-usage-plan[data-key='p:anthropic-max']")
-    warn = page.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--z-warn')")
-    assert mx.get_attribute("data-tone") == "allowed_warning"
+    assert mx.get_attribute("data-tone") == "hot", "at or past 90% the meter runs hot"
     assert mx.locator(".z2-usage-state").text_content() == "warning"
-    assert mx.locator(".z2-usage-pct").evaluate(COLOR) == "rgb(115, 74, 12)", warn
-    assert mx.locator("> .z2-usage-meter .z2-usage-meter-fill").evaluate("e => getComputedStyle(e).fill") == "rgb(115, 74, 12)"
-    assert kic.locator(".z2-usage-pct").evaluate(COLOR) != "rgb(115, 74, 12)", "negative control: an allowed plan is not warn-toned"
-    page.evaluate("(() => { const d = structuredClone(USAGE_SPAIN); d.providers[0].plans[1].windows[0].status = 'allowed'; usage.update(d) })()")
-    assert mx.get_attribute("data-tone") == "allowed", "negative control: tone follows the provider's status, not the 95%"
-    assert mx.locator(".z2-usage-state").text_content() == ""
+    assert mx.locator(".z2-usage-pct").evaluate(COLOR) == "rgb(125, 46, 46)", "light hot is keel's oxblood"
+    assert mx.locator("> .z2-usage-meter .z2-usage-meter-fill").evaluate("e => getComputedStyle(e).fill") == "rgb(125, 46, 46)"
+    assert kic.locator(".z2-usage-pct").evaluate(COLOR) != "rgb(125, 46, 46)", "negative control: an allowed plan at 17% is not hot"
+    page.evaluate("(() => { const d = structuredClone(USAGE_SPAIN); d.providers[0].plans[1].windows[0].used_percent = 80; usage.update(d) })()")
+    assert mx.get_attribute("data-tone") == "allowed_warning", "negative control: a warning under 90% stays amber"
+    assert mx.locator(".z2-usage-pct").evaluate(COLOR) == "rgb(135, 88, 15)"
+    page.evaluate("(() => { const d = structuredClone(USAGE_SPAIN); d.providers[0].plans[1].windows[0].used_percent = 89; d.providers[0].plans[1].windows[0].status = 'allowed'; usage.update(d) })()")
+    assert mx.get_attribute("data-tone") == "allowed" and mx.locator(".z2-usage-state").text_content() == ""
     page.evaluate("usage.update(USAGE_SPAIN)")
+    sec = kic.locator(".z2-usage-other[data-key=seven_day] .z2-usage-meter")
+    assert sec.bounding_box()["height"] == kic.locator("> .z2-usage-meter").bounding_box()["height"], "secondary meters are as tall as the headline"
 
     via = page.locator(".z2-usage-access[data-key='a:anthropic-max:rou2:spain:anthropic-max']")
     direct = page.locator(".z2-usage-access[data-key='a:anthropic-max:direct:gluck:anthropic']")
-    assert via.locator(".z2-usage-gw").text_content() == "via rou2" and direct.locator(".z2-usage-gw").text_content() == "direct"
+    assert via.locator(".z2-usage-gw").text_content() == "rou2" and direct.locator(".z2-usage-gw").text_content() == "direct"
+    assert via.locator(".z2-usage-gw").bounding_box()["x"] < via.locator(".z2-usage-where").bounding_box()["x"], "the gateway leads the line"
     assert direct.locator("[data-col=req]").text_content() == "12,515req"
     assert direct.locator("[data-col=cache]").text_content() == "cache95%"
     assert via.locator(".z2-usage-seen").text_content() == "this path last saw 7 d 94% (28 min old)"
@@ -65,7 +71,7 @@ with sync_playwright() as p:
     gpt = page.locator(".z2-usage-plan[data-key='p:chatgpt-personal']")
     assert gpt.get_attribute("data-tone") == "stale" and gpt.get_attribute("data-age") == "3"
     assert gpt.locator(".z2-usage-state").text_content() == "3 d old, was limit reached"
-    assert gpt.locator(".z2-usage-pct").evaluate(COLOR) == "rgb(107, 74, 61)", "a stale 100% is muted, never the fail tone"
+    assert gpt.locator(".z2-usage-pct").evaluate(COLOR) == "rgb(90, 61, 50)", "a stale 100% is muted, never the fail tone"
     assert gpt.locator("> .z2-usage-meter").evaluate("e => getComputedStyle(e).opacity") == "0.45"
     page.evaluate("(() => { const d = structuredClone(USAGE_SPAIN); const w = d.providers[1].plans[0].windows[1]; w.stale = false; w.fetched_at = d.generated_at; usage.update(d) })()")
     assert gpt.get_attribute("data-tone") == "rejected" and gpt.get_attribute("data-age") is None, "negative control: the same window, fresh, takes its status tone"
@@ -118,16 +124,17 @@ with sync_playwright() as p:
     assert page.locator(".z2-usage-body > *").count() == 0
     page.evaluate("usage.update(USAGE_SPAIN)")
 
-    assert page.locator("body").evaluate("e => getComputedStyle(e).backgroundColor") == "rgb(231, 212, 196)"
-    assert page.locator(".z2-usage h2").evaluate(COLOR) == "rgb(125, 46, 46)", "light accent is keel's oxblood"
+    assert page.locator("body").evaluate("e => getComputedStyle(e).backgroundColor") == "rgb(246, 237, 226)", "light ground is keel's sheet"
+    assert page.locator(".z2-usage-pct").first.evaluate("e => getComputedStyle(e).fontFamily").lstrip('"').startswith('Inter'), "numbers are in the one UI face"
     page.emulate_media(color_scheme="dark")
     assert page.locator("body").evaluate("e => getComputedStyle(e).backgroundColor") == "rgb(26, 13, 15)"
-    assert page.locator(".z2-usage h2").evaluate(COLOR) == "rgb(217, 169, 78)", "dark accent is keel's bright gold"
-    assert mx.locator(".z2-usage-pct").evaluate(COLOR) == "rgb(226, 178, 92)"
+    assert mx.locator(".z2-usage-pct").evaluate(COLOR) == "rgb(232, 130, 106)", "dark hot is keel's fail-red ramp"
 
     page.set_viewport_size({"width": 390, "height": 844})
     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
     assert kic.locator(".z2-usage-name").bounding_box()["y"] < kic.locator("> .z2-usage-meter").bounding_box()["y"], "narrow: the name sits above its meter"
+    m, st = mx.locator("> .z2-usage-meter").bounding_box(), mx.locator(".z2-usage-state").bounding_box()
+    assert abs((m["y"] + m["height"] / 2) - (st["y"] + st["height"] / 2)) < 12, "narrow: the warning sits on the meter line"
     page.set_viewport_size({"width": 1280, "height": 900})
     page.locator("link[href$='z2-usage.css']").evaluate("e => e.remove()")
     assert len(set(page.evaluate(RIGHT_EDGES))) > 1, "negative control: the aligned number columns belong to z2-usage.css"

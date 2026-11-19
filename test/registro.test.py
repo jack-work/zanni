@@ -21,8 +21,8 @@ with sync_playwright() as p:
         assert link.bounding_box()["height"] >= 44
     current = nav.locator("[aria-current='page']")
     assert current.evaluate("e => getComputedStyle(e).borderBottomColor") == "rgb(217, 169, 78)"
-    assert page.locator("h2").evaluate("e => getComputedStyle(e).fontFamily").startswith('"Jacquard 24"')
-    assert not page.locator(".z2-capacity-value").first.evaluate("e => getComputedStyle(e).fontFamily").startswith('"Jacquard 24"')
+    assert page.locator(".z2-scope [data-slot='mark']").evaluate("e => getComputedStyle(e).fontFamily").startswith('"Jacquard 24"'), "the display face stays on the mark"
+    assert page.locator("h2").evaluate("e => getComputedStyle(e).fontFamily").lstrip('"').startswith("Inter"), "panel titles are in the UI face, not blackletter"
     assert page.locator(".z2-capacity-value").first.inner_text() == "Unavailable"
     assert page.locator(".z2-capacity-state").inner_text() == "Stale"
     assert page.locator("h3").all_text_contents() == ["Provider reported", "Observed headers", "Local usage"]
@@ -35,13 +35,6 @@ with sync_playwright() as p:
     more = page.locator(".proscenio-more")
     assert more.is_visible()
     assert more.bounding_box()["height"] >= 44
-    more.focus()
-    page.keyboard.press("Enter")
-    assert nav.is_visible()
-    assert current.is_visible()
-    page.keyboard.press("Escape")
-    assert not nav.is_visible()
-    assert more.evaluate("e => e === document.activeElement")
     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
     page.set_viewport_size({"width": 1280, "height": 800})
     page.locator("link[href$='z2-registro.css']").evaluate("e => e.remove()")

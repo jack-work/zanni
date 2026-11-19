@@ -5,6 +5,7 @@
   var WINDOW_NAMES = { five_hour: "5 h", seven_day: "7 d", seven_day_opus: "7 d Opus", seven_day_sonnet: "7 d Sonnet", overage: "overage", daily: "1 d" };
   var STATUS_WORDS = { allowed_warning: "warning", rejected: "limit reached" };
   var OBSERVED_STALE_MS = 5 * 60000;
+  var HOT_PERCENT = 90;
 
   function el(tag, cls, text) {
     var n = document.createElement(tag);
@@ -174,7 +175,7 @@
       c.dataset.col = key;
       var u = el("span", "z2-usage-unit", unit);
       var v = el("span", "z2-usage-val");
-      if (lead) { c.appendChild(u); c.appendChild(v); } else { c.appendChild(v); c.appendChild(u); }
+      if (lead) { c.dataset.lead = ""; c.appendChild(u); c.appendChild(v); } else { c.appendChild(v); c.appendChild(u); }
       n.appendChild(c);
       return { cell: c, val: v, unit: u };
     }
@@ -229,7 +230,9 @@
       var known = Number.isFinite(w.used_percent);
       var fetched = Date.parse(w.fetched_at);
       var age = Number.isFinite(fetched) ? now() - fetched : null;
-      return { known: known, stale: !!w.stale, age: age, status: w.status || "unknown", tone: w.stale ? "stale" : (w.status || "unknown") };
+      var status = w.status || "unknown";
+      var tone = w.stale ? "stale" : status === "rejected" ? "rejected" : known && w.used_percent >= HOT_PERCENT ? "hot" : status;
+      return { known: known, stale: !!w.stale, age: age, status: status, tone: tone };
     }
 
     function makePlan() {
@@ -237,27 +240,26 @@
       var s = n._s = {};
       var name = el("div", "z2-usage-name");
       s.label = el("b");
-      s.account = el("span", "z2-usage-account");
-      s.id = el("span", "z2-usage-id");
-      name.appendChild(s.label); name.appendChild(s.account); name.appendChild(s.id);
+      s.account = el("span", "z2-usage-chip");
+      name.appendChild(s.label); name.appendChild(s.account);
       s.win = el("span", "z2-usage-win");
       s.meter = meter();
       s.pct = el("b", "z2-usage-pct");
       s.pctVal = el("span", "z2-usage-val");
       s.pctUnit = el("span", "z2-usage-unit", "%");
       s.pct.appendChild(s.pctVal); s.pct.appendChild(s.pctUnit);
-      s.detail = el("div", "z2-usage-detail");
       s.state = el("span", "z2-usage-state");
+      s.detail = el("div", "z2-usage-detail");
       s.reset = el("span", "z2-usage-reset");
       s.others = el("span", "z2-usage-others");
-      s.detail.appendChild(s.state); s.detail.appendChild(s.reset); s.detail.appendChild(s.others);
-      n.appendChild(name); n.appendChild(s.win); n.appendChild(s.meter); n.appendChild(s.pct); n.appendChild(s.detail);
+      s.detail.appendChild(s.reset); s.detail.appendChild(s.others);
+      n.appendChild(name); n.appendChild(s.win); n.appendChild(s.meter); n.appendChild(s.pct); n.appendChild(s.state); n.appendChild(s.detail);
       return n;
     }
 
     function makeOther() {
       var n = el("span", "z2-usage-other");
-      n._s = { name: el("span", "z2-usage-unit"), meter: meter("z2-usage-meter-s"), val: el("span", "z2-usage-val") };
+      n._s = { name: el("span", "z2-usage-other-name"), meter: meter("z2-usage-meter-s"), val: el("span", "z2-usage-val") };
       n.appendChild(n._s.name); n.appendChild(n._s.meter); n.appendChild(n._s.val);
       return n;
     }
@@ -284,8 +286,9 @@
     function fillPlan(n, it) {
       var pv = it.pv, pl = it.pl, s = n._s;
       setText(s.label, planLabel(pv, pl));
-      setText(s.account, pl.account ? "\u00b7 " + pl.account : "");
-      setText(s.id, pl.plan);
+      setText(s.account, pl.account || "");
+      off(s.account, !pl.account);
+      s.account.title = pl.account ? "account " + pl.account : "";
       var wins = pl.windows || [];
       var metered = wins.filter(function (w) { return Number.isFinite(w.used_percent); });
       var lead = metered.filter(function (w) { return w.window === pl.binding; })[0] ||
@@ -348,8 +351,9 @@
     function fillAccess(n, it) {
       var a = it.a, s = n._s;
       setData(n, "gateway", a.gateway);
-      setText(s.gw, a.gateway === "rou2" ? "via rou2" : "direct");
+      setText(s.gw, a.gateway === "rou2" ? "rou2" : "direct");
       setText(s.where, a.gateway === "rou2" ? a.host + " \u00b7 " + a.via : "figaro@" + a.host);
+      s.gw.title = a.gateway === "rou2" ? "proxied by the rou2 gateway" : "sent straight to the provider by a figaro host";
       fillNumbers(s.nums, Object.assign({ tokens: tokensOf(a) }, a));
       var d = disagreement(it.pl, a);
       setText(s.seen, d);
@@ -404,7 +408,9 @@
       var items = [];
       (pv.plans || []).forEach(function (pl) {
         items.push({ key: "p:" + pl.plan, kind: "plan", pv: pv, pl: pl, ref: { kind: "plan", provider: pv.provider, plan: pl.plan } });
-        (pl.access || []).forEach(function (a) {
+        var paths = pl.access || [];
+        var used = paths.filter(function (a) { return a.requests > 0; });
+        (used.length ? used : paths.slice(0, 1)).forEach(function (a) {
           items.push({ key: "a:" + [pl.plan, a.gateway, a.host, a.via].join(":"), kind: "access", pv: pv, pl: pl, a: a,
             ref: { kind: "access", provider: pv.provider, plan: pl.plan, gateway: a.gateway, host: a.host, via: a.via } });
         });
