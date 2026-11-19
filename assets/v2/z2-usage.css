@@ -31,7 +31,7 @@
 .z2-usage-stamp[data-tone="warn"] { color: var(--z-warn); }
 .z2-usage-note { margin: 0; font-size: var(--z-fs-sm); color: var(--z-muted); }
 .z2-usage[data-state="error"] .z2-usage-note { color: var(--z-fail); }
-.z2-usage[data-state="error"] .z2-usage-body { filter: grayscale(1); opacity: 0.55; }
+.z2-usage[data-state="error"] :is(.z2-usage-body, .z2-usage-sum) { filter: grayscale(1); opacity: 0.55; }
 .z2-usage-body { display: grid; min-width: 0; }
 
 .z2-usage-skel { display: none; gap: var(--z-space-3); }

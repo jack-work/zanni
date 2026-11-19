@@ -232,6 +232,7 @@
     var sumMore = el("span", "z2-usage-sum-more");
     sum.appendChild(sumWho); sum.appendChild(sumFig); sum.appendChild(sumMore);
     head.insertBefore(sum, stamp);
+    off(sum, true);
     var note = el("p", "z2-usage-note");
     off(note, true);
     var body = el("div", "z2-usage-body");
@@ -678,6 +679,7 @@
         var req = sumAccess(allAccess(pv)).requests;
         if (!lead || req > lead.req || (req === lead.req && top.w.used_percent > lead.top.w.used_percent)) lead = { pv: pv, top: top, req: req };
       });
+      off(sum, !provs.length);
       band.dataset.open = bandOpen ? "true" : "false";
       sum.setAttribute("aria-expanded", String(bandOpen));
       off(sumWho, !lead);
