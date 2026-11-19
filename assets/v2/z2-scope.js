@@ -66,7 +66,7 @@
     if (!node || typeof getComputedStyle !== "function") {
       return {
         ink: "#1A0D0F", muted: "#694B3F", rule: "#CDB39F", line: "#A5887B",
-        ground: "#E7D4C4", ground2: "#DCC4B0", accent: "#634A16",
+        ground: "#E7D4C4", ground2: "#DCC4B0", accent: "#7D2E2E",
         ok: "#335949", warn: "#8E3B0B", fail: "#972C1D",
         mono: "ui-monospace, monospace",
         withAlpha: withAlpha,
@@ -89,7 +89,7 @@
       line: pick("--z-line", "#A5887B"),
       ground: pick("--z-ground", "#E7D4C4"),
       ground2: pick("--z-ground-2", "#DCC4B0"),
-      accent: pick("--z-accent", "#634A16"),
+      accent: pick("--z-accent", "#7D2E2E"),
       ok: pick("--z-ok", "#335949"),
       warn: pick("--z-warn", "#8E3B0B"),
       fail: pick("--z-fail", "#972C1D"),

@@ -60,18 +60,18 @@
 }
 [data-theme="registro"] {
   --z-ground: light-dark(#E7D4C4, #1A0D0F);
-  --z-ground-2: light-dark(#DCC4B0, #2B1A15);
-  --z-ink: light-dark(#1A0D0F, #E7D4C4);
-  --z-muted: light-dark(#694B3F, #A5887B);
-  --z-rule: light-dark(#CDB39F, #3B2620);
-  --z-line: light-dark(#A5887B, #7A584A);
-  --z-accent: light-dark(#634A16, #D9A94E);
-  --accent-ink: light-dark(#634A16, #D9A94E);
+  --z-ground-2: light-dark(#DCC4B0, #271215);
+  --z-ink: light-dark(#2B1A15, #F0DFC8);
+  --z-muted: light-dark(#6B4A3D, #A5887B);
+  --z-rule: light-dark(#C9AF9A, #3D2224);
+  --z-line: light-dark(#B0917D, #5C3A3A);
+  --z-accent: light-dark(#7D2E2E, #D9A94E);
+  --accent-ink: light-dark(#7D2E2E, #D9A94E);
   --z-on-accent: light-dark(#F6EDE2, #1A0D0F);
-  --z-focus: light-dark(#634A16, #D9A94E);
-  --z-ok: light-dark(#335949, #7FA391);
-  --z-warn: light-dark(#8E3B0B, #EE8A4A);
-  --z-fail: light-dark(#972C1D, #D66551);
+  --z-focus: light-dark(#7D2E2E, #D9A94E);
+  --z-ok: light-dark(#30561F, #9CC47A);
+  --z-warn: light-dark(#734A0C, #E2B25C);
+  --z-fail: light-dark(#952A22, #EC7A64);
   --z-fs-xs: 12px;
   --z-fs-sm: 13px;
   --z-fs-base: 15px;

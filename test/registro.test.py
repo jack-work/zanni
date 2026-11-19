@@ -29,7 +29,7 @@ with sync_playwright() as p:
     dark_ground = page.locator("body").evaluate("e => getComputedStyle(e).backgroundColor")
     page.emulate_media(color_scheme="light")
     assert page.locator("body").evaluate("e => getComputedStyle(e).backgroundColor") != dark_ground
-    assert current.evaluate("e => getComputedStyle(e).borderBottomColor") == "rgb(99, 74, 22)"
+    assert current.evaluate("e => getComputedStyle(e).borderBottomColor") == "rgb(125, 46, 46)"
     page.emulate_media(color_scheme="dark")
     page.set_viewport_size({"width": 390, "height": 844})
     more = page.locator(".proscenio-more")
