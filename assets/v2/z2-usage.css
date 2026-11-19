@@ -49,8 +49,6 @@
 .z2-usage-prov-h > .z2-usage-total { grid-column: 3; text-align: right; }
 .z2-usage-prov-h > .z2-usage-more { grid-column: 4; }
 .z2-usage-prov-h > .z2-usage-more, .z2-usage-quiet > .z2-usage-more { display: block; justify-self: end; color: var(--z-muted); line-height: 1; }
-.z2-usage-prov-h > .z2-usage-more::before, .z2-usage-quiet > .z2-usage-more::before { content: "\25B8"; }
-.z2-usage-prov[data-open="true"] > .z2-usage-prov-h > .z2-usage-more::before, .z2-usage-quiet[data-open="true"] > .z2-usage-more::before { content: "\25BE"; }
 .z2-usage-quiet > .z2-usage-more { grid-column: -2; grid-row: 1; }
 @media (hover: hover) { .z2-usage-prov-h:hover, .z2-usage-sum:hover .z2-usage-sum-more { background: var(--z-tint); } }
 .z2-usage-prov-h h3 { margin: 0; font-size: var(--z-fs-lg); font-weight: 600; line-height: var(--z-leading-tight); }
@@ -139,8 +137,6 @@
   .z2-usage-plan { --z2u-win: 3.5rem; --z2u-pct: 5.25rem; grid-template-columns: var(--z2u-win) minmax(0, 1fr) var(--z2u-pct) auto 1.25rem; column-gap: var(--z-space-3); min-height: 44px; }
   .z2-usage-name { grid-column: 1 / 5; }
   .z2-usage-more { display: block; grid-column: 5; grid-row: 1; justify-self: end; color: var(--z-muted); font-size: var(--z-fs-md); line-height: 1; }
-  .z2-usage-more::before { content: "\25B8"; }
-  [data-open="true"] > .z2-usage-more::before { content: "\25BE"; }
   .z2-usage-notes { display: contents; }
   .z2-usage-plan[data-metered="false"] > .z2-usage-notes > .z2-usage-state { grid-column: 1 / 5; }
   .z2-usage-notes > .z2-usage-reset, .z2-usage-drill-link { grid-column: 1 / -1; font-size: var(--z-fs-base); color: var(--z-muted); }
@@ -172,3 +168,14 @@
   .z2-usage-total { white-space: normal; text-align: right; }
 }
 
+
+.z2-usage[data-open="true"] :is(.z2-usage-body, .z2-usage-stamp),
+.z2-usage-prov[data-open="true"] > .z2-usage-rows,
+.z2-usage-plan[data-open="true"] :is(.z2-usage-reset, .z2-usage-other, .z2-usage-drill-link),
+.z2-usage-access[data-open="true"] { animation: z2-unfold var(--z-unfold) ease-out backwards; }
+.z2-usage-prov[data-open="true"] > .z2-usage-rows > :nth-child(2) { animation: z2-unfold var(--z-unfold) 25ms ease-out backwards; }
+.z2-usage-prov[data-open="true"] > .z2-usage-rows > :nth-child(3) { animation: z2-unfold var(--z-unfold) 50ms ease-out backwards; }
+.z2-usage-prov[data-open="true"] > .z2-usage-rows > :nth-child(n+4) { animation: z2-unfold var(--z-unfold) 75ms ease-out backwards; }
+@media (prefers-reduced-motion: reduce) {
+  .z2-usage * { animation: none !important; }
+}
