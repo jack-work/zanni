@@ -1,0 +1,136 @@
+import os
+import sys
+
+from playwright.sync_api import sync_playwright
+
+page_url = "file://" + os.path.abspath(sys.argv[1])
+
+RIGHT_EDGES = "[...document.querySelectorAll('.z2-usage-access [data-col=req], .z2-usage-quiet [data-col=req]')].map(e => Math.round(e.getBoundingClientRect().right))"
+BOXES = "[...document.querySelectorAll('.z2-usage-plan, .z2-usage-access, .z2-usage-quiet, .z2-usage-prov-h')].map(e => { const r = e.getBoundingClientRect(); return [r.x, r.y, r.width, r.height].map(Math.round).join(',') }).join(';')"
+COLOR = "e => getComputedStyle(e).color"
+
+with sync_playwright() as p:
+    browser = p.chromium.launch(args=["--no-sandbox"])
+    page = browser.new_page(viewport={"width": 1280, "height": 900}, color_scheme="light")
+
+    page.goto(page_url + "?hold")
+    band = page.locator(".z2-usage")
+    assert band.get_attribute("data-state") == "loading" and band.get_attribute("aria-busy") == "true"
+    assert page.locator(".z2-usage-skel").is_visible()
+    assert page.locator(".z2-usage-plan").count() == 0
+    page.evaluate("usage.fail(new Error('HTTP 503'))")
+    assert band.get_attribute("data-state") == "error"
+    assert page.locator(".z2-usage-note[role=alert]").text_content() == "Could not load plans: HTTP 503."
+    assert not page.locator(".z2-usage-skel").is_visible(), "an error is not a loading state"
+
+    page.evaluate("usage.update(USAGE_SPAIN)")
+    assert band.get_attribute("data-state") == "ready" and band.get_attribute("aria-busy") is None
+    assert not page.locator(".z2-usage-note").is_visible()
+    assert page.locator(".z2-usage-prov h3").all_text_contents() == ["Anthropic", "OpenAI", "Google"]
+    assert page.locator(".z2-usage-quiet b").all_text_contents() == ["Experiential Labs", "Modelflare", "Azure"]
+    assert page.locator(".z2-usage-quiet .z2-usage-meter").count() == 0, "a quiet provider carries no meter"
+
+    kic = page.locator(".z2-usage-plan[data-key='p:anthropic-kic']")
+    assert kic.locator(".z2-usage-name b").text_content() == "Claude Max"
+    assert kic.locator(".z2-usage-win").text_content() == "5 h", "the headline is the binding window, not the first or the weekly"
+    assert kic.locator(".z2-usage-pct").text_content() == "17%"
+    assert kic.get_attribute("data-tone") == "allowed"
+    assert kic.locator(".z2-usage-reset").text_content() == "resets 11:00 \u00b7 in 4 h"
+    assert kic.locator(".z2-usage-other").all_text_contents() == ["7 d3%", "7 d \u201coi\u201d0% \u00b7 27 min old", "overagerejected"]
+    assert kic.locator(".z2-usage-other[data-key=overage] .z2-usage-meter").is_hidden(), "a window with no percent draws no meter"
+
+    mx = page.locator(".z2-usage-plan[data-key='p:anthropic-max']")
+    warn = page.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--z-warn')")
+    assert mx.get_attribute("data-tone") == "allowed_warning"
+    assert mx.locator(".z2-usage-state").text_content() == "warning"
+    assert mx.locator(".z2-usage-pct").evaluate(COLOR) == "rgb(115, 74, 12)", warn
+    assert mx.locator("> .z2-usage-meter .z2-usage-meter-fill").evaluate("e => getComputedStyle(e).fill") == "rgb(115, 74, 12)"
+    assert kic.locator(".z2-usage-pct").evaluate(COLOR) != "rgb(115, 74, 12)", "negative control: an allowed plan is not warn-toned"
+    page.evaluate("(() => { const d = structuredClone(USAGE_SPAIN); d.providers[0].plans[1].windows[0].status = 'allowed'; usage.update(d) })()")
+    assert mx.get_attribute("data-tone") == "allowed", "negative control: tone follows the provider's status, not the 95%"
+    assert mx.locator(".z2-usage-state").text_content() == ""
+    page.evaluate("usage.update(USAGE_SPAIN)")
+
+    via = page.locator(".z2-usage-access[data-key='a:anthropic-max:rou2:spain:anthropic-max']")
+    direct = page.locator(".z2-usage-access[data-key='a:anthropic-max:direct:gluck:anthropic']")
+    assert via.locator(".z2-usage-gw").text_content() == "via rou2" and direct.locator(".z2-usage-gw").text_content() == "direct"
+    assert direct.locator("[data-col=req]").text_content() == "12,515req"
+    assert direct.locator("[data-col=cache]").text_content() == "cache95%"
+    assert via.locator(".z2-usage-seen").text_content() == "this path last saw 7 d 94% (28 min old)"
+    assert direct.locator(".z2-usage-seen").is_hidden(), "negative control: a path that agrees with the plan says nothing"
+    edges = page.evaluate(RIGHT_EDGES)
+    assert len(edges) == 10 and len(set(edges)) == 1, edges
+    assert direct.locator("[data-col=req] .z2-usage-val").evaluate("e => getComputedStyle(e).fontVariantNumeric").find("tabular-nums") >= 0
+
+    gpt = page.locator(".z2-usage-plan[data-key='p:chatgpt-personal']")
+    assert gpt.get_attribute("data-tone") == "stale" and gpt.get_attribute("data-age") == "3"
+    assert gpt.locator(".z2-usage-state").text_content() == "3 d old, was limit reached"
+    assert gpt.locator(".z2-usage-pct").evaluate(COLOR) == "rgb(107, 74, 61)", "a stale 100% is muted, never the fail tone"
+    assert gpt.locator("> .z2-usage-meter").evaluate("e => getComputedStyle(e).opacity") == "0.45"
+    page.evaluate("(() => { const d = structuredClone(USAGE_SPAIN); const w = d.providers[1].plans[0].windows[1]; w.stale = false; w.fetched_at = d.generated_at; usage.update(d) })()")
+    assert gpt.get_attribute("data-tone") == "rejected" and gpt.get_attribute("data-age") is None, "negative control: the same window, fresh, takes its status tone"
+    assert gpt.locator("> .z2-usage-meter").evaluate("e => getComputedStyle(e).opacity") == "1"
+    assert gpt.locator(".z2-usage-state").text_content() == "limit reached"
+    page.evaluate("usage.update(USAGE_SPAIN)")
+
+    unid = page.locator(".z2-usage-plan[data-key='p:unidentified']")
+    assert unid.get_attribute("data-metered") == "false" and unid.locator(".z2-usage-meter").first.is_hidden()
+    assert unid.locator(".z2-usage-state").text_content() == "no recent limit data \u00b7 last seen 9 h ago"
+
+    kic.evaluate("e => { e.dataset.witness = 'same-node' }")
+    before = page.evaluate(BOXES)
+    page.evaluate("""(() => { const d = structuredClone(USAGE_SPAIN); const pl = d.providers[0].plans[0];
+      pl.windows[0].used_percent = 18; pl.access[0].requests = 151; pl.access[0].last_seen = d.generated_at; d.generated_at = '2026-11-19T06:34:19Z'; usage.update(d) })()""")
+    assert kic.locator(".z2-usage-pct").text_content() == "18%"
+    assert kic.get_attribute("data-witness") == "same-node", "a refresh updates the row in place"
+    assert page.evaluate(BOXES) == before, "no layout shift on refresh"
+    page.evaluate("(() => { const d = structuredClone(USAGE_SPAIN); d.providers[0].plans.shift(); usage.update(d) })()")
+    assert page.evaluate(BOXES) != before, "negative control: the box witness sees a row leave"
+    page.evaluate("usage.update(USAGE_SPAIN)")
+
+    kic = page.locator(".z2-usage-plan[data-key='p:anthropic-kic']")
+    kic.focus()
+    assert kic.evaluate("e => getComputedStyle(e).outlineStyle") == "solid"
+    page.keyboard.press("x")
+    assert page.evaluate("USAGE_OPENED.length") == 0, "negative control: only Enter and Space open"
+    page.keyboard.press("Enter")
+    assert page.evaluate("USAGE_OPENED[0]") == {"kind": "plan", "provider": "anthropic", "plan": "anthropic-kic"}
+    page.keyboard.press("ArrowDown")
+    page.keyboard.press("Enter")
+    assert page.evaluate("USAGE_OPENED[1]") == {"kind": "access", "provider": "anthropic", "plan": "anthropic-kic", "gateway": "rou2", "host": "spain", "via": "anthropic-kic"}
+    page.locator(".z2-usage-prov").first.focus()
+    page.keyboard.press("Enter")
+    assert page.evaluate("USAGE_OPENED[2]") == {"kind": "provider", "provider": "anthropic"}
+    drill = page.evaluate("(() => { const d = usage.detail(USAGE_OPENED[0]); document.body.append(d.node); return [d.title, d.node.querySelectorAll('table').length, d.node.querySelector('td:nth-child(2)').textContent] })()")
+    assert drill == ["Anthropic \u00b7 Claude Max kic", 3, "five_hour"], drill
+
+    page.evaluate("usage.fail(new Error('HTTP 502'))")
+    assert band.get_attribute("data-state") == "error"
+    assert page.locator(".z2-usage-note").text_content() == "Could not load plans: HTTP 502. Showing the answer from 06:34:14, 6 s old."
+    assert page.locator(".z2-usage-plan").count() == 6, "the last answer stays on screen"
+    assert page.locator(".z2-usage-body").evaluate("e => getComputedStyle(e).opacity") == "0.55"
+    page.evaluate("usage.update(USAGE_SPAIN)")
+    assert page.locator(".z2-usage-body").evaluate("e => getComputedStyle(e).opacity") == "1", "negative control: a good answer clears the error"
+
+    page.evaluate("usage.update({ generated_at: USAGE_SPAIN.generated_at, providers: [] })")
+    assert band.get_attribute("data-state") == "empty"
+    assert page.locator(".z2-usage-note").text_content() == "No plan or usage data in this range."
+    assert page.locator(".z2-usage-body > *").count() == 0
+    page.evaluate("usage.update(USAGE_SPAIN)")
+
+    assert page.locator("body").evaluate("e => getComputedStyle(e).backgroundColor") == "rgb(231, 212, 196)"
+    assert page.locator(".z2-usage h2").evaluate(COLOR) == "rgb(125, 46, 46)", "light accent is keel's oxblood"
+    page.emulate_media(color_scheme="dark")
+    assert page.locator("body").evaluate("e => getComputedStyle(e).backgroundColor") == "rgb(26, 13, 15)"
+    assert page.locator(".z2-usage h2").evaluate(COLOR) == "rgb(217, 169, 78)", "dark accent is keel's bright gold"
+    assert mx.locator(".z2-usage-pct").evaluate(COLOR) == "rgb(226, 178, 92)"
+
+    page.set_viewport_size({"width": 390, "height": 844})
+    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+    assert kic.locator(".z2-usage-name").bounding_box()["y"] < kic.locator("> .z2-usage-meter").bounding_box()["y"], "narrow: the name sits above its meter"
+    page.set_viewport_size({"width": 1280, "height": 900})
+    page.locator("link[href$='z2-usage.css']").evaluate("e => e.remove()")
+    assert len(set(page.evaluate(RIGHT_EDGES))) > 1, "negative control: the aligned number columns belong to z2-usage.css"
+    browser.close()
+
+print("usage: ok")

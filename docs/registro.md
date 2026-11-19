@@ -61,3 +61,25 @@ Link `v2/z2-scope.js` after `v2/z2.js` for thin-client Scope views:
   messages, expandable `<dl>` attributes, delta `prepend` and cursor `append`.
 - `z2.relTime(isoOrMs, nowMs)` and `z2.copyChip(command)`: relative horizon
   text and clipboard command chip.
+
+## Usage band (z2-usage.css, z2-usage.js)
+
+`z2.usageBand(host, opts)` draws provider > plan > access path from figscope's
+`GET /api/plans` and returns `update(data)`, `fail(err)`, `detail(ref)` and
+`repaint()`. A provider with a plan window or a subscription is a block; the
+rest are one quiet line each. A plan row leads with its binding window; the
+other windows sit beside it with small meters. Tone is the provider's status
+(`allowed`, `allowed_warning`, `rejected`), never a threshold of ours. A stale
+window is muted, shows its age and fades in three steps (under an hour, under
+a day, older). Access lines share fixed number columns, so they align and a
+refresh does not move them. `update` reuses rows by key. Rows and blocks are
+focusable; Enter or Space calls `opts.onOpen(ref)`, arrows move between rows,
+and `detail(ref)` returns the drill-down node for a drawer.
+
+`opts`: `title`, `planLabel(provider, plan)`, `onOpen(ref, node)`, `now()`,
+`timeZone`, `emptyText`.
+
+Example: examples/usage.html (the 11-19 spain answer plus synthetic stale,
+unidentified and quiet rows). Browser test: test/usage.test.py, with negative
+controls for tone, staleness, alignment, in-place refresh and the keyboard.
+checks.usage runs it in Chromium.
