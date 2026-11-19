@@ -195,3 +195,32 @@ body.placet-page { margin: 0; background: var(--z-ground); }
 .placet-approve:disabled, .placet-deny:disabled, .placet-button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 @media (prefers-reduced-motion: reduce) { .placet * { scroll-behavior: auto !important; } }
+
+.placet { --placet-caret: polygon(0 0,14.286% 0,14.286% 14.286%,42.857% 14.286%,42.857% 28.571%,71.429% 28.571%,71.429% 42.857%,100% 42.857%,100% 57.143%,71.429% 57.143%,71.429% 71.429%,42.857% 71.429%,42.857% 85.714%,14.286% 85.714%,14.286% 100%,0 100%); --placet-unfold: 150ms; }
+@keyframes placet-unfold {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: none; }
+}
+.placet summary { list-style: none; }
+.placet summary::-webkit-details-marker { display: none; }
+.placet summary::before {
+  content: "";
+  display: inline-block;
+  flex: none;
+  width: 0.75em;
+  height: 0.75em;
+  margin-right: 0.6em;
+  background: currentColor;
+  clip-path: var(--placet-caret);
+  transition: transform var(--placet-unfold) steps(4, end);
+}
+.placet details[open] > summary::before { transform: rotate(90deg); }
+.placet details[open] > :not(summary) { animation: placet-unfold var(--placet-unfold) ease-out backwards; }
+.placet-row { animation: placet-unfold var(--placet-unfold) ease-out backwards; }
+.placet-row:nth-child(2) { animation-delay: 25ms; }
+.placet-row:nth-child(3) { animation-delay: 50ms; }
+.placet-row:nth-child(n+4) { animation-delay: 75ms; }
+@media (prefers-reduced-motion: reduce) {
+  .placet summary::before { transition: none; }
+  .placet details > *, .placet-row { animation: none !important; }
+}
