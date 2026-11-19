@@ -227,8 +227,8 @@
 
 .z2-toolbar-meta {
   margin-left: auto;
-  font-family: var(--z-mono);
-  font-size: var(--z-fs-xs);
+  font-family: var(--z-font);
+  font-size: var(--z-fs-sm);
   color: var(--z-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -392,8 +392,8 @@
 }
 
 .z2-uplot .u-legend {
-  font-family: var(--z-mono);
-  font-size: var(--z-fs-xs);
+  font-family: var(--z-font);
+  font-size: var(--z-fs-sm);
   color: var(--z-muted);
   display: flex;
   flex-wrap: wrap;
