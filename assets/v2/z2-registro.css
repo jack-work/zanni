@@ -1,7 +1,7 @@
 :where(:root[data-theme="registro"]) { color-scheme: light dark; }
 
 [data-theme="registro"] {
-  --z-font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --z-font: "Alegreya", Georgia, "Times New Roman", serif;
   --z-display: "Jacquard 24", Georgia, serif;
   --z-utility: var(--z-font);
   --z-code: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -65,10 +65,11 @@
 
 [data-theme="registro"] .z2-panel { border-color: var(--z-rule); }
 [data-theme="registro"] .z2-panel h2 {
-  font-family: var(--z-font);
-  font-weight: 600;
-  letter-spacing: -0.005em;
-  color: var(--z-ink);
+  font-family: var(--z-display);
+  font-size: var(--z-fs-2xl);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: var(--accent-ink);
 }
 [data-theme="registro"] .z2-kpis { gap: 1px; overflow: hidden; border-block: 1px solid var(--z-line); }
 [data-theme="registro"] .z2-kpi {
