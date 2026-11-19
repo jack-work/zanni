@@ -36,7 +36,7 @@ with sync_playwright() as p:
     assert more.is_visible()
     assert more.bounding_box()["height"] >= 44
     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
-    page.add_script_tag(path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "v2", "z2-scope.js"))
+    page.add_script_tag(path=os.path.join(os.path.dirname(os.path.abspath(sys.argv[1])), "..", "assets", "v2", "z2-scope.js"))
     page.evaluate("""(() => { const t = document.createElement('div'); t.className = 'z2-toolbar'; t.style.height = '120px'; document.body.prepend(t);
       window.__undo = z2.stickyInset(t); })()""")
     assert page.evaluate("getComputedStyle(document.querySelector('.z2-toolbar')).backgroundColor").startswith("rgb("), "the sticky toolbar is opaque"
