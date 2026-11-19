@@ -184,7 +184,7 @@ body.placet-page { margin: 0; background: var(--z-ground); }
   background: var(--z-ground);
   border-top: 1px solid var(--z-line);
 }
-.placet-foot > * { width: 100%; max-width: var(--placet-width); margin-left: auto; margin-right: auto; }
+.placet-foot > * { width: 100%; max-width: calc(var(--placet-width) - 2 * var(--z-space-5, 16px)); margin-left: auto; margin-right: auto; }
 .placet-foot > .placet-linkbutton { display: flex; }
 .placet-result { min-height: 1.4em; padding-bottom: var(--z-space-2, 4px); font-size: var(--z-fs-sm, 13px); color: var(--z-muted); overflow-wrap: anywhere; }
 .placet-result.placet-ok { color: var(--z-ok); font-weight: 600; }
