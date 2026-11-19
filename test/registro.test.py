@@ -36,6 +36,15 @@ with sync_playwright() as p:
     assert more.is_visible()
     assert more.bounding_box()["height"] >= 44
     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+    page.add_script_tag(path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "v2", "z2-scope.js"))
+    page.evaluate("""(() => { const t = document.createElement('div'); t.className = 'z2-toolbar'; t.style.height = '120px'; document.body.prepend(t);
+      window.__undo = z2.stickyInset(t); })()""")
+    assert page.evaluate("getComputedStyle(document.querySelector('.z2-toolbar')).backgroundColor").startswith("rgb("), "the sticky toolbar is opaque"
+    bottom = page.evaluate("(() => { const t = document.querySelector('.z2-toolbar'); return parseFloat(getComputedStyle(t).top) + t.getBoundingClientRect().height })()")
+    pad = page.evaluate("parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)")
+    assert bottom <= pad <= bottom + 16, ("anchors and focus land below the sticky bars", bottom, pad)
+    page.evaluate("window.__undo(); document.documentElement.style.removeProperty('--z-sticky-h')")
+    assert page.evaluate("parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)") < bottom, "negative control: no bars, no inset"
     page.set_viewport_size({"width": 1280, "height": 800})
     page.locator("link[href$='z2-registro.css']").evaluate("e => e.remove()")
     assert current.evaluate("e => getComputedStyle(e).borderBottomStyle") == "none", "negative control: active underline belongs to registro"

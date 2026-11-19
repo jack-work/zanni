@@ -107,10 +107,11 @@
   align-items: center;
   gap: var(--z-space-3) var(--z-space-4);
   padding: var(--z-space-3) clamp(var(--z-space-3), 2.4vw, var(--z-space-6));
-  background: color-mix(in srgb, var(--z-ground) 93%, transparent);
+  background: var(--z-ground);
   border-bottom: 1px solid var(--z-rule);
-  backdrop-filter: blur(6px);
 }
+
+:root[data-theme="registro"] { scroll-padding-top: calc(var(--z-sticky-h, 0px) + var(--z-space-3)); }
 
 .z2-seg {
   flex-wrap: wrap;

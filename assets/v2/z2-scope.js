@@ -1217,7 +1217,29 @@
     };
   }
 
+  function stickyInset() {
+    var bars = Array.prototype.slice.call(arguments).filter(Boolean);
+    var docEl = document.documentElement;
+    function measure() {
+      var h = bars.reduce(function (m, el) {
+        var top = parseFloat(getComputedStyle(el).top) || 0;
+        return Math.max(m, top + el.getBoundingClientRect().height);
+      }, 0);
+      var v = Math.ceil(h) + "px";
+      if (docEl.style.getPropertyValue("--z-sticky-h") !== v) docEl.style.setProperty("--z-sticky-h", v);
+    }
+    measure();
+    if (typeof ResizeObserver === "function") {
+      var ro = new ResizeObserver(measure);
+      bars.forEach(function (el) { ro.observe(el); });
+      return function () { ro.disconnect(); };
+    }
+    window.addEventListener("resize", measure);
+    return function () { window.removeEventListener("resize", measure); };
+  }
+
   root.z2 = Object.assign(root.z2 || {}, {
+    stickyInset: stickyInset,
     tokens: tokens,
     onSchemeChange: onSchemeChange,
     relTime: relTime,
