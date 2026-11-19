@@ -112,6 +112,17 @@
     return out;
   }
 
+  function requestsByPlan(recent) {
+    var out = {};
+    ((recent && recent.providers) || []).forEach(function (pv) {
+      var m = out[pv.provider] = {};
+      (pv.plans || []).forEach(function (pl) {
+        m[pl.plan] = (pl.access || []).reduce(function (n, a) { return n + (a.requests || 0); }, 0);
+      });
+    });
+    return out;
+  }
+
   function tokensOf(a) {
     return (a.input_tokens || 0) + (a.output_tokens || 0) + (a.cache_read_tokens || 0) + (a.cache_write_tokens || 0);
   }
@@ -183,6 +194,8 @@
     var planLabel = opts.planLabel || function (pv, pl) { return pl.label || pl.plan; };
     var data = null;
     var primary = {};
+    var hourly = {};
+    var leadRule = opts.lead || "current";
     var openPlans = {};
     var bandOpen = !!opts.open;
     var openProvs = {};
@@ -333,13 +346,14 @@
 
     function makeFig() {
       var n = el("span", "z2-usage-fig");
-      var s = n._s = { val: el("b", "z2-usage-left"), unit: el("span", "z2-usage-unit", "% left"), stale: el("span", "z2-usage-stale"), meter: meter(), reset: el("span", "z2-usage-reset") };
-      s.stale.setAttribute("aria-label", "stale");
-      [s.val, s.unit, s.stale, s.meter, s.reset].forEach(function (c) { n.appendChild(c); });
+      var s = n._s = { val: el("b", "z2-usage-left"), unit: el("span", "z2-usage-unit", "% left"), marks: el("span", "z2-usage-marks"), stale: el("span", "z2-usage-stale"),
+        low: el("span", "z2-usage-low"), meter: meter(), reset: el("span", "z2-usage-reset") };
+      s.marks.appendChild(s.stale); s.marks.appendChild(s.low);
+      [s.val, s.unit, s.marks, s.meter, s.reset].forEach(function (c) { n.appendChild(c); });
       return n;
     }
 
-    function fillFig(n, pv, lead, seat) {
+    function fillFig(n, pv, lead, seat, low) {
       var s = n._s;
       off(n, !lead);
       if (!lead) return;
@@ -350,25 +364,48 @@
       setMeter(s.meter, left, name + " " + windowName(lead.w.window) + " left", left + "% left" + (st.stale ? ", stale" : ""));
       setData(n, "tone", st.tone);
       off(s.stale, !st.stale);
+      off(s.low, !low.length);
+      tipText(s.low, "Running low", low.length ? low.join("; ") + "." : "");
       var reset = Date.parse(lead.w.reset_at);
       setText(s.reset, st.stale ? "" : resetText(lead.w));
       tipText(n, name, [windowName(lead.w.window) + " window: " + Math.round(lead.w.used_percent) + "% used, " + left + "% left.",
         Number.isFinite(reset) ? "Resets " + localTime(reset) + ", in " + span(reset - now()) + "." : "",
         st.stale ? staleWords(st) : (STATUS_WORDS[st.status] ? "The provider says: " + STATUS_WORDS[st.status] + "." : ""),
-        lead.first ? "This is the plan the fleet used most in the last hour." : "This is the provider's busiest plan in the range."].filter(Boolean).join(" "));
+        LEAD_WHY[lead.why]].filter(Boolean).join(" "));
+    }
+
+    var LEAD_WHY = { hour: "Shown because the fleet sent it the most requests in the last hour.", range: "Shown because it carried the most requests in the range.",
+      least: "Shown because it has the least left." };
+
+    function bindingOf(pl) {
+      var metered = (pl.windows || []).filter(function (w) { return Number.isFinite(w.used_percent); });
+      return metered.filter(function (x) { return x.window === pl.binding; })[0] || metered.slice().sort(function (a, b) { return b.used_percent - a.used_percent; })[0] || null;
     }
 
     function leadOf(pv) {
-      var best = null, prim = primary[pv.provider];
+      var best = null, hour = hourly[pv.provider] || {};
       (pv.plans || []).forEach(function (pl) {
-        var metered = (pl.windows || []).filter(function (w) { return Number.isFinite(w.used_percent); });
-        if (!metered.length) return;
-        var w = metered.filter(function (x) { return x.window === pl.binding; })[0] || metered.slice().sort(function (a, b) { return b.used_percent - a.used_percent; })[0];
-        var first = !!prim && prim.plan === pl.plan;
-        var score = (first ? 1e12 : 0) + sumAccess(pl.access || []).requests;
-        if (!best || score > best.score || (score === best.score && w.used_percent > best.w.used_percent)) best = { pl: pl, w: w, score: score, first: first };
+        var w = bindingOf(pl);
+        if (!w) return;
+        var inHour = leadRule === "current" ? hour[pl.plan] || 0 : 0;
+        var inRange = sumAccess(pl.access || []).requests;
+        var fresh = w.stale ? 0 : 1;
+        var key = leadRule === "least" ? [fresh, w.used_percent, inRange] : [inHour, inRange, w.used_percent];
+        var c = best ? key[0] - best.key[0] || key[1] - best.key[1] || key[2] - best.key[2] : 1;
+        if (c > 0) best = { pl: pl, w: w, key: key, why: leadRule === "least" ? "least" : inHour > 0 ? "hour" : "range" };
       });
       return best;
+    }
+
+    function lowOf(pv, except) {
+      var seat = seats(pv), out = [];
+      (pv.plans || []).forEach(function (pl) {
+        var w = bindingOf(pl);
+        if (!w || pl === except) return;
+        var tone = windowState(w).tone;
+        if (tone === "hot" || tone === "rejected" || tone === "allowed_warning") out.push(planFullName(pv, pl, seat[pl.plan], " ") + " has " + leftOf(w) + "% left on its " + windowName(w.window) + " window");
+      });
+      return out;
     }
 
     function stateText(st) {
@@ -566,10 +603,11 @@
         return n;
       }
       n = el("section", "z2-usage-prov");
-      n.tabIndex = 0;
       n._s = { title: el("h3"), fig: makeFig(), total: el("span", "z2-usage-total"), caret: el("span", "z2-usage-more"), rows: el("div", "z2-usage-rows") };
       n._s.caret.setAttribute("aria-hidden", "true");
-      var h = el("header", "z2-usage-prov-h");
+      var h = n._s.head = el("header", "z2-usage-prov-h");
+      h.tabIndex = 0;
+      h.setAttribute("role", "button");
       h.appendChild(n._s.title); h.appendChild(n._s.fig); h.appendChild(n._s.total); h.appendChild(n._s.caret);
       n.appendChild(h); n.appendChild(n._s.rows);
       return n;
@@ -578,6 +616,7 @@
     function fillProvider(n, it) {
       var pv = it.pv, s = n._s;
       n._ref = { kind: "provider", provider: pv.provider };
+      if (s.head) s.head._ref = n._ref;
       var all = sumAccess(allAccess(pv));
       if (it.kind === "quiet") {
         setData(n, "open", openPlans[pv.provider + ":"] ? "true" : "false");
@@ -596,12 +635,12 @@
       tipText(s.total, "In the range", fmtInt(all.requests) + " requests" + (all.list_cost_usd != null ? ", " + fmtUSD(all.list_cost_usd) + " at list price" : "") + " across " + (pv.plans || []).length + " plans.");
       var isOpen = !!openProvs[pv.provider];
       setData(n, "open", isOpen ? "true" : "false");
-      n.setAttribute("aria-expanded", String(isOpen));
+      s.head.setAttribute("aria-expanded", String(isOpen));
       var items = [];
       var seat = seats(pv);
       var top = leadOf(pv);
-      fillFig(s.fig, pv, top, top ? seat[top.pl.plan] : null);
-      n.setAttribute("aria-label", (pv.label || pv.provider) + ", " + (pv.plans || []).length + " plans" + (top ? ", " + s.fig.textContent.replace(/\s+/g, " ").trim() : ""));
+      fillFig(s.fig, pv, top, top ? seat[top.pl.plan] : null, lowOf(pv, top && top.pl));
+      s.head.setAttribute("aria-label", (pv.label || pv.provider) + ", " + (pv.plans || []).length + " plans" + (top ? ", " + s.fig.textContent.replace(/\s+/g, " ").trim() : ""));
       (pv.plans || []).forEach(function (pl) {
         items.push({ key: "p:" + pl.plan, kind: "plan", pv: pv, pl: pl, seat: seat[pl.plan] || null, ref: { kind: "plan", provider: pv.provider, plan: pl.plan } });
         var paths = pl.access || [];
@@ -646,9 +685,9 @@
         var seat = seats(lead.pv)[lead.top.pl.plan];
         setText(sumProv, lead.pv.label || lead.pv.provider);
         setText(sumPlan, planFullName(lead.pv, lead.top.pl, seat, " \u00b7 "));
-        fillFig(sumFig, lead.pv, lead.top, seat);
+        fillFig(sumFig, lead.pv, lead.top, seat, provs.reduce(function (acc, pv) { return acc.concat(lowOf(pv, lead.top.pl)); }, []));
       } else {
-        fillFig(sumFig, null, null, null);
+        fillFig(sumFig, null, null, null, []);
       }
       var others = provs.length - (lead ? 1 : 0);
       setText(sumMore, bandOpen ? "fold" : (lead ? "and " + others + " more\u2026" : provs.length + " providers\u2026"));
@@ -658,7 +697,7 @@
 
     function update(next, recent) {
       data = next;
-      if (recent !== undefined) primary = primaryOf(recent);
+      if (recent !== undefined) { primary = primaryOf(recent); hourly = requestsByPlan(recent); }
       band.removeAttribute("aria-busy");
       paint();
       var empty = !((next && next.providers) || []).length;
@@ -762,7 +801,7 @@
 
     function act(t, viaDrill) {
       if (t === sum) { bandOpen = !bandOpen; if (data) paint(); return; }
-      if (t && t.classList.contains("z2-usage-prov")) {
+      if (t && t.classList.contains("z2-usage-prov-h")) {
         var k = t._ref.provider;
         if (openProvs[k]) delete openProvs[k]; else openProvs[k] = true;
         if (data) paint();
@@ -776,9 +815,9 @@
     band.addEventListener("pointerdown", function (e) { lastPointer = e.pointerType || "mouse"; }, true);
     band.addEventListener("click", function (e) {
       var drill = e.target.closest(".z2-usage-drill-link");
-      var t = e.target.closest(".z2-usage-plan, .z2-usage-access, .z2-usage-quiet, .z2-usage-sum");
-      if (!t && e.target.closest(".z2-usage-prov-h")) t = e.target.closest(".z2-usage-prov");
-      if (!drill && lastPointer === "touch" && e.target.closest("[data-tip-text]") && e.target.closest("[data-tip-text]") !== t && !e.target.closest(".z2-usage-sum-more")) return;
+      var t = e.target.closest(".z2-usage-plan, .z2-usage-access, .z2-usage-quiet, .z2-usage-sum, .z2-usage-prov-h");
+      var tipped = e.target.closest("[data-tip-text]");
+      if (!drill && lastPointer === "touch" && tipped && tipped !== t && tipped.matches(".z2-usage-stale, .z2-usage-low, .z2-usage-chip, .z2-usage-primary, .z2-usage-num, .z2-usage-gw, .z2-usage-reset, .z2-usage-state")) return;
       act(t, !!drill);
     });
     band.addEventListener("keydown", function (e) {
@@ -786,7 +825,7 @@
       if (!t._ref && t !== sum && !t.classList.contains("z2-usage-drill-link")) return;
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
-        act(t.closest(".z2-usage-plan, .z2-usage-access, .z2-usage-quiet, .z2-usage-prov, .z2-usage-sum") || t, t.classList.contains("z2-usage-drill-link"));
+        act(t.closest(".z2-usage-plan, .z2-usage-access, .z2-usage-quiet, .z2-usage-prov-h, .z2-usage-sum") || t, t.classList.contains("z2-usage-drill-link"));
       } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         var list = focusables();
         var next = list[list.indexOf(t) + (e.key === "ArrowDown" ? 1 : -1)];
@@ -794,7 +833,14 @@
       }
     });
 
-    return { root: band, update: update, fail: fail, detail: detail, repaint: function () { if (data) paint(); }, data: function () { return data; } };
+    function fold(open, providers) {
+      bandOpen = !!open;
+      openProvs = {};
+      (providers || []).forEach(function (k) { openProvs[k] = true; });
+      if (data) paint();
+    }
+
+    return { root: band, update: update, fail: fail, detail: detail, fold: fold, repaint: function () { if (data) paint(); }, data: function () { return data; } };
   }
 
   root.z2 = Object.assign(root.z2 || {}, { usageBand: usageBand, usageWindowName: windowName, usageSeats: seatsOf, usagePrimary: primaryOf });
