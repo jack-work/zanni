@@ -34,20 +34,20 @@ with sync_playwright() as p:
     assert band.bounding_box()["height"] < 60, band.bounding_box()
     assert page.locator(".z2-usage-head h2").text_content() == "Usage"
     assert page.locator(".z2-usage-head h2").evaluate("e => getComputedStyle(e).fontFamily").startswith('"Jacquard 24"'), "titles are in the pixel gothic"
-    assert summ.locator(".z2-usage-sum-who").text_content() == "AnthropicClaude Team 5x \u00b7 kic \u00b7 seat 2", "the headline is the plan the fleet sent the most to in the last hour"
-    assert summ.locator(".z2-usage-left").text_content() == "59" and summ.locator(".z2-usage-fig > .z2-usage-unit").text_content() == "% left"
+    assert summ.locator(".z2-usage-sum-who").text_content() == "AnthropicClaude Max 20x \u00b7 personal", "the headline is the most used provider's most used plan in the range"
+    assert summ.locator(".z2-usage-left").text_content() == "5" and summ.locator(".z2-usage-fig > .z2-usage-unit").text_content() == "% left"
+    assert summ.locator(".z2-usage-fig").get_attribute("data-tone") == "hot"
     assert summ.locator(".z2-usage-left").evaluate("e => getComputedStyle(e).fontFamily").startswith('"Jacquard 24"'), "the one headline number is gothic"
-    assert summ.locator(".z2-usage-reset").text_content() == "resets in 3 d"
+    assert summ.locator(".z2-usage-reset").text_content() == "resets in 5 d"
     assert summ.locator(".z2-usage-sum-more").text_content() == "and 5 more\u2026"
-    assert summ.locator(".z2-usage-fig").get_attribute("data-tip-text") == "7 d window: 41% used, 59% left. Resets Sun 22 17:00, in 3 d. Shown because the fleet sent it the most requests in the last hour."
+    assert summ.locator(".z2-usage-fig").get_attribute("data-tip-text") == "7 d window: 95% used, 5% left. Resets Tue 24 02:00, in 5 d. The provider says: warning. Shown because it carried the most requests in the range."
+    assert summ.locator(".z2-usage-low").is_hidden(), "nothing but the headline plan is low: no extra mark"
+    page.evaluate("(() => { const d = structuredClone(USAGE_SPAIN); d.providers[0].plans[1].windows[1].used_percent = 93; usage.update(d) })()")
     assert summ.locator(".z2-usage-low").is_visible(), "another plan is nearly out: the headline says so with a mark"
-    assert summ.locator(".z2-usage-low").get_attribute("data-tip-text") == "Claude Max 20x personal has 5% left on its 7 d window."
-    page.evaluate("(() => { const d = structuredClone(USAGE_SPAIN); d.providers[0].plans[2].windows[0].used_percent = 40; d.providers[0].plans[2].windows[0].status = 'allowed'; usage.update(d) })()")
-    assert summ.locator(".z2-usage-low").is_hidden(), "negative control: nothing low, no mark"
-    page.evaluate("usage.update(USAGE_SPAIN, null)")
-    assert summ.locator(".z2-usage-sum-who").text_content() == "AnthropicClaude Max 20x \u00b7 personal", "with no last-hour answer the headline is the busiest plan in the range"
-    assert summ.locator(".z2-usage-left").text_content() == "5" and summ.locator(".z2-usage-fig").get_attribute("data-tone") == "hot"
-    assert summ.locator(".z2-usage-fig").get_attribute("data-tip-text").endswith("The provider says: warning. Shown because it carried the most requests in the range.")
+    assert summ.locator(".z2-usage-low").get_attribute("data-tip-text") == "Claude Team 5x kic seat 2 has 7% left on its 7 d window."
+    page.evaluate("(() => { const d = structuredClone(USAGE_SPAIN); d.providers[0].plans[2].access[1].requests = 1; usage.update(d) })()")
+    assert summ.locator(".z2-usage-sum-who").text_content() == "AnthropicClaude Team 5x \u00b7 kic \u00b7 seat 1", "negative control: the headline follows the requests, not the alarm"
+    assert summ.locator(".z2-usage-left").text_content() == "83"
     page.evaluate("usage.update(USAGE_SPAIN, USAGE_RECENT)")
 
     summ.click()
@@ -55,7 +55,7 @@ with sync_playwright() as p:
     heads = page.locator(".z2-usage-prov-h")
     assert heads.count() == 3 and page.locator(".z2-usage-plan").first.is_hidden(), "unfolded: one row per provider, each folded"
     assert [h.get_attribute("aria-expanded") for h in heads.all()] == ["false", "false", "false"]
-    assert page.locator(".z2-usage-prov .z2-usage-left").all_text_contents() == ["59", "0", "66"]
+    assert page.locator(".z2-usage-prov .z2-usage-left").all_text_contents() == ["5", "0", "66"]
     rows = "[...document.querySelectorAll('.z2-usage-prov, .z2-usage-quiet')].map(e => Math.round(e.getBoundingClientRect().height))"
     assert max(page.evaluate(rows)) < 60, page.evaluate(rows)
     lefts = "[...document.querySelectorAll('.z2-usage-prov-h .z2-usage-left')].map(e => Math.round(e.getBoundingClientRect().right))"
@@ -283,6 +283,43 @@ with sync_playwright() as p:
     page.set_viewport_size({"width": 1280, "height": 900})
     page.locator("link[href$='z2-usage.css']").evaluate("e => e.remove()")
     assert len(set(page.evaluate(RIGHT_EDGES))) > 1, "negative control: the aligned number columns belong to z2-usage.css"
+    for rule, who, left, why in [("current", "AnthropicClaude Team 5x \u00b7 kic \u00b7 seat 2", "59", "Shown because the fleet sent it the most requests in the last hour."),
+                                 ("least", "AnthropicClaude Max 20x \u00b7 personal", "5", "Shown because it has the least left.")]:
+        alt = browser.new_page(viewport={"width": 1280, "height": 900})
+        alt.goto(page_url + "?lead=" + rule)
+        assert alt.locator(".z2-usage-sum-who").text_content() == who, (rule, alt.locator(".z2-usage-sum-who").text_content())
+        assert alt.locator(".z2-usage-sum .z2-usage-left").text_content() == left
+        assert alt.locator(".z2-usage-sum .z2-usage-fig").get_attribute("data-tip-text").endswith(why)
+        if rule == "current":
+            assert alt.locator(".z2-usage-sum .z2-usage-low").get_attribute("data-tip-text") == "Claude Max 20x personal has 5% left on its 7 d window."
+            alt.evaluate("usage.update(USAGE_SPAIN, null)")
+            assert alt.locator(".z2-usage-sum .z2-usage-left").text_content() == "5", "with no last-hour answer the current rule falls back to the range"
+        else:
+            alt.evaluate("usage.fold(true)")
+            assert alt.locator(".z2-usage-prov[data-key=openai_subscription] .z2-usage-left").text_content() == "0", "a provider with only stale readings still shows one"
+            alt.evaluate("(() => { const d = structuredClone(USAGE_SPAIN); d.providers[0].plans[0].windows[2].used_percent = 99; usage.update(d) })()")
+            assert alt.locator(".z2-usage-sum .z2-usage-left").text_content() == "5", "a stale window never outranks a fresh one"
+        alt.close()
+
+    phone = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
+    tp = phone.new_page()
+    tp.goto(page_url)
+    tp.add_script_tag(path=os.path.join(os.path.dirname(os.path.abspath(sys.argv[1])), "..", "assets", "v2", "z2.js"))
+    tp.add_script_tag(path=os.path.join(os.path.dirname(os.path.abspath(sys.argv[1])), "..", "assets", "v2", "z2-scope.js"))
+    tp.evaluate("window.__tips = z2.tips({ lockDelay: 700 })")
+    tband = tp.locator(".z2-usage")
+    tp.locator(".z2-usage-sum .z2-usage-left").tap()
+    assert tband.get_attribute("data-open") == "true", "touch: a tap on the headline figure unfolds the band"
+    assert tp.locator(".z2-tip:not([hidden])").count() == 0, "touch: and does not also raise the figure's tooltip"
+    gh = tp.locator(".z2-usage-prov[data-key=openai_subscription] .z2-usage-prov-h")
+    gh.locator(".z2-usage-stale").tap()
+    assert gh.get_attribute("aria-expanded") == "false", "touch: a tap on the stale mark does not unfold the provider"
+    assert tp.locator(".z2-tip:not([hidden])").count() == 1 and "Stale: last read 3 d ago" in tp.locator(".z2-tip:not([hidden])").inner_text(), "touch: it opens the tooltip that holds the words"
+    tp.locator("body").tap(position={"x": 5, "y": 5})
+    gh.locator("h3").tap()
+    assert gh.get_attribute("aria-expanded") == "true", "negative control: a tap on the name does"
+    assert tp.evaluate("document.documentElement.scrollWidth <= innerWidth")
+    phone.close()
     browser.close()
 
 print("usage: ok")

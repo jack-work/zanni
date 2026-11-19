@@ -45,9 +45,10 @@
 .z2-usage-prov-h { display: grid; grid-template-columns: minmax(8rem, 16rem) auto minmax(5rem, 1fr) 1.25rem; align-items: baseline; column-gap: var(--z-space-5); padding: 0 var(--z-space-3); cursor: pointer; }
 .z2-usage-prov[data-open="true"] > .z2-usage-prov-h { padding-bottom: var(--z-space-3); }
 .z2-usage-prov-h > .z2-usage-total { text-align: right; }
-.z2-usage-prov-h > .z2-usage-more { display: block; justify-self: end; color: var(--z-muted); line-height: 1; }
-.z2-usage-prov-h > .z2-usage-more::before { content: "\25B8"; }
-.z2-usage-prov[data-open="true"] > .z2-usage-prov-h > .z2-usage-more::before { content: "\25BE"; }
+.z2-usage-prov-h > .z2-usage-more, .z2-usage-quiet > .z2-usage-more { display: block; justify-self: end; color: var(--z-muted); line-height: 1; }
+.z2-usage-prov-h > .z2-usage-more::before, .z2-usage-quiet > .z2-usage-more::before { content: "\25B8"; }
+.z2-usage-prov[data-open="true"] > .z2-usage-prov-h > .z2-usage-more::before, .z2-usage-quiet[data-open="true"] > .z2-usage-more::before { content: "\25BE"; }
+.z2-usage-quiet > .z2-usage-more { grid-column: -2; grid-row: 1; }
 @media (hover: hover) { .z2-usage-prov-h:hover, .z2-usage-sum:hover .z2-usage-sum-more { background: var(--z-tint); } }
 .z2-usage-prov-h h3 { margin: 0; font-size: var(--z-fs-lg); font-weight: 600; line-height: var(--z-leading-tight); }
 .z2-usage-total { font-size: var(--z-fs-sm); color: var(--z-muted); white-space: nowrap; }
@@ -105,7 +106,7 @@
 .z2-usage-quiet { padding: var(--z-space-3) var(--z-space-3); border-top: 1px solid var(--z-line); }
 .z2-usage-quiet[data-open="false"] { grid-template-columns: minmax(0, 1fr) 9ch 1.25rem; column-gap: var(--z-space-5); }
 .z2-usage-quiet[data-open="false"] :is([data-col=tok], [data-col=cache], [data-col=cost], [data-col=last], .z2-usage-where) { display: none; }
-.z2-usage-quiet[data-open="true"] { row-gap: var(--z-space-1); }
+.z2-usage-quiet[data-open="true"] { grid-template-columns: minmax(0, 1fr) var(--z2u-nums) 1.25rem; }
 .z2-usage-path { display: flex; align-items: center; flex-wrap: wrap; gap: var(--z-space-1) var(--z-space-3); min-width: 0; }
 .z2-usage-gw { min-width: 6ch; font-weight: 600; letter-spacing: 0.02em; color: var(--z-muted); }
 [data-gateway="rou2"] .z2-usage-gw { border-color: color-mix(in srgb, var(--z-accent) 55%, transparent); color: var(--accent-ink); }
@@ -155,7 +156,8 @@
   .z2-usage-sum > .z2-usage-fig { grid-template-columns: auto auto 1.75rem auto; }
   .z2-usage-sum > .z2-usage-fig > .z2-usage-reset { display: inline; grid-column: 4; }
   .z2-usage-sum { min-height: 44px; }
-  .z2-usage-access, .z2-usage-quiet { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: var(--z-space-1); column-gap: var(--z-space-4); }
+  .z2-usage-access, .z2-usage-quiet[data-open="true"] { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: var(--z-space-1); column-gap: var(--z-space-4); }
+  .z2-usage-quiet[data-open="true"] > .z2-usage-path { padding-right: 1.5rem; }
   .z2-usage-access { padding-left: var(--z-space-5); }
   .z2-usage-path { grid-column: 1 / -1; }
   .z2-usage-num, .z2-usage-num[data-lead] { grid-template-columns: auto minmax(0, 1fr); }

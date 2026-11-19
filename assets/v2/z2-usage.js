@@ -195,7 +195,7 @@
     var data = null;
     var primary = {};
     var hourly = {};
-    var leadRule = opts.lead || "current";
+    var leadRule = opts.lead || "range";
     var openPlans = {};
     var bandOpen = !!opts.open;
     var openProvs = {};
@@ -601,6 +601,9 @@
         path.appendChild(s.label); path.appendChild(s.where);
         n.appendChild(path);
         s.nums = numbers(n);
+        s.caret = el("span", "z2-usage-more");
+        s.caret.setAttribute("aria-hidden", "true");
+        n.appendChild(s.caret);
         return n;
       }
       n = el("section", "z2-usage-prov");
@@ -818,8 +821,11 @@
     band.addEventListener("click", function (e) {
       var drill = e.target.closest(".z2-usage-drill-link");
       var t = e.target.closest(".z2-usage-plan, .z2-usage-access, .z2-usage-quiet, .z2-usage-sum, .z2-usage-prov-h");
-      var tipped = e.target.closest("[data-tip-text]");
-      if (!drill && lastPointer === "touch" && tipped && tipped !== t && tipped.matches(".z2-usage-stale, .z2-usage-low, .z2-usage-chip, .z2-usage-primary, .z2-usage-num, .z2-usage-gw, .z2-usage-reset, .z2-usage-state")) return;
+      if (!drill && lastPointer === "touch") {
+        var mark = e.target.closest(".z2-usage-stale, .z2-usage-low, .z2-usage-chip, .z2-usage-primary, .z2-usage-num, .z2-usage-gw, .z2-usage-reset, .z2-usage-state");
+        if (mark && mark.closest("[data-tip-text]")) return;
+        if (t && e.target.closest("[data-tip-text]")) e.stopPropagation();
+      }
       act(t, !!drill);
     });
     band.addEventListener("keydown", function (e) {
