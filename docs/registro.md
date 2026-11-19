@@ -80,19 +80,32 @@ its fill under the pointer.
 ## Usage band (z2-usage.css, z2-usage.js)
 
 `z2.usageBand(host, opts)` draws provider > plan > access path from figscope's
-`GET /api/plans` and returns `update(data, recent)`, `fail(err)`, `detail(ref)`
-and `repaint()`. A provider with a plan window or a named plan is a block; pay
-as you go providers are one quiet line each. A plan row leads with its binding
-window; its other metered windows stack under it on the same columns, each
-with its own reset, so every meter and percent in the band shares one edge.
-Windows with a status and no percent sit as a quiet note at the row's end.
-Tone is the provider's status (`allowed`, `allowed_warning`, `rejected`), never
-a threshold of ours. A stale window is muted, shows its age and fades in three
-steps (under an hour, under a day, older). Access lines share fixed number
-columns, so they align and a refresh does not move them. `update` reuses rows
-by key. Rows and blocks are focusable; Enter or Space calls
-`opts.onOpen(ref)`, arrows move between rows, and `detail(ref)` returns the
-drill-down node for a drawer.
+`GET /api/plans` and returns `update(data, recent)`, `fail(err)`, `detail(ref)`,
+`fold(open, providers)` and `repaint()`.
+
+Three depths, each folded until asked. On load the band is one row: the title,
+one plan, its percent left on its binding window in the gothic, a meter and
+when it resets, then "and N more...". That unfolds to one row per provider,
+each with the same figure for its own leading plan. A provider row unfolds to
+its plans and access paths. A pay as you go provider is a name and a request
+count until opened.
+
+Which plan leads (`opts.lead`): `current`, the default, is the plan the fleet
+sent the most requests to in the last hour (from `recent`), falling back to the
+busiest in the range; `range` ignores the last hour; `least` is the fresh plan
+with the least left. A lozenge beside the figure says some other plan is
+running low, and its tip names it.
+
+Rows carry values, tips carry sentences: the reset's wall time, why a plan
+leads, what a path last saw, windows that have a status and no percent. Every
+figure in the band is percent left, and meters drain. Tone is the provider's
+status (`allowed`, `allowed_warning`, `rejected`), never a threshold of ours,
+plus hot at 10% left. A stale reading is a muted value and a dotted ring; the
+age and the last status are in the ring's tip. Plan rows share one set of
+columns, access lines another, and `update` reuses rows by key, so a refresh
+moves nothing. The headline, provider headers and rows are focusable; Enter or
+Space folds or calls `opts.onOpen(ref)`, arrows move between rows, and
+`detail(ref)` returns the drill-down node for a drawer.
 
 Seats: plans of one provider that share a name and an account are numbered in
 the account chip ("kic · seat 2"), by the number their upstream ends in, or by
@@ -103,7 +116,7 @@ most requests gets the one filled `primary` chip. No requests in the hour, or
 `z2.usageSeats` and `z2.usagePrimary` are the two rules as pure functions.
 
 `opts`: `title`, `planLabel(provider, plan)`, `onOpen(ref, node)`, `now()`,
-`timeZone`, `emptyText`.
+`timeZone`, `emptyText`, `lead`, `open`.
 
 Example: examples/usage.html (the 11-19 spain answer plus a second KIC seat,
 a last-hour answer, and synthetic stale, unidentified and quiet rows). Browser

@@ -581,6 +581,8 @@ window.USAGE_OPENED = [];
 window.usage = z2.usageBand(document.getElementById("usage"), {
   now: function () { return window.USAGE_NOW; },
   timeZone: "UTC",
+  lead: (/[?&]lead=(\w+)/.exec(location.search) || [])[1],
+  open: /[?&]open\b/.test(location.search),
   planLabel: function (pv, pl) {
     if (/^[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(pl.label || "")) return pl.label.split("_").map(function (w) { return /^\d/.test(w) ? w : w[0].toUpperCase() + w.slice(1); }).join(" ");
     if (pl.label === "subscription") return { anthropic: "Claude Max", openai_subscription: "ChatGPT", gemini: "Gemini Code Assist" }[pv.provider] || "Subscription";
