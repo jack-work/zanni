@@ -474,6 +474,16 @@
       "docs": "docs/v2.md",
       "example": "examples/v2.html"
     },
+    "placet": {
+      "summary": "Owner approvals page: a phone-first list of filed requests, the exact patch with current against new and its hash, Approve and Deny. Server text only enters as text nodes, a changed patch blocks approval until read, no decision while offline. Ships as a reviewed flat directory via bin/placet-bundle.",
+      "classes": ["placet", "placet-top", "placet-main", "placet-foot", "placet-row", "placet-link", "placet-patch", "placet-line", "placet-approve", "placet-deny"],
+      "files": ["placet.js", "placet.css"],
+      "docs": "docs/placet.md",
+      "example": "examples/placet.html",
+      "requires": ["v2"],
+      "constructed": true,
+      "knobs": ["--placet-ui", "--placet-display", "--placet-code", "--placet-bar", "--placet-width", "--placet-hit"]
+    },
     "rotolo": {
       "summary": "Thin scrollbars on the page and every scroll container under it: a dark track and an accent thumb that lights on hover, Firefox and Chromium alike.",
       "marker": "<!-- zanni:rotolo -->",

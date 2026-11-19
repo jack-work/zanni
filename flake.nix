@@ -267,6 +267,23 @@
           python3 ${./test/usage.test.py} examples/usage.html 2>&1 | tee $out
         '';
 
+        checks.placet = pkgs.runCommand "zanni-placet-test" {
+          nativeBuildInputs = [ pkgs.nodejs (pkgs.python3.withPackages (ps: [ ps.playwright ])) ];
+          PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
+          PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+          FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
+        } ''
+          set -o pipefail
+          export HOME=$TMPDIR
+          cp -r ${./assets} assets
+          cp -r ${./examples} examples
+          cp -r ${./test} test
+          cp -r ${./bin} bin
+          chmod -R u+w assets examples test bin
+          node test/placet.test.js
+          python3 test/placet.test.py examples/placet.html 2>&1 | tee $out
+        '';
+
         checks.rotolo = pkgs.runCommand "zanni-rotolo-test" {
           nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.playwright ps.pillow ])) ];
           PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;

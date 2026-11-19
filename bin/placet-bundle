@@ -1,0 +1,39 @@
+#!/usr/bin/env node
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+
+const out = process.argv[2];
+if (!out || out === '-h' || out === '--help') {
+  process.stdout.write('usage: placet-bundle OUT_DIR\n\nWrites the approvals SPA as a flat directory: index.html, boot.js, placet.js,\nplacet.css, z2-tokens.css, rotolo.css, fonts.css, fonts/*.woff2, figaro-head.png\nand SHA256SUMS. Same-origin only, no inline script or style, no external URL.\n');
+  process.exit(out ? 0 : 2);
+}
+const assets = process.env.ZANNI_ASSETS || path.join(__dirname, '..', 'assets');
+const manifest = JSON.parse(fs.readFileSync(path.join(assets, 'manifest.json'), 'utf8'));
+const faces = ['Inter', 'Jacquard 24'];
+const files = [
+  ['placet/index.html', 'index.html'],
+  ['placet/boot.js', 'boot.js'],
+  ['placet/placet.js', 'placet.js'],
+  ['placet/placet.css', 'placet.css'],
+  ['v2/z2-tokens.css', 'z2-tokens.css'],
+  ['rotolo/rotolo.css', 'rotolo.css'],
+  ['parla/figaro-head.png', 'figaro-head.png']
+];
+fs.rmSync(out, { recursive: true, force: true });
+fs.mkdirSync(path.join(out, 'fonts'), { recursive: true });
+for (const [from, to] of files) fs.copyFileSync(path.join(assets, from), path.join(out, to));
+const css = fs.readFileSync(path.join(assets, 'fontpack/fonts.css'), 'utf8').split('\n')
+  .filter((line) => faces.some((f) => line.includes("font-family: '" + f + "'")));
+if (css.length !== faces.length) { process.stderr.write('placet-bundle: font faces not found in fonts.css\n'); process.exit(1); }
+fs.writeFileSync(path.join(out, 'fonts.css'), css.join('\n') + '\n');
+for (const line of css) {
+  const m = /url\(([^)]+)\)/.exec(line);
+  fs.copyFileSync(path.join(assets, 'fontpack', m[1]), path.join(out, m[1]));
+}
+const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]);
+const sums = walk(out).filter((f) => path.basename(f) !== 'SHA256SUMS').sort().map((f) =>
+  crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex') + '  ' + path.relative(out, f));
+fs.writeFileSync(path.join(out, 'SHA256SUMS'), sums.join('\n') + '\n');
+process.stdout.write('placet ' + manifest.version + ': ' + sums.length + ' files in ' + out + '\n');
