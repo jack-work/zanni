@@ -65,21 +65,33 @@ Link `v2/z2-scope.js` after `v2/z2.js` for thin-client Scope views:
 ## Usage band (z2-usage.css, z2-usage.js)
 
 `z2.usageBand(host, opts)` draws provider > plan > access path from figscope's
-`GET /api/plans` and returns `update(data)`, `fail(err)`, `detail(ref)` and
-`repaint()`. A provider with a plan window or a subscription is a block; the
-rest are one quiet line each. A plan row leads with its binding window; the
-other windows sit beside it with small meters. Tone is the provider's status
-(`allowed`, `allowed_warning`, `rejected`), never a threshold of ours. A stale
-window is muted, shows its age and fades in three steps (under an hour, under
-a day, older). Access lines share fixed number columns, so they align and a
-refresh does not move them. `update` reuses rows by key. Rows and blocks are
-focusable; Enter or Space calls `opts.onOpen(ref)`, arrows move between rows,
-and `detail(ref)` returns the drill-down node for a drawer.
+`GET /api/plans` and returns `update(data, recent)`, `fail(err)`, `detail(ref)`
+and `repaint()`. A provider with a plan window or a named plan is a block; pay
+as you go providers are one quiet line each. A plan row leads with its binding
+window; its other metered windows stack under it on the same columns, each
+with its own reset, so every meter and percent in the band shares one edge.
+Windows with a status and no percent sit as a quiet note at the row's end.
+Tone is the provider's status (`allowed`, `allowed_warning`, `rejected`), never
+a threshold of ours. A stale window is muted, shows its age and fades in three
+steps (under an hour, under a day, older). Access lines share fixed number
+columns, so they align and a refresh does not move them. `update` reuses rows
+by key. Rows and blocks are focusable; Enter or Space calls
+`opts.onOpen(ref)`, arrows move between rows, and `detail(ref)` returns the
+drill-down node for a drawer.
+
+Seats: plans of one provider that share a name and an account are numbered in
+the account chip ("kic · seat 2"), by the number their upstream ends in, or by
+name order when it has none. Primary: `recent` is a second `/api/plans` answer
+over the last hour; in each provider the plan whose access lines carried the
+most requests gets the one filled `primary` chip. No requests in the hour, or
+`recent` null, marks nothing; leaving `recent` out keeps the last answer.
+`z2.usageSeats` and `z2.usagePrimary` are the two rules as pure functions.
 
 `opts`: `title`, `planLabel(provider, plan)`, `onOpen(ref, node)`, `now()`,
 `timeZone`, `emptyText`.
 
-Example: examples/usage.html (the 11-19 spain answer plus synthetic stale,
-unidentified and quiet rows). Browser test: test/usage.test.py, with negative
-controls for tone, staleness, alignment, in-place refresh and the keyboard.
-checks.usage runs it in Chromium.
+Example: examples/usage.html (the 11-19 spain answer plus a second KIC seat,
+a last-hour answer, and synthetic stale, unidentified and quiet rows). Browser
+test: test/usage.test.py, with negative controls for tone, staleness, seats,
+the primary marker, alignment, in-place refresh and the keyboard; checks.usage
+runs it in Chromium. test/v2-usage.test.js covers the two rules in node.

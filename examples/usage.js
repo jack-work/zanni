@@ -23,7 +23,7 @@ window.USAGE_SPAIN = {
    "plans": [
     {
      "plan": "anthropic-kic",
-     "label": "subscription",
+     "label": "claude_team_5x",
      "account": "kic",
      "windows": [
       {
@@ -93,8 +93,70 @@ window.USAGE_SPAIN = {
      ]
     },
     {
+     "plan": "anthropic-kic-2",
+     "label": "claude_team_5x",
+     "account": "kic",
+     "windows": [
+      {
+       "window": "five_hour",
+       "used_percent": 9,
+       "reset_at": "2026-11-19T09:00:00Z",
+       "status": "allowed",
+       "source": "observed_headers",
+       "fetched_at": "2026-11-19T06:33:02Z",
+       "stale": false
+      },
+      {
+       "window": "seven_day",
+       "used_percent": 41,
+       "reset_at": "2026-11-22T17:00:00Z",
+       "status": "allowed",
+       "source": "observed_headers",
+       "fetched_at": "2026-11-19T06:33:02Z",
+       "stale": false
+      },
+      {
+       "window": "overage",
+       "used_percent": null,
+       "reset_at": null,
+       "status": "rejected",
+       "source": "observed_headers",
+       "fetched_at": "2026-11-19T06:33:02Z",
+       "stale": false
+      }
+     ],
+     "binding": "seven_day",
+     "access": [
+      {
+       "gateway": "rou2",
+       "host": "spain",
+       "via": "anthropic-kic-2",
+       "requests": 61,
+       "input_tokens": 187,
+       "output_tokens": 30412,
+       "cache_read_tokens": 17630112,
+       "cache_write_tokens": 1820334,
+       "cache_read_share": 0.9064,
+       "priced_requests": 61,
+       "list_cost_usd": 12.6104,
+       "last_seen": "2026-11-19T06:33:02Z",
+       "observed": [
+        {
+         "window": "seven_day",
+         "used_percent": 41,
+         "reset_at": "2026-11-22T17:00:00Z",
+         "status": "allowed",
+         "source": "observed_headers",
+         "fetched_at": "2026-11-19T06:33:02Z",
+         "stale": false
+        }
+       ]
+      }
+     ]
+    },
+    {
      "plan": "anthropic-max",
-     "label": "subscription",
+     "label": "claude_max_20x",
      "account": "personal",
      "windows": [
       {
@@ -401,12 +463,126 @@ window.USAGE_SPAIN = {
   }
  ]
 };
+window.USAGE_RECENT = {
+ "generated_at": "2026-11-19T06:34:14Z",
+ "from": "2026-11-19T05:34:14Z",
+ "to": "2026-11-19T06:34:14Z",
+ "providers": [
+  {
+   "provider": "anthropic",
+   "plans": [
+    {
+     "plan": "anthropic-kic",
+     "access": [
+      {
+       "gateway": "rou2",
+       "host": "spain",
+       "via": "anthropic-kic",
+       "requests": 9,
+       "last_seen": "2026-11-19T06:31:15Z"
+      }
+     ]
+    },
+    {
+     "plan": "anthropic-kic-2",
+     "access": [
+      {
+       "gateway": "rou2",
+       "host": "spain",
+       "via": "anthropic-kic-2",
+       "requests": 41,
+       "last_seen": "2026-11-19T06:33:02Z"
+      }
+     ]
+    },
+    {
+     "plan": "anthropic-max",
+     "access": [
+      {
+       "gateway": "rou2",
+       "host": "spain",
+       "via": "anthropic-max",
+       "requests": 0,
+       "last_seen": "2026-11-19T06:06:38Z"
+      },
+      {
+       "gateway": "direct",
+       "host": "gluck",
+       "via": "anthropic",
+       "requests": 22,
+       "last_seen": "2026-11-19T06:32:33Z"
+      }
+     ]
+    },
+    {
+     "plan": "anthropic-personal",
+     "access": [
+      {
+       "gateway": "rou2",
+       "host": "spain",
+       "via": "anthropic-personal",
+       "requests": 0,
+       "last_seen": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "provider": "openai_subscription",
+   "plans": [
+    {
+     "plan": "chatgpt-personal",
+     "access": [
+      {
+       "gateway": "rou2",
+       "host": "spain",
+       "via": "chatgpt-personal",
+       "requests": 0,
+       "last_seen": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "provider": "gemini",
+   "plans": [
+    {
+     "plan": "gemini",
+     "access": [
+      {
+       "gateway": "rou2",
+       "host": "spain",
+       "via": "gemini",
+       "requests": 14,
+       "last_seen": "2026-11-19T06:20:02Z"
+      }
+     ]
+    },
+    {
+     "plan": "unidentified",
+     "access": [
+      {
+       "gateway": "direct",
+       "host": "cheroot",
+       "via": "gemini",
+       "requests": 0,
+       "last_seen": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+};
 window.USAGE_NOW = Date.parse("2026-11-19T06:34:20Z");
 window.USAGE_OPENED = [];
 window.usage = z2.usageBand(document.getElementById("usage"), {
   now: function () { return window.USAGE_NOW; },
   timeZone: "UTC",
   planLabel: function (pv, pl) {
+    if (/^[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(pl.label || "")) return pl.label.split("_").map(function (w) { return /^\d/.test(w) ? w : w[0].toUpperCase() + w.slice(1); }).join(" ");
     if (pl.label === "subscription") return { anthropic: "Claude Max", openai_subscription: "ChatGPT", gemini: "Gemini Code Assist" }[pv.provider] || "Subscription";
     if (pl.label === "pay as you go") return "API key";
     if (pl.label === "unidentified plan") return "Unidentified plan";
@@ -414,4 +590,4 @@ window.usage = z2.usageBand(document.getElementById("usage"), {
   },
   onOpen: function (ref) { window.USAGE_OPENED.push(ref); }
 });
-if (!/[?&]hold\b/.test(location.search)) window.usage.update(window.USAGE_SPAIN);
+if (!/[?&]hold\b/.test(location.search)) window.usage.update(window.USAGE_SPAIN, window.USAGE_RECENT);

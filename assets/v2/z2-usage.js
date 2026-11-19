@@ -74,6 +74,43 @@
     return "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  function seatsOf(plans, nameOf) {
+    var groups = {};
+    (plans || []).forEach(function (pl) {
+      if (!pl.account) return;
+      var k = nameOf(pl) + "\u0000" + pl.account;
+      (groups[k] = groups[k] || []).push(pl);
+    });
+    var out = {};
+    Object.keys(groups).forEach(function (k) {
+      var g = groups[k].slice().sort(function (a, b) { return String(a.plan).localeCompare(String(b.plan), "en", { numeric: true }); });
+      if (g.length < 2) return;
+      var named = g.map(function (pl) { var m = /-(\d+)$/.exec(pl.plan); return m ? Number(m[1]) : 1; });
+      var distinct = named.every(function (n, i) { return n > 0 && named.indexOf(n) === i; });
+      g.forEach(function (pl, i) { out[pl.plan] = { n: distinct ? named[i] : i + 1, of: g.length }; });
+    });
+    return out;
+  }
+
+  function primaryOf(recent) {
+    var out = {};
+    ((recent && recent.providers) || []).forEach(function (pv) {
+      var best = null, total = 0;
+      (pv.plans || []).forEach(function (pl) {
+        var req = 0, seen = 0;
+        (pl.access || []).forEach(function (a) {
+          req += a.requests || 0;
+          var t = Date.parse(a.last_seen);
+          if (Number.isFinite(t) && t > seen) seen = t;
+        });
+        total += req;
+        if (req > 0 && (!best || req > best.requests || (req === best.requests && seen > best.seen))) best = { plan: pl.plan, requests: req, seen: seen };
+      });
+      if (best) out[pv.provider] = { plan: best.plan, requests: best.requests, total: total, span: Date.parse(recent.to) - Date.parse(recent.from) };
+    });
+    return out;
+  }
+
   function tokensOf(a) {
     return (a.input_tokens || 0) + (a.output_tokens || 0) + (a.cache_read_tokens || 0) + (a.cache_write_tokens || 0);
   }
@@ -144,6 +181,7 @@
     var now = opts.now || Date.now;
     var planLabel = opts.planLabel || function (pv, pl) { return pl.label || pl.plan; };
     var data = null;
+    var primary = {};
     var openPlans = {};
     var lastPointer = "mouse";
     var NARROW = opts.narrowWidth || 760;
@@ -177,6 +215,14 @@
     band.appendChild(skel);
     band.appendChild(body);
     host.replaceChildren(band);
+
+    function planFullName(pv, pl, seat, sep) {
+      return [planLabel(pv, pl), pl.account, seat ? "seat " + seat.n : ""].filter(Boolean).join(sep);
+    }
+
+    function seats(pv) {
+      return seatsOf(pv.plans, function (pl) { return planLabel(pv, pl); });
+    }
 
     function row(cls) {
       var n = el("div", cls);
@@ -250,57 +296,85 @@
       return { known: known, stale: !!w.stale, age: age, status: status, tone: tone };
     }
 
+    function resetText(w) {
+      var reset = Date.parse(w.reset_at);
+      return Number.isFinite(reset) ? "resets " + localTime(reset) + " \u00b7 in " + span(reset - now()) : "";
+    }
+
+    function resetTip(n, w) {
+      var reset = Date.parse(w.reset_at);
+      tipText(n, "Window reset", Number.isFinite(reset) ? new Date(reset).toISOString() + " UTC, " + (w.source === "provider_reported" ? "reported by the provider" : "from response headers") : "");
+    }
+
+    function stateText(st) {
+      var word = STATUS_WORDS[st.status] || "";
+      return st.stale ? (st.age != null ? span(st.age) + " old" : "stale") + (word ? ", was " + word : "") : word;
+    }
+
     function makePlan() {
       var n = row("z2-usage-plan");
       var s = n._s = {};
       var name = el("div", "z2-usage-name");
       s.label = el("b");
       s.account = el("span", "z2-usage-chip");
-      name.appendChild(s.label); name.appendChild(s.account);
+      s.primary = el("span", "z2-usage-primary", "primary");
+      name.appendChild(s.label); name.appendChild(s.account); name.appendChild(s.primary);
       s.win = el("span", "z2-usage-win");
       s.meter = meter();
       s.pct = el("b", "z2-usage-pct");
       s.pctVal = el("span", "z2-usage-val");
       s.pctUnit = el("span", "z2-usage-unit", "%");
       s.pct.appendChild(s.pctVal); s.pct.appendChild(s.pctUnit);
+      s.notes = el("span", "z2-usage-notes");
       s.state = el("span", "z2-usage-state");
-      s.detail = el("div", "z2-usage-detail");
       s.reset = el("span", "z2-usage-reset");
+      s.notes.appendChild(s.state); s.notes.appendChild(s.reset);
+      s.more = el("span", "z2-usage-more");
+      s.more.setAttribute("aria-hidden", "true");
       s.others = el("span", "z2-usage-others");
+      s.flags = el("span", "z2-usage-flags");
+      s.notes.appendChild(s.flags);
       s.drill = el("span", "z2-usage-drill-link", "details");
       s.drill.tabIndex = 0;
       s.drill.setAttribute("role", "button");
-      s.detail.appendChild(s.reset); s.detail.appendChild(s.others); s.detail.appendChild(s.drill);
-      s.more = el("span", "z2-usage-more");
-      s.more.setAttribute("aria-hidden", "true");
-      n.appendChild(name); n.appendChild(s.win); n.appendChild(s.meter); n.appendChild(s.pct); n.appendChild(s.state); n.appendChild(s.more); n.appendChild(s.detail);
+      [name, s.win, s.meter, s.pct, s.notes, s.more, s.others, s.drill].forEach(function (c) { n.appendChild(c); });
       return n;
+    }
+
+    function windowTip(n, w, st) {
+      var reset = Date.parse(w.reset_at);
+      tipText(n, windowName(w.window) + " window", [w.status ? "status " + w.status.replace(/_/g, " ") : "", Number.isFinite(reset) ? "resets " + localTime(reset) : "",
+        w.source === "provider_reported" ? "reported by the provider" : "seen in response headers", st.age != null ? span(st.age) + " old" : ""].filter(Boolean).join(" \u00b7 "));
     }
 
     function makeOther() {
       var n = el("span", "z2-usage-other");
-      n._s = { name: el("span", "z2-usage-other-name"), meter: meter("z2-usage-meter-s"), val: el("span", "z2-usage-val") };
-      n.appendChild(n._s.name); n.appendChild(n._s.meter); n.appendChild(n._s.val);
+      var s = n._s = { name: el("span", "z2-usage-win"), meter: meter(), val: el("span", "z2-usage-val"), notes: el("span", "z2-usage-notes"),
+        state: el("span", "z2-usage-state"), reset: el("span", "z2-usage-reset") };
+      s.notes.appendChild(s.state); s.notes.appendChild(s.reset);
+      n.appendChild(s.name); n.appendChild(s.meter); n.appendChild(s.val); n.appendChild(s.notes);
       return n;
     }
 
     function fillOther(n, it) {
-      var w = it.w, st = windowState(w);
-      setText(n._s.name, windowName(w.window));
-      off(n._s.meter, !st.known);
-      if (st.known) {
-        setMeter(n._s.meter, w.used_percent, it.plan + " " + windowName(w.window) + " used", Math.round(w.used_percent) + "% used" + (st.stale ? ", stale" : ""));
-        setText(n._s.val, Math.round(w.used_percent) + "%" + (st.stale && st.age != null ? " \u00b7 " + span(st.age) + " old" : ""));
-        setData(n, "tone", st.tone);
-        setData(n, "age", st.stale && st.age != null ? ageTier(st.age) : null);
-      } else {
-        setText(n._s.val, (w.status || "unknown").replace(/_/g, " "));
-        setData(n, "tone", "flag");
-        setData(n, "age", null);
-      }
-      var reset = Date.parse(w.reset_at);
-      tipText(n, windowName(w.window) + " window", [w.status ? "status " + w.status.replace(/_/g, " ") : "", Number.isFinite(reset) ? "resets " + localTime(reset) : "",
-        w.source === "provider_reported" ? "reported by the provider" : "seen in response headers", st.age != null ? span(st.age) + " old" : ""].filter(Boolean).join(" \u00b7 "));
+      var w = it.w, st = windowState(w), s = n._s;
+      setText(s.name, windowName(w.window));
+      setMeter(s.meter, w.used_percent, it.plan + " " + windowName(w.window) + " used", Math.round(w.used_percent) + "% used" + (st.stale ? ", stale" : ""));
+      setText(s.val, Math.round(w.used_percent) + "%");
+      setData(n, "tone", st.tone);
+      setData(n, "age", st.stale && st.age != null ? ageTier(st.age) : null);
+      setText(s.state, stateText(st));
+      off(s.state, !s.state.textContent);
+      setText(s.reset, resetText(w));
+      windowTip(n, w, st);
+    }
+
+    function makeFlag() { return el("span", "z2-usage-flag"); }
+
+    function fillFlag(n, it) {
+      var w = it.w;
+      setText(n, windowName(w.window) + " " + (w.status || "unknown").replace(/_/g, " "));
+      windowTip(n, w, windowState(w));
     }
 
     function fillPlan(n, it) {
@@ -309,32 +383,39 @@
       setData(n, "open", open ? "true" : "false");
       n.setAttribute("aria-expanded", String(open));
       setText(s.label, planLabel(pv, pl));
-      setText(s.account, pl.account || "");
+      var seat = it.seat;
+      setText(s.account, pl.account ? pl.account + (seat ? " \u00b7 seat " + seat.n : "") : "");
       off(s.account, !pl.account);
-      tipText(s.account, "Account", pl.account ? pl.account + " \u00b7 upstream " + pl.plan : "");
+      tipText(s.account, "Account", pl.account ? pl.account + (seat ? " \u00b7 seat " + seat.n + " of " + seat.of : "") + " \u00b7 upstream " + pl.plan : "");
+      var lead0 = primary[pv.provider];
+      var first = !!lead0 && lead0.plan === pl.plan;
+      setData(n, "primary", first ? "true" : null);
+      off(s.primary, !first);
+      tipText(s.primary, "Primary seat", first ? "Carried " + fmtInt(lead0.requests) + " of " + fmtInt(lead0.total) + " " + (pv.label || pv.provider) + " requests in the last " +
+        (Number.isFinite(lead0.span) ? span(lead0.span) : "hour") + ", more than any other plan." : "");
       var wins = pl.windows || [];
       var metered = wins.filter(function (w) { return Number.isFinite(w.used_percent); });
       var lead = metered.filter(function (w) { return w.window === pl.binding; })[0] ||
         metered.slice().sort(function (a, b) { return b.used_percent - a.used_percent; })[0] || null;
-      var rest = wins.filter(function (w) { return w !== lead; });
-      var planName = planLabel(pv, pl) + (pl.account ? " " + pl.account : "");
-      sync(s.others, rest.map(function (w) { return { key: w.window, kind: "other", w: w, plan: planName }; }), makeOther, fillOther);
+      var planName = planFullName(pv, pl, seat, " ");
+      sync(s.others, metered.filter(function (w) { return w !== lead; }).map(function (w) { return { key: w.window, kind: "other", w: w, plan: planName }; }), makeOther, fillOther);
+      sync(s.flags, wins.filter(function (w) { return !Number.isFinite(w.used_percent); }).map(function (w) { return { key: w.window, kind: "flag", w: w }; }), makeFlag, fillFlag);
+      off(s.flags, !s.flags.children.length);
       setData(n, "metered", lead ? "true" : "false");
+      setData(n, "windows", String(metered.length));
       off(s.meter, !lead); off(s.pct, !lead); off(s.win, !lead);
       if (lead) {
         var st = windowState(lead);
         var pct = Math.round(lead.used_percent);
         setText(s.win, windowName(lead.window));
-        setMeter(s.meter, lead.used_percent, planLabel(pv, pl) + (pl.account ? " " + pl.account : "") + " " + windowName(lead.window) + " used",
+        setMeter(s.meter, lead.used_percent, planName + " " + windowName(lead.window) + " used",
           pct + "% used" + (STATUS_WORDS[st.status] ? ", " + STATUS_WORDS[st.status] : "") + (st.stale ? ", stale" : ""));
         setText(s.pctVal, pct);
         setData(n, "tone", st.tone);
         setData(n, "age", st.stale && st.age != null ? ageTier(st.age) : null);
-        var word = STATUS_WORDS[st.status] || "";
-        setText(s.state, st.stale ? (st.age != null ? span(st.age) + " old" : "stale") + (word ? ", was " + word : "") : word);
-        var reset = Date.parse(lead.reset_at);
-        setText(s.reset, Number.isFinite(reset) ? "resets " + localTime(reset) + " \u00b7 in " + span(reset - now()) : "");
-        tipText(s.reset, "Window reset", Number.isFinite(reset) ? new Date(reset).toISOString() + " UTC, " + (lead.source === "provider_reported" ? "reported by the provider" : "from response headers") : "");
+        setText(s.state, stateText(st));
+        setText(s.reset, resetText(lead));
+        resetTip(s.reset, lead);
       } else {
         var seen = sumAccess(pl.access || []).last_seen;
         var sub = !/pay as you go/i.test(pl.label || "");
@@ -344,6 +425,8 @@
         setText(s.state, sub ? "no recent limit data" + (seen ? " \u00b7 last seen " + span(now() - Date.parse(seen)) + " ago" : "") : "pay as you go");
         setText(s.reset, "");
       }
+      off(s.state, !s.state.textContent);
+      off(s.reset, !s.reset.textContent);
       n.setAttribute("aria-label", n.textContent.replace(/\s+/g, " ").trim() || pl.plan);
     }
 
@@ -434,8 +517,9 @@
       setText(s.total, fmtInt(all.requests) + " req" + (all.list_cost_usd != null ? " \u00b7 list " + fmtUSD(all.list_cost_usd) : ""));
       n.setAttribute("aria-label", (pv.label || pv.provider) + ", " + (pv.plans || []).length + " plans");
       var items = [];
+      var seat = seats(pv);
       (pv.plans || []).forEach(function (pl) {
-        items.push({ key: "p:" + pl.plan, kind: "plan", pv: pv, pl: pl, ref: { kind: "plan", provider: pv.provider, plan: pl.plan } });
+        items.push({ key: "p:" + pl.plan, kind: "plan", pv: pv, pl: pl, seat: seat[pl.plan] || null, ref: { kind: "plan", provider: pv.provider, plan: pl.plan } });
         var paths = pl.access || [];
         var used = paths.filter(function (a) { return a.requests > 0; });
         (used.length ? used : paths.slice(0, 1)).forEach(function (a) {
@@ -455,7 +539,7 @@
       var d = data;
       var provs = (d && d.providers) || [];
       sync(body, provs.map(function (pv) {
-        var metered = (pv.plans || []).some(function (pl) { return (pl.windows || []).length > 0 || /subscription|unidentified/i.test(pl.label || ""); });
+        var metered = (pv.plans || []).some(function (pl) { return (pl.windows || []).length > 0 || (!!pl.label && !/pay as you go/i.test(pl.label)); });
         return { key: pv.provider, kind: metered ? "prov" : "quiet", pv: pv };
       }), makeProvider, fillProvider);
       var gen = d && Date.parse(d.generated_at);
@@ -465,8 +549,9 @@
       setData(stamp, "tone", bad.length ? "warn" : null);
     }
 
-    function update(next) {
+    function update(next, recent) {
       data = next;
+      if (recent !== undefined) primary = primaryOf(recent);
       band.removeAttribute("aria-busy");
       paint();
       var empty = !((next && next.providers) || []).length;
@@ -524,10 +609,11 @@
       if (!hit) return null;
       var pv = hit.provider;
       var plans = hit.plan ? [hit.plan] : (pv.plans || []);
+      var seat = seats(pv);
       var node = el("div", "z2-usage-drill");
       plans.forEach(function (pl) {
         var sec = el("section");
-        sec.appendChild(el("h4", null, planLabel(pv, pl) + (pl.account ? " \u00b7 " + pl.account : "") + " (" + pl.plan + ")"));
+        sec.appendChild(el("h4", null, planFullName(pv, pl, seat[pl.plan], " \u00b7 ") + " (" + pl.plan + ")"));
         if ((pl.windows || []).length) sec.appendChild(table(["window", "raw", ">used", "status", "resets", "source", "age"], windowRows(pl.windows)));
         else sec.appendChild(el("p", "z2-usage-stamp", "No limit windows reported or observed for this plan."));
         sec.appendChild(table(["path", ">req", ">uncached in", ">out", ">cache read", ">cache write", ">cache", ">priced", ">list $", "last seen"],
@@ -548,7 +634,7 @@
         node.appendChild(sec);
       });
       if (data.join_rule) node.appendChild(el("p", "z2-usage-stamp", "How paths join plans: " + data.join_rule + "."));
-      var title = hit.plan ? (pv.label || pv.provider) + " \u00b7 " + planLabel(pv, hit.plan) + (hit.plan.account ? " " + hit.plan.account : "") : (pv.label || pv.provider);
+      var title = hit.plan ? (pv.label || pv.provider) + " \u00b7 " + planFullName(pv, hit.plan, seat[hit.plan.plan], " ") : (pv.label || pv.provider);
       return { title: title, node: node };
     }
 
@@ -596,5 +682,5 @@
     return { root: band, update: update, fail: fail, detail: detail, repaint: function () { if (data) paint(); }, data: function () { return data; } };
   }
 
-  root.z2 = Object.assign(root.z2 || {}, { usageBand: usageBand, usageWindowName: windowName });
+  root.z2 = Object.assign(root.z2 || {}, { usageBand: usageBand, usageWindowName: windowName, usageSeats: seatsOf, usagePrimary: primaryOf });
 })(typeof window !== "undefined" ? window : globalThis);
