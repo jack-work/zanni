@@ -290,7 +290,7 @@ with sync_playwright() as p:
     bundle = tempfile.mkdtemp(prefix="placet-bundle-")
     server = None
     try:
-        subprocess.run([os.path.join(root, "bin/placet-bundle"), bundle], check=True, capture_output=True)
+        subprocess.run(["node", os.path.join(root, "bin/placet-bundle"), bundle], check=True, capture_output=True)
         server = subprocess.Popen(["node", os.path.join(root, "test/placet-server.js"), bundle], stdout=subprocess.PIPE, text=True)
         port = int(server.stdout.readline())
         origin = "http://127.0.0.1:%d" % port
