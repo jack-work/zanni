@@ -44,7 +44,10 @@
 .z2-usage-prov { padding: var(--z-space-3) 0; border-top: 1px solid var(--z-line); min-width: 0; }
 .z2-usage-prov-h { display: grid; grid-template-columns: minmax(8rem, 16rem) auto minmax(5rem, 1fr) 1.25rem; align-items: baseline; column-gap: var(--z-space-5); padding: 0 var(--z-space-3); cursor: pointer; }
 .z2-usage-prov[data-open="true"] > .z2-usage-prov-h { padding-bottom: var(--z-space-3); }
-.z2-usage-prov-h > .z2-usage-total { text-align: right; }
+.z2-usage-prov-h > h3 { grid-column: 1; }
+.z2-usage-prov-h > .z2-usage-fig { grid-column: 2; }
+.z2-usage-prov-h > .z2-usage-total { grid-column: 3; text-align: right; }
+.z2-usage-prov-h > .z2-usage-more { grid-column: 4; }
 .z2-usage-prov-h > .z2-usage-more, .z2-usage-quiet > .z2-usage-more { display: block; justify-self: end; color: var(--z-muted); line-height: 1; }
 .z2-usage-prov-h > .z2-usage-more::before, .z2-usage-quiet > .z2-usage-more::before { content: "\25B8"; }
 .z2-usage-prov[data-open="true"] > .z2-usage-prov-h > .z2-usage-more::before, .z2-usage-quiet[data-open="true"] > .z2-usage-more::before { content: "\25BE"; }
@@ -151,6 +154,7 @@
   .z2-usage-plan[data-open="false"] :is(.z2-usage-reset, .z2-usage-other, .z2-usage-drill-link), .z2-usage-access[data-open="false"] { display: none; }
   .z2-usage-prov-h { grid-template-columns: minmax(0, 1fr) auto 1.25rem; column-gap: var(--z-space-3); min-height: 44px; align-items: center; }
   .z2-usage-prov-h > .z2-usage-total { display: none; }
+  .z2-usage-prov-h > .z2-usage-more { grid-column: 3; }
   .z2-usage-fig, .z2-usage-sum > .z2-usage-fig { grid-template-columns: auto auto 1.75rem; }
   .z2-usage-fig > :is(.z2-usage-meter, .z2-usage-reset) { display: none; }
   .z2-usage-sum > .z2-usage-fig { grid-template-columns: auto auto 1.75rem auto; }

@@ -65,6 +65,14 @@ with sync_playwright() as p:
     assert "old" not in gpt_h.text_content() and "limit reached" not in gpt_h.text_content(), "the stale words are not on the row"
     assert gpt_h.locator(".z2-usage-fig").get_attribute("data-tip-text") == "7 d window: 100% used, 0% left. Resets Fri 20 18:00, in 35 h. Stale: last read 3 d ago, when it said limit reached. Shown muted until a fresh reading arrives. Shown because it carried the most requests in the range."
     assert heads.first.locator(".z2-usage-stale").is_hidden(), "negative control: a fresh reading carries no stale mark"
+    ends = "[...document.querySelectorAll('.z2-usage-prov-h')].map(h => [h.querySelector('.z2-usage-total'), h.querySelector('.z2-usage-more')].map(e => Math.round(e.getBoundingClientRect().right)).join(':'))"
+    page.evaluate("(() => { const d = structuredClone(USAGE_SPAIN); d.providers[2].plans[0].windows = []; d.providers[2].plans[0].binding = null; usage.update(d) })()")
+    assert page.locator(".z2-usage-prov[data-key=gemini] .z2-usage-fig").is_hidden(), "a provider with no limit window has no figure"
+    assert len(set(page.evaluate(ends))) == 1, ("its request count and caret stay in their columns", page.evaluate(ends))
+    page.locator(".z2-usage-prov[data-key=gemini] .z2-usage-total").evaluate("e => { e.style.gridColumn = 'auto' }")
+    assert len(set(page.evaluate(ends))) == 2, "negative control: left to auto placement the count slides into the empty figure column"
+    page.locator(".z2-usage-prov[data-key=gemini] .z2-usage-total").evaluate("e => { e.style.gridColumn = '' }")
+    page.evaluate("usage.update(USAGE_SPAIN)")
     quiet = page.locator(".z2-usage-quiet").first
     assert quiet.locator("[data-col=req]").is_visible() and quiet.locator("[data-col=cost]").is_hidden() and quiet.locator(".z2-usage-where").is_hidden(), "a pay as you go provider folds to its name and requests"
     opened = page.evaluate("USAGE_OPENED.length")
