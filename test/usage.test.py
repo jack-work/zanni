@@ -53,6 +53,13 @@ with sync_playwright() as p:
     page.evaluate("(() => { const d = structuredClone(USAGE_SPAIN); d.providers[0].plans[1].windows[0].used_percent = 89; d.providers[0].plans[1].windows[0].status = 'allowed'; usage.update(d) })()")
     assert mx.get_attribute("data-tone") == "allowed" and mx.locator(".z2-usage-state").text_content() == ""
     page.evaluate("usage.update(USAGE_SPAIN)")
+    meter = mx.locator("> .z2-usage-meter")
+    assert meter.get_attribute("role") == "meter" and meter.get_attribute("aria-valuenow") == "95" and meter.get_attribute("aria-valuemax") == "100"
+    assert meter.get_attribute("aria-label") == "Claude Max personal 7 d used", meter.get_attribute("aria-label")
+    assert kic.locator(".z2-usage-other[data-key=seven_day] .z2-usage-meter").get_attribute("aria-label") == "Claude Max kic 7 d used"
+    direct_req = page.locator(".z2-usage-access[data-key='a:anthropic-max:direct:gluck:anthropic'] [data-col=req]")
+    assert direct_req.evaluate("e => getComputedStyle(e).textDecorationLine") == "none", "values carry no dotted underline"
+    assert page.locator(".z2-usage-access[data-key='a:anthropic-max:direct:gluck:anthropic'] [data-col=cache] .z2-usage-unit").evaluate("e => getComputedStyle(e).textDecorationLine") == "underline", "explained terms keep it"
     sec = kic.locator(".z2-usage-other[data-key=seven_day] .z2-usage-meter")
     assert sec.bounding_box()["height"] == kic.locator("> .z2-usage-meter").bounding_box()["height"], "secondary meters are as tall as the headline"
 
@@ -135,6 +142,12 @@ with sync_playwright() as p:
     assert kic.locator(".z2-usage-name").bounding_box()["y"] < kic.locator("> .z2-usage-meter").bounding_box()["y"], "narrow: the name sits above its meter"
     m, st = mx.locator("> .z2-usage-meter").bounding_box(), mx.locator(".z2-usage-state").bounding_box()
     assert abs((m["y"] + m["height"] / 2) - (st["y"] + st["height"] / 2)) < 12, "narrow: the warning sits on the meter line"
+    page.set_viewport_size({"width": 360, "height": 740})
+    head = page.locator(".z2-usage-prov-h").first
+    assert head.locator(".z2-usage-total").bounding_box()["y"] > head.locator("h3").bounding_box()["y"] + 8, "narrow: provider totals sit under the name"
+    page.set_viewport_size({"width": 1280, "height": 900})
+    assert abs(head.locator(".z2-usage-total").bounding_box()["y"] - head.locator("h3").bounding_box()["y"]) < 12, "negative control: wide keeps them on one line"
+    page.set_viewport_size({"width": 390, "height": 844})
     mx_paths = page.locator(".z2-usage-access[data-key^='a:anthropic-max:']")
     assert mx_paths.first.is_hidden() and mx.locator(".z2-usage-detail").is_hidden(), "narrow: access lines and detail start collapsed"
     opened = page.evaluate("USAGE_OPENED.length")

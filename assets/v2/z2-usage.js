@@ -83,7 +83,9 @@
     svg.setAttribute("class", "z2-usage-meter" + (cls ? " " + cls : ""));
     svg.setAttribute("viewBox", "0 0 100 8");
     svg.setAttribute("preserveAspectRatio", "none");
-    svg.setAttribute("role", "img");
+    svg.setAttribute("role", "meter");
+    svg.setAttribute("aria-valuemin", "0");
+    svg.setAttribute("aria-valuemax", "100");
     var bg = document.createElementNS(SVG_NS, "rect");
     bg.setAttribute("class", "z2-usage-meter-bg");
     bg.setAttribute("width", "100");
@@ -109,10 +111,13 @@
     if (yes) n.setAttribute("data-off", ""); else n.removeAttribute("data-off");
   }
 
-  function setMeter(svg, pct, label) {
+  function setMeter(svg, pct, label, text) {
     var w = String(pct > 0 ? Math.max(1, Math.min(100, pct)) : 0);
     if (svg._fill.getAttribute("width") !== w) svg._fill.setAttribute("width", w);
+    var now = String(Math.round(Math.max(0, Math.min(100, pct))));
+    if (svg.getAttribute("aria-valuenow") !== now) svg.setAttribute("aria-valuenow", now);
     if (svg.getAttribute("aria-label") !== label) svg.setAttribute("aria-label", label);
+    if (svg.getAttribute("aria-valuetext") !== text) svg.setAttribute("aria-valuetext", text);
   }
 
   function sync(parent, items, make, fill) {
@@ -284,7 +289,7 @@
       setText(n._s.name, windowName(w.window));
       off(n._s.meter, !st.known);
       if (st.known) {
-        setMeter(n._s.meter, w.used_percent, windowName(w.window) + " " + Math.round(w.used_percent) + "% used");
+        setMeter(n._s.meter, w.used_percent, it.plan + " " + windowName(w.window) + " used", Math.round(w.used_percent) + "% used" + (st.stale ? ", stale" : ""));
         setText(n._s.val, Math.round(w.used_percent) + "%" + (st.stale && st.age != null ? " \u00b7 " + span(st.age) + " old" : ""));
         setData(n, "tone", st.tone);
         setData(n, "age", st.stale && st.age != null ? ageTier(st.age) : null);
@@ -312,14 +317,16 @@
       var lead = metered.filter(function (w) { return w.window === pl.binding; })[0] ||
         metered.slice().sort(function (a, b) { return b.used_percent - a.used_percent; })[0] || null;
       var rest = wins.filter(function (w) { return w !== lead; });
-      sync(s.others, rest.map(function (w) { return { key: w.window, kind: "other", w: w }; }), makeOther, fillOther);
+      var planName = planLabel(pv, pl) + (pl.account ? " " + pl.account : "");
+      sync(s.others, rest.map(function (w) { return { key: w.window, kind: "other", w: w, plan: planName }; }), makeOther, fillOther);
       setData(n, "metered", lead ? "true" : "false");
       off(s.meter, !lead); off(s.pct, !lead); off(s.win, !lead);
       if (lead) {
         var st = windowState(lead);
         var pct = Math.round(lead.used_percent);
         setText(s.win, windowName(lead.window));
-        setMeter(s.meter, lead.used_percent, windowName(lead.window) + " " + pct + "% used" + (st.stale ? ", stale" : ""));
+        setMeter(s.meter, lead.used_percent, planLabel(pv, pl) + (pl.account ? " " + pl.account : "") + " " + windowName(lead.window) + " used",
+          pct + "% used" + (STATUS_WORDS[st.status] ? ", " + STATUS_WORDS[st.status] : "") + (st.stale ? ", stale" : ""));
         setText(s.pctVal, pct);
         setData(n, "tone", st.tone);
         setData(n, "age", st.stale && st.age != null ? ageTier(st.age) : null);

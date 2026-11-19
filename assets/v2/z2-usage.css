@@ -93,6 +93,8 @@
 .z2-usage-drill h4 { margin: 0; font-size: var(--z-fs-md); font-weight: 600; }
 .z2-usage-drill h5 { margin: var(--z-space-2) 0 0; font-size: var(--z-fs-xs); font-weight: 400; color: var(--z-muted); text-transform: uppercase; letter-spacing: 0.08em; }
 
+.z2-usage [data-tip-text] { text-decoration: none; }
+.z2-usage :is([data-col=cache], [data-col=cost]) .z2-usage-unit { text-decoration: underline dotted var(--z-line); text-underline-offset: 0.2em; }
 .z2-usage-more, .z2-usage-drill-link { display: none; }
 .z2-usage-drill-link { color: var(--z-accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 
@@ -121,4 +123,9 @@
   .z2-usage-quiet[data-open="false"] { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .z2-usage-quiet[data-open="false"] .z2-usage-path { grid-column: 1 / -1; }
   .z2-usage-total { white-space: normal; text-align: right; }
+}
+
+@container z2-usage (max-width: 420px) {
+  .z2-usage-prov-h { flex-direction: column; align-items: flex-start; gap: var(--z-space-1); }
+  .z2-usage-total { text-align: left; white-space: nowrap; }
 }

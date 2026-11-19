@@ -710,10 +710,23 @@
     var raf = opts.raf || (typeof requestAnimationFrame === "function" ? requestAnimationFrame : function (fn) { return setTimeout(fn, 16); });
     var caf = opts.caf || (typeof cancelAnimationFrame === "function" ? cancelAnimationFrame : clearTimeout);
 
+    function anchorBox(el) {
+      var r = el.getBoundingClientRect();
+      var row = el.closest && el.closest("[role=button], tr, li, .z2-kpi");
+      var rr = row && row !== el ? row.getBoundingClientRect() : r;
+      return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, rowTop: Math.min(r.top, rr.top), rowBottom: Math.max(r.bottom, rr.bottom) };
+    }
+
     function clampPosition(rect, tipW, tipH, depth) {
       var vw = typeof window !== "undefined" && window.innerWidth ? window.innerWidth : 1280;
       var vh = typeof window !== "undefined" && window.innerHeight ? window.innerHeight : 800;
       var margin = 8;
+      if (vw <= 520 && rect.rowBottom != null) {
+        var inset = typeof document !== "undefined" ? parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--z-sticky-h")) || 0 : 0;
+        var below = vh - margin - tipH;
+        var sheetTop = rect.rowBottom + margin <= below ? below : Math.max(inset + margin, rect.rowTop - tipH - margin);
+        return { left: margin, top: Math.max(margin, sheetTop) };
+      }
       var left = rect.left + depth * 12;
       var top = rect.bottom + 8;
       if (top + tipH > vh - margin && rect.top - tipH - 8 >= margin) {
@@ -1049,7 +1062,7 @@
       if (depth > 0 && stack[depth - 1] && !stack[depth - 1].locked) return null;
       var spec = buildContentFromElement(trigger);
       if (!spec) return null;
-      var rect = trigger.getBoundingClientRect ? trigger.getBoundingClientRect() : { left: 20, top: 20, bottom: 40, right: 100 };
+      var rect = trigger.getBoundingClientRect ? anchorBox(trigger) : { left: 20, top: 20, bottom: 40, right: 100 };
       return openEntry({
         key: trigger,
         depth: depth,
@@ -1157,7 +1170,7 @@
           stack.forEach(function (entry) {
             if (entry.dragged) return;
             if (entry.anchor && entry.anchor.getBoundingClientRect) {
-              entry.anchorRect = entry.anchor.getBoundingClientRect();
+              entry.anchorRect = anchorBox(entry.anchor);
             }
             var r = entry.node.getBoundingClientRect ? entry.node.getBoundingClientRect() : { width: 280, height: 140 };
             var p = clampPosition(entry.anchorRect || { left: 24, top: 24, bottom: 44, right: 120 }, r.width || 280, r.height || 140, entry.depth);
@@ -1222,7 +1235,9 @@
     var docEl = document.documentElement;
     function measure() {
       var h = bars.reduce(function (m, el) {
-        var top = parseFloat(getComputedStyle(el).top) || 0;
+        var cs = getComputedStyle(el);
+        if (cs.position !== "sticky" && cs.position !== "fixed") return m;
+        var top = parseFloat(cs.top) || 0;
         return Math.max(m, top + el.getBoundingClientRect().height);
       }, 0);
       var v = Math.ceil(h) + "px";

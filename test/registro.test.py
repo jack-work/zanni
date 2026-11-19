@@ -43,6 +43,8 @@ with sync_playwright() as p:
     bottom = page.evaluate("(() => { const t = document.querySelector('.z2-toolbar'); return parseFloat(getComputedStyle(t).top) + t.getBoundingClientRect().height })()")
     pad = page.evaluate("parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)")
     assert bottom <= pad <= bottom + 16, ("anchors and focus land below the sticky bars", bottom, pad)
+    page.evaluate("window.__undo(); document.documentElement.style.removeProperty('--z-sticky-h'); document.querySelector('.z2-toolbar').style.position = 'static'; window.__undo = z2.stickyInset(document.querySelector('.z2-toolbar'))")
+    assert page.evaluate("document.documentElement.style.getPropertyValue('--z-sticky-h')") == "0px", "a bar that does not stick adds no inset"
     page.evaluate("window.__undo(); document.documentElement.style.removeProperty('--z-sticky-h')")
     assert page.evaluate("parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)") < bottom, "negative control: no bars, no inset"
     page.set_viewport_size({"width": 1280, "height": 800})
