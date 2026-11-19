@@ -48,8 +48,25 @@ with sync_playwright() as p:
     page.evaluate("window.__undo(); document.documentElement.style.removeProperty('--z-sticky-h')")
     assert page.evaluate("parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)") < bottom, "negative control: no bars, no inset"
     page.set_viewport_size({"width": 1280, "height": 800})
+    page.emulate_media(color_scheme="light")
+    page.evaluate("""(() => { const m = document.createElement('div'); m.id = 'chrome-probe';
+      m.innerHTML = '<div class="z2-seg"><button class="z2-seg-b" id="seg-on" aria-pressed="true">24h</button><button class="z2-seg-b" id="seg-off" aria-pressed="false">3d</button></div>' +
+        '<section class="z2-kpis"><div class="z2-kpi"><span class="z2-kl">turns</span><span class="z2-kv">1.7k</span><span class="z2-kn">10.4k rounds</span></div>' +
+        '<div class="z2-kpi warn"><span class="z2-kl">cold restarts</span><span class="z2-kv">513</span><span class="z2-kn">write 128.22M</span></div></section>';
+      document.querySelector('main').prepend(m); })()""")
+    bg = "e => getComputedStyle(e).backgroundColor"
+    page.hover("#seg-on")
+    assert page.locator("#seg-on").evaluate(bg) == "rgb(125, 46, 46)", "a pressed segment keeps its fill under the pointer, so its label stays readable"
+    page.hover("#seg-off")
+    assert page.locator("#seg-off").evaluate(bg) != "rgb(125, 46, 46)", "negative control: hover alone does not press a segment"
+    tile = page.locator("#chrome-probe .z2-kpi").first
+    assert tile.evaluate("e => getComputedStyle(e).borderLeftWidth") == "0px", "KPI tiles are divided by hairlines, not edged cards"
+    assert tile.locator(".z2-kn").bounding_box()["y"] >= tile.locator(".z2-kv").bounding_box()["y"] + 20, "the note sits under the value, never truncated beside it"
+    assert page.locator("#chrome-probe .z2-kpi.warn .z2-kv").evaluate("e => getComputedStyle(e).color") == "rgb(135, 88, 15)", "a tile past its line still colours its value"
+    assert page.locator(".z2-panel").first.evaluate("e => getComputedStyle(e).borderTopWidth") == "1px", "panels carry one hairline, the accent rule is the header's"
     page.locator("link[href$='z2-registro.css']").evaluate("e => e.remove()")
     assert current.evaluate("e => getComputedStyle(e).borderBottomStyle") == "none", "negative control: active underline belongs to registro"
+    assert tile.evaluate("e => getComputedStyle(e).borderLeftWidth") == "3px", "negative control: the hairline strip belongs to registro"
     browser.close()
 
 print("registro: ok")

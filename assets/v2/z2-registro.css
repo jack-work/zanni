@@ -63,16 +63,28 @@
 }
 .z2-scope .proscenio-more { min-width: 44px; min-height: 44px; }
 
-[data-theme="registro"] .z2-panel { border-top: 2px solid var(--z-accent); }
+[data-theme="registro"] .z2-panel { border-color: var(--z-rule); }
 [data-theme="registro"] .z2-panel h2 {
   font-family: var(--z-font);
   font-weight: 600;
   letter-spacing: -0.005em;
   color: var(--z-ink);
 }
-[data-theme="registro"] .z2-kpi { border-left-color: var(--z-accent); }
-[data-theme="registro"] .z2-kpi.warn { border-left-color: var(--z-warn); }
-[data-theme="registro"] .z2-kpi.bad { border-left-color: var(--z-fail); }
+[data-theme="registro"] .z2-kpis { gap: 1px; overflow: hidden; border-block: 1px solid var(--z-line); }
+[data-theme="registro"] .z2-kpi {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "l" "v" "n";
+  align-content: start;
+  row-gap: var(--z-space-1);
+  padding: var(--z-space-3) var(--z-space-4);
+  border-left: 0;
+  background: none;
+  box-shadow: 1px 0 0 var(--z-rule), 0 1px 0 var(--z-rule);
+}
+[data-theme="registro"] .z2-kpi .z2-kl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+[data-theme="registro"] .z2-kpi .z2-kv { font-weight: 650; letter-spacing: -0.01em; }
+[data-theme="registro"] .z2-kpi .z2-kn { font-size: var(--z-fs-sm); }
+[data-theme="registro"] .z2-kpi .z2-spark { color: var(--z-muted); }
 [data-theme="registro"] .z2-kv,
 [data-theme="registro"] .z2-table {
   font-variant-numeric: lining-nums tabular-nums;
@@ -118,7 +130,8 @@
   max-width: 100%;
 }
 
-.z2-seg-b[aria-pressed="true"] {
+.z2-seg-b[aria-pressed="true"],
+.z2-seg-b[aria-pressed="true"]:hover:not(:disabled) {
   background: var(--z-accent);
   color: var(--z-on-accent);
 }

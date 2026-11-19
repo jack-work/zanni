@@ -62,6 +62,14 @@ Link `v2/z2-scope.js` after `v2/z2.js` for thin-client Scope views:
 - `z2.relTime(isoOrMs, nowMs)` and `z2.copyChip(command)`: relative horizon
   text and clipboard command chip.
 
+## Chrome
+
+One accent rule, under the header. Panels carry a single hairline. A
+`.z2-kpis` strip is divided by hairlines with no tile fill or edge: label,
+value, then the note on its own line so it never truncates; `.warn` and `.bad`
+colour the value only, and sparklines are muted ink. A pressed segment keeps
+its fill under the pointer.
+
 ## Usage band (z2-usage.css, z2-usage.js)
 
 `z2.usageBand(host, opts)` draws provider > plan > access path from figscope's
