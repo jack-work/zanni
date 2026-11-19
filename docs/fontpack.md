@@ -7,6 +7,7 @@ Three faces, three jobs. The voice is the assignment, not the fonts.
 | **Jacquard 24** | display, numerals, drop caps | pixel blackletter, **one weight (400)**. Ask for bold and the browser synthesises one, which smears the pixel grid. |
 | **EB Garamond** | prose, act names in italic | the humane register |
 | **VT323** | everything technical: commands, labels, chips, timestamps | CRT terminal face. **Never below ~13px CSS.** It is bitmap-derived and disintegrates. |
+| **Alegreya** | registro's text and every aligned figure (`serif`) | sturdy at 13px, lining tabular figures; a 35 KB latin subset with `lnum`, `tnum`, `onum`, `pnum`, `liga`, `kern` |
 
 ```html
 <h1 class="fontpack-display">John Kelliher</h1>

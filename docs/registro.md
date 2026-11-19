@@ -62,6 +62,13 @@ Link `v2/z2-scope.js` after `v2/z2.js` for thin-client Scope views:
 - `z2.relTime(isoOrMs, nowMs)` and `z2.copyChip(command)`: relative horizon
   text and clipboard command chip.
 
+## Type
+
+Two faces. Jacquard 24, the pixel gothic, sets the mark, panel titles and the
+usage band's one headline figure. Alegreya sets everything else, with lining
+tabular figures on numbers so columns hold. Mono stays for ids, model names
+and log rows.
+
 ## Chrome
 
 One accent rule, under the header. Panels carry a single hairline. A
