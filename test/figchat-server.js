@@ -59,9 +59,20 @@ const server = http.createServer((req, res) => {
     res.end(all.subarray(from, to + 1));
     return;
   }
+  if (url.pathname === '/__online') {
+    core.setOnline(url.searchParams.get('store'), url.searchParams.get('on') === '1');
+    res.writeHead(200); res.end('ok');
+    return;
+  }
+  if (url.pathname === '/__inject') {
+    core.inject(url.searchParams.get('store'), url.searchParams.get('aria'), url.searchParams.get('text'), url.searchParams.get('from'));
+    res.writeHead(200); res.end('ok');
+    return;
+  }
+  if (url.pathname === '/__drop') { core.drop(); res.writeHead(200); res.end('ok'); return; }
   if (url.pathname === '/__state') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ posts: core.state.posts, clips: core.state.clips, received: core.state.received, ranges: seen.ranges, upgrades: seen.upgrades }));
+    res.end(JSON.stringify({ posts: core.state.posts, clips: core.state.clips, received: core.state.received, cancels: core.state.cancels, forks: core.state.forks, attaches: core.state.attaches, pages: core.state.pages, ranges: seen.ranges, upgrades: seen.upgrades }));
     return;
   }
   res.writeHead(404); res.end('no');
@@ -77,11 +88,11 @@ function frame(opcode, payload) {
 server.on('upgrade', (req, socket) => {
   const url = new URL(req.url, 'http://x');
   const origin = req.headers.origin || '';
-  if (url.pathname !== '/chat/ws' || origin !== 'http://' + req.headers.host || !core.thread(url.searchParams.get('thread'))) { socket.destroy(); return; }
+  if (url.pathname !== '/chat/ws' || origin !== 'http://' + req.headers.host || !core.hasAria(url.searchParams.get('store'), url.searchParams.get('aria'))) { socket.destroy(); return; }
   seen.upgrades++;
   const accept = crypto.createHash('sha1').update(req.headers['sec-websocket-key'] + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
   socket.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ' + accept + '\r\n\r\n');
-  const conn = core.attach(url.searchParams.get('thread'), url.searchParams.get('after'), {
+  const conn = core.attach(url.searchParams.get('store'), url.searchParams.get('aria'), url.searchParams.get('cursor'), {
     text: (s) => socket.write(frame(1, Buffer.from(s))),
     binary: (b) => socket.write(frame(2, Buffer.from(b))),
     close: () => socket.destroy()

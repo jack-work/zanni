@@ -23,15 +23,56 @@
     return parts;
   }
 
-  function routeFor(thread) {
-    return '#/t/' + encodeURIComponent(thread);
+  function enc(s) { return encodeURIComponent(String(s)); }
+
+  function routeFor(store, aria, turn) {
+    if (store == null) return '#/';
+    var out = '#/' + enc(store);
+    if (aria == null) return out;
+    out += '/' + enc(aria);
+    if (turn != null && turn !== '') out += ':' + enc(turn);
+    return out;
   }
 
   function parseRoute(hash) {
-    if (hash === '#/new') return { fresh: true };
-    var m = /^#\/t\/([^/]+)$/.exec(hash || '');
+    var m = /^#\/([^/:]+)(?:\/([^/:]+)(?::([^/:]+))?)?$/.exec(hash || '');
     if (!m) return null;
-    try { return { thread: decodeURIComponent(m[1]) }; } catch (e) { return null; }
+    try {
+      var out = { store: decodeURIComponent(m[1]) };
+      if (m[2] != null) out.aria = decodeURIComponent(m[2]);
+      if (m[3] != null) out.turn = decodeURIComponent(m[3]);
+      return out;
+    } catch (e) { return null; }
+  }
+
+  function tree(rows) {
+    var out = [];
+    for (var i = 0; i < rows.length; i++) {
+      var d = Math.max(0, Number(rows[i].depth) || 0), prefix = [], last = true;
+      for (var level = 1; level <= d; level++) {
+        var more = false;
+        for (var j = i + 1; j < rows.length; j++) {
+          var dj = Math.max(0, Number(rows[j].depth) || 0);
+          if (dj < level) break;
+          if (dj === level) { more = true; break; }
+        }
+        if (level === d) last = !more;
+        else prefix.push(more);
+      }
+      out.push({ prefix: prefix, last: last, depth: d });
+    }
+    return out;
+  }
+
+  function treeText(t) {
+    if (!t.depth) return '';
+    return t.prefix.map(function (more) { return more ? '\u2502 ' : '  '; }).join('') + (t.last ? '\u2514\u2500' : '\u251c\u2500');
+  }
+
+  function cursorText(c) {
+    if (c == null || c === '') return '';
+    if (typeof c === 'string') return c;
+    return [c.turn, c.text, c.started, c.ended].join('.');
   }
 
   function ago(then, now) {
@@ -45,11 +86,6 @@
     return new Date(t).toISOString().slice(0, 10);
   }
 
-  function titleFrom(text) {
-    var line = String(text).trim().split('\n')[0].replace(/\s+/g, ' ');
-    return line.length > 60 ? line.slice(0, 59).trimEnd() + '\u2026' : line;
-  }
-
   function backoff(attempt) {
     return Math.min(15000, 500 * Math.pow(2, Math.max(0, attempt)));
   }
@@ -57,12 +93,6 @@
   var MAX_CLIP_MS = 5 * 60000;
 
   function key(id) { return String(id); }
-
-  function before(a, b) {
-    var x = Number(a), y = Number(b);
-    if (!isNaN(x) && !isNaN(y)) return x < y;
-    return key(a) < key(b);
-  }
 
   function toolState(t) {
     if (t.error) return 'failed';
@@ -175,151 +205,144 @@
   }
 
   function conversation() {
-    var c = { messages: [], audio: null };
+    var c = { turns: [], audio: null, cur: '' };
     var byId = {};
 
-    function insert(m) {
-      var i = c.messages.length;
-      while (i > 0 && before(m.id, c.messages[i - 1].id)) i--;
-      c.messages.splice(i, 0, m);
-      byId[key(m.id)] = m;
-      return m;
+    function blank(id) {
+      return { id: id, at: '', prompt: '', reply: '', from: '', tools: [], done: false, streaming: false, failed: false, fault: '', audio_id: '', prompt_audio_id: '', cursor: '' };
     }
 
-    function ensure(id, role) {
-      var m = byId[key(id)];
-      if (m) return m;
-      return insert({ id: id, role: role || 'assistant', text: '', created: '', audio_id: '', tools: [], streaming: false, done: false, partial: true, failed: false, fault: '' });
+    function ensure(id) {
+      var t = byId[key(id)];
+      if (t) return t;
+      t = byId[key(id)] = blank(id);
+      c.turns.push(t);
+      return t;
     }
 
-    function tool(m, id) {
-      for (var i = 0; i < m.tools.length; i++) if (key(m.tools[i].id) === key(id)) return m.tools[i];
-      var t = { id: id, name: '', args: '', result: '', error: '', state: 'running' };
-      m.tools.push(t);
+    function tool(t, id) {
+      for (var i = 0; i < t.tools.length; i++) if (key(t.tools[i].id) === key(id)) return t.tools[i];
+      var x = { id: id, name: '', args: '', result: '', error: '', state: 'running' };
+      t.tools.push(x);
+      return x;
+    }
+
+    function fill(t, raw) {
+      t.at = raw.at || t.at || '';
+      t.prompt = typeof raw.prompt === 'string' ? raw.prompt : t.prompt;
+      t.reply = typeof raw.reply === 'string' ? raw.reply : t.reply;
+      t.from = raw.from ? String(raw.from) : t.from;
+      t.audio_id = raw.audio_id ? String(raw.audio_id) : t.audio_id;
+      t.prompt_audio_id = raw.prompt_audio_id ? String(raw.prompt_audio_id) : t.prompt_audio_id;
+      t.cursor = cursorText(raw.cursor) || t.cursor;
+      t.tools = (Array.isArray(raw.tools) ? raw.tools : []).map(function (x) {
+        return { id: x.id, name: x.name || '', args: x.args == null ? '' : String(x.args), result: x.result == null ? '' : String(x.result), error: x.error ? String(x.error) : '', state: x.error ? 'failed' : 'done' };
+      });
+      t.done = raw.done !== false;
+      t.streaming = !t.done;
       return t;
     }
 
     c.get = function (id) { return byId[key(id)] || null; };
-    c.next = function (m) {
-      var i = c.messages.indexOf(m);
-      return i >= 0 && i + 1 < c.messages.length ? c.messages[i + 1] : null;
+    c.next = function (t) {
+      var i = c.turns.indexOf(t);
+      return i >= 0 && i + 1 < c.turns.length ? c.turns[i + 1] : null;
     };
-    c.last = function () {
-      for (var i = c.messages.length - 1; i >= 0; i--) if (c.messages[i].done) return c.messages[i].id;
-      return null;
+    c.running = function () {
+      return c.turns.some(function (t) { return !t.done; });
+    };
+    c.cursor = function () {
+      if (c.cur) return c.cur;
+      for (var i = c.turns.length - 1; i >= 0; i--) if (c.turns[i].cursor) return c.turns[i].cursor;
+      return '';
     };
 
-    c.load = function (list) {
-      var touched = [];
+    c.load = function (list, older) {
+      var made = [], fresh = [];
       (list || []).forEach(function (raw) {
         if (!raw || raw.id == null) return;
-        var m = byId[key(raw.id)];
-        if (m && m.streaming) return;
-        var role = raw.role === 'user' ? 'user' : 'assistant';
-        var text = typeof raw.text === 'string' ? raw.text : '';
-        var list = Array.isArray(raw.tools) ? raw.tools : [];
-        var known = raw.state === 'streaming' || raw.state === 'done' || raw.state === 'failed';
-        var pending = known ? raw.state === 'streaming' : role === 'assistant' && !text && !list.length && !raw.audio_id;
-        if (m && !m.done && pending) { m.partial = true; return; }
-        if (!m) m = insert({ id: raw.id, tools: [], text: '', fault: '' });
-        m.role = role;
-        m.failed = raw.state === 'failed';
-        m.text = text || (m.failed ? m.text : '');
-        if (m.failed && !m.fault) m.fault = 'This reply failed.';
-        m.created = raw.created || '';
-        m.audio_id = raw.audio_id || m.audio_id || '';
-        m.tools = list.map(function (t) {
-          return { id: t.id, name: t.name || '', args: t.args || '', result: t.result || '', error: t.error || '', state: t.error ? 'failed' : 'done' };
-        });
-        m.streaming = false;
-        m.partial = pending;
-        m.done = !pending;
-        touched.push(m);
+        var t = byId[key(raw.id)];
+        if (t) {
+          if (t.streaming) return;
+          fill(t, raw);
+          made.push(t);
+          return;
+        }
+        t = byId[key(raw.id)] = fill(blank(raw.id), raw);
+        fresh.push(t);
+        made.push(t);
       });
-      return touched;
-    };
-
-    c.running = function () {
-      return c.messages.some(function (m) { return m.role === 'assistant' && !m.done; });
-    };
-
-    c.add = function (raw) {
-      var m = byId[key(raw.id)] || insert({ id: raw.id, tools: [], audio_id: '' });
-      m.role = raw.role === 'assistant' ? 'assistant' : 'user';
-      m.text = typeof raw.text === 'string' ? raw.text : '';
-      m.created = raw.created || m.created || '';
-      m.audio_id = raw.audio_id || m.audio_id || '';
-      m.streaming = false;
-      m.partial = false;
-      m.failed = false;
-      m.fault = '';
-      m.done = true;
-      return m;
+      if (older) c.turns = fresh.concat(c.turns);
+      else c.turns = c.turns.concat(fresh);
+      return made;
     };
 
     c.apply = function (f) {
       if (!f || typeof f.type !== 'string') return null;
-      var m, t;
+      var t, x, cur = cursorText(f.cursor);
+      if (cur) c.cur = cur;
       switch (f.type) {
-        case 'message.added':
-          if (!f.message || f.message.id == null) return null;
-          return { kind: 'message', message: c.add(f.message) };
-        case 'message.start':
-          if (f.id == null) return null;
-          m = ensure(f.id, f.role === 'user' ? 'user' : 'assistant');
-          if (m.done) return null;
-          m.text = '';
-          m.tools = [];
-          m.streaming = true;
-          m.partial = false;
-          return { kind: 'message', message: m };
+        case 'turn.start':
+          if (f.turn == null) return null;
+          t = byId[key(f.turn)];
+          if (t) return null;
+          t = ensure(f.turn);
+          t.prompt = typeof f.prompt === 'string' ? f.prompt : '';
+          t.from = f.from ? String(f.from) : '';
+          t.at = f.at || '';
+          t.prompt_audio_id = f.prompt_audio_id ? String(f.prompt_audio_id) : '';
+          t.streaming = true;
+          return { kind: 'turn', turn: t };
         case 'message.delta':
-          if (f.id == null || typeof f.text !== 'string') return null;
-          m = ensure(f.id);
-          if (m.done) return null;
-          m.streaming = true;
-          m.text += f.text;
-          return { kind: 'delta', message: m, text: f.text };
+          if (f.turn == null || typeof f.text !== 'string') return null;
+          t = ensure(f.turn);
+          if (t.done) return null;
+          t.streaming = true;
+          t.reply += f.text;
+          return { kind: 'delta', turn: t, text: f.text };
         case 'tool.start':
         case 'tool.end':
-          if (f.id == null || f.tool_id == null) return null;
-          m = ensure(f.id);
-          if (m.done) return null;
-          m.streaming = true;
-          t = tool(m, f.tool_id);
-          if (f.name) t.name = String(f.name);
-          if (f.args != null) t.args = String(f.args);
+          if (f.turn == null || f.tool_id == null) return null;
+          t = ensure(f.turn);
+          if (t.done) return null;
+          t.streaming = true;
+          x = tool(t, f.tool_id);
+          if (f.name) x.name = String(f.name);
+          if (f.args != null) x.args = typeof f.args === 'string' ? f.args : JSON.stringify(f.args);
           if (f.type === 'tool.end') {
-            t.result = f.result == null ? '' : String(f.result);
-            t.error = f.error ? String(f.error) : '';
-            t.state = t.error ? 'failed' : 'done';
+            x.result = f.result == null ? '' : String(f.result);
+            x.error = f.error ? String(f.error) : '';
+            x.state = x.error ? 'failed' : 'done';
           }
-          return { kind: 'tool', message: m, tool: t };
-        case 'message.end':
-          m = f.id == null ? null : byId[key(f.id)];
-          if (!m || m.done) return null;
-          m.streaming = false;
-          m.done = true;
-          return { kind: 'end', message: m, refetch: m.partial };
+          return { kind: 'tool', turn: t, tool: x };
+        case 'turn.end':
+          t = f.turn == null ? null : byId[key(f.turn)];
+          if (!t || t.done) return null;
+          if (typeof f.text === 'string') t.reply = f.text;
+          t.streaming = false;
+          t.done = true;
+          return { kind: 'end', turn: t };
         case 'audio.start':
-          if (f.message_id == null) return null;
-          m = ensure(f.message_id);
-          c.audio = key(m.id);
-          return { kind: 'audio.start', message: m, format: { format: f.format, rate: f.rate, bits: f.bits, channels: f.channels } };
+          if (f.turn == null) return null;
+          t = ensure(f.turn);
+          c.audio = key(t.id);
+          return { kind: 'audio.start', turn: t, format: { format: f.format, rate: f.rate, bits: f.bits, channels: f.channels } };
         case 'audio.end':
-          if (f.message_id == null) return null;
-          m = ensure(f.message_id);
-          if (c.audio === key(m.id)) c.audio = null;
-          if (f.audio_id) m.audio_id = String(f.audio_id);
-          return { kind: 'audio.end', message: m, audio_id: m.audio_id };
+          if (f.turn == null) return null;
+          t = ensure(f.turn);
+          if (c.audio === key(t.id)) c.audio = null;
+          if (f.audio_id) t.audio_id = String(f.audio_id);
+          return { kind: 'audio.end', turn: t, audio_id: t.audio_id };
         case 'error':
-          m = f.message_id == null ? null : byId[key(f.message_id)] || null;
-          if (m && f.code === 'speech' && c.audio === key(m.id)) c.audio = null;
-          if (m) {
-            if (f.code !== 'speech') m.failed = true;
-            m.fault = (f.code === 'speech' ? 'Speech failed: ' : 'Failed: ') + String(f.text || f.code || 'error');
+          t = f.turn == null ? null : byId[key(f.turn)] || null;
+          if (t && f.code === 'speech' && c.audio === key(t.id)) c.audio = null;
+          if (t) {
+            if (f.code !== 'speech') { t.failed = true; t.streaming = false; t.done = true; }
+            t.fault = (f.code === 'speech' ? 'Speech failed: ' : 'Failed: ') + String(f.text || f.code || 'error');
           }
-          return { kind: 'error', message: m, code: String(f.code || 'error'), text: String(f.text || '') };
+          return { kind: 'error', turn: t, code: String(f.code || 'error'), text: String(f.text || '') };
+        case 'offline':
+          return { kind: 'offline' };
         default:
           return null;
       }
@@ -330,10 +353,10 @@
     };
 
     c.cut = function () {
-      var m = c.binary();
+      var t = c.binary();
       c.audio = null;
-      c.messages.forEach(function (x) { x.streaming = false; });
-      return m;
+      c.turns.forEach(function (x) { x.streaming = false; });
+      return t;
     };
 
     return c;
@@ -356,7 +379,6 @@
     var trim = function (s) { return String(s).replace(/\/$/, ''); };
     var api = trim(o.api || 'api'), audio = trim(o.audio || 'audio'), ws = o.ws || 'ws';
     var doFetch = o.fetch || function (u, i) { return win.fetch(u, i); };
-    var enc = encodeURIComponent;
 
     function answer(res) {
       return res.text().then(function (text) {
@@ -375,15 +397,21 @@
       return doFetch(api + path, init).then(answer);
     }
 
+    function query(q, names) {
+      var parts = [];
+      names.forEach(function (n) { if (q && q[n] != null && q[n] !== '') parts.push(n + '=' + enc(q[n])); });
+      return parts.length ? '?' + parts.join('&') : '';
+    }
+
+    function ariaPath(store, aria) { return '/stores/' + enc(store) + '/arias/' + enc(aria); }
+
     return {
-      threads: function () { return call('GET', '/threads'); },
-      createThread: function (title) { return call('POST', '/threads', title ? { title: title } : {}); },
-      messages: function (thread, q) {
-        var parts = ['limit=' + enc((q && q.limit) || 50)];
-        if (q && q.before != null) parts.unshift('before=' + enc(q.before));
-        return call('GET', '/threads/' + enc(thread) + '/messages?' + parts.join('&'));
-      },
-      send: function (thread, body) { return call('POST', '/threads/' + enc(thread) + '/messages', body); },
+      stores: function () { return call('GET', '/stores'); },
+      arias: function (store, q) { return call('GET', '/stores/' + enc(store) + '/arias' + query(q, ['before', 'limit', 'q'])); },
+      turns: function (store, aria, q) { return call('GET', ariaPath(store, aria) + '/turns' + query(q, ['before', 'limit'])); },
+      send: function (store, aria, body) { return call('POST', ariaPath(store, aria) + '/send', body); },
+      cancel: function (store, aria) { return call('POST', ariaPath(store, aria) + '/cancel', {}); },
+      createAria: function (store, body) { return call('POST', '/stores/' + enc(store) + '/arias', body || {}); },
       clip: function (blob) {
         return doFetch(api + '/clips', { method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json', 'Content-Type': blob.type || 'application/octet-stream' }, body: blob }).then(answer);
       },
@@ -392,10 +420,10 @@
         return doFetch(audio + '/' + enc(id), { method: 'GET', credentials: 'same-origin', cache: 'no-store', headers: { Range: 'bytes=0-0' } })
           .then(function (res) { return res.status; });
       },
-      connect: function (thread, after, h) {
+      connect: function (store, aria, cursor, h) {
         var Socket = o.WebSocket || win.WebSocket;
         var base = o.base || win.document.baseURI;
-        var url = new URL(ws, base).href.replace(/^http/, 'ws') + '?thread=' + enc(thread) + (after == null ? '' : '&after=' + enc(after));
+        var url = new URL(ws, base).href.replace(/^http/, 'ws') + '?store=' + enc(store) + '&aria=' + enc(aria) + (cursor ? '&cursor=' + enc(cursor) : '');
         var sock = new Socket(url);
         sock.binaryType = 'arraybuffer';
         sock.addEventListener('open', function () { if (h.open) h.open(); });
@@ -418,6 +446,14 @@
     };
   }
 
+  var PAGE = 20;
+  var ARIA_PAGE = 30;
+  var STATES = { active: 'active', idle: 'idle', dormant: 'dormant', reaped: 'reaped' };
+
+  function ariaName(a) {
+    return (a && (a.title || a.mantra || a.handle || a.id)) || '';
+  }
+
   function mount(host, opts) {
     if (!host || host.figchat) throw new Error('figchat needs an unused host');
     opts = opts || {};
@@ -431,7 +467,11 @@
     });
     var now = opts.now || function () { return Date.now(); };
     var wait = opts.backoff || backoff;
-    var state = { threads: [], loaded: false, error: '', voice: false, link: 'idle' };
+    var state = {
+      stores: [], storesLoaded: false, storesError: '',
+      store: null, arias: [], next: null, ariasLoaded: false, ariasError: '', ariasBusy: false,
+      voice: false, link: 'idle'
+    };
     var media = opts.media || { devices: win.navigator && win.navigator.mediaDevices, Recorder: win.MediaRecorder };
     var canRecord = !!(media.devices && typeof media.devices.getUserMedia === 'function' && media.Recorder);
     var rec = { state: canRecord ? 'idle' : 'unsupported', recorder: null, stream: null, chunks: [], began: 0, tick: 0, token: 0 };
@@ -439,6 +479,7 @@
     var view = null;
     var listeners = [];
     var destroyed = false;
+    var current = null;
 
     function put(n, s) {
       reveal(s).forEach(function (p) {
@@ -485,14 +526,16 @@
     top.append(mark, tools);
 
     var side = el('nav', 'figchat-side');
-    side.setAttribute('aria-label', 'Threads');
+    side.setAttribute('aria-label', 'Stores and arias');
     var sideHead = el('div', 'figchat-side-head');
-    var fresh = el('a', 'figchat-new', 'New thread');
-    fresh.href = '#/new';
-    sideHead.append(el('h2', 'figchat-h2', 'Threads'), fresh);
+    var sideTitle = el('h2', 'figchat-h2', 'Stores');
+    var sideAct = el('div', 'figchat-side-act');
+    sideHead.append(sideTitle, sideAct);
     var list = el('ul', 'figchat-threads');
     var listNote = el('p', 'figchat-note');
-    side.append(sideHead, list, listNote);
+    var moreArias = button('figchat-older figchat-more', 'More arias');
+    moreArias.hidden = true;
+    side.append(sideHead, list, listNote, moreArias);
 
     var pane = el('div', 'figchat-pane');
     var main = el('main', 'figchat-main');
@@ -530,6 +573,8 @@
     host.classList.add('figchat');
     host.replaceChildren(top, body);
 
+    function live() { return !!(view && !view.dead && view.aria); }
+
     function paintLink() {
       var words = { idle: '', connecting: 'Connecting', live: 'Live', offline: 'Offline' };
       host.setAttribute('data-link', state.link);
@@ -538,8 +583,9 @@
       if (voice.textContent !== label) voice.textContent = label;
       voice.setAttribute('aria-pressed', state.voice ? 'true' : 'false');
       send.disabled = !!(view && view.sending) || state.link === 'offline';
-      turn.hidden = !(view && view.id && view.conv.running());
-      stop.disabled = !(view && view.socket && state.link === 'live');
+      turn.hidden = !(live() && view.conv.running());
+      stop.disabled = !(live() && view.socket && state.link === 'live');
+      composer.hidden = !live();
     }
 
     function paintMic() {
@@ -649,45 +695,135 @@
       paintLink();
     }
 
-    function titleOf(id) {
-      for (var i = 0; i < state.threads.length; i++) if (state.threads[i].id === id) return state.threads[i].title || 'Untitled thread';
-      return 'Thread';
+    function storeLabel(id) {
+      for (var i = 0; i < state.stores.length; i++) if (state.stores[i].id === id) return state.stores[i].label || id;
+      return id;
     }
 
-    function paintThreads() {
-      var open = view ? view.id : null;
-      var rows = state.threads.map(function (t) {
+    function ariaOf(store, id) {
+      if (state.store !== store) return null;
+      for (var i = 0; i < state.arias.length; i++) if (state.arias[i].id === id) return state.arias[i];
+      return null;
+    }
+
+    function paintSideNote(text) {
+      listNote.replaceChildren();
+      put(listNote, text);
+      listNote.hidden = !text;
+    }
+
+    function paintStores() {
+      sideTitle.textContent = 'Stores';
+      sideAct.replaceChildren();
+      moreArias.hidden = true;
+      var rows = state.stores.map(function (s) {
         var li = el('li', 'figchat-row');
-        var a = el('a', 'figchat-thread');
-        a.href = routeFor(t.id);
-        if (t.id === open) a.setAttribute('aria-current', 'page');
-        a.append(el('span', 'figchat-thread-title', t.title || 'Untitled thread'), el('span', 'figchat-thread-when', ago(t.updated, now())));
-        li.appendChild(a);
+        li.setAttribute('data-online', s.online ? 'true' : 'false');
+        if (s.online) {
+          var a = el('a', 'figchat-thread');
+          a.href = routeFor(s.id);
+          if (current && current.store === s.id) a.setAttribute('aria-current', 'page');
+          a.append(el('span', 'figchat-aria-name', s.label || s.id), el('span', 'figchat-thread-when', 'Online'));
+          li.appendChild(a);
+        } else {
+          var d = el('div', 'figchat-thread figchat-offline');
+          d.append(el('span', 'figchat-aria-name', s.label || s.id), el('span', 'figchat-thread-when', 'Offline'));
+          li.append(d, el('p', 'figchat-aria-sub', 'Not answering. Nothing is queued.'));
+        }
         return li;
       });
       list.replaceChildren.apply(list, rows);
-      var note = !state.loaded ? (state.error ? 'Could not load threads: ' + state.error : 'Loading threads.') : state.threads.length ? '' : 'No threads yet.';
-      listNote.replaceChildren();
-      put(listNote, note);
-      listNote.hidden = !note;
-      if (view && view.heading && view.id) {
-        var t = titleOf(view.id);
-        if (view.heading.textContent !== t) { view.heading.replaceChildren(); put(view.heading, t); }
+      paintSideNote(!state.storesLoaded ? (state.storesError ? 'Could not load stores: ' + state.storesError : 'Loading stores.') : state.stores.length ? '' : 'No stores configured.');
+    }
+
+    function paintArias() {
+      var store = current && current.store;
+      sideTitle.textContent = storeLabel(store);
+      sideAct.replaceChildren();
+      var back = el('a', 'figchat-new', 'Stores');
+      back.href = '#/';
+      var fresh = button('figchat-new figchat-fork', 'New aria');
+      fresh.addEventListener('click', function () { forkAria(store, undefined, fresh); });
+      sideAct.append(back, fresh);
+      var shape = tree(state.arias);
+      var open = current && current.aria;
+      var rows = state.arias.map(function (a, i) {
+        var li = el('li', 'figchat-row');
+        var anchor = el('a', 'figchat-thread');
+        anchor.href = routeFor(store, a.id);
+        if (a.id === open) anchor.setAttribute('aria-current', 'page');
+        var st = STATES[a.state] || 'idle';
+        anchor.setAttribute('data-state', st);
+        var line = el('span', 'figchat-aria-line');
+        var branch = treeText(shape[i]);
+        if (branch) line.appendChild(el('span', 'figchat-tree', branch));
+        var dot = el('i', 'figchat-dot');
+        dot.setAttribute('aria-hidden', 'true');
+        line.append(dot, el('span', 'figchat-aria-name', ariaName(a)));
+        var sub = [(a.roles || []).join(' '), a.id, st].filter(Boolean).join(' \u00b7 ');
+        anchor.append(line, el('span', 'figchat-thread-when', ago(a.last_turn, now())), el('span', 'figchat-aria-sub', sub));
+        li.appendChild(anchor);
+        return li;
+      });
+      list.replaceChildren.apply(list, rows);
+      moreArias.hidden = state.next == null;
+      moreArias.disabled = state.ariasBusy;
+      var note = !state.ariasLoaded ? (state.ariasError ? state.ariasError : 'Loading arias.') : state.arias.length ? '' : 'This store has no arias.';
+      paintSideNote(note);
+      if (view && view.heading && view.aria && !view.titled) {
+        var found = ariaOf(view.store, view.aria);
+        if (found) { view.titled = true; view.heading.replaceChildren(); put(view.heading, ariaName(found)); }
       }
     }
 
-    function loadThreads() {
-      return transport.threads().then(function (res) {
+    function paintSide() {
+      if (current && current.store != null) paintArias();
+      else paintStores();
+    }
+
+    function loadStores() {
+      return transport.stores().then(function (res) {
         if (destroyed) return;
-        state.threads = Array.isArray(res && res.threads) ? res.threads.filter(function (t) { return t && typeof t.id === 'string'; }) : [];
-        state.threads.sort(function (a, b) { return String(b.updated || '').localeCompare(String(a.updated || '')); });
-        state.loaded = true;
-        state.error = '';
-        paintThreads();
+        state.stores = Array.isArray(res && res.stores) ? res.stores.filter(function (s) { return s && typeof s.id === 'string'; }) : [];
+        state.storesLoaded = true;
+        state.storesError = '';
+        paintSide();
+        if (view && view.heading && !view.aria) { view.heading.replaceChildren(); put(view.heading, storeLabel(view.store)); }
       }, function (err) {
         if (destroyed) return;
-        state.error = err && err.message ? err.message : 'network';
-        paintThreads();
+        state.storesError = err && err.message ? err.message : 'network';
+        paintSide();
+      });
+    }
+
+    function loadArias(store, more) {
+      if (state.store !== store) {
+        state.store = store;
+        state.arias = [];
+        state.next = null;
+        state.ariasLoaded = false;
+        state.ariasError = '';
+        more = false;
+      }
+      var q = { limit: more ? ARIA_PAGE : Math.max(ARIA_PAGE, state.arias.length) };
+      if (more && state.next != null) q.before = state.next;
+      state.ariasBusy = true;
+      if (current && current.store === store) paintSide();
+      return transport.arias(store, q).then(function (res) {
+        if (destroyed || state.store !== store) return;
+        var got = Array.isArray(res && res.arias) ? res.arias.filter(function (a) { return a && typeof a.id === 'string'; }) : [];
+        if (more) state.arias = state.arias.concat(got);
+        else state.arias = got;
+        state.next = res && res.next_before != null ? res.next_before : null;
+        state.ariasLoaded = true;
+        state.ariasError = '';
+        state.ariasBusy = false;
+        if (current && current.store === store) paintSide();
+      }, function (err) {
+        if (destroyed || state.store !== store) return;
+        state.ariasBusy = false;
+        state.ariasError = err && err.code === 'store_offline' ? 'This store is offline. Nothing is queued.' : 'Could not load arias: ' + (err && err.message ? err.message : 'network');
+        if (current && current.store === store) paintSide();
       });
     }
 
@@ -703,39 +839,38 @@
       if (stick) toBottom();
     }
 
-    function playerFor(v, m) {
-      var k = key(m.id), node = nodeFor(v, m);
-      if (node.player || !V) return node.player;
-      node.player = V.create(doc, {
-        audioId: m.audio_id,
+    function playerFor(v, t, which) {
+      var node = nodeFor(v, t), part = node[which];
+      var id = which === 'prompt' ? t.prompt_audio_id : t.audio_id;
+      if (part.player || !V) return part.player;
+      part.player = V.create(doc, {
+        audioId: id,
         src: transport.audioURL,
         status: transport.audioStatus,
-        label: m.role === 'user' ? 'Recording' : 'Spoken reply'
+        label: which === 'prompt' ? 'Recording' : 'Spoken reply'
       });
-      node.player.el.setAttribute('data-for', k);
-      node.bubble.appendChild(node.player.el);
-      return node.player;
+      part.player.el.setAttribute('data-for', key(t.id) + ':' + (which === 'prompt' ? 'in' : 'out'));
+      part.bubble.appendChild(part.player.el);
+      return part.player;
     }
 
-    function paintTools(node, m) {
-      var rows = m.tools.map(function (t) {
+    function paintTools(part, t) {
+      var rows = t.tools.map(function (x) {
         var li = el('li', 'figchat-tool');
-        li.setAttribute('data-state', toolState(t));
-        li.append(el('span', 'figchat-tool-name', t.name || 'tool'), el('span', 'figchat-tool-state', toolState(t)));
+        li.setAttribute('data-state', toolState(x));
+        li.append(el('span', 'figchat-tool-name', x.name || 'tool'), el('span', 'figchat-tool-state', toolState(x)));
         return li;
       });
-      node.tools.replaceChildren.apply(node.tools, rows);
-      node.tools.hidden = !rows.length;
+      part.tools.replaceChildren.apply(part.tools, rows);
+      part.tools.hidden = !rows.length;
     }
 
-    function nodeFor(v, m) {
-      var k = key(m.id), node = v.nodes[k];
-      if (node) return node;
+    function makePart(role, t) {
       var li = el('li', 'figchat-msg');
-      li.setAttribute('data-role', m.role);
-      li.setAttribute('data-id', k);
+      li.setAttribute('data-role', role);
+      li.setAttribute('data-turn', key(t.id));
       var bubble = el('div', 'figchat-bubble');
-      var who = el('span', 'figchat-who', m.role === 'user' ? 'You' : 'Figaro');
+      var who = el('span', 'figchat-who', role === 'user' ? 'Prompt' : 'Figaro');
       var text = el('div', 'figchat-text');
       var toolList = el('ul', 'figchat-tools');
       toolList.hidden = true;
@@ -744,17 +879,24 @@
       bubble.append(who, text, toolList, faultLine);
       var meta = el('span', 'figchat-meta');
       li.append(bubble, meta);
-      node = v.nodes[k] = { li: li, bubble: bubble, text: text, tools: toolList, fault: faultLine, meta: meta, player: null, blocks: [], plain: null };
+      return { li: li, bubble: bubble, text: text, tools: toolList, fault: faultLine, meta: meta, player: null, blocks: [], plain: null };
+    }
+
+    function nodeFor(v, t) {
+      var k = key(t.id), node = v.nodes[k];
+      if (node) return node;
+      node = v.nodes[k] = { prompt: makePart('user', t), reply: makePart('assistant', t) };
       var anchor = null;
-      for (var next = v.conv.next(m); next && !anchor; next = v.conv.next(next)) {
-        if (v.nodes[key(next.id)]) anchor = v.nodes[key(next.id)].li;
+      for (var next = v.conv.next(t); next && !anchor; next = v.conv.next(next)) {
+        if (v.nodes[key(next.id)]) anchor = v.nodes[key(next.id)].prompt.li;
       }
-      v.log.insertBefore(li, anchor);
+      v.log.insertBefore(node.prompt.li, anchor);
+      v.log.insertBefore(node.reply.li, anchor);
       return node;
     }
 
-    function inline(n, list) {
-      list.forEach(function (sp) {
+    function inline(n, spanList) {
+      spanList.forEach(function (sp) {
         var c;
         if (sp.kind === 'text') { put(n, sp.text); return; }
         if (sp.kind === 'code') c = el('code', 'figchat-code', sp.text);
@@ -782,57 +924,71 @@
         case 'ol':
           n = el(b.kind, 'figchat-list');
           if (b.kind === 'ol' && b.start !== 1) n.start = b.start;
-          b.items.forEach(function (t) { n.appendChild(inline(el('li'), spans(t))); });
+          b.items.forEach(function (x) { n.appendChild(inline(el('li'), spans(x))); });
           return n;
         case 'quote': return inline(el('blockquote', 'figchat-quote'), spans(b.text));
         default: return inline(el('p', 'figchat-p'), spans(b.text));
       }
     }
 
-    function paintText(node, m) {
-      if (m.role === 'user') {
-        if (node.plain === m.text) return;
-        node.plain = m.text;
-        node.text.replaceChildren();
-        put(node.text, m.text);
-        return;
-      }
-      var next = blocks(m.text), old = node.blocks;
+    function paintReplyText(part, t) {
+      var next = blocks(t.reply), old = part.blocks;
       for (var i = 0; i < next.length; i++) {
         var sig = JSON.stringify(next[i]);
         if (old[i] && old[i].sig === sig) continue;
         var made = blockEl(next[i]);
-        if (old[i]) node.text.replaceChild(made, old[i].el);
-        else node.text.appendChild(made);
+        if (old[i]) part.text.replaceChild(made, old[i].el);
+        else part.text.appendChild(made);
         old[i] = { sig: sig, el: made };
       }
-      while (old.length > next.length) node.text.removeChild(old.pop().el);
+      while (old.length > next.length) part.text.removeChild(old.pop().el);
     }
 
-    function paintMessage(v, m) {
-      var node = nodeFor(v, m);
-      node.li.setAttribute('data-role', m.role);
-      paintText(node, m);
-      paintTools(node, m);
-      paintMeta(node, m);
-      if (m.audio_id) {
-        var p = playerFor(v, m);
-        if (p && !p.audioId()) p.end(m.audio_id);
+    function paintPrompt(v, t) {
+      var part = nodeFor(v, t).prompt;
+      part.li.hidden = !t.prompt && !t.prompt_audio_id;
+      if (part.plain !== t.prompt) {
+        part.plain = t.prompt;
+        part.text.replaceChildren();
+        put(part.text, t.prompt);
       }
-      return node;
+      var stamp = Date.parse(t.at);
+      var when = isNaN(stamp) ? '' : new Date(stamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      part.meta.replaceChildren();
+      var bits = [when, t.from].filter(Boolean).join(' \u00b7 ');
+      var anchor = el('a', 'figchat-turnlink', '#' + key(t.id));
+      anchor.href = routeFor(v.store, v.aria, t.id);
+      anchor.setAttribute('aria-label', 'Link to turn ' + key(t.id));
+      if (bits) put(part.meta, bits + ' \u00b7 ');
+      part.meta.appendChild(anchor);
+      if (t.prompt_audio_id) {
+        var p = playerFor(v, t, 'prompt');
+        if (p && !p.audioId()) p.end(t.prompt_audio_id);
+      }
     }
 
-    function paintMeta(node, m) {
-      if (m.streaming || (m.role === 'assistant' && !m.done)) node.li.setAttribute('data-streaming', '');
-      else node.li.removeAttribute('data-streaming');
-      if (m.failed) node.li.setAttribute('data-failed', '');
-      else node.li.removeAttribute('data-failed');
-      node.fault.replaceChildren();
-      put(node.fault, m.fault || '');
-      node.fault.hidden = !m.fault;
-      var t = Date.parse(m.created);
-      var when = isNaN(t) ? '' : new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      if (node.meta.textContent !== when) node.meta.textContent = when;
+    function paintReply(v, t) {
+      var part = nodeFor(v, t).reply;
+      part.li.hidden = !t.reply && !t.tools.length && !t.audio_id && t.done && !t.fault;
+      paintReplyText(part, t);
+      paintTools(part, t);
+      if (t.streaming || !t.done) part.li.setAttribute('data-streaming', '');
+      else part.li.removeAttribute('data-streaming');
+      if (t.failed) part.li.setAttribute('data-failed', '');
+      else part.li.removeAttribute('data-failed');
+      part.fault.replaceChildren();
+      put(part.fault, t.fault || '');
+      part.fault.hidden = !t.fault;
+      if (t.audio_id) {
+        var p = playerFor(v, t, 'reply');
+        if (p && !p.audioId()) p.end(t.audio_id);
+      }
+    }
+
+    function paintTurn(v, t) {
+      nodeFor(v, t);
+      paintPrompt(v, t);
+      paintReply(v, t);
     }
 
     function notice(v, text) {
@@ -842,97 +998,132 @@
       v.log.appendChild(li);
     }
 
+    function say(text) {
+      sendNote.replaceChildren();
+      put(sendNote, text);
+    }
+
     function frame(v, f) {
       var eff = v.conv.apply(f);
       if (!eff) return;
-      var m = eff.message, node;
+      var t = eff.turn, node;
       keep(function () {
         switch (eff.kind) {
-          case 'message':
-            paintMessage(v, m);
+          case 'turn':
+            paintTurn(v, t);
             break;
           case 'delta':
-            node = nodeFor(v, m);
-            paintText(node, m);
-            paintMeta(node, m);
-            break;
           case 'tool':
-            node = nodeFor(v, m);
-            paintTools(node, m);
-            paintMeta(node, m);
+            nodeFor(v, t);
+            paintReply(v, t);
             break;
           case 'end':
-            paintMeta(nodeFor(v, m), m);
-            if (eff.refetch) history(v);
-            loadThreads();
+            paintReply(v, t);
+            loadArias(v.store, false);
             break;
           case 'audio.start':
-            nodeFor(v, m);
-            if (playerFor(v, m)) playerFor(v, m).start(eff.format);
+            nodeFor(v, t);
+            if (playerFor(v, t, 'reply')) playerFor(v, t, 'reply').start(eff.format);
             break;
           case 'audio.end':
-            nodeFor(v, m);
-            if (playerFor(v, m)) playerFor(v, m).end(eff.audio_id);
+            nodeFor(v, t);
+            paintReply(v, t);
+            if (playerFor(v, t, 'reply')) playerFor(v, t, 'reply').end(eff.audio_id);
             break;
           case 'error':
-            if (m) {
-              node = nodeFor(v, m);
-              if (eff.code === 'speech' && node.player) node.player.fail();
-              paintMeta(node, m);
+            if (t) {
+              node = nodeFor(v, t);
+              if (eff.code === 'speech' && node.reply.player) node.reply.player.fail();
+              paintReply(v, t);
             } else notice(v, 'Error: ' + eff.text);
+            break;
+          case 'offline':
+            v.storeOffline = true;
+            say('The store went offline. Nothing is queued; reconnecting.');
             break;
         }
       });
       paintLink();
     }
 
-    function history(v, q) {
-      return transport.messages(v.id, q || { limit: 50 }).then(function (page) {
-        if (view !== v) return page;
+    function loadOlder(v) {
+      if (view !== v || !v.more || v.olderBusy || !v.conv.turns.length) return Promise.resolve();
+      v.olderBusy = true;
+      v.older.disabled = true;
+      return transport.turns(v.store, v.aria, { before: v.conv.turns[0].id, limit: PAGE }).then(function (page) {
+        v.olderBusy = false;
+        v.older.disabled = false;
+        if (view !== v) return;
         var first = v.log.firstChild, anchorTop = first ? first.getBoundingClientRect().top : 0;
-        var older = !!q && q.before != null;
-        v.conv.load(page && page.messages).forEach(function (m) { paintMessage(v, m); });
-        if (older || v.cursor === undefined) v.cursor = page && page.next_before != null ? page.next_before : null;
-        v.older.hidden = v.cursor == null;
-        if (older && first) win.scrollBy(0, first.getBoundingClientRect().top - anchorTop);
-        paintLink();
-        return page;
+        var got = v.conv.load(page && page.turns, true);
+        got.forEach(function (t) { paintTurn(v, t); });
+        v.more = !!(page && page.more) && got.length > 0;
+        v.older.hidden = !v.more;
+        if (first) win.scrollBy(0, first.getBoundingClientRect().top - anchorTop);
+      }, function (err) {
+        v.olderBusy = false;
+        v.older.disabled = false;
+        if (view === v) say('Could not load earlier turns: ' + (err && err.message ? err.message : 'network'));
       });
+    }
+
+    function markTurn(v, id) {
+      Object.keys(v.nodes).forEach(function (k) { v.nodes[k].prompt.li.removeAttribute('data-target'); v.nodes[k].reply.li.removeAttribute('data-target'); });
+      var t = v.conv.get(id);
+      if (!t || !v.nodes[key(t.id)]) return false;
+      var n = v.nodes[key(t.id)];
+      n.prompt.li.setAttribute('data-target', '');
+      n.reply.li.setAttribute('data-target', '');
+      (n.prompt.li.hidden ? n.reply.li : n.prompt.li).scrollIntoView({ block: 'start' });
+      return true;
+    }
+
+    function seek(v, id) {
+      var guard = 0;
+      function step() {
+        if (view !== v) return Promise.resolve();
+        if (v.conv.get(id)) { markTurn(v, id); v.ready = true; return Promise.resolve(); }
+        if (!v.more || guard++ > 200) {
+          v.ready = true;
+          v.status.hidden = false;
+          v.status.replaceChildren();
+          put(v.status, 'Turn ' + id + ' is not in this aria\u2019s history.');
+          return Promise.resolve();
+        }
+        return loadOlder(v).then(step);
+      }
+      return step();
     }
 
     function connect(v) {
       if (view !== v || v.closed) return;
       setLink('connecting');
-      v.socket = transport.connect(v.id, v.conv.last(), {
+      v.socket = transport.connect(v.store, v.aria, v.conv.cursor(), {
         open: function () {
           if (view !== v) return;
           v.attempts = 0;
+          v.storeOffline = false;
+          say('');
           setLink('live');
           if (state.voice) v.socket.send({ type: 'voice', on: true });
           v.waiting.splice(0).forEach(function (go) { go(); });
-          if (v.conv.running()) history(v).catch(function () {});
         },
         frame: function (f) { if (view === v) frame(v, f); },
         binary: function (data) {
           if (view !== v) return;
-          var m = v.conv.binary();
-          var node = m && v.nodes[key(m.id)];
-          if (node && node.player) node.player.push(data);
+          var t = v.conv.binary();
+          var node = t && v.nodes[key(t.id)];
+          if (node && node.reply.player) node.reply.player.push(data);
         },
         close: function () {
           if (view !== v || v.closed) return;
           v.socket = null;
-          var m = v.conv.cut();
-          var node = m && v.nodes[key(m.id)];
-          if (node && node.player) node.player.end('');
-          v.conv.messages.forEach(function (x) { if (v.nodes[key(x.id)]) paintMeta(v.nodes[key(x.id)], x); });
+          var t = v.conv.cut();
+          var node = t && v.nodes[key(t.id)];
+          if (node && node.reply.player) node.reply.player.end('');
+          v.conv.turns.forEach(function (x) { if (v.nodes[key(x.id)]) paintReply(v, x); });
           setLink('offline');
-          v.timer = win.setTimeout(function () {
-            history(v).then(function () { connect(v); }, function () {
-              if (view !== v || v.closed) return;
-              v.timer = win.setTimeout(function () { connect(v); }, wait(v.attempts++));
-            });
-          }, wait(v.attempts++));
+          v.timer = win.setTimeout(function () { connect(v); }, wait(v.attempts++));
         }
       });
     }
@@ -944,88 +1135,119 @@
       v.closed = true;
       win.clearTimeout(v.timer);
       if (v.socket) v.socket.close();
-      Object.keys(v.nodes).forEach(function (k) { if (v.nodes[k].player) v.nodes[k].player.destroy(); });
+      Object.keys(v.nodes).forEach(function (k) {
+        if (v.nodes[k].prompt.player) v.nodes[k].prompt.player.destroy();
+        if (v.nodes[k].reply.player) v.nodes[k].reply.player.destroy();
+      });
       setLink('idle');
     }
 
-    function crumb() {
-      var back = el('a', 'figchat-back', 'Threads');
-      back.href = '#/';
+    function crumb(store) {
+      var back = el('a', 'figchat-back', store == null ? 'Stores' : 'Arias');
+      back.href = routeFor(store);
       return back;
     }
 
-    function openThread(id) {
-      closeView();
-      var v = view = { id: id, conv: conversation(), nodes: {}, socket: null, timer: 0, attempts: 0, closed: false, sending: false, waiting: [], cursor: undefined };
-      v.heading = el('h1', 'figchat-h1', titleOf(id));
-      v.heading.tabIndex = -1;
-      v.older = button('figchat-older', 'Earlier messages');
-      v.older.hidden = true;
-      v.older.addEventListener('click', function () {
-        if (view !== v || v.cursor == null) return;
-        v.older.disabled = true;
-        history(v, { before: v.cursor, limit: 50 }).then(function () { v.older.disabled = false; }, function () { v.older.disabled = false; });
+    function forkAria(store, parent, btn) {
+      if (btn) btn.disabled = true;
+      var req = parent ? { fork_of: parent } : {};
+      return transport.createAria(store, req).then(function (res) {
+        if (btn) btn.disabled = false;
+        if (destroyed) return;
+        loadArias(store, false);
+        win.location.hash = routeFor(store, res.id);
+      }, function (err) {
+        if (btn) btn.disabled = false;
+        say('Could not start an aria: ' + (err && err.message ? err.message : 'network'));
       });
+    }
+
+    function deadWords(store, err) {
+      if (err && err.code === 'store_offline') return storeLabel(store) + ' is offline. Nothing is queued.';
+      if (err && (err.status === 404 || err.code === 'aria_gone')) return 'This aria is gone. It was reaped, or the link is wrong.';
+      return 'Could not load turns: ' + (err && err.message ? err.message : 'network');
+    }
+
+    function openAria(rt) {
+      closeView();
+      var v = view = { store: rt.store, aria: rt.aria, conv: conversation(), nodes: {}, socket: null, timer: 0, attempts: 0, closed: false, sending: false, waiting: [], more: false, olderBusy: false, ready: false, dead: false, titled: false, storeOffline: false };
+      var known = ariaOf(rt.store, rt.aria);
+      v.heading = el('h1', 'figchat-h1', known ? ariaName(known) : rt.aria);
+      v.heading.tabIndex = -1;
+      v.titled = !!known;
+      var actions = el('div', 'figchat-actions');
+      var fork = button('figchat-button figchat-fork', 'Fork this aria');
+      fork.addEventListener('click', function () { forkAria(v.store, v.aria, fork); });
+      actions.append(el('span', 'figchat-where', storeLabel(rt.store) + ' \u00b7 ' + rt.aria), fork);
+      v.older = button('figchat-older', 'Earlier turns');
+      v.older.hidden = true;
+      v.older.addEventListener('click', function () { loadOlder(v); });
       v.log = el('ol', 'figchat-log');
-      v.log.setAttribute('aria-label', 'Messages');
-      v.status = el('p', 'figchat-note', 'Loading messages.');
-      main.replaceChildren(crumb(), v.heading, v.older, v.log, v.status);
-      history(v).then(function () {
+      v.log.setAttribute('aria-label', 'Turns');
+      v.status = el('p', 'figchat-note', 'Loading turns.');
+      main.replaceChildren(crumb(rt.store), v.heading, actions, v.older, v.log, v.status);
+      transport.turns(rt.store, rt.aria, { limit: PAGE }).then(function (page) {
         if (view !== v) return;
         v.status.hidden = true;
-        toBottom();
-        connect(v);
+        v.conv.load(page && page.turns, false).forEach(function (t) { paintTurn(v, t); });
+        v.more = !!(page && page.more);
+        v.older.hidden = !v.more;
+        var go = rt.turn != null ? seek(v, rt.turn) : Promise.resolve().then(function () { toBottom(); v.ready = true; });
+        go.then(function () { if (view === v) connect(v); });
+        paintLink();
       }, function (err) {
         if (view !== v) return;
+        v.dead = true;
         v.status.replaceChildren();
-        put(v.status, err && err.status === 404 ? 'This thread is gone.' : 'Could not load messages: ' + (err && err.message ? err.message : 'network'));
-        if (!err || err.status !== 404) {
+        put(v.status, deadWords(rt.store, err));
+        paintLink();
+        if (!err || (err.status !== 404 && err.code !== 'aria_gone')) {
           var retry = button('figchat-button', 'Try again');
-          retry.addEventListener('click', function () { if (view === v) openThread(id); });
+          retry.addEventListener('click', function () { if (view === v) openAria(rt); });
           main.appendChild(retry);
         }
       });
       return v.heading;
     }
 
-    function openFresh() {
+    function openStoreHome(rt) {
       closeView();
-      view = { id: null, conv: conversation(), nodes: {}, socket: null, timer: 0, attempts: 0, closed: false, sending: false, waiting: [] };
-      view.heading = el('h1', 'figchat-h1', 'New thread');
-      view.heading.tabIndex = -1;
-      main.replaceChildren(crumb(), view.heading, el('p', 'figchat-note', 'Write the first message below.'));
-      return view.heading;
+      var h = el('h1', 'figchat-h1', storeLabel(rt.store));
+      h.tabIndex = -1;
+      view = { store: rt.store, aria: null, heading: h, conv: conversation(), nodes: {}, closed: false, dead: true, waiting: [] };
+      main.replaceChildren(crumb(), h, el('p', 'figchat-note', 'Pick an aria.'));
+      return h;
     }
 
-    function openList() {
+    function openStores() {
       closeView();
       var h = el('h1', 'figchat-h1', 'figchat');
       h.tabIndex = -1;
-      main.replaceChildren(h, el('p', 'figchat-note', 'Pick a thread or start a new one.'));
+      main.replaceChildren(h, el('p', 'figchat-note', 'Pick a store, then an aria to attend.'));
       return h;
     }
 
     function route() {
       var rt = parseRoute(win.location.hash);
       var h;
-      if (rt && rt.thread && view && view.id === rt.thread && !view.closed) return;
-      if (rt && rt.thread) h = openThread(rt.thread);
-      else if (rt && rt.fresh) h = openFresh();
-      else h = openList();
-      host.setAttribute('data-route', rt && rt.thread ? 'thread' : rt && rt.fresh ? 'fresh' : 'list');
-      composer.hidden = !rt;
-      if (!rt) cancelRecording();
+      if (rt && rt.aria != null && view && view.aria === rt.aria && view.store === rt.store && !view.closed) {
+        current = rt;
+        if (rt.turn != null && !view.dead) seek(view, rt.turn);
+        paintSide();
+        return;
+      }
+      current = rt;
+      if (rt && rt.aria != null) h = openAria(rt);
+      else if (rt) h = openStoreHome(rt);
+      else h = openStores();
+      host.setAttribute('data-route', rt && rt.aria != null ? 'aria' : rt ? 'store' : 'stores');
+      if (!rt || rt.aria == null) cancelRecording();
       sendNote.replaceChildren();
-      paintThreads();
+      if (rt) loadArias(rt.store, false);
+      paintSide();
       paintLink();
-      win.scrollTo(0, 0);
-      if (rt && rt.fresh) input.focus({ preventScroll: true });
-      else h.focus({ preventScroll: true });
-    }
-
-    function say(text) {
-      sendNote.replaceChildren();
-      put(sendNote, text);
+      if (!(rt && rt.turn != null)) win.scrollTo(0, 0);
+      h.focus({ preventScroll: true });
     }
 
     function whenLive(v) {
@@ -1040,38 +1262,25 @@
       say('Not sent: ' + (err && err.message ? err.message : 'network'));
     }
 
-    function post(v, text, held) {
+    function submit() {
+      var v = view, text = input.value.trim(), held = clip;
+      if (!live() || v.sending || !text) return;
+      if (state.link === 'offline') { say('Offline. Nothing is queued; try again when it is live.'); return; }
+      if (V) V.unlock(win);
       v.sending = true;
       say('');
       paintLink();
-      whenLive(v).then(function () { return transport.send(v.id, held ? { text: text, clip_id: held.id } : { text: text }); }).then(function (res) {
+      whenLive(v).then(function () {
+        return transport.send(v.store, v.aria, held ? { text: text, clip_id: held.id } : { text: text });
+      }).then(function () {
         v.sending = false;
         if (clip === held) clip = null;
         if (input.value.trim() === text) input.value = '';
         grow();
         paintMic();
         if (view !== v) return;
-        if (!v.conv.get(res.id)) paintMessage(v, v.conv.add({ id: res.id, role: 'user', text: text, created: new Date(now()).toISOString(), audio_id: held ? held.id : '' }));
         paintLink();
         toBottom();
-      }, function (err) { unsent(v, err); });
-    }
-
-    function submit() {
-      var v = view, text = input.value.trim(), held = clip;
-      if (!v || v.sending || !text) return;
-      if (state.link === 'offline') { say('Offline. Reconnecting.'); return; }
-      if (V) V.unlock(win);
-      if (v.id) { post(v, text, held); return; }
-      v.sending = true;
-      paintLink();
-      transport.createThread(titleFrom(text)).then(function (res) {
-        if (view !== v) return;
-        win.location.hash = routeFor(res.id);
-        route();
-        input.focus({ preventScroll: true });
-        loadThreads();
-        post(view, text, held);
       }, function (err) { unsent(v, err); });
     }
 
@@ -1095,31 +1304,42 @@
       paintMic();
     });
     on(stop, 'click', function () {
-      if (view && view.socket) view.socket.send({ type: 'cancel' });
+      if (live()) transport.cancel(view.store, view.aria).catch(function (err) { say('Could not stop: ' + (err && err.message ? err.message : 'network')); });
+    });
+    on(moreArias, 'click', function () {
+      if (current && current.store != null && state.next != null) loadArias(current.store, true);
     });
     on(voice, 'click', function () {
       if (V) V.unlock(win);
       state.voice = !state.voice;
       paintLink();
-      if (view && view.socket) view.socket.send({ type: 'voice', on: state.voice });
-      if (!state.voice && view) {
-        var m = view.conv.binary();
-        var node = m && view.nodes[key(m.id)];
+      if (live() && view.socket) view.socket.send({ type: 'voice', on: state.voice });
+      if (!state.voice && live()) {
+        var t = view.conv.binary();
+        var node = t && view.nodes[key(t.id)];
         view.conv.audio = null;
-        if (node && node.player) {
-          node.player.stop();
-          node.player.end('');
+        if (node && node.reply.player) {
+          node.reply.player.stop();
+          node.reply.player.end('');
         }
       }
     });
     on(win, 'hashchange', route);
-    on(doc, 'visibilitychange', function () { if (doc.visibilityState === 'visible') loadThreads(); });
+    on(win, 'scroll', function () {
+      var v = view;
+      if (v && v.aria && v.ready && v.more && !v.olderBusy && win.scrollY < 160) loadOlder(v);
+    });
+    on(doc, 'visibilitychange', function () {
+      if (doc.visibilityState !== 'visible') return;
+      loadStores();
+      if (current && current.store != null) loadArias(current.store, false);
+    });
 
     var api = {
-      state: function () { return { threads: state.threads, voice: state.voice, link: state.link, thread: view ? view.id : null, mic: rec.state, clip: clip ? clip.id : null }; },
-      player: function (id) {
+      state: function () { return { stores: state.stores, arias: state.arias, store: current ? current.store || null : null, aria: live() ? view.aria : null, voice: state.voice, link: state.link, mic: rec.state, clip: clip ? clip.id : null, turns: view && view.conv ? view.conv.turns.length : 0 }; },
+      player: function (id, which) {
         var node = view && view.nodes[key(id)];
-        return node ? node.player : null;
+        return node ? node[which === 'in' ? 'prompt' : 'reply'].player : null;
       },
       detach: function () {
         destroyed = true;
@@ -1138,7 +1358,7 @@
     if (!canRecord) micSay('This browser cannot record audio.');
     paintMic();
     route();
-    loadThreads();
+    loadStores();
     return api;
   }
 
@@ -1153,8 +1373,10 @@
     reveal: reveal,
     routeFor: routeFor,
     parseRoute: parseRoute,
+    tree: tree,
+    treeText: treeText,
+    cursorText: cursorText,
     ago: ago,
-    titleFrom: titleFrom,
     backoff: backoff
   };
 }));

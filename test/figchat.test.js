@@ -17,14 +17,20 @@ assert.deepEqual(
   'bidi, zero width and C0 controls are shown, not obeyed'
 );
 assert.deepEqual(figchat.reveal('tab\there\nnewline').map((p) => p.plain), ['tab\there\nnewline']);
-assert.equal(figchat.routeFor('c0ffee/01'), '#/t/c0ffee%2F01');
-assert.deepEqual(figchat.parseRoute('#/t/c0ffee%2F01'), { thread: 'c0ffee/01' });
-assert.deepEqual(figchat.parseRoute('#/new'), { fresh: true });
-assert.equal(figchat.parseRoute('#/t/a/b'), null);
-assert.equal(figchat.parseRoute('#/t/%E0%A4%A'), null, 'a malformed escape is no route');
+assert.equal(figchat.routeFor(null), '#/');
+assert.equal(figchat.routeFor('spain'), '#/spain');
+assert.equal(figchat.routeFor('spain', 'wick-sushi'), '#/spain/wick-sushi');
+assert.equal(figchat.routeFor('spain', 'wick-sushi', 41), '#/spain/wick-sushi:41');
+assert.equal(figchat.routeFor('a/b', 'c:d', 'e f'), '#/a%2Fb/c%3Ad:e%20f', 'a colon inside an id is escaped, so the first literal colon is the turn');
+assert.deepEqual(figchat.parseRoute('#/spain'), { store: 'spain' });
+assert.deepEqual(figchat.parseRoute('#/spain/wick-sushi'), { store: 'spain', aria: 'wick-sushi' });
+assert.deepEqual(figchat.parseRoute('#/spain/wick-sushi:41'), { store: 'spain', aria: 'wick-sushi', turn: '41' });
+assert.deepEqual(figchat.parseRoute('#/a%2Fb/c%3Ad:e%20f'), { store: 'a/b', aria: 'c:d', turn: 'e f' });
+assert.equal(figchat.parseRoute('#/spain/a/b'), null);
+assert.equal(figchat.parseRoute('#/spain/a:1:2'), null);
+assert.equal(figchat.parseRoute('#/%E0%A4%A'), null, 'a malformed escape is no route');
+assert.equal(figchat.parseRoute('#/'), null, 'the bare hash is the store picker');
 assert.equal(figchat.parseRoute(''), null);
-assert.equal(figchat.titleFrom('  first   line\nsecond'), 'first line');
-assert.equal(figchat.titleFrom('x'.repeat(200)).length, 60);
 assert.deepEqual([0, 1, 2, 5, 9].map(figchat.backoff), [500, 1000, 2000, 15000, 15000]);
 const t0 = Date.parse('2026-11-20T12:00:00Z');
 assert.equal(figchat.ago(t0 - 5000, t0), 'now');
@@ -35,97 +41,82 @@ assert.equal(figchat.ago(t0 - 30 * 86400000, t0), '2026-10-21');
 assert.equal(figchat.ago('garbage', t0), '');
 
 {
+  const rows = [0, 1, 2, 2, 1, 2, 0, 1].map((depth, i) => ({ id: 'r' + i, depth }));
+  assert.deepEqual(figchat.tree(rows).map((t) => figchat.treeText(t)), [
+    '', '\u251c\u2500', '\u2502 \u251c\u2500', '\u2502 \u2514\u2500', '\u2514\u2500', '  \u2514\u2500', '', '\u2514\u2500'
+  ], 'connectors follow depth, as the pager draws them');
+  assert.deepEqual(figchat.tree([{ depth: 1 }, { depth: 1 }]).map((t) => t.last), [false, true], 'a page that starts below the root still closes its last sibling');
+  assert.equal(figchat.cursorText({ turn: 3, text: 17, started: 3, ended: 2 }), '3.17.3.2');
+  assert.equal(figchat.cursorText('3.17.3.2'), '3.17.3.2');
+  assert.equal(figchat.cursorText(null), '');
+}
+
+{
   const c = figchat.conversation();
-  c.load([{ id: 1, role: 'user', text: 'hi', tools: [] }, { id: 2, role: 'assistant', text: 'hello', tools: [{ id: 't', name: 'x', error: 'boom' }], audio_id: 'a0' }]);
-  assert.deepEqual(c.messages.map((m) => [m.id, m.done]), [[1, true], [2, true]]);
-  assert.equal(c.messages[1].tools[0].state, 'failed');
-  assert.equal(c.last(), 2);
+  const T = (id, extra) => Object.assign({ id, at: '2026-11-20T12:00:00Z', prompt: 'q' + id, reply: 'a' + id, tools: [], done: true, cursor: { turn: id, text: 2, started: id, ended: id } }, extra);
+  c.load([T(11), T(12, { tools: [{ id: 't', name: 'x', error: 'boom' }], audio_id: 'a0', prompt_audio_id: 'p0', from: 'lane x' })]);
+  assert.deepEqual(c.turns.map((t) => [t.id, t.done]), [[11, true], [12, true]]);
+  assert.deepEqual([c.get(12).tools[0].state, c.get(12).audio_id, c.get(12).prompt_audio_id, c.get(12).from], ['failed', 'a0', 'p0', 'lane x']);
+  assert.equal(c.cursor(), '12.2.12.12', 'the cursor to resume from is the newest stored turn');
+  c.load([T(9), T(10)], true);
+  assert.deepEqual(c.turns.map((t) => t.id), [9, 10, 11, 12], 'older turns go in front, oldest first');
+  c.load([T(10), T(11)], true);
+  assert.equal(c.turns.length, 4, 'a turn is never listed twice');
 
   const kinds = [];
   const feed = (f) => { const e = c.apply(f); kinds.push(e ? e.kind : null); return e; };
-  feed({ type: 'message.start', id: 4, role: 'assistant' });
-  c.add({ id: 3, role: 'user', text: 'what time?' });
-  assert.deepEqual(c.messages.map((m) => m.id), [1, 2, 3, 4], 'the sent message sorts before a reply that raced its POST answer');
-  feed({ type: 'message.delta', id: 4, text: 'It is ' });
-  feed({ type: 'audio.start', message_id: 4, format: 'pcm', rate: 24000, bits: 16, channels: 1 });
-  assert.equal(c.binary().id, 4, 'binary frames belong to the message of the current audio.start');
-  feed({ type: 'tool.start', id: 4, tool_id: 't1', name: 'bash', args: '{}' });
-  assert.equal(c.get(4).tools[0].state, 'running');
-  feed({ type: 'tool.end', id: 4, tool_id: 't1', result: 'ok' });
-  assert.equal(c.get(4).tools[0].state, 'done');
-  feed({ type: 'message.delta', id: 4, text: 'noon.' });
-  const end = feed({ type: 'message.end', id: 4 });
-  assert.equal(end.refetch, false);
-  assert.equal(c.get(4).text, 'It is noon.');
-  assert.equal(c.binary().id, 4, 'message.end may precede audio.end: the stream stays open');
-  const done = feed({ type: 'audio.end', message_id: 4, audio_id: 'a9' });
-  assert.equal(done.audio_id, 'a9');
+  const cur = (turn, text, started, ended) => ({ turn, text, started, ended });
+  feed({ type: 'turn.start', turn: 13, prompt: 'what time?', from: 'Gluck (figchat)', cursor: cur(13, 0, 13, 12) });
+  assert.deepEqual([c.get(13).prompt, c.get(13).from, c.running(), c.cursor()], ['what time?', 'Gluck (figchat)', true, '13.0.13.12']);
+  feed({ type: 'message.delta', turn: 13, text: 'It is ', cursor: cur(13, 6, 13, 12) });
+  feed({ type: 'audio.start', turn: 13, format: 'pcm', rate: 24000, bits: 16, channels: 1, cursor: cur(13, 6, 13, 12) });
+  assert.equal(c.binary().id, 13, 'binary frames belong to the turn of the current audio.start');
+  feed({ type: 'tool.start', turn: 13, tool_id: 't1', name: 'bash', args: '{}' });
+  assert.equal(c.get(13).tools[0].state, 'running');
+  feed({ type: 'tool.end', turn: 13, tool_id: 't1', result: 'ok' });
+  assert.equal(c.get(13).tools[0].state, 'done');
+  feed({ type: 'message.delta', turn: 13, text: 'noon.', cursor: cur(13, 11, 13, 12) });
+  const end = feed({ type: 'turn.end', turn: 13, text: 'It is noon.', cursor: cur(13, 11, 13, 13) });
+  assert.deepEqual([end.turn.reply, c.running(), c.cursor()], ['It is noon.', false, '13.11.13.13']);
+  assert.equal(c.binary().id, 13, 'turn.end may precede audio.end: the stream stays open');
+  assert.equal(feed({ type: 'audio.end', turn: 13, audio_id: 'a9' }).audio_id, 'a9');
   assert.equal(c.binary(), null, 'after audio.end binary frames have no owner');
-  assert.equal(feed({ type: 'message.delta', id: 4, text: 'late' }), null, 'a delta after message.end is dropped');
-  assert.equal(c.get(4).text, 'It is noon.');
-  assert.equal(feed({ type: 'keepalive' }), null);
-  assert.equal(feed({ type: 'something.new', id: 9 }), null, 'unknown frame types are ignored');
+  assert.equal(feed({ type: 'message.delta', turn: 13, text: 'late' }), null, 'a delta after turn.end is dropped');
+  assert.equal(c.get(13).reply, 'It is noon.');
+  assert.equal(feed({ type: 'turn.start', turn: 13, prompt: 'again' }), null, 'a turn.start for a known turn changes nothing');
+  assert.equal(c.get(13).prompt, 'what time?');
+  assert.equal(feed({ type: 'keepalive', cursor: cur(13, 11, 13, 13) }), null);
+  assert.equal(feed({ type: 'something.new', turn: 9 }), null, 'unknown frame types are ignored');
   assert.equal(feed(null), null);
-  assert.equal(feed({ type: 'ping' }), null, 'liveness is the protocol ping: a JSON ping is just an unknown frame');
-  assert.deepEqual(kinds, ['message', 'delta', 'audio.start', 'tool', 'tool', 'delta', 'end', 'audio.end', null, null, null, null, null]);
+  assert.deepEqual(kinds, ['turn', 'delta', 'audio.start', 'tool', 'tool', 'delta', 'end', 'audio.end', null, null, null, null, null]);
+  assert.equal(feed({ type: 'offline' }).kind, 'offline');
 
-  feed({ type: 'message.delta', id: 6, text: 'tail of a reply' });
-  assert.equal(c.get(6).partial, true);
-  assert.equal(feed({ type: 'message.end', id: 6 }).refetch, true, 'a reply joined halfway is fetched whole when it ends');
-  c.load([{ id: 6, role: 'assistant', text: 'The whole tail of a reply', tools: [] }]);
-  assert.equal(c.get(6).text, 'The whole tail of a reply');
+  feed({ type: 'message.delta', turn: 14, text: 'tail of a reply' });
+  assert.deepEqual([c.get(14).prompt, c.get(14).done, c.running()], ['', false, true], 'a frame for an unseen turn makes the turn, so a resumed follow shows it');
+  feed({ type: 'turn.end', turn: 14, text: 'The whole tail of a reply' });
+  assert.equal(c.get(14).reply, 'The whole tail of a reply', 'turn.end carries the reply as shown');
 
-  c.load([{ id: 7, role: 'assistant', text: '', tools: [] }]);
-  assert.equal(c.get(7).done, false, 'an empty stored reply is a turn still running');
-  feed({ type: 'message.delta', id: 7, text: 'abc' });
-  feed({ type: 'message.start', id: 7, role: 'assistant' });
-  assert.equal(c.get(7).text, '', 'a resent message.start restarts the text instead of doubling it');
-  feed({ type: 'message.delta', id: 7, text: 'abcdef' });
-  c.load([{ id: 7, role: 'assistant', text: 'stale', tools: [] }]);
-  assert.equal(c.get(7).text, 'abcdef', 'history does not overwrite a message that is streaming');
-  c.cut();
-  c.load([{ id: 7, role: 'assistant', text: '', tools: [] }]);
-  assert.deepEqual([c.get(7).text, c.get(7).done, c.get(7).partial], ['abcdef', false, true], 'after a dropped socket an unfinished stored reply keeps what was heard');
-  feed({ type: 'message.delta', id: 7, text: 'xyz' });
-  assert.equal(feed({ type: 'message.end', id: 7 }).refetch, true, 'and is fetched whole when it ends');
-  c.load([{ id: 7, role: 'assistant', text: 'abcdef-gap-xyz', tools: [] }]);
-  assert.equal(c.get(7).text, 'abcdef-gap-xyz');
+  c.load([T(15, { reply: 'half', done: false })]);
+  assert.deepEqual([c.get(15).done, c.get(15).streaming, c.running()], [false, true, true], 'a stored turn that is not done is running');
+  feed({ type: 'message.delta', turn: 15, text: ' and more' });
+  c.load([T(15, { reply: 'stale' })]);
+  assert.equal(c.get(15).reply, 'half and more', 'history does not overwrite a turn that is streaming');
+  feed({ type: 'turn.end', turn: 15, text: 'half and more' });
 
-  c.load([{ id: 20, role: 'assistant', text: 'has text already', tools: [], state: 'streaming' }]);
-  assert.deepEqual([c.get(20).done, c.get(20).partial, c.running()], [false, true, true], 'state says a turn is running, whatever the row holds');
-  feed({ type: 'message.delta', id: 20, text: ' tail' });
-  assert.equal(feed({ type: 'message.end', id: 20 }).refetch, true);
-  c.load([{ id: 20, role: 'assistant', text: 'whole', tools: [], state: 'done' }]);
-  assert.deepEqual([c.get(20).text, c.get(20).done, c.running()], ['whole', true, false]);
-  c.load([{ id: 21, role: 'assistant', text: '', tools: [], state: 'done' }]);
-  assert.equal(c.get(21).done, true, 'an empty reply that is done is not a running turn');
-  c.load([{ id: 22, role: 'assistant', text: '', tools: [], state: 'failed' }]);
-  assert.deepEqual([c.get(22).done, c.get(22).failed, c.get(22).fault], [true, true, 'This reply failed.']);
+  feed({ type: 'turn.start', turn: 16, prompt: 'go' });
+  feed({ type: 'message.delta', turn: 16, text: 'half' });
+  feed({ type: 'error', turn: 16, code: 'figaro', text: 'aria died' });
+  assert.deepEqual([c.get(16).failed, c.get(16).fault, c.get(16).done, c.get(16).reply], [true, 'Failed: aria died', true, 'half']);
+  assert.equal(feed({ type: 'error', code: 'cursor', text: 'x' }).turn, null, 'an error without a turn is the aria\u2019s');
 
-  const added = { id: 23, thread: 't', role: 'user', text: 'from the other tab', created: '2026-11-20T12:00:00Z', audio_id: 'clip9', tools: [], state: 'done' };
-  assert.equal(feed({ type: 'message.added', message: added }).kind, 'message');
-  c.add({ id: 23, role: 'user', text: 'from the other tab' });
-  feed({ type: 'message.added', message: added });
-  assert.equal(c.messages.filter((m) => m.id === 23).length, 1, 'message.added and the POST answer are one message');
-  assert.deepEqual([c.get(23).audio_id, c.get(23).created, c.get(23).done], ['clip9', '2026-11-20T12:00:00Z', true]);
-  assert.equal(feed({ type: 'message.added' }), null);
-
-  feed({ type: 'message.start', id: 24, role: 'assistant' });
-  feed({ type: 'message.delta', id: 24, text: 'half' });
-  feed({ type: 'error', message_id: 24, code: 'figaro', text: 'aria died' });
-  feed({ type: 'message.end', id: 24 });
-  assert.deepEqual([c.get(24).failed, c.get(24).fault, c.get(24).done, c.get(24).text], [true, 'Failed: aria died', true, 'half']);
-  c.load([{ id: 24, role: 'assistant', text: '', tools: [], state: 'failed' }]);
-  assert.equal(c.get(24).text, 'half', 'a failed reply keeps what was heard when the stored row is empty');
-
-  feed({ type: 'message.start', id: 8, role: 'assistant' });
-  feed({ type: 'audio.start', message_id: 8, format: 'pcm' });
-  const err = feed({ type: 'error', message_id: 8, code: 'speech', text: 'tts down' });
+  feed({ type: 'turn.start', turn: 17, prompt: 'speak' });
+  feed({ type: 'audio.start', turn: 17, format: 'pcm' });
+  const err = feed({ type: 'error', turn: 17, code: 'speech', text: 'tts down' });
   assert.equal(err.kind, 'error');
-  assert.equal(c.binary(), null, 'a speech error closes the audio stream: no audio.end follows it');
-  feed({ type: 'audio.start', message_id: 8, format: 'pcm' });
-  assert.equal(c.cut().id, 8, 'a dropped socket hands back the message whose audio was cut');
-  assert.equal(c.get(8).streaming, false);
+  assert.deepEqual([c.binary(), c.get(17).failed, c.get(17).done], [null, false, false], 'a speech error closes the audio stream and fails nothing else');
+  feed({ type: 'audio.start', turn: 17, format: 'pcm' });
+  assert.equal(c.cut().id, 17, 'a dropped socket hands back the turn whose audio was cut');
+  assert.equal(c.get(17).streaming, false);
 }
 
 {
@@ -168,64 +159,93 @@ assert.equal(figchat.ago('garbage', t0), '');
     clearTimeout: () => {}
   });
   const flush = () => { while (timers.length) { timers.sort((a, b) => a.at - b.at); const t = timers.shift(); clock = t.at; t.fn(); } };
-  const tap = () => {
+  const get = (p) => core.handle('GET', '/chat/api' + p, '');
+  const tap = (cursor) => {
     const seen = [];
-    const conn = core.attach('c0ffee01', null, { text: (s) => seen.push(JSON.parse(s)), binary: (b) => seen.push(b), close: () => {} });
+    const conn = core.attach('spain', 'wick-sushi', cursor || null, { text: (s) => seen.push(JSON.parse(s)), binary: (b) => seen.push(b), close: () => {} });
     return { seen, conn };
   };
+
+  assert.deepEqual(get('/stores').json.stores, [{ id: 'spain', label: 'Spain', online: true }, { id: 'gluck', label: 'Gluck', online: false }]);
+  assert.deepEqual([get('/stores/gluck/arias').status, get('/stores/gluck/arias').json.code], [503, 'store_offline'], 'an offline store answers 503 store_offline');
+  assert.equal(get('/stores/nope/arias').status, 404);
+
+  const first = get('/stores/spain/arias?limit=4').json;
+  assert.deepEqual(first.arias.map((a) => a.id), ['wick-sushi', 'anklet-aerosol', 'arsonist-grill', 'aardvark-thaw']);
+  assert.deepEqual(first.arias.map((a) => a.depth), [0, 1, 1, 2], 'the list is in tree order and says each depth');
+  assert.deepEqual(Object.keys(first.arias[0]).sort(), ['depth', 'handle', 'id', 'last_turn', 'mantra', 'parent', 'roles', 'state', 'title']);
+  assert.equal(first.arias[3].parent, 'arsonist-grill');
+  const second = get('/stores/spain/arias?limit=4&before=' + first.next_before).json;
+  assert.deepEqual(second.arias.map((a) => a.id), ['abundant-lecturer', 'again-myspace', 'degree-frosting', 'lantern-bishop'], 'the next page continues the tree where the last stopped');
+  assert.equal(get('/stores/spain/arias?limit=200').json.next_before, undefined);
+
+  const newest = get('/stores/spain/arias/wick-sushi/turns').json;
+  assert.deepEqual([newest.turns.length, newest.turns[0].id, newest.turns[19].id, newest.more], [20, 101, 120, true], 'turns come oldest first, the newest page by default');
+  assert.deepEqual(Object.keys(newest.turns[0]).sort(), ['at', 'cursor', 'done', 'id', 'prompt', 'reply', 'tools']);
+  const older = get('/stores/spain/arias/wick-sushi/turns?before=101&limit=20').json;
+  assert.deepEqual([older.turns[0].id, older.turns[19].id, older.more], [81, 100, true], 'before is the oldest id seen');
+  assert.equal(get('/stores/spain/arias/wick-sushi/turns?before=21&limit=20').json.more, false);
+  assert.deepEqual([get('/stores/spain/arias/again-myspace/turns').status, get('/stores/spain/arias/nope/turns').json.code], [404, 'aria_gone'], 'a reaped or unknown aria is aria_gone');
+  assert.equal(core.handle('POST', '/chat/api/stores/spain/arias/wick-sushi/send', '{"text":"  "}').status, 400);
+
   const loud = tap(), quiet = tap();
   loud.conn.receive(JSON.stringify({ type: 'voice', on: true }));
-
-  const threads = core.handle('GET', '/chat/api/threads', '').json.threads;
-  assert.deepEqual(Object.keys(threads[0]).sort(), ['id', 'title', 'updated']);
-  const page = core.handle('GET', '/chat/api/threads/c0ffee02/messages?limit=50', '').json;
-  assert.equal(page.messages.length, 50);
-  assert.equal(page.next_before, 71, 'next_before is the oldest id on the page');
-  assert.equal(core.handle('GET', '/chat/api/threads/c0ffee02/messages?limit=200&before=71', '').json.next_before, undefined);
-  assert.deepEqual(Object.keys(page.messages[0]).sort(), ['created', 'id', 'role', 'state', 'text', 'thread', 'tools']);
-  assert.equal(core.handle('GET', '/chat/api/threads/nope/messages', '').status, 404);
-  assert.equal(core.handle('POST', '/chat/api/threads/c0ffee01/messages', '{"text":"  "}').status, 400);
-
-  const sent = core.handle('POST', '/chat/api/threads/c0ffee01/messages', JSON.stringify({ text: 'ciao' }));
-  assert.deepEqual(sent.json, { id: 5, state: 'accepted' });
-  assert.equal(core.handle('GET', '/chat/api/threads/c0ffee01/messages', '').json.messages[5].state, 'streaming', 'a reply is streaming, with empty text, while its turn runs');
+  const sent = core.handle('POST', '/chat/api/stores/spain/arias/wick-sushi/send', JSON.stringify({ text: 'ciao' }));
+  assert.deepEqual(sent.json, { state: 'accepted' });
+  assert.equal(get('/stores/spain/arias/wick-sushi/turns?limit=1').json.turns[0].done, true, 'nothing has run yet: the reply comes on the socket');
   flush();
-  assert.equal(core.handle('GET', '/chat/api/threads/c0ffee01/messages', '').json.messages[5].state, 'done');
+  const stored = get('/stores/spain/arias/wick-sushi/turns?limit=1').json.turns[0];
+  assert.deepEqual([stored.id, stored.prompt, stored.done, stored.from], [121, 'ciao', true, 'Gluck (figchat)']);
 
   const tag = (f) => (f instanceof ArrayBuffer ? 'pcm' : f.type);
   const order = loud.seen.map(tag);
-  const first = (name) => order.indexOf(name), last = (name) => order.lastIndexOf(name);
-  assert.deepEqual(order.slice(0, 2), ['message.added', 'message.start'], 'the user message reaches every socket before the reply starts');
-  assert.deepEqual([loud.seen[0].message.id, loud.seen[0].message.role, loud.seen[0].message.state, loud.seen[0].message.thread], [5, 'user', 'done', 'c0ffee01']);
-  assert.ok(first('message.delta') > first('message.start') && last('message.delta') < first('message.end'), 'deltas sit between message.start and message.end');
-  assert.ok(first('audio.start') > first('message.delta'), 'audio.start follows the first sentence');
-  assert.ok(first('pcm') > first('audio.start') && last('pcm') < first('audio.end'), 'PCM sits between audio.start and audio.end');
-  assert.ok(first('tool.start') < first('tool.end') && last('tool.end') < first('message.end'));
-  assert.ok(first('message.end') < first('audio.end'), 'message.end may precede audio.end');
-  assert.equal(order.filter((x) => x === 'audio.start').length, 1, 'one audio stream at a time');
-  const start = loud.seen[first('audio.start')];
-  assert.deepEqual([start.format, start.rate, start.bits, start.channels, start.audio_id], ['pcm', 24000, 16, 1, undefined], 'audio.start carries no audio_id');
+  const first1 = (name) => order.indexOf(name), last1 = (name) => order.lastIndexOf(name);
+  assert.equal(order[0], 'turn.start', 'the prompt reaches every socket as turn.start before the reply');
+  assert.deepEqual([loud.seen[0].turn, loud.seen[0].prompt, loud.seen[0].from], [121, 'ciao', 'Gluck (figchat)']);
+  assert.ok(loud.seen.filter((f) => !(f instanceof ArrayBuffer)).every((f) => f.cursor && f.cursor.turn === 121 && typeof f.cursor.started === 'number'), 'every frame carries a cursor');
+  assert.ok(first1('message.delta') > first1('turn.start') && last1('message.delta') < first1('turn.end'), 'deltas sit between turn.start and turn.end');
+  assert.ok(first1('audio.start') > first1('message.delta'));
+  assert.ok(first1('pcm') > first1('audio.start') && last1('pcm') < first1('audio.end'), 'PCM sits between audio.start and audio.end');
+  assert.ok(first1('tool.start') < first1('tool.end') && last1('tool.end') < first1('turn.end'));
+  assert.ok(first1('turn.end') < first1('audio.end'), 'turn.end may precede audio.end');
+  const start = loud.seen[first1('audio.start')];
+  assert.deepEqual([start.format, start.rate, start.bits, start.channels, start.audio_id], ['pcm', 24000, 16, 1, undefined]);
   const pcm = loud.seen.filter((f) => f instanceof ArrayBuffer);
-  assert.ok(pcm.every((b) => b.byteLength % 2 === 0 && b.byteLength <= 4096), 'every PCM frame is whole samples, about 4 KiB');
+  assert.ok(pcm.every((b) => b.byteLength % 2 === 0 && b.byteLength <= 4096), 'every PCM frame is whole samples');
   const total = pcm.reduce((n, b) => n + b.byteLength, 0);
-  const endFrame = loud.seen[first('audio.end')];
+  const endFrame = loud.seen[first1('audio.end')];
   assert.equal(core.audio(endFrame.audio_id).bytes.length, 44 + total, 'the stored copy holds exactly the streamed samples');
-  assert.equal(core.audio('seed-expired').status, 404);
-
   const calm = quiet.seen.map(tag);
   assert.ok(!calm.includes('pcm') && !calm.includes('audio.start'), 'a socket that did not ask for voice gets no PCM');
   assert.equal(quiet.seen[calm.indexOf('audio.end')].audio_id, endFrame.audio_id, 'but it learns the audio_id, so it can replay');
-  assert.deepEqual(calm, order.filter((x) => !/^audio\.start|^pcm/.test(x)), 'and the same text frames in the same order');
   assert.equal(core.clip('audio/webm;codecs=opus', 9).json.text, 'A mock transcript.');
   assert.equal(core.clip('audio/wav', 9).status, 415);
 
   const c = figchat.conversation();
   let bytes = 0;
-  loud.seen.forEach((f) => { if (f instanceof ArrayBuffer) { assert.equal(c.binary().id, 6); bytes += voce.decodePCM(f).length; } else c.apply(f); });
+  loud.seen.forEach((f) => { if (f instanceof ArrayBuffer) { assert.equal(c.binary().id, 121); bytes += voce.decodePCM(f).length; } else c.apply(f); });
   assert.equal(bytes * 2, total);
-  assert.equal(c.get(6).text, core.thread('c0ffee01').messages[5].text, 'folded deltas equal the stored text');
-  assert.equal(c.get(6).audio_id, endFrame.audio_id);
-  assert.equal(c.get(6).done, true);
+  assert.equal(c.get(121).reply, stored.reply, 'folded deltas equal the stored reply');
+  assert.deepEqual([c.get(121).audio_id, c.get(121).done], [endFrame.audio_id, true]);
+
+  core.inject('spain', 'wick-sushi', 'from the terminal', 'terminal');
+  const cut = loud.seen.filter((f) => !(f instanceof ArrayBuffer));
+  clock = 0;
+  const before = cut.length;
+  for (let n = 0; n < 4; n++) { timers.sort((a, b) => a.at - b.at); const t = timers.shift(); clock = t.at; t.fn(); }
+  const heard = loud.seen.filter((f) => !(f instanceof ArrayBuffer)).slice(before);
+  const resumeAt = heard[heard.length - 1].cursor;
+  const resumeCursor = [resumeAt.turn, resumeAt.text, resumeAt.started, resumeAt.ended].join('.');
+  const rest1 = tap(resumeCursor);
+  flush();
+  const tail = loud.seen.filter((f) => !(f instanceof ArrayBuffer)).slice(before + heard.length).filter((f) => f.type !== 'audio.start').map((f) => JSON.stringify(f));
+  assert.deepEqual(rest1.seen.filter((f) => !(f instanceof ArrayBuffer)).map((f) => JSON.stringify(f)), tail, 'a socket that resumes from the last cursor it saw gets exactly the frames it missed');
+  assert.ok(tail.length > 3);
+
+  const fork = core.handle('POST', '/chat/api/stores/spain/arias', JSON.stringify({ fork_of: 'arsonist-grill', title: 'side quest' }));
+  const ids = get('/stores/spain/arias?limit=200').json.arias;
+  const at = ids.findIndex((a) => a.id === fork.json.id);
+  assert.deepEqual([ids[at].parent, ids[at].depth, ids[at - 1].id], ['arsonist-grill', 2, 'degree-frosting'], 'a fork is listed under its parent, after that parent\u2019s subtree');
 }
 
 {
@@ -237,57 +257,60 @@ assert.equal(figchat.ago('garbage', t0), '');
     send(data) { this.out.push(data); }
     close(code) { this.closed = code; }
   }
-  const answers = { 'chat/api/threads': { status: 200, body: '{"threads":[]}' } };
+  const answers = { 'chat/api/stores': { status: 200, body: '{"stores":[]}' } };
   const fetch = (url, init) => {
     calls.push([init.method, url, init.body, init.headers]);
-    const a = answers[url] || { status: 404, body: '{"error":"no such thread","code":"not_found"}' };
+    const a = answers[url] || { status: 404, body: '{"error":"no such aria","code":"aria_gone"}' };
     return Promise.resolve({ status: a.status, text: () => Promise.resolve(a.body) });
   };
   const tr = figchat.httpTransport({ api: 'chat/api/', ws: 'chat/ws', audio: 'chat/audio', base: 'https://fig.example/app/', fetch, WebSocket: FakeSocket });
   assert.equal(tr.audioURL('a b/c'), 'chat/audio/a%20b%2Fc', 'audio ids are one escaped path segment');
   const seen = [];
-  const sock = tr.connect('t 1', 41, { open: () => seen.push('open'), frame: (f) => seen.push(f.type), binary: (b) => seen.push(b.byteLength), close: (c) => seen.push('close ' + c.code) });
-  assert.equal(sockets[0].url, 'wss://fig.example/app/chat/ws?thread=t%201&after=41', 'the socket is same-origin, relative to the page, wss under https');
+  const sock = tr.connect('spain', 'wick sushi', '41.7.41.40', { open: () => seen.push('open'), frame: (f) => seen.push(f.type), binary: (b) => seen.push(b.byteLength), close: (c) => seen.push('close ' + c.code) });
+  assert.equal(sockets[0].url, 'wss://fig.example/app/chat/ws?store=spain&aria=wick%20sushi&cursor=41.7.41.40', 'the socket is same-origin, relative to the page, wss under https, and carries the cursor');
   assert.equal(sockets[0].binaryType, 'arraybuffer');
   assert.equal(sock.send({ type: 'voice', on: true }), false, 'nothing is sent before the socket opens');
   sockets[0].readyState = 1;
   sockets[0].heard.open();
-  sockets[0].heard.message({ data: '{"type":"message.start","id":1,"role":"assistant"}' });
-  sockets[0].heard.message({ data: '{"type":"audio.start","message_id":1,"format":"pcm"}' });
+  sockets[0].heard.message({ data: '{"type":"turn.start","turn":1,"prompt":"q"}' });
+  sockets[0].heard.message({ data: '{"type":"audio.start","turn":1,"format":"pcm"}' });
   sockets[0].heard.message({ data: new ArrayBuffer(4096) });
   sockets[0].heard.message({ data: 'not json' });
   sockets[0].heard.message({ data: new ArrayBuffer(512) });
-  sockets[0].heard.message({ data: '{"type":"audio.end","message_id":1,"audio_id":"a"}' });
+  sockets[0].heard.message({ data: '{"type":"audio.end","turn":1,"audio_id":"a"}' });
   sockets[0].heard.close({ code: 1006 });
-  assert.deepEqual(seen, ['open', 'message.start', 'audio.start', 4096, 512, 'audio.end', 'close 1006'], 'text and binary frames reach the view in arrival order');
+  assert.deepEqual(seen, ['open', 'turn.start', 'audio.start', 4096, 512, 'audio.end', 'close 1006'], 'text and binary frames reach the view in arrival order');
   assert.equal(sock.send({ type: 'voice', on: true }), true);
   assert.deepEqual(sockets[0].out, ['{"type":"voice","on":true}']);
-  tr.connect('t', null, {});
-  assert.equal(sockets[1].url, 'wss://fig.example/app/chat/ws?thread=t');
+  tr.connect('spain', 'a', '', {});
+  assert.equal(sockets[1].url, 'wss://fig.example/app/chat/ws?store=spain&aria=a', 'no cursor, no parameter');
 
   (async () => {
-    assert.deepEqual(await tr.threads(), { threads: [] });
-    await assert.rejects(tr.messages('gone', { before: 9, limit: 20 }), (e) => e.status === 404 && e.code === 'not_found' && e.message === 'no such thread');
-    await tr.send('t/1', { text: 'hi' }).catch(() => null);
-    await tr.createThread('').catch(() => null);
+    assert.deepEqual(await tr.stores(), { stores: [] });
+    await assert.rejects(tr.turns('spain', 'gone', { before: 9, limit: 20 }), (e) => e.status === 404 && e.code === 'aria_gone' && e.message === 'no such aria');
+    await tr.arias('spain', { before: '30', limit: 30 }).catch(() => null);
+    await tr.send('s 1', 'a/b', { text: 'hi' }).catch(() => null);
+    await tr.cancel('spain', 'a').catch(() => null);
+    await tr.createAria('spain', { fork_of: 'a' }).catch(() => null);
     assert.equal(await tr.audioStatus('zz'), 404);
     const blob = { type: 'audio/mp4', size: 3 };
-    await assert.rejects(tr.clip(blob), (e) => e.status === 404);
     answers['chat/api/clips'] = { status: 415, body: '{"error":"record as audio/webm, audio/ogg or audio/mp4","code":"unsupported_type"}' };
     await assert.rejects(tr.clip(blob), (e) => e.status === 415 && e.code === 'unsupported_type' && /audio\/webm/.test(e.message), 'the server refusal text reaches the page');
-    assert.deepEqual([calls[5][0], calls[5][1], calls[5][2], calls[5][3]['Content-Type']], ['POST', 'chat/api/clips', blob, 'audio/mp4'], 'a clip goes up as recorded, typed as recorded');
-    calls.length = 5;
     assert.deepEqual(calls.map((c) => c[0] + ' ' + c[1]), [
-      'GET chat/api/threads',
-      'GET chat/api/threads/gone/messages?before=9&limit=20',
-      'POST chat/api/threads/t%2F1/messages',
-      'POST chat/api/threads',
-      'GET chat/audio/zz'
+      'GET chat/api/stores',
+      'GET chat/api/stores/spain/arias/gone/turns?before=9&limit=20',
+      'GET chat/api/stores/spain/arias?before=30&limit=30',
+      'POST chat/api/stores/s%201/arias/a%2Fb/send',
+      'POST chat/api/stores/spain/arias/a/cancel',
+      'POST chat/api/stores/spain/arias',
+      'GET chat/audio/zz',
+      'POST chat/api/clips'
     ]);
-    assert.equal(calls[2][2], '{"text":"hi"}');
-    assert.equal(calls[2][3]['Content-Type'], 'application/json');
-    assert.equal(calls[3][2], '{}');
-    assert.equal(calls[4][3].Range, 'bytes=0-0');
+    assert.equal(calls[3][2], '{"text":"hi"}');
+    assert.equal(calls[3][3]['Content-Type'], 'application/json');
+    assert.equal(calls[5][2], '{"fork_of":"a"}');
+    assert.equal(calls[6][3].Range, 'bytes=0-0');
+    assert.deepEqual([calls[7][2], calls[7][3]['Content-Type']], [blob, 'audio/mp4'], 'a clip goes up as recorded, typed as recorded');
     rest();
   })().catch((e) => { console.error(e); process.exit(1); });
 }

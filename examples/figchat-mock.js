@@ -37,40 +37,67 @@
 
   function iso(ms) { return new Date(ms).toISOString(); }
 
+  var MIN = 60000;
+
+  function turnsFor(count, now, extra) {
+    var out = [];
+    for (var i = 1; i <= count; i++) {
+      var reply = 'Answer ' + i + '. Short and to the point.';
+      out.push({
+        id: i, at: iso(now - (count - i + 1) * 3 * MIN), prompt: 'Question ' + i + '?', reply: reply,
+        tools: [], done: true, cursor: { turn: i, text: reply.length, started: i, ended: i }
+      });
+    }
+    if (extra) extra(out);
+    return out;
+  }
+
+  function kingTurns(now) {
+    return turnsFor(120, now, function (t) {
+      t[116].tools = [{ id: 'k1', name: 'calendar.today', args: '{}', result: '4 entries' }];
+      t[116].reply = 'Three shaves before noon, then the Count at one.\nShall I read you the list?';
+      t[116].audio_id = 'seed-reply';
+      t[117].prompt = 'Yes, and note that Rosina moved to Thursday.';
+      t[117].prompt_audio_id = 'seed-clip';
+      t[118].reply = 'Noted. Thursday at ten for Rosina.';
+      t[118].audio_id = 'seed-expired';
+      t[119].from = 'lane order-ui';
+      t[119].prompt = 'Status of the order site?';
+      t[119].reply = 'Pushed, checks green.';
+    });
+  }
+
+  function row(id, title, depth, parent, st, ago, roles, turns, extra) {
+    return Object.assign({ id: id, handle: roles && roles[0] ? roles[0] : '', title: title, mantra: '', roles: roles || [], parent: parent || '', depth: depth, state: st, last_turn: ago, turns: turns || [] }, extra || {});
+  }
+
   function seed(kind, now) {
-    var min = 60000;
-    var say = function (id, role, text, at, extra) {
-      return Object.assign({ id: id, role: role, text: text, created: iso(at), tools: [], state: 'done' }, extra || {});
-    };
-    if (kind === 'empty') return [];
+    if (kind === 'empty') return { spain: [], gluck: [] };
     if (kind === 'hostile') {
       var long = new Array(600).join('0123456789');
-      return [
-        { id: 'aa01', title: 'Hostile ' + EVIL + ' \u202Eeltit', updated: iso(now - min), messages: [
-          say(1, 'user', EVIL + ' and a \u200Bzero width and \u0000 nul', now - 9 * min),
-          say(2, 'assistant', 'Markup stays text: ' + EVIL + '\n<script>window.__pwned=2</script>\n' + long, now - 8 * min, {
-            tools: [{ id: 't1', name: EVIL, args: EVIL, result: EVIL }, { id: 't2', name: 'bash', args: '{}', error: EVIL }]
-          })
-        ] },
-        { id: 'aa02', title: long, updated: iso(now - 2 * min), messages: [] }
+      var bad = [
+        { id: 'T1', at: iso(now - 9 * MIN), prompt: EVIL + ' and a \u200Bzero width and \u0000 nul', reply: 'Markup stays text: ' + EVIL + '\n<script>window.__pwned=2</script>\n' + long, tools: [{ id: 't1', name: EVIL, args: EVIL, result: EVIL }, { id: 't2', name: 'bash', args: '{}', error: EVIL }], done: true, cursor: { turn: 1, text: 10, started: 1, ended: 1 } }
       ];
+      bad[0].id = 1;
+      return { spain: [
+        row('aa01', 'Hostile ' + EVIL + ' \u202Eeltit', 0, '', 'idle', iso(now - MIN), ['@' + EVIL], bad),
+        row('aa02', long, 1, 'aa01', 'idle', iso(now - 2 * MIN), [], [])
+      ], gluck: [] };
     }
-    var many = [];
-    for (var i = 1; i <= 120; i++) {
-      many.push(say(i, i % 2 ? 'user' : 'assistant', i % 2 ? 'Question ' + Math.ceil(i / 2) + '?' : 'Answer ' + (i / 2) + '. Short and to the point.', now - (200 - i) * min));
-    }
-    return [
-      { id: 'c0ffee01', title: 'Razors and schedules', updated: iso(now - 4 * min), messages: [
-        say(1, 'user', 'Good morning. What is on for today?', now - 30 * min),
-        say(2, 'assistant', 'Three shaves before noon, then the Count at one.\nShall I read you the list?', now - 29 * min, {
-          audio_id: 'seed-reply', tools: [{ id: 't1', name: 'calendar.today', args: '{}', result: '4 entries' }]
-        }),
-        say(3, 'user', 'Yes, and note that Rosina moved to Thursday.', now - 6 * min, { audio_id: 'seed-clip' }),
-        say(4, 'assistant', 'Noted. Thursday at ten for Rosina.', now - 5 * min, { audio_id: 'seed-expired' })
-      ] },
-      { id: 'c0ffee02', title: 'A long thread', updated: iso(now - 80 * min), messages: many },
-      { id: 'c0ffee03', title: '', updated: iso(now - 3 * 24 * 60 * min), messages: [] }
+    var spain = [
+      row('wick-sushi', 'King of Spain', 0, '', 'active', iso(now - 4 * MIN), ['@King of Spain'], kingTurns(now)),
+      row('anklet-aerosol', 'Chat-aria A-E choices for Gluck', 1, 'wick-sushi', 'dormant', iso(now - 26 * 60 * MIN), [], turnsFor(3, now)),
+      row('arsonist-grill', 'Figaro Engineer', 1, 'wick-sushi', 'active', iso(now - MIN), ['@Figaro Engineer'], turnsFor(6, now)),
+      row('aardvark-thaw', '#126 follow focus', 2, 'arsonist-grill', 'idle', iso(now - 24 * 60 * MIN), [], turnsFor(4, now)),
+      row('abundant-lecturer', 'Read the chat-follow lane brief', 2, 'arsonist-grill', 'active', iso(now - 2 * MIN), [], turnsFor(5, now)),
+      row('again-myspace', 'review scope slice 2', 2, 'arsonist-grill', 'reaped', iso(now - 3 * 60 * MIN), [], []),
+      row('degree-frosting', 'King delegation lane', 2, 'arsonist-grill', 'idle', iso(now - 10 * 60 * MIN), [], turnsFor(2, now)),
+      row('lantern-bishop', 'Backend Engineer', 1, 'wick-sushi', 'idle', iso(now - 40 * MIN), ['@Backend Engineer'], turnsFor(3, now)),
+      row('merlin-tally', 'keel lane', 2, 'lantern-bishop', 'idle', iso(now - 5 * 60 * MIN), [], turnsFor(2, now)),
+      row('verdant-olive', 'Herald', 0, '', 'idle', iso(now - 3 * 24 * 60 * MIN), ['@Herald'], turnsFor(3, now))
     ];
+    for (var i = 0; i < 40; i++) spain.push(row('spare-' + ('0' + i).slice(-2), 'Scratch ' + i, 0, '', 'idle', iso(now - (4 + i) * 24 * 60 * MIN), [], []));
+    return { spain: spain, gluck: [row('desk-main', 'Gluck desk', 0, '', 'idle', iso(now - 80 * MIN), [], turnsFor(2, now))] };
   }
 
   function create(opts) {
@@ -78,38 +105,58 @@
     var now = opts.now || function () { return Date.now(); };
     var set = opts.setTimeout || function (fn, ms) { return setTimeout(fn, ms); };
     var clear = opts.clearTimeout || function (t) { clearTimeout(t); };
+    var rows = seed(opts.seed || 'demo', now());
     var state = {
-      threads: seed(opts.seed || 'demo', now()),
+      stores: [{ id: 'spain', label: 'Spain', online: true }, { id: 'gluck', label: 'Gluck', online: opts.gluckOnline === true }],
+      rows: rows,
       audio: { 'seed-reply': wav(chirp(3.2)), 'seed-clip': wav(chirp(1.6)), 'seed-expired': null },
       sockets: [],
       posts: [],
+      cancels: [],
+      forks: [],
+      attaches: [],
       clips: [],
       transcript: 'A mock transcript.',
       received: [],
       step: opts.step == null ? 40 : opts.step,
       seconds: opts.seconds || 2.4,
       status: 0,
-      silent: false,
       oddFrameAt: -1,
       speechFails: false,
-      serial: 0
+      serial: 0,
+      seq: 0,
+      pages: []
     };
+    var seqOf = {};
 
-    function thread(id) {
-      for (var i = 0; i < state.threads.length; i++) if (state.threads[i].id === id) return state.threads[i];
+    function storeOf(id) {
+      for (var i = 0; i < state.stores.length; i++) if (state.stores[i].id === id) return state.stores[i];
       return null;
     }
 
-    function emit(t, frame, voiceOnly) {
+    function ariaOf(store, id) {
+      var list = rows[store] || [];
+      for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+      return null;
+    }
+
+    function emit(a, frame, voiceOnly) {
+      var tid = frame.turn;
+      var t = a.turns[a.turns.length - 1];
+      frame.cursor = { turn: tid, text: t && t.id === tid ? t.reply.length : 0, started: a.started, ended: a.ended };
+      var str = [frame.cursor.turn, frame.cursor.text, frame.cursor.started, frame.cursor.ended].join('.');
+      a.log.push({ seq: ++state.seq, frame: frame, voiceOnly: !!voiceOnly });
+      seqOf[a.store + '/' + a.id + '/' + str] = state.seq;
+      if (a.log.length > 400) a.log.shift();
       var text = JSON.stringify(frame);
       state.sockets.slice().forEach(function (s) {
-        if (s.thread === t.id && (!voiceOnly || s.voice)) s.sink.text(text);
+        if (s.store === a.store && s.aria === a.id && (!voiceOnly || s.voice)) s.sink.text(text);
       });
     }
 
-    function emitBinary(t, bytes) {
+    function emitBinary(a, bytes) {
       state.sockets.slice().forEach(function (s) {
-        if (s.thread === t.id && s.voice) s.sink.binary(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+        if (s.store === a.store && s.aria === a.id && s.voice) s.sink.binary(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
       });
     }
 
@@ -118,23 +165,22 @@
       return ['You said: ' + text + '. ', 'I checked the clock for you. It is a fine day in Seville,\nand the razor is sharp.'];
     }
 
-    function turn(t, asked) {
-      if (t.running) return;
-      t.running = true;
-      var id = t.messages.length ? t.messages[t.messages.length - 1].id + 1 : 1;
-      var msg = { id: id, thread: t.id, role: 'assistant', text: '', created: iso(now()), tools: [], state: 'streaming' };
-      t.messages.push(msg);
-      var speak = state.sockets.some(function (s) { return s.thread === t.id && s.voice; });
+    function run(a, asked, from, clipId) {
+      if (a.running) { a.queue.push([asked, from, clipId]); return; }
+      a.running = true;
+      var id = a.turns.length ? a.turns[a.turns.length - 1].id + 1 : 1;
+      var t = { id: id, at: iso(now()), prompt: asked, reply: '', tools: [], done: false, cursor: null };
+      if (from) t.from = from;
+      if (clipId) t.prompt_audio_id = clipId;
+      var speak = state.sockets.some(function (s) { return s.store === a.store && s.aria === a.id && s.voice; });
       var parts = replyTo(asked);
       var pcm = speak ? chirp(state.seconds) : new Uint8Array(0);
       var chunks = [];
       for (var at = 0; at < pcm.length; at += CHUNK) chunks.push(pcm.subarray(at, Math.min(pcm.length, at + CHUNK)));
       var sent = 0;
       var steps = [];
-      var text = '';
-      var tools = [];
       var delta = function (piece) {
-        return function () { text += piece; emit(t, { type: 'message.delta', id: id, text: piece }); };
+        return function () { t.reply += piece; emit(a, { type: 'message.delta', turn: id, text: piece }); };
       };
       var sound = function () {
         return function () {
@@ -143,93 +189,141 @@
             if (!c) return;
             if (sent === state.oddFrameAt) c = c.subarray(0, c.length - 1);
             sent++;
-            emitBinary(t, c);
+            emitBinary(a, c);
           }
         };
       };
-      steps.push(function () { emit(t, { type: 'message.start', id: id, role: 'assistant' }); });
+      steps.push(function () { a.turns.push(t); a.started++; var f = { type: 'turn.start', turn: id, prompt: asked }; if (from) f.from = from; if (clipId) f.prompt_audio_id = clipId; emit(a, f); });
       pieces(parts[0]).forEach(function (p) { steps.push(delta(p)); });
-      if (speak) steps.push(function () { emit(t, { type: 'audio.start', message_id: id, format: 'pcm', rate: RATE, bits: 16, channels: 1 }, true); });
+      if (speak) steps.push(function () { emit(a, { type: 'audio.start', turn: id, format: 'pcm', rate: RATE, bits: 16, channels: 1 }, true); });
       steps.push(function () {
-        tools.push({ id: 't1', name: 'bash', args: '{"command":"date"}' });
-        emit(t, { type: 'tool.start', id: id, tool_id: 't1', name: 'bash', args: '{"command":"date"}' });
+        t.tools.push({ id: 't1', name: 'bash', args: '{"command":"date"}' });
+        emit(a, { type: 'tool.start', turn: id, tool_id: 't1', name: 'bash', args: '{"command":"date"}' });
       });
       for (var k = 0; k < 4 && speak; k++) steps.push(sound());
       steps.push(function () {
-        tools[0].result = 'Fri Nov 20 07:00:00 EST 2026';
-        emit(t, { type: 'tool.end', id: id, tool_id: 't1', result: tools[0].result, error: '' });
+        t.tools[0].result = 'Fri Nov 20 07:00:00 EST 2026';
+        emit(a, { type: 'tool.end', turn: id, tool_id: 't1', result: t.tools[0].result });
       });
       pieces(parts[1]).forEach(function (p) {
         steps.push(delta(p));
         if (speak) steps.push(sound());
       });
       steps.push(function () {
-        msg.text = text;
-        msg.tools = tools;
-        msg.state = 'done';
-        emit(t, { type: 'message.end', id: id });
+        t.done = true;
+        a.ended++;
+        emit(a, { type: 'turn.end', turn: id, text: t.reply });
       });
       for (var rest = chunks.length; rest > 0 && speak; rest--) steps.push(sound());
       if (speak) steps.push(function () {
-        if (state.speechFails) { emit(t, { type: 'error', message_id: id, code: 'speech', text: 'synthesis stopped' }, true); return; }
+        if (state.speechFails) { emit(a, { type: 'error', turn: id, code: 'speech', text: 'synthesis stopped' }, true); return; }
         var audio = 'a' + (++state.serial);
         state.audio[audio] = wav(pcm);
-        msg.audio_id = audio;
-        emit(t, { type: 'audio.end', message_id: id, audio_id: audio });
+        t.audio_id = audio;
+        emit(a, { type: 'audio.end', turn: id, audio_id: audio });
       });
-      steps.push(function () { t.running = false; t.updated = iso(now()); });
-      var run = function () {
+      steps.push(function () {
+        a.running = false;
+        a.last_turn = iso(now());
+        var next = a.queue.shift();
+        if (next) run(a, next[0], next[1], next[2]);
+      });
+      var go = function () {
         var step = steps.shift();
         if (!step) return;
         step();
-        t.timer = set(run, state.step);
+        a.timer = set(go, state.step);
       };
-      t.timer = set(run, state.step);
+      a.timer = set(go, state.step);
     }
 
+    function prepare(a, store) {
+      if (a.log) return a;
+      a.store = store;
+      a.log = [];
+      a.queue = [];
+      a.running = false;
+      a.started = a.turns.length;
+      a.ended = a.turns.length;
+      return a;
+    }
+
+    function fail(status, code, error) { return { status: status, json: { error: error, code: code } }; }
+
     function handle(method, path, body) {
-      if (state.status) return { status: state.status, json: { error: 'mock failure', code: 'mock' } };
+      if (state.status) return fail(state.status, 'mock', 'mock failure');
       var url = path.split('?'), q = {};
       (url[1] || '').split('&').forEach(function (kv) { var p = kv.split('='); if (p[0]) q[p[0]] = decodeURIComponent(p[1] || ''); });
-      var m, t, req = {};
-      if (body) { try { req = JSON.parse(body); } catch (e) { return { status: 400, json: { error: 'bad json', code: 'bad_request' } }; } }
-      if (url[0] === '/chat/api/threads' && method === 'GET') {
-        return { status: 200, json: { threads: state.threads.map(function (x) { return { id: x.id, title: x.title, updated: x.updated }; }) } };
+      var m, req = {};
+      if (body) { try { req = JSON.parse(body); } catch (e) { return fail(400, 'bad_request', 'bad json'); } }
+      if (url[0] === '/chat/api/stores' && method === 'GET') return { status: 200, json: { stores: state.stores.map(function (x) { return { id: x.id, label: x.label, online: x.online }; }) } };
+      if (url[0] === '/chat/api/clips' && method === 'POST') return clip('audio/webm', 1);
+      if ((m = /^\/chat\/api\/clips\/([^/]+)\/retranscribe$/.exec(url[0])) && method === 'POST') {
+        return state.audio[decodeURIComponent(m[1])] ? { status: 200, json: { text: 'A mock transcript, again.' } } : fail(404, 'not_found', 'no such audio');
       }
-      if (url[0] === '/chat/api/threads' && method === 'POST') {
-        t = { id: 'feed' + ('0000' + (++state.serial)).slice(-4), title: String(req.title || '').trim(), updated: iso(now()), messages: [] };
-        state.threads.push(t);
-        return { status: 200, json: { id: t.id } };
-      }
-      if ((m = /^\/chat\/api\/threads\/([^/]+)\/messages$/.exec(url[0]))) {
-        t = thread(decodeURIComponent(m[1]));
-        if (!t) return { status: 404, json: { error: 'no such thread', code: 'not_found' } };
+      m = /^\/chat\/api\/stores\/([^/]+)\/arias(?:\/([^/]+)(?:\/(turns|send|cancel))?)?$/.exec(url[0]);
+      if (!m) return fail(404, 'not_found', 'no route');
+      var store = decodeURIComponent(m[1]), id = m[2] && decodeURIComponent(m[2]), verb = m[3];
+      var st = storeOf(store);
+      if (!st) return fail(404, 'not_found', 'no such store');
+      if (!st.online) return fail(503, 'store_offline', 'store is offline');
+      var list = rows[store];
+      if (!id) {
         if (method === 'GET') {
-          var before = Number(q.before) || 0, limit = Number(q.limit) > 0 ? Math.min(200, Number(q.limit)) : 50;
-          var list = t.messages.filter(function (x) { return !before || x.id < before; });
-          var out = { messages: list.slice(-limit).map(function (x) { return Object.assign({ thread: t.id }, x); }) };
-          if (list.length > limit) out.next_before = out.messages[0].id;
+          var from = Number(q.before) || 0, limit = Number(q.limit) > 0 ? Math.min(200, Number(q.limit)) : 30;
+          state.pages.push({ store: store, before: q.before || '', limit: limit });
+          var slice = list.slice(from, from + limit).map(function (x) {
+            var o = Object.assign({}, x);
+            delete o.turns; delete o.log; delete o.queue; delete o.timer; delete o.store; delete o.running; delete o.started; delete o.ended;
+            return o;
+          });
+          var out = { arias: slice };
+          if (from + limit < list.length) out.next_before = String(from + limit);
           return { status: 200, json: out };
         }
         if (method === 'POST') {
-          if (!String(req.text || '').trim()) return { status: 400, json: { error: 'text is required', code: 'bad_request' } };
-          var id = t.messages.length ? t.messages[t.messages.length - 1].id + 1 : 1;
-          var msg = { id: id, role: 'user', text: req.text, created: iso(now()), tools: [], state: 'done' };
-          if (req.clip_id && !state.audio[req.clip_id]) return { status: 400, json: { error: 'unknown clip', code: 'bad_request' } };
-          if (req.clip_id) msg.audio_id = req.clip_id;
-          t.messages.push(msg);
-          t.updated = msg.created;
-          state.posts.push({ thread: t.id, body: req });
-          emit(t, { type: 'message.added', message: Object.assign({ thread: t.id }, msg) });
-          if (!state.silent) turn(t, req.text);
-          return { status: 200, json: { id: id, state: 'accepted' } };
+          var parent = req.fork_of ? ariaOf(store, req.fork_of) : list[0];
+          if (req.fork_of && !parent) return fail(404, 'aria_gone', 'no such aria');
+          var nid = 'fork-' + (++state.serial);
+          var at = parent ? list.indexOf(parent) + 1 : 0;
+          while (parent && at < list.length && list[at].depth > parent.depth) at++;
+          var fresh = row(nid, String(req.title || '').trim() || 'New fork', parent ? parent.depth + 1 : 0, parent ? parent.id : '', 'idle', iso(now()), [], []);
+          list.splice(at, 0, fresh);
+          state.forks.push({ store: store, fork_of: req.fork_of || '', title: req.title || '' });
+          return { status: 200, json: { id: nid } };
         }
       }
-      if (url[0] === '/chat/api/clips' && method === 'POST') return clip('audio/webm', 1);
-      if ((m = /^\/chat\/api\/clips\/([^/]+)\/retranscribe$/.exec(url[0])) && method === 'POST') {
-        return state.audio[decodeURIComponent(m[1])] ? { status: 200, json: { text: 'A mock transcript, again.' } } : { status: 404, json: { error: 'no such audio', code: 'not_found' } };
+      var a = ariaOf(store, id);
+      if (!a || a.state === 'reaped') return fail(404, 'aria_gone', 'no such aria');
+      prepare(a, store);
+      if (verb === 'turns' && method === 'GET') {
+        var before = Number(q.before) || 0, lim = Number(q.limit) > 0 ? Math.min(200, Number(q.limit)) : 20;
+        var older = a.turns.filter(function (x) { return !before || x.id < before; });
+        var got = older.slice(-lim).map(function (x) { return JSON.parse(JSON.stringify(Object.assign({}, x, { cursor: x.cursor || { turn: x.id, text: x.reply.length, started: a.started, ended: x.done ? a.ended : a.ended } }))); });
+        state.pages.push({ store: store, aria: id, before: q.before || '', limit: lim });
+        return { status: 200, json: { turns: got, more: older.length > lim } };
       }
-      return { status: 404, json: { error: 'no route', code: 'not_found' } };
+      if (verb === 'send' && method === 'POST') {
+        if (!String(req.text || '').trim()) return fail(400, 'bad_request', 'text is required');
+        if (req.clip_id && !state.audio[req.clip_id]) return fail(400, 'bad_request', 'unknown clip');
+        state.posts.push({ store: store, aria: id, body: req });
+        if (a.running) state.posts[state.posts.length - 1].steered = true;
+        else run(a, req.text, 'Gluck (figchat)', req.clip_id);
+        return { status: 200, json: { state: 'accepted' } };
+      }
+      if (verb === 'cancel' && method === 'POST') {
+        state.cancels.push({ store: store, aria: id });
+        if (a.running) {
+          clear(a.timer);
+          a.running = false;
+          var t = a.turns[a.turns.length - 1];
+          t.done = true;
+          a.ended++;
+          emit(a, { type: 'turn.end', turn: t.id, text: t.reply });
+        }
+        return { status: 200, json: { state: 'accepted' } };
+      }
+      return fail(404, 'not_found', 'no route');
     }
 
     function clip(type, size) {
@@ -247,24 +341,22 @@
       return bytes ? { status: 200, bytes: bytes, type: 'audio/wav' } : { status: 404, bytes: null, type: '' };
     }
 
-    function attach(threadId, after, sink) {
-      var s = { thread: threadId, after: after, voice: false, sink: sink };
+    function attach(store, aria, cursor, sink) {
+      var a = ariaOf(store, aria);
+      var s = { store: store, aria: aria, cursor: cursor, voice: false, sink: sink };
+      state.attaches.push({ store: store, aria: aria, cursor: cursor || '' });
       state.sockets.push(s);
+      if (a && a.log && cursor && seqOf[store + '/' + aria + '/' + cursor] != null) {
+        var after = seqOf[store + '/' + aria + '/' + cursor];
+        a.log.forEach(function (e) { if (e.seq > after && !e.voiceOnly) sink.text(JSON.stringify(e.frame)); });
+      }
       return {
         receive: function (text) {
           var f;
           try { f = JSON.parse(text); } catch (e) { return; }
           state.received.push(f);
           if (f.type === 'voice') s.voice = !!f.on;
-          if (f.type === 'cancel') {
-            var t = thread(threadId);
-            if (t && t.running) {
-              clear(t.timer);
-              t.running = false;
-              t.messages[t.messages.length - 1].state = 'done';
-              emit(t, { type: 'message.end', id: t.messages[t.messages.length - 1].id });
-            }
-          }
+          if (f.type === 'cancel') handle('POST', '/chat/api/stores/' + encodeURIComponent(store) + '/arias/' + encodeURIComponent(aria) + '/cancel', '{}');
         },
         close: function () {
           var i = state.sockets.indexOf(s);
@@ -277,11 +369,27 @@
       state.sockets.splice(0).forEach(function (s) { s.sink.close(); });
     }
 
-    return { state: state, handle: handle, clip: clip, audio: audio, attach: attach, drop: drop, thread: thread };
+    function inject(store, aria, text, from) {
+      var a = ariaOf(store, aria);
+      prepare(a, store);
+      run(a, text, from || 'terminal', '');
+    }
+
+    function setOnline(id, on) {
+      storeOf(id).online = !!on;
+      if (!on) {
+        state.sockets.filter(function (s) { return s.store === id; }).forEach(function (s) { s.sink.text(JSON.stringify({ type: 'offline' })); });
+        state.sockets.filter(function (s) { return s.store === id; }).forEach(function (s) { s.sink.close(); });
+        state.sockets = state.sockets.filter(function (s) { return s.store !== id; });
+      }
+    }
+
+    return { state: state, handle: handle, clip: clip, audio: audio, attach: attach, drop: drop, inject: inject, setOnline: setOnline, aria: function (store, id) { return ariaOf(store, id); }, hasAria: function (store, id) { return !!ariaOf(store, id); } };
   }
 
   function transport(core, win) {
     var urls = {};
+    var enc = encodeURIComponent;
     var answer = function (method, path, body) {
       return new Promise(function (resolve, reject) {
         var res = core.handle(method, path, body === undefined ? '' : JSON.stringify(body));
@@ -292,14 +400,19 @@
         reject(e);
       });
     };
-    var enc = encodeURIComponent;
+    var qs = function (q, names) {
+      var parts = [];
+      names.forEach(function (n) { if (q && q[n] != null && q[n] !== '') parts.push(n + '=' + enc(q[n])); });
+      return parts.length ? '?' + parts.join('&') : '';
+    };
+    var base = function (store, aria) { return '/chat/api/stores/' + enc(store) + '/arias/' + enc(aria); };
     return {
-      threads: function () { return answer('GET', '/chat/api/threads'); },
-      createThread: function (title) { return answer('POST', '/chat/api/threads', title ? { title: title } : {}); },
-      messages: function (thread, q) {
-        return answer('GET', '/chat/api/threads/' + enc(thread) + '/messages?limit=' + ((q && q.limit) || 50) + (q && q.before != null ? '&before=' + enc(q.before) : ''));
-      },
-      send: function (thread, body) { return answer('POST', '/chat/api/threads/' + enc(thread) + '/messages', body); },
+      stores: function () { return answer('GET', '/chat/api/stores'); },
+      arias: function (store, q) { return answer('GET', '/chat/api/stores/' + enc(store) + '/arias' + qs(q, ['before', 'limit', 'q'])); },
+      turns: function (store, aria, q) { return answer('GET', base(store, aria) + '/turns' + qs(q, ['before', 'limit'])); },
+      send: function (store, aria, body) { return answer('POST', base(store, aria) + '/send', body); },
+      cancel: function (store, aria) { return answer('POST', base(store, aria) + '/cancel', {}); },
+      createAria: function (store, body) { return answer('POST', '/chat/api/stores/' + enc(store) + '/arias', body || {}); },
       clip: function (blob) {
         return new Promise(function (resolve, reject) {
           var res = core.clip(blob.type, blob.size);
@@ -317,16 +430,18 @@
         return urls[id];
       },
       audioStatus: function (id) { return Promise.resolve(core.audio(id).status); },
-      connect: function (thread, after, h) {
-        var open = false, shut = false;
-        var conn = core.attach(thread, after, {
-          text: function (s) { if (open && !shut) h.frame(JSON.parse(s)); },
-          binary: function (b) { if (open && !shut) h.binary(b); },
-          close: function () { if (!shut) { shut = true; h.close({ code: 1006 }); } }
-        });
+      connect: function (store, aria, cursor, h) {
+        var open = false, shut = false, conn = null;
         win.setTimeout(function () {
           if (shut) return;
+          var st = core.state.stores.filter(function (x) { return x.id === store; })[0];
+          if (!st || !st.online) { shut = true; h.close({ code: 1006 }); return; }
           open = true;
+          conn = core.attach(store, aria, cursor, {
+            text: function (s) { if (open && !shut) h.frame(JSON.parse(s)); },
+            binary: function (b) { if (open && !shut) h.binary(b); },
+            close: function () { if (!shut) { shut = true; h.close({ code: 1006 }); } }
+          });
           h.open();
         }, 0);
         return {
@@ -335,7 +450,7 @@
             conn.receive(JSON.stringify(frame));
             return true;
           },
-          close: function () { shut = true; conn.close(); }
+          close: function () { shut = true; if (conn) conn.close(); }
         };
       }
     };

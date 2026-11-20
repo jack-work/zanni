@@ -58,7 +58,7 @@ body.figchat-page {
 .figchat[data-link="offline"] .figchat-link { color: var(--z-warn); }
 .figchat[data-link="offline"] .figchat-link::before { background: var(--z-warn); }
 
-.figchat-voice, .figchat-new, .figchat-send, .figchat-button, .figchat-older, .figchat-mic, .figchat-stop, .figchat-clip-drop {
+.figchat-voice, .figchat-new, .figchat-fork, .figchat-send, .figchat-button, .figchat-older, .figchat-mic, .figchat-stop, .figchat-clip-drop {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -113,14 +113,35 @@ body.figchat-page {
 }
 .figchat-thread:hover { background: var(--z-tint); }
 .figchat-thread[aria-current="page"] { background: var(--z-tint); box-shadow: inset 4px 0 0 var(--z-accent); }
-.figchat-thread-title { font-size: 1.1875rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.figchat-thread { grid-template-columns: minmax(0, 1fr) auto; row-gap: 2px; }
+.figchat-aria-line { display: flex; align-items: baseline; min-width: 0; gap: 6px; }
+.figchat-aria-name { font-size: 1.1875rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.figchat-tree { flex: none; white-space: pre; font: 400 1.25rem / 1 var(--figchat-mono); color: var(--z-muted); letter-spacing: 0; }
+.figchat-dot { flex: none; align-self: center; width: 9px; height: 9px; border: 2px solid var(--z-muted); background: transparent; }
+.figchat-thread[data-state="active"] .figchat-dot { background: var(--z-ok); border-color: var(--z-ok); }
+.figchat-thread[data-state="idle"] .figchat-dot { border-color: var(--z-ink); }
+.figchat-thread[data-state="dormant"] .figchat-dot { border-style: dotted; }
+.figchat-thread[data-state="reaped"] { opacity: 0.6; }
+.figchat-thread[data-state="reaped"] .figchat-aria-name { text-decoration: line-through; }
+.figchat-aria-sub { grid-column: 1 / -1; font: 400 1rem / 1.1 var(--figchat-mono); color: var(--z-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+li.figchat-row > .figchat-aria-sub { padding: 0 var(--z-space-3, 8px) var(--z-space-3, 8px); white-space: normal; }
+.figchat-offline { opacity: 0.75; }
+.figchat-offline .figchat-thread-when { color: var(--z-warn); }
+.figchat-side-act { display: flex; gap: var(--z-space-3, 8px); }
+.figchat-more { margin-top: var(--z-space-4, 12px); }
+.figchat-actions { display: flex; align-items: center; justify-content: space-between; gap: var(--z-space-3, 8px); }
+.figchat-where { font: 400 1.0625rem / 1.1 var(--figchat-mono); color: var(--z-muted); min-width: 0; overflow-wrap: anywhere; }
+.figchat-turnlink { color: inherit; text-decoration: none; }
+.figchat-turnlink:hover, .figchat-turnlink:focus-visible { text-decoration: underline; }
+.figchat-msg[data-target] .figchat-bubble { box-shadow: 0 0 0 2px var(--z-accent); }
+.figchat-msg { scroll-margin-top: calc(var(--figchat-bar) + 12px); }
 .figchat-thread-when { font: 400 1rem / 1 var(--figchat-mono); color: var(--z-muted); white-space: nowrap; }
 .figchat-note { color: var(--z-muted); font-size: 1rem; font-style: italic; overflow-wrap: anywhere; }
 .figchat-side .figchat-note { padding-top: var(--z-space-4, 12px); }
 
 .figchat-pane { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.figchat[data-route="list"] .figchat-pane { display: none; }
-.figchat[data-route="thread"] .figchat-side, .figchat[data-route="fresh"] .figchat-side { display: none; }
+.figchat[data-route="stores"] .figchat-pane, .figchat[data-route="store"] .figchat-pane { display: none; }
+.figchat[data-route="aria"] .figchat-side { display: none; }
 .figchat-main {
   flex: 1;
   width: 100%;
