@@ -143,13 +143,27 @@
       e.session(on ? 'play-and-record' : 'playback');
     };
     e.running = function () { return !!e.ctx && e.ctx.state === 'running'; };
+    e.waiting = [];
     e.claim = function (player) {
       var old = e.current;
       e.current = player;
+      e.drop(player);
       if (old && old !== player) old.yield();
+    };
+    e.busy = function (player) {
+      return !!e.current && e.current !== player && !!e.current.speaking && e.current.speaking();
+    };
+    e.wait = function (player) {
+      if (e.waiting.indexOf(player) < 0) e.waiting.push(player);
+    };
+    e.drop = function (player) {
+      var i = e.waiting.indexOf(player);
+      if (i >= 0) e.waiting.splice(i, 1);
     };
     e.release = function (player) {
       if (e.current === player) e.current = null;
+      e.drop(player);
+      while (!e.current && e.waiting.length) e.waiting.shift().resume();
     };
     engines.set(win, e);
     return e;
@@ -179,6 +193,7 @@
     var dragging = false;
     var timer = 0;
     var destroyed = false;
+    var pending = null;
 
     function el(tag, cls) {
       var n = doc.createElement(tag);
@@ -244,7 +259,7 @@
       button.setAttribute('data-act', action.toLowerCase());
       button.disabled = state === 'expired' || state === 'none' || state === 'muted' || state === 'lost' || (!audioId && !ACTIONS[state]);
       seek.disabled = !(duration > 0) || !audioId || state === 'live' || state === 'draining' || state === 'muted' || state === 'expired' || state === 'lost';
-      var text = NOTES[state] || '';
+      var text = pending ? 'queued' : (NOTES[state] || '');
       if (note.textContent !== text) note.textContent = text;
       var ticking = state === 'live' || state === 'draining' || state === 'playing';
       if (ticking && !timer) timer = win.setInterval(paint, 200);
@@ -256,7 +271,7 @@
       var next = transition(state, event);
       if (next === state) return false;
       state = next;
-      if (state === 'idle' || state === 'expired' || state === 'error' || state === 'lost') eng.release(api);
+      if (state === 'idle' || state === 'muted' || state === 'expired' || state === 'error' || state === 'lost') eng.release(api);
       dress();
       if (opts.change) opts.change(state, event);
       return true;
@@ -332,8 +347,18 @@
     }
 
     function stop() {
+      if (pending) { pending = null; eng.drop(api); dress(); }
       dropLive();
       go('stop');
+    }
+
+    function resume() {
+      var p = pending;
+      pending = null;
+      if (!p || destroyed) return;
+      if (!api.start(p.format)) { if (p.end !== null) api.end(p.end); return; }
+      p.chunks.forEach(function (c) { api.push(c); });
+      if (p.end !== null) api.end(p.end);
     }
 
     function seekTo(seconds) {
@@ -368,7 +393,15 @@
       stats: function () {
         return live ? { chunks: live.chunks, samples: live.samples, underruns: live.underruns, seconds: live.seconds(), pending: live.pending() } : null;
       },
+      speaking: function () { return state === 'live' || state === 'draining'; },
+      resume: resume,
       start: function (format) {
+        if (!pending && eng.busy(api)) {
+          pending = { format: format, chunks: [], end: null };
+          eng.wait(api);
+          dress();
+          return true;
+        }
         dropLive();
         dropMedia();
         live = null;
@@ -379,6 +412,7 @@
         return state === 'live';
       },
       push: function (data) {
+        if (pending) { pending.chunks.push(data); return true; }
         if (state !== 'live' || !live) return false;
         try { live.push(data); } catch (e) {
           dropLive();
@@ -390,6 +424,7 @@
       },
       end: function (id) {
         audioId = id || audioId;
+        if (pending) { pending.end = id || ''; return; }
         if (live && live.samples) duration = live.seconds();
         var streaming = state === 'live' && live;
         go(state === 'none' || state === 'lost' ? 'ready' : 'end');
@@ -397,6 +432,7 @@
         dress();
       },
       fail: function () {
+        if (pending) { pending = null; eng.drop(api); }
         dropLive();
         go('fail');
       },
@@ -410,6 +446,8 @@
       },
       destroy: function () {
         destroyed = true;
+        pending = null;
+        eng.drop(api);
         dropLive();
         dropMedia();
         if (timer) win.clearInterval(timer);
