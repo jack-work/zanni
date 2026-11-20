@@ -6,7 +6,7 @@ const crypto = require('crypto');
 
 const out = process.argv[2];
 if (!out || out === '-h' || out === '--help') {
-  process.stdout.write('usage: figchat-bundle OUT_DIR\n\nWrites the figchat shell as a flat directory: index.html, boot.js, figchat.js,\nvoce.js, figchat.css, voce.css, z2-tokens.css, rotolo.css, fonts.css, fonts/*.woff2,\nfigaro-head.png and SHA256SUMS. Serve index.html at the app root and the directory\nunder assets/ beside it. Same-origin only, no inline script or style.\n');
+  process.stdout.write('usage: figchat-bundle OUT_DIR\n\nWrites the figchat shell as a flat directory: index.html, boot.js, figchat.js,\nspeech.js, aria.js, aria-source.json, nodi.js, nodi.css, voce.js, figchat.css, voce.css, z2-tokens.css, rotolo.css, fonts.css, fonts/*.woff2,\nfigaro-head.png and SHA256SUMS. Serve index.html at the app root and the directory\nunder assets/ beside it. Same-origin only, no inline script or style.\n');
   process.exit(out ? 0 : 2);
 }
 const assets = process.env.ZANNI_ASSETS || path.join(__dirname, '..', 'assets');
@@ -17,6 +17,11 @@ const files = [
   ['figchat/boot.js', 'boot.js'],
   ['figchat/figchat.js', 'figchat.js'],
   ['figchat/figchat.css', 'figchat.css'],
+  ['aria/aria.js', 'aria.js'],
+  ['aria/SOURCE.json', 'aria-source.json'],
+  ['nodi/nodi.js', 'nodi.js'],
+  ['nodi/nodi.css', 'nodi.css'],
+  ['figchat/speech.js', 'speech.js'],
   ['voce/voce.js', 'voce.js'],
   ['voce/voce.css', 'voce.css'],
   ['v2/z2-tokens.css', 'z2-tokens.css'],

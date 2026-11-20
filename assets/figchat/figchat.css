@@ -58,8 +58,7 @@ body.figchat-page {
 .figchat[data-link="offline"] .figchat-link { color: var(--z-warn); }
 .figchat[data-link="offline"] .figchat-link::before { background: var(--z-warn); }
 
-.figchat-voice, .figchat-new, .figchat-send, .figchat-button, .figchat-older, .figchat-mic, .figchat-stop, .figchat-clip-drop {
-  display: inline-flex;
+.figchat-voice, .figchat-new, .figchat-send, .figchat-button, .figchat-older,   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: var(--figchat-hit);
@@ -79,13 +78,7 @@ body.figchat-page {
 .figchat-voice { min-width: 6.4rem; padding: 0 var(--z-space-4, 12px); }
 .figchat-voice[aria-pressed="true"], .figchat-send { background: var(--z-accent); color: var(--z-on-accent); }
 .figchat-send { font-size: 1.375rem; }
-.figchat-send, .figchat-mic { min-height: var(--figchat-mic); }
-.figchat-mic { min-width: 6.5rem; padding: 0 var(--z-space-3, 8px); gap: 6px; font-size: 1.375rem; }
-.figchat-mic::before { content: ""; flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--z-fail); }
-.figchat-mic[aria-pressed="true"] { background: var(--z-fail); border-color: var(--z-fail); color: var(--z-ground); }
-.figchat-mic[aria-pressed="true"]::before { border-radius: 0; background: currentColor; }
-.figchat-stop, .figchat-clip-drop { flex: none; padding: 0 var(--z-space-4, 12px); }
-.figchat :is(button):disabled { opacity: 0.45; cursor: not-allowed; }
+.figchat-send, .figchat-stop, .figchat :is(button):disabled { opacity: 0.45; cursor: not-allowed; }
 
 .figchat-body { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .figchat-side {
@@ -147,55 +140,6 @@ body.figchat-page {
   vertical-align: baseline;
 }
 
-.figchat-log { list-style: none; display: flex; flex-direction: column; gap: var(--z-space-4, 12px); }
-.figchat-msg { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
-.figchat-msg[data-role="user"] { align-items: flex-end; }
-.figchat-bubble {
-  display: grid;
-  gap: var(--z-space-3, 8px);
-  min-width: 0;
-  max-width: min(88%, 36rem);
-  padding: var(--z-space-3, 8px) var(--z-space-4, 12px);
-  background: var(--z-ground-2);
-  border: 1px solid var(--z-line);
-  border-radius: 0 10px 10px 10px;
-}
-.figchat-msg[data-role="user"] .figchat-bubble {
-  background: color-mix(in srgb, var(--z-accent) 12%, var(--z-ground));
-  border-color: color-mix(in srgb, var(--z-accent) 55%, var(--z-ground));
-  border-radius: 10px 0 10px 10px;
-}
-.figchat-who { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.figchat-text { font: 400 1.1875rem / 1.4 var(--figchat-prose); white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0; }
-.figchat-text:empty { display: none; }
-.figchat-msg[data-streaming] .figchat-text:empty { display: block; }
-.figchat-msg[data-streaming] .figchat-text:empty::after, .figchat-msg[data-streaming] .figchat-text > :last-child:is(p, h3, h4, blockquote)::after, .figchat-msg[data-streaming] .figchat-text > :last-child:is(ul, ol) > li:last-child::after, .figchat-msg[data-streaming] .figchat-text > pre:last-child > code::after { content: ""; display: inline-block; width: 0.45em; height: 0.95em; margin-left: 2px; background: var(--z-accent); vertical-align: -0.12em; }
-.figchat-p, .figchat-h, .figchat-quote, .figchat-list, .figchat-pre, .figchat-hr { margin: 0; }
-.figchat-text > * + * { margin-top: 0.55em; }
-.figchat-h { font: 600 1.1875rem / 1.3 var(--figchat-prose); }
-h3.figchat-h { font-size: 1.3125rem; }
-.figchat-list { padding-left: 1.4em; white-space: normal; }
-.figchat-list > li { white-space: pre-wrap; }
-.figchat-list > li + li { margin-top: 0.2em; }
-.figchat-quote { padding-left: var(--z-space-4, 12px); border-left: 3px solid var(--z-line); color: var(--z-muted); }
-.figchat-hr { border: 0; border-top: 1px solid var(--z-line); }
-.figchat-code, .figchat-pre { font: 400 1.0625rem / 1.3 var(--figchat-mono); }
-.figchat-code { padding: 0 3px; background: color-mix(in srgb, var(--z-ink) 8%, transparent); border-radius: var(--z-radius-1, 2px); }
-.figchat-pre { padding: var(--z-space-3, 8px); overflow-x: auto; white-space: pre; background: color-mix(in srgb, var(--z-ink) 6%, transparent); border: 1px solid var(--z-line); border-radius: var(--z-radius-1, 2px); }
-.figchat-a { color: var(--accent-ink); text-decoration: underline; text-underline-offset: 2px; }
-.figchat-msg[data-failed] .figchat-bubble { border-color: var(--z-fail); }
-.figchat-tools { list-style: none; display: grid; gap: var(--z-space-1, 2px); min-width: 0; }
-.figchat-tool { display: flex; align-items: baseline; gap: var(--z-space-3, 8px); min-width: 0; font: 400 1.125rem / 1.2 var(--figchat-mono); color: var(--z-muted); }
-.figchat-tool::before { content: ""; flex: none; width: 0.5em; height: 0.5em; background: currentColor; clip-path: var(--figchat-caret); }
-.figchat-tool-name { color: var(--z-ink); overflow-wrap: anywhere; min-width: 0; }
-.figchat-tool-state { flex: none; }
-.figchat-tool[data-state="failed"] .figchat-tool-state { color: var(--z-fail); }
-.figchat-tool[data-state="running"] .figchat-tool-state { color: var(--z-warn); }
-.figchat-fault { color: var(--z-fail); font-size: 1rem; font-weight: 600; overflow-wrap: anywhere; }
-.figchat-system { align-items: center; }
-.figchat-meta { padding: 2px 4px 0; font: 400 1rem / 1.1 var(--figchat-mono); color: var(--z-muted); -webkit-user-select: none; user-select: none; }
-.figchat-meta:empty { display: none; }
-
 .figchat-composer {
   position: sticky;
   bottom: 0;
@@ -211,11 +155,7 @@ h3.figchat-h { font-size: 1.3125rem; }
 }
 .figchat-sendnote { grid-column: 1 / -1; color: var(--z-warn); font: 400 1.0625rem / 1.2 var(--figchat-mono); overflow-wrap: anywhere; }
 .figchat-sendnote:empty { display: none; }
-.figchat-turn, .figchat-clip { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: var(--z-space-3, 8px); min-width: 0; color: var(--z-muted); font: 400 1.0625rem / 1.2 var(--figchat-mono); }
-.figchat-turn[hidden], .figchat-clip[hidden] { display: none; }
-.figchat-turn-text, .figchat-clip-text { min-width: 0; overflow-wrap: anywhere; }
-.figchat[data-mic="recording"] .figchat-input { border-color: var(--z-fail); }
-.figchat-input {
+.figchat-turn, .figchat-turn[hidden], .figchat-turn-text, .figchat-input {
   display: block;
   width: 100%;
   min-height: var(--figchat-hit);
@@ -251,3 +191,28 @@ h3.figchat-h { font-size: 1.3125rem; }
   .figchat-composer > * { max-width: none; }
   .figchat-composer { grid-template-columns: auto minmax(0, calc(var(--figchat-width) - 2 * var(--z-space-5, 16px) - 12rem)) auto; justify-content: center; }
 }
+
+.figchat-thread { padding-left: calc(var(--z-space-3, 8px) + 14px * 0); }
+.figchat-thread[data-depth="1"] { padding-left: calc(var(--z-space-3, 8px) + 14px); }
+.figchat-thread[data-depth="2"] { padding-left: calc(var(--z-space-3, 8px) + 28px); }
+.figchat-thread[data-depth="3"] { padding-left: calc(var(--z-space-3, 8px) + 42px); }
+.figchat-thread[data-depth="4"] { padding-left: calc(var(--z-space-3, 8px) + 56px); }
+.figchat-thread[data-depth="5"], .figchat-thread[data-depth="6"] { padding-left: calc(var(--z-space-3, 8px) + 70px); }
+.figchat-thread[data-state="active"] .figchat-thread-when { color: var(--z-warn); }
+.figchat-thread[data-state="dormant"] { opacity: 0.7; }
+.figchat-thread-title { font-weight: 500; }
+.figchat-more { margin-top: var(--z-space-3, 8px); }
+.figchat-metrics { min-height: 1rem; }
+.figchat-stops { display: inline-flex; gap: var(--z-space-3, 8px); flex-wrap: wrap; justify-content: flex-end; }
+.figchat-fork, .figchat-fork-here {
+  display: inline-flex; align-items: center; justify-content: center; min-height: var(--figchat-hit); padding: 0 var(--z-space-4, 12px);
+  border: 1px solid var(--z-line); border-radius: var(--z-radius-1, 2px); background: transparent; color: var(--z-ink);
+  font: 400 1.125rem / 1 var(--figchat-mono); letter-spacing: 0.04em; cursor: pointer;
+}
+.figchat-fork-here { min-height: 28px; padding: 0 var(--z-space-3, 8px); border-color: transparent; color: var(--z-muted); font-size: 1.0625rem; }
+.figchat-fork-here:hover { border-color: var(--z-line); color: var(--z-ink); }
+.figchat-composer { grid-template-columns: auto minmax(0, 1fr) auto; }
+.figchat-composer .figchat-fork { grid-column: 1; grid-row: 3; }
+.figchat-composer .figchat-input { grid-column: 2; grid-row: 3; }
+.figchat-composer .figchat-send { grid-column: 3; grid-row: 3; }
+.figchat .nodi-turns { margin-top: var(--z-space-4, 12px); }
