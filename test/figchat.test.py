@@ -78,7 +78,7 @@ fast = door(12)
 
 try:
     with sync_playwright() as p:
-        browser = p.chromium.launch(args=["--no-sandbox", "--disable-audio-output"])
+        browser = p.chromium.launch(args=["--no-sandbox", "--disable-audio-output", "--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"])
 
         def fresh(width=390, height=844, scheme="light"):
             phone = width < 600
@@ -91,7 +91,7 @@ try:
 
         def attend(pg, door, aria, turn=None):
             pg.goto("about:blank")
-            pg.goto(door.url + "#/local/" + aria + (":%d" % turn if turn else ""))
+            pg.goto(door.url + "#/gluck/" + aria + (":%d" % turn if turn else ""))
             until(pg, "window.figchat && document.querySelector('#app').figchat && document.querySelector('#app').figchat.state().link === 'live'", timeout=15000)
 
         def snap(pg, name):
@@ -262,25 +262,52 @@ try:
         pg = fresh()
         attend(pg, door(12), MAIN)
         pg.locator(".figchat-fork").click()
-        until(pg, "location.hash.startsWith('#/local/') && !location.hash.includes('%s')" % MAIN, timeout=10000)
+        until(pg, "location.hash.startsWith('#/gluck/') && !location.hash.includes('%s')" % MAIN, timeout=10000)
         until(pg, "document.querySelector('#app').figchat.state().link === 'live' && document.querySelector('#app').figchat.state().aria !== '%s'" % MAIN)
         assert pg.locator(".nodi-turn").count() >= 1, "the alternative opens with the history it was cut from"
         pg.close()
 
         pg = fresh()
-        attend(pg, door(12), MAIN)
+        door_v = door(12)
+        attend(pg, door_v, MAIN)
         pg.locator(".figchat-voice").click()
         assert pg.locator(".figchat-voice").get_attribute("aria-pressed") == "true"
         send(pg, "just a [plain] hello")
-        pg.wait_for_selector(".nodi-turn[data-turn='27'] .voce[data-for]", timeout=15000)
-        key = pg.locator(".nodi-turn[data-turn='27'] .voce").get_attribute("data-for")
-        assert key.startswith("27."), key
-        node = int(key.split(".")[1])
-        assert pg.locator(".nodi-turn[data-turn='27'] .nodi-turn-body > *").nth(node + 1).locator(".voce").count() == 1, "the player sits inside the prose node it speaks"
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .voce[data-for='27']", timeout=15000)
+        assert pg.locator(".nodi-turn[data-turn='27'] .nodi-prose .voce").count() == 1, "one player per turn, inside a prose node"
+        assert pg.locator(".nodi-turn[data-turn='27'] .voce").count() == 1
+        until(pg, "document.querySelector('.voce').dataset.state !== 'none'", 10000)
+        until(pg, "['idle','loading','playing','paused'].includes(document.querySelector('.voce').dataset.state)", 15000)
+        assert door_v.state()["audio"] >= 1, "the gateway audio socket was opened by the voice toggle"
         pg.close()
 
+        mic_door = door(12)
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
+        pg = ctx.new_page()
+        pg.errors = []
+        pg.on("pageerror", lambda e: pg.errors.append(str(e)))
+        attend(pg, mic_door, MAIN)
+        assert pg.locator(".figchat-mic").is_enabled()
+        pg.locator(".figchat-input").fill("typed first")
+        pg.locator(".figchat-mic").tap()
+        until(pg, "document.querySelector('#app').dataset.mic === 'recording'", 10000)
+        pg.wait_for_timeout(600)
+        pg.locator(".figchat-mic").tap()
+        until(pg, "document.querySelector('.figchat-input').value.includes('crossing count')", 10000)
+        assert pg.locator(".figchat-input").input_value() == "typed first what is the crossing count", pg.locator(".figchat-input").input_value()
+        posts = mic_door.state()["stt"]
+        assert len(posts) == 1 and posts[0]["type"].startswith("audio/") and posts[0]["size"] > 0, posts
+        assert posts[0]["aria"] == "gluck/" + MAIN, posts
+        assert mic_door.state()["sent"] == [], "the transcript is not sent until Gluck sends it"
+        pg.locator(".figchat-input").fill("edited words")
+        pg.locator(".figchat-send").tap()
+        until(pg, "document.querySelector(\"[data-turn='27']\")", 10000)
+        assert mic_door.state()["sent"][0]["text"] == "edited words"
+        assert not pg.errors, pg.errors
+        ctx.close()
+
         refused = fresh()
-        refused.goto(fast.url + "#/local/" + "f" * 32)
+        refused.goto(fast.url + "#/gluck/" + "f" * 32)
         until(refused, "document.querySelector('#app').dataset.link === 'gone'", timeout=10000)
         assert "No such aria" in refused.locator(".figchat-main").inner_text()
         refused.goto("about:blank")
@@ -301,7 +328,7 @@ try:
             attend(s, bad, MAIN, 3)
             s.wait_for_selector(".nodi-turn[data-turn='3']")
             s.wait_for_timeout(300)
-            assert "script ran" in hostile_findings(s), "negative control: with the text sink swapped for HTML the hostile turn must fire"
+            assert any(f.startswith("element") for f in hostile_findings(s)), "negative control: with the text sink swapped for HTML the hostile turn must inject an element"
             s.close()
         finally:
             bad.stop()

@@ -51,28 +51,70 @@ async function test(name, fn) {
     assert.strictEqual(new Set(ids).size, ids.length);
   });
 
-  await test('speech mock: settled prose becomes PCM chunks tagged with turn and node, only when voice is on', async () => {
+  await test('speech mock: prose is spoken from its first sentence, tagged with turn, node and cursor, only when voice is on', async () => {
     const m = speech.mock({ gap: 0 });
-    const fns = [];
-    const got = [], ended = [];
-    const conn = m.open({ aria: 'x', events: (fn) => { fns.push(fn); return () => {}; } }, { chunk: (c) => got.push(c), end: (e) => ended.push(e), error() {} });
-    const settled = { type: 'prose.settled', kind: 'prose', turn: 4, node: 2, text: 'Buongiorno signore, largo al factotum della citta' };
-    fns[0](settled);
+    let push;
+    const got = [], started = [], ended = [], cancelled = [];
+    const conn = m.open({ aria: 'x', watch: (fn) => { push = fn; return () => {}; } }, { chunk: (c) => got.push(c), start: (e) => started.push(e), end: (e) => ended.push(e), cancel: (e) => cancelled.push(e), error() {} });
+    const turn = (n, text, open) => ({ turn: n, open, items: [{ kind: 'thinking', node: 0, text: 'hmm' }, { kind: 'prose', node: 1, text }], end: null });
+    push([turn(3, 'old words.', false)]);
+    push([turn(3, 'old words.', false), turn(4, 'First sentence. Second', true)]);
     await new Promise((r) => setTimeout(r, 30));
     assert.strictEqual(got.length, 0, 'voice off speaks nothing');
     conn.voice(true);
-    fns[0](settled);
-    fns[0]({ type: 'thinking.settled', kind: 'thinking', turn: 4, node: 1, text: 'hmm' });
-    await new Promise((r) => setTimeout(r, 80));
+    push([turn(3, 'old words.', false), turn(4, 'First sentence. Second one here. Tail', true)]);
+    await new Promise((r) => setTimeout(r, 60));
+    assert.strictEqual(started.length, 1);
+    assert.strictEqual(started[0].turn, 4);
+    assert.strictEqual(started[0].node, 1);
+    assert.strictEqual(started[0].key, 'mock/x:4/out');
+    assert.strictEqual(started[0].rate, 24000);
     assert.ok(got.length >= 1);
-    assert.ok(got.every((c) => c.turn === 4 && c.node === 2 && c.aria === 'x'));
-    assert.deepStrictEqual(got.map((c) => c.seq), got.map((_, i) => i));
-    assert.ok(got.every((c) => c.pcm.byteLength % 2 === 0 && c.format.rate === 24000 && c.format.bits === 16));
+    assert.ok(got.every((c) => c.turn === 4 && c.node === 1 && c.cursor === '4.2' && c.pcm.byteLength % 2 === 0 && c.bytes === c.pcm.byteLength));
+    assert.deepStrictEqual(got.map((c) => c.offset), got.map((c, i) => got.slice(0, i).reduce((n, x) => n + x.bytes, 0)));
+    assert.ok(!m.spoken.some((x) => x.turn === 3), 'history is not spoken');
+    push([turn(3, 'old words.', false), turn(4, 'First sentence. Second one here. Tail', false)]);
+    await new Promise((r) => setTimeout(r, 80));
     assert.strictEqual(ended.length, 1);
-    assert.strictEqual(ended[0].node, 2);
-    fns[0](settled);
-    await new Promise((r) => setTimeout(r, 40));
-    assert.strictEqual(ended.length, 1, 'a node is spoken once');
+    assert.strictEqual(ended[0].key, 'mock/x:4/out');
+    assert.ok(m.spoken.some((x) => x.text === 'Tail'));
+    push([turn(3, 'old words.', false), turn(4, 'First sentence. Second one here. Tail', false)]);
+    await new Promise((r) => setTimeout(r, 30));
+    assert.strictEqual(ended.length, 1, 'a turn is finished once');
+  });
+
+  await test('speech gateway: text frames and the binary frame behind audio.chunk become one tagged chunk', () => {
+    const socks = [];
+    class FakeSocket {
+      constructor(url) { this.url = url; this.sent = []; this.l = {}; socks.push(this); }
+      addEventListener(n, f) { (this.l[n] = this.l[n] || []).push(f); }
+      emit(n, ev) { (this.l[n] || []).forEach((f) => f(ev)); }
+      send(x) { this.sent.push(x); }
+      close() { this.closed = true; }
+    }
+    const g = speech.gateway({ WebSocket: FakeSocket, base: 'https://fig.example/chat/', url: '/audio', window: {} });
+    const out = [];
+    const conn = g.open({ aria: 'c0ffee01c0ffee01c0ffee01c0ffee01' }, { ready: (e) => out.push(['ready', e.store]), start: (e) => out.push(['start', e.turn, e.key, e.node, e.cursor, e.rate]), chunk: (c) => out.push(['chunk', c.turn, c.node, c.cursor, c.offset, c.pcm.byteLength]), end: (e) => out.push(['end', e.key, e.audio_id]), cancel: (e) => out.push(['cancel', e.why]), error: (e) => out.push(['error', e.code]) });
+    assert.strictEqual(socks.length, 0, 'no socket until voice is on');
+    conn.voice(true);
+    assert.strictEqual(socks.length, 1);
+    assert.strictEqual(socks[0].url, 'wss://fig.example/audio/c0ffee01c0ffee01c0ffee01c0ffee01');
+    const t = (o) => socks[0].emit('message', { data: JSON.stringify(o) });
+    t({ type: 'ready', aria: 'x', store: 'gluck' });
+    t({ type: 'audio.start', turn: 5, key: 'gluck/x:5/out', format: 'pcm', rate: 24000, bits: 16, channels: 1, node: 2, cursor: '5.3' });
+    t({ type: 'audio.chunk', turn: 5, node: 2, cursor: '5.3', offset: 0, bytes: 4 });
+    socks[0].emit('message', { data: new ArrayBuffer(4) });
+    socks[0].emit('message', { data: new ArrayBuffer(4) });
+    t({ type: 'audio.chunk', turn: 5, node: 2, cursor: '5.3', offset: 4, bytes: 3 });
+    socks[0].emit('message', { data: new ArrayBuffer(3) });
+    t({ type: 'audio.end', turn: 5, key: 'gluck/x:5/out' });
+    t({ type: 'audio.cancel', turn: 6, key: 'k', why: 'interrupt' });
+    t({ type: 'error', turn: 6, code: 'speech', text: 'down' });
+    assert.deepStrictEqual(out, [['ready', 'gluck'], ['start', 5, 'gluck/x:5/out', 2, '5.3', 24000], ['chunk', 5, 2, '5.3', 0, 4], ['end', 'gluck/x:5/out', 'gluck/x:5/out'], ['cancel', 'interrupt'], ['error', 'speech']]);
+    conn.cancel();
+    assert.deepStrictEqual(JSON.parse(socks[0].sent[0]), { type: 'cancel' });
+    conn.voice(false);
+    assert.ok(socks[0].closed);
   });
 
   await test('bundle: the shell lists exactly the files it needs and every sum matches', () => {

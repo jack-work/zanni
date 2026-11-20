@@ -95,32 +95,40 @@
           });
           pump();
         }
-        var off = ctx.events(function (e) {
-          if (closed) return;
-          if (e.type === 'input') { turns[e.turn] = { turn: e.turn, fed: 0, offset: 0, started: false, cancelled: false, nodeSeen: {} }; return; }
-          var t = turns[e.turn];
-          if (!t || !on) return;
-          if (e.type === 'prose.delta' || e.type === 'prose.settled') {
-            if (t.node != null && t.node !== e.node) { t.node = e.node; t.fed = 0; }
-            if (t.node == null) t.node = e.node;
-            var text = e.text, settled = e.type === 'prose.settled';
-            for (;;) {
-              var cut = sentences(text, t.fed);
-              if (cut < 0) break;
-              var piece = text.slice(t.fed, cut).trim();
-              t.fed = cut;
-              if (piece) { spoken.push({ aria: ctx.aria, turn: t.turn, node: e.node, text: piece }); speak(t, e.node, e.cursor, piece); }
-            }
-            if (settled && t.fed < text.length) {
-              var tail = text.slice(t.fed).trim();
-              t.fed = text.length;
-              if (tail) { spoken.push({ aria: ctx.aria, turn: t.turn, node: e.node, text: tail }); speak(t, e.node, e.cursor, tail); }
-            }
-          } else if (e.type === 'turn.end' || e.type === 'turn.error') {
-            if (e.type === 'turn.error') { t.cancelled = true; h.cancel({ aria: ctx.aria, turn: t.turn, key: keyOf(store, ctx.aria, t.turn), why: 'interrupt' }); }
-            else if (e.reason === 'interrupted') { t.cancelled = true; h.cancel({ aria: ctx.aria, turn: t.turn, key: keyOf(store, ctx.aria, t.turn), why: 'interrupt' }); }
-            else finish(t);
+        var baseline = null;
+        function feed(t, it, settled) {
+          var text = it.text || '', fed = t.fed[it.node] || 0;
+          if (!on) { t.fed[it.node] = text.length; return; }
+          for (;;) {
+            var cut = sentences(text, fed);
+            if (cut < 0) break;
+            var piece = text.slice(fed, cut).trim();
+            fed = cut;
+            if (piece) { spoken.push({ aria: ctx.aria, turn: t.turn, node: it.node, text: piece }); speak(t, it.node, t.turn + '.' + (it.node + 1), piece); }
           }
+          if (settled && fed < text.length) {
+            var tail = text.slice(fed).trim();
+            fed = text.length;
+            if (tail) { spoken.push({ aria: ctx.aria, turn: t.turn, node: it.node, text: tail }); speak(t, it.node, t.turn + '.' + (it.node + 1), tail); }
+          }
+          t.fed[it.node] = fed;
+        }
+        var off = ctx.watch(function (models) {
+          if (closed) return;
+          if (!baseline) { baseline = {}; models.forEach(function (m) { baseline[m.turn] = 1; }); }
+          models.forEach(function (m) {
+            if (baseline[m.turn]) return;
+            var t = turns[m.turn] || (turns[m.turn] = { turn: m.turn, fed: {}, offset: 0, started: false, cancelled: false, ended: false });
+            if (t.ended) return;
+            var over = !m.open;
+            m.items.forEach(function (it) { if (it.kind === 'prose') feed(t, it, over); });
+            if (!over) return;
+            t.ended = true;
+            if (m.end && (m.end.kind === 'error' || m.end.text === 'interrupted')) {
+              t.cancelled = true;
+              if (t.started) h.cancel({ aria: ctx.aria, turn: t.turn, key: keyOf(store, ctx.aria, t.turn), why: 'interrupt' });
+            } else finish(t);
+          });
         });
         h.ready && h.ready({ aria: ctx.aria, store: store });
         return {

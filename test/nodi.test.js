@@ -72,40 +72,33 @@ function clientFor(core) {
     assert.strictEqual(nodi.metricsLine(undefined), '');
   });
 
-  await test('events: a delta replaces the node text, a re-sent node at the cursor does not repeat it', () => {
-    const s = nodi.events();
-    s.apply({ type: 'input', kind: 'input', turn: 5, text: 'q', segments: [{ text: 'q' }] });
-    s.apply({ type: 'prose.delta', kind: 'prose', turn: 5, node: 0, text: 'He', at: 0, del: 0, ins: 'He' });
-    s.apply({ type: 'prose.delta', kind: 'prose', turn: 5, node: 0, text: 'Hello', at: 2, del: 0, ins: 'llo' });
-    s.apply({ type: 'prose.delta', kind: 'prose', turn: 5, node: 0, text: 'Hello', at: 0, del: 0, ins: 'Hello' });
-    let t = s.turns();
-    assert.strictEqual(t.length, 1);
-    assert.strictEqual(t[0].nodes.length, 1);
-    assert.strictEqual(t[0].nodes[0].text, 'Hello');
-    assert.strictEqual(t[0].nodes[0].settled, false);
-    s.apply({ type: 'prose.settled', kind: 'prose', turn: 5, node: 0, text: 'Hello!' });
-    s.apply({ type: 'turn.end', kind: 'turn', turn: 5, replayed: false, reason: 'stop' });
-    t = s.turns();
-    assert.strictEqual(t[0].nodes[0].text, 'Hello!');
-    assert.strictEqual(t[0].nodes[0].settled, true);
-    assert.deepStrictEqual(t[0].end, { reason: 'stop', idle: undefined, failed: false });
+  await test('native: a figaro.aria turn part draws like a folded one', () => {
+    const m = nodi.model([{
+      turn: 4, from: 0, sealed: true, at: 5,
+      inquiry: 'a\n\nb', inquiry_segments: [{ sender: 'c0ffee02c0ffee02c0ffee02c0ffee02', name: 'Il Zanni', text: 'a' }, { text: 'b' }],
+      nodes: [
+        { type: 'thinking', role: 'output', markdown: 't' },
+        { type: 'prose', role: 'output', markdown: 'p' },
+        { type: 'steering', role: 'input', markdown: 's', sender: 'king', sender_name: 'the King' },
+        { type: 'tool', role: 'output', name: 'bash', status: 'error', args: { a: 1 }, output: 'x', output_base: 7, started_at: 1000, finished_at: 3000 },
+        { type: 'sparkle', markdown: 'odd' }
+      ]
+    }])[0];
+    assert.deepStrictEqual(m.input.parts.map((p) => p.role + ':' + p.label), ['aria:Il Zanni', 'you:You']);
+    assert.deepStrictEqual(m.items.map((i) => i.kind), ['thinking', 'prose', 'steering', 'tool', 'unknown']);
+    assert.deepStrictEqual(m.items.map((i) => i.node), [0, 1, 2, 3, 4]);
+    assert.ok(m.items.every((i) => i.settled));
+    assert.strictEqual(m.items[2].label, 'the King');
+    assert.strictEqual(m.items[3].status, 'error');
+    assert.strictEqual(m.items[3].outputBase, 7);
+    assert.strictEqual(m.items[3].ms, 2000);
+    assert.strictEqual(m.items[4].type, 'sparkle');
   });
 
-  await test('events: turns sort by number whatever order they arrive in', () => {
-    const s = nodi.events();
-    [9, 7, 8].forEach((n) => s.apply({ type: 'input', kind: 'input', turn: n, text: 'q' + n, segments: [] }));
-    assert.deepStrictEqual(s.turns().map((t) => t.turn), [7, 8, 9]);
-  });
-
-  await test('events: an event kind nobody planned for lands as an unknown node', () => {
-    const s = nodi.events();
-    s.apply({ type: 'hologram.settled', kind: 'hologram', turn: 2, node: 4, text: 'beam' });
-    const n = s.turns()[0].nodes[0];
-    assert.strictEqual(n.kind, 'unknown');
-    assert.strictEqual(n.node, 4);
-    assert.strictEqual(n.text, 'beam');
-    assert.strictEqual(s.skipped, 1);
-    assert.strictEqual(s.apply(null), false);
+  await test('native: an open turn leaves its nodes unsettled and the turn open', () => {
+    const m = nodi.model([{ turn: 9, from: 0, sealed: false, inquiry: 'q', nodes: [{ type: 'prose', markdown: 'half' }] }])[0];
+    assert.strictEqual(m.open, true);
+    assert.strictEqual(m.items[0].settled, false);
   });
 
   await test('stream: the tail read pages back through older turns in order, no duplicates', async () => {
@@ -144,27 +137,15 @@ function clientFor(core) {
     const c = clientFor(core);
     const st = c.attach(core.ids.main);
     await st.ready();
-    const seen = [];
-    const store = nodi.events();
-    st.subscribe((e) => { seen.push(e); store.apply(e); });
     await st.prompt('please run the tests [drop]');
-    await until(() => seen.some((e) => e.type === 'turn.end' && e.turn === 27));
+    await until(() => { const l = st.snapshot().turns.slice(-1)[0]; return l && l.turn === 27 && l.end; });
     assert.ok(core.dropped >= 1, 'the door really dropped the connection');
-    const once = {};
-    seen.forEach((e) => {
-      if (!/settled$|^tool\.end$|^input$|^turn\./.test(e.type)) return;
-      const k = e.type + ':' + e.turn + ':' + (e.node != null ? e.node : e.tool ? e.tool.node : '');
-      once[k] = (once[k] || 0) + 1;
-    });
-    Object.keys(once).forEach((k) => assert.strictEqual(once[k], 1, k + ' was told more than once'));
     const fresh = clientFor(core);
     const other = fresh.attach(core.ids.main);
     await other.ready();
     const mine = nodi.model(st.snapshot().turns).filter((t) => t.turn === 27)[0];
     const theirs = nodi.model(other.snapshot().turns).filter((t) => t.turn === 27)[0];
     assert.deepStrictEqual(mine.items, theirs.items);
-    const fromEvents = nodi.model(store.turns()).filter((t) => t.turn === 27)[0];
-    assert.deepStrictEqual(fromEvents.items.map((i) => [i.kind, i.text]), mine.items.map((i) => [i.kind, i.text]));
     assert.deepStrictEqual(mine.items.map((i) => i.kind), ['thinking', 'prose', 'tool', 'prose']);
     assert.ok(mine.items.every((i) => i.settled));
     c.close();

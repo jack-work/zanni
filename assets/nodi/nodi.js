@@ -120,6 +120,10 @@
 
   function inputOf(input) {
     if (!input) return null;
+    if (input.inquiry !== undefined || input.inquiry_segments) {
+      var raw = Array.isArray(input.inquiry_segments) && input.inquiry_segments.length ? input.inquiry_segments : [{ text: input.inquiry }];
+      input = { at: input.at, segments: raw.map(function (g) { return { sender: g.sender, senderName: g.name, text: g.text }; }) };
+    }
     var segs = Array.isArray(input.segments) && input.segments.length ? input.segments : [{ sender: input.sender, senderName: input.senderName, text: input.text }];
     return {
       at: input.at,
@@ -128,6 +132,17 @@
         return { role: w.role, label: w.label, text: s.text == null ? '' : String(s.text) };
       })
     };
+  }
+
+  function native(n, sealed) {
+    var settled = n.settled !== undefined ? !!n.settled : !!sealed;
+    var type = n.type;
+    if (type === 'prose' || type === 'thinking') return { kind: type, node: n.node, text: n.markdown, settled: settled };
+    if (type === 'steering') return { kind: 'steering', node: n.node, text: n.markdown, sender: n.sender, senderName: n.sender_name, settled: settled };
+    if (type === 'tool') {
+      return { kind: 'tool', node: n.node, settled: settled, tool: { name: n.name, status: n.status, summary: n.summary, args: n.args, input: n.input, output: n.output, outputBase: n.output_base, startedAt: n.started_at, finishedAt: n.finished_at } };
+    }
+    return { kind: 'unknown', node: n.node, type: type, text: n.markdown, settled: settled };
   }
 
   function itemOf(n) {
@@ -165,11 +180,15 @@
 
   function model(turns) {
     return (turns || []).map(function (t) {
+      var isNative = t.inquiry !== undefined || t.inquiry_segments !== undefined;
       return {
         key: 't' + t.turn,
         turn: t.turn,
-        input: inputOf(t.input),
-        items: (t.nodes || []).map(itemOf),
+        input: inputOf(isNative ? t : t.input),
+        items: (t.nodes || []).map(function (n, i) {
+          if (n && n.node === undefined) n = Object.assign({}, n, { node: t.from !== undefined ? t.from + i : i });
+          return itemOf(n && n.kind === undefined && n.type !== undefined ? native(n, t.sealed) : n);
+        }),
         end: endOf(t.end),
         open: !t.end && !t.sealed,
         sealed: !!t.sealed
@@ -187,91 +206,6 @@
     var cache = (Number(m.cache_read_tokens) || 0) + (Number(m.cache_write_tokens) || 0);
     if (cache) parts.push('cache ' + k(cache));
     return parts.join(' \u00b7 ');
-  }
-
-  function events() {
-    var turns = {}, order = [], metrics;
-    var s = { skipped: 0 };
-    function turn(n) {
-      if (!turns[n]) {
-        turns[n] = { turn: n, nodes: {}, sealed: false };
-        order.push(n);
-        order.sort(function (a, b) { return a - b; });
-      }
-      return turns[n];
-    }
-    function node(t, e, kind) {
-      var cur = t.nodes[e.node];
-      if (!cur || cur.kind !== kind) cur = t.nodes[e.node] = { kind: kind, node: e.node, settled: false };
-      return cur;
-    }
-    s.apply = function (e) {
-      if (!e || typeof e.type !== 'string') { s.skipped++; return false; }
-      var t, n;
-      switch (e.type) {
-        case 'input':
-          t = turn(e.turn);
-          t.input = { text: e.text, segments: e.segments, sender: e.sender, senderName: e.senderName, at: e.at };
-          return true;
-        case 'prose.delta': case 'thinking.delta': case 'steering.delta': case 'unknown.delta':
-          t = turn(e.turn);
-          n = node(t, e, e.kind);
-          n.text = e.text;
-          if (e.kind === 'steering') { n.sender = e.sender; n.senderName = e.senderName; }
-          if (e.kind === 'unknown') n.type = e.nodeType;
-          return true;
-        case 'prose.settled': case 'thinking.settled': case 'steering.settled': case 'unknown.settled':
-          t = turn(e.turn);
-          n = node(t, e, e.kind);
-          if (e.text !== undefined) n.text = e.text;
-          n.settled = true;
-          if (e.kind === 'steering') { n.sender = e.sender; n.senderName = e.senderName; }
-          if (e.kind === 'unknown') n.type = e.nodeType;
-          return true;
-        case 'tool.start': case 'tool.update': case 'tool.end':
-          t = turn(e.turn);
-          n = node(t, { node: e.tool.node }, 'tool');
-          n.tool = e.tool;
-          if (e.type === 'tool.end') n.settled = true;
-          return true;
-        case 'turn.end':
-          t = turn(e.turn);
-          t.sealed = true;
-          t.end = { reason: e.reason, idle: e.idle, failed: false };
-          return true;
-        case 'turn.error':
-          t = turn(e.turn);
-          t.sealed = true;
-          t.end = { reason: e.reason, idle: e.idle, failed: true };
-          return true;
-        case 'metrics':
-          metrics = e.metrics;
-          return true;
-        default:
-          s.skipped++;
-          if (typeof e.turn === 'number') {
-            t = turn(e.turn);
-            n = node(t, { node: e.node == null ? Object.keys(t.nodes).length : e.node }, 'unknown');
-            n.type = e.nodeType || e.type;
-            n.text = typeof e.text === 'string' ? e.text : '';
-            n.settled = /\.settled$/.test(e.type);
-            return true;
-          }
-          return false;
-      }
-    };
-    s.turns = function () {
-      return order.map(function (k) {
-        var t = turns[k];
-        var keys = Object.keys(t.nodes).map(Number).sort(function (a, b) { return a - b; });
-        var out = { turn: t.turn, nodes: keys.map(function (i) { return t.nodes[i]; }), sealed: t.sealed };
-        if (t.input) out.input = t.input;
-        if (t.end) out.end = t.end;
-        return out;
-      });
-    };
-    s.metrics = function () { return metrics; };
-    return s;
   }
 
   function dom(doc) {
@@ -616,7 +550,6 @@
     spans: spans,
     who: who,
     model: model,
-    events: events,
     metricsLine: metricsLine,
     renderers: renderers,
     create: create,

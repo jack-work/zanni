@@ -385,7 +385,9 @@
       var again = firstTurn && v.body.querySelector('[data-turn="' + firstTurn + '"]');
       if (v.paging && again) win.scrollBy(0, again.getBoundingClientRect().top - top0);
       v.metrics.update(snap.metrics);
+      var was = v.running;
       v.running = runningOf(snap);
+      if (was && !v.running) loadListSoon();
       v.older.hidden = snap.olderAvailable !== true;
       var note = snap.refusal ? refusalText(snap.refusal) : snap.turns.length || snap.phase !== 'live' ? '' : 'Nothing said yet.';
       v.status.replaceChildren();
@@ -441,14 +443,16 @@
 
     function speak(v) {
       if (v.voiceConn) return;
-      var players = {}, live = false;
+      var players = {};
       var ctx = {
         aria: v.id,
-        events: function (fn) {
-          return v.stream.subscribe(function (e) { if (live) fn(e); });
+        watch: function (fn) {
+          return v.stream.onChange(function () {
+            if (v.stream.state !== 'live') return;
+            fn(N.model(v.stream.snapshot().turns));
+          });
         }
       };
-      v.stream.onChange(function () { if (v.stream.state === 'live') live = true; });
       var audio = opts.audioURL || function (key) { return 'audio/key/' + key.split('/').map(encodeURIComponent).join('/'); };
       function playerFor(c) {
         if (players[c.turn] || !V) return players[c.turn] || null;
@@ -556,7 +560,6 @@
       }
       v.stream = c.attach(id, {});
       v.stream.onChange(function () { paintAria(v); });
-      v.stream.subscribe(function () { loadListSoon(); }, { kind: 'turn' });
       v.older.addEventListener('click', function () { loadOlder(v).catch(function () {}); });
       if (win.IntersectionObserver) {
         v.watch = new win.IntersectionObserver(function (entries) {
