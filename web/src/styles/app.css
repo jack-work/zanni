@@ -1,0 +1,12 @@
+:where(:root[data-theme="registro"]) { color-scheme: light dark; }
+
+body.fw-page {
+  margin: 0;
+  background-color: var(--z-ground);
+  background-image: repeating-conic-gradient(color-mix(in srgb, var(--z-ink) 5%, transparent) 0% 25%, transparent 0% 50%);
+  background-size: 6px 6px;
+  color: var(--z-ink);
+}
+
+.fw-top { display: flex; align-items: center; min-height: 56px; padding: 0 16px; border-bottom: 2px solid var(--z-accent); background: var(--z-ground); }
+.fw-title { font: 400 var(--z-fs-2xl, 26px) / 1 "Jacquard 24", Georgia, serif; letter-spacing: 0.03em; }

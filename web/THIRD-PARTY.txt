@@ -1,0 +1,4 @@
+figaro web: third-party notices
+
+React and react-dom, MIT License, Copyright (c) Meta Platforms, Inc. and affiliates.
+Jotai, MIT License, Copyright (c) 2020 Daishi Kato.

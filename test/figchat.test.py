@@ -1,16 +1,15 @@
 import json
 import time
 import os
-import shutil
 import subprocess
 import sys
-import tempfile
 import urllib.request
 
 from playwright.sync_api import sync_playwright
 
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 shots = os.environ.get("FIGCHAT_SHOTS", "")
+bundle = os.path.abspath(sys.argv[1])
 MAIN = "c0ffee01" * 4
 LANE = "c0ffee02" * 4
 EVIL = '<img src=x onerror="window.__pwned=1">'
@@ -83,9 +82,6 @@ class Door:
         self.proc.wait()
 
 
-tmp = tempfile.mkdtemp(prefix="figchat-web-")
-bundle = os.path.join(tmp, "bundle")
-subprocess.check_call(["node", os.path.join(root, "bin", "figchat-bundle"), bundle], stdout=subprocess.DEVNULL)
 doors = []
 
 
@@ -110,259 +106,27 @@ try:
             pg.on("console", lambda m: pg.errors.append(m.text) if m.type == "error" else None)
             return pg
 
-        def attend(pg, door, aria, turn=None):
-            pg.goto("about:blank")
-            pg.goto(door.url + "#/gluck/" + aria + (":%d" % turn if turn else ""))
-            until(pg, "window.figchat && document.querySelector('#app').figchat && document.querySelector('#app').figchat.state().link === 'live'", timeout=15000)
-
         def snap(pg, name):
             if shots:
                 os.makedirs(shots, exist_ok=True)
                 pg.screenshot(path=os.path.join(shots, name + ".png"))
 
-        def send(pg, text):
-            pg.locator(".figchat-input").fill(text)
-            pg.locator(".figchat-send").click()
-
-        def turns_shown(pg):
-            return pg.evaluate("[...document.querySelectorAll('.nodi-turn')].map(n => Number(n.dataset.turn))")
-
         for width, height in ((390, 844), (1280, 800)):
-            tag = "%d" % width
             pg = fresh(width, height)
-            attend(pg, fast, MAIN)
-
-            first = turns_shown(pg)
-            assert first and first[-1] == 26 and len(first) < 26, "tail page only: %s" % first
-            assert first == sorted(first) and len(set(first)) == len(first), first
-            pg.wait_for_selector(".figchat-thread", state="attached")
-            rows = pg.locator(".figchat-thread").count()
-            assert rows == 8, "list is paged at eight, got %d" % rows
-            if width >= 900:
-                assert pg.locator(".figchat-side").is_visible(), "the list sits beside the transcript at 1280"
-            else:
-                assert not pg.locator(".figchat-side").is_visible(), "one pane at 390"
-            pg.locator(".figchat-more").click() if pg.locator(".figchat-more").is_visible() else None
-            if width >= 900:
-                until(pg, "document.querySelectorAll('.figchat-thread').length > 8")
-                depths = pg.evaluate("[...document.querySelectorAll('.figchat-thread')].map(a => a.dataset.depth)")
-                assert "1" in depths, "children are indented under their parent: %s" % depths
-            snap(pg, "attend-light-" + tag)
-
-            before = len(turns_shown(pg))
-            for _ in range(40):
-                if pg.locator(".nodi-turn[data-turn='4']").count():
-                    break
-                pg.evaluate("window.scrollTo(0, 0)")
-                pg.wait_for_timeout(120)
-            assert pg.locator(".nodi-turn[data-turn='4']").count() == 1, "scrolling up pages older turns in: %s" % turns_shown(pg)
-            got = turns_shown(pg)
-            assert len(got) - before >= 10, "read back ten turns or more: %d -> %d" % (before, len(got))
-            assert got == sorted(got) and len(set(got)) == len(got), "older pages land in order without repeats: %s" % got
-            assert pg.locator(".nodi-unknown").count() == 1, pg.locator(".nodi-unknown").count()
-            assert "Unknown node: sparkle" in pg.locator(".nodi-unknown").inner_text()
-            assert pg.locator(".nodi-said[data-from='aria'] .nodi-who").first.inner_text() == "Il Zanni"
-            assert pg.locator(".nodi-said[data-from='caller'] .nodi-who").first.inner_text() == "the King"
-            assert pg.locator(".nodi-said[data-from='you']").count() > 3
-            assert pg.locator(".nodi-steering .nodi-who").first.inner_text() == "Il Zanni"
-            tool = pg.locator(".nodi-turn[data-turn='7'] .nodi-tool")
-            assert tool.evaluate("n => n.open") is False, "tool blocks are collapsed"
-            tool.locator("summary").click()
-            assert tool.evaluate("n => n.open") is True
-            assert "go test" in tool.locator(".nodi-tool-args").inner_text(), tool.evaluate("n => n.outerHTML")
-            assert tool.locator(".nodi-tool-out").is_visible()
-            assert "clipped" in tool.locator(".nodi-clipped").inner_text(), "a clipped result says so"
-            sans_free(pg, "history at %d" % width)
-            no_sideways(pg, width, "history")
+            pg.goto(fast.url)
+            pg.wait_for_selector(".fw-title")
+            assert pg.title() == "figaro web"
+            assert pg.locator(".fw-title").inner_text() == "figaro web"
+            until(pg, "document.fonts.check('26px \"Jacquard 24\"')")
+            assert pg.evaluate("document.querySelectorAll('script:not([src]), style, [style]').length") == 0, "no inline script or style under the CSP"
+            sans_free(pg, "the blank shell at %d" % width)
+            no_sideways(pg, width, "the blank shell")
             assert not pg.errors, pg.errors
+            snap(pg, "shell-%d" % width)
             pg.close()
-
-        deep = fresh()
-        attend(deep, fast, MAIN, 12)
-        deep.wait_for_selector(".nodi-turn[data-turn='12']")
-        until(deep, "() => { const r = document.querySelector(\"[data-turn='12']\").getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight; }", timeout=10000)
-        assert deep.locator(".nodi-said[data-from='you'] .nodi-who").count() >= 1
-        assert "Gluck at the terminal" in deep.locator(".nodi-turn[data-turn='12']").inner_text(), "a terminal caller keeps its name"
-        deep.close()
-
-        for width, height, scheme in ((390, 844, "light"), (390, 844, "dark"), (1280, 800, "light"), (1280, 800, "dark")):
-            pg = fresh(width, height, scheme)
-            attend(pg, door(45), MAIN)
-            before = pg.locator(".nodi-turn[data-turn='27']").count()
-            send(pg, "please run the tests")
-            pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='running']", timeout=10000)
-            thinking = pg.locator(".nodi-turn[data-turn='27'] .nodi-thinking")
-            assert thinking.evaluate("n => n.open") is False, "thinking is collapsed while it streams"
-            assert pg.locator(".nodi-turn[data-turn='27'][data-state='open']").count() == 1
-            assert pg.locator(".figchat-turn").is_visible(), "the composer says a message will steer"
-            pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-prose:not([data-settled])", timeout=10000) if False else None
-            pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='ok']", timeout=10000)
-            pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])", timeout=10000)
-            thinking.locator("summary").click()
-            assert thinking.evaluate("n => n.open") is True
-            assert "answer plainly" in thinking.locator(".nodi-thought").inner_text()
-            kinds = pg.evaluate("[...document.querySelectorAll('.nodi-turn[data-turn=\"27\"] .nodi-turn-body > *')].map(n => n.className.split(' ')[0])")
-            assert kinds == ["nodi-input", "nodi-thinking", "nodi-prose", "nodi-tool", "nodi-prose"], kinds
-            assert "please run the tests" in pg.locator(".nodi-turn[data-turn='27'] .nodi-input").inner_text()
-            assert pg.locator(".figchat-input").input_value() == ""
-            assert pg.locator(".nodi-metrics").inner_text().startswith("ctx"), "metrics sit quietly above the transcript"
-            snap(pg, "live-%s-%d" % (scheme, width))
-            sans_free(pg, "live turn %s %d" % (scheme, width))
-            no_sideways(pg, width, "live turn")
-            assert not pg.errors, pg.errors
-            pg.close()
-
-        pg = fresh()
-        drop_door = door(12)
-        attend(pg, drop_door, MAIN)
-        send(pg, "run it and then [drop] the line")
-        until(pg, "document.querySelector('#app').figchat.state().running", timeout=10000)
-        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool", timeout=10000)
-        drop_door.drop()
-        until(pg, "document.querySelector('#app').dataset.link === 'offline'", timeout=5000)
-        until(pg, "document.querySelector('#app').dataset.link === 'live'", timeout=15000)
-        pg.wait_for_selector(".nodi-turn[data-turn='28']:not([data-state='open'])", timeout=15000) if False else None
-        until(pg, "document.querySelector('#app').figchat.state().running === false", timeout=15000)
-        for want in ("27", "28"):
-            if pg.locator(".nodi-turn[data-turn='%s']" % want).count():
-                prose = pg.locator(".nodi-turn[data-turn='%s'] .nodi-prose" % want).count()
-                assert prose <= 2, "no node drawn twice after the reconnect: %d" % prose
-        last = turns_shown(pg)[-1]
-        body = pg.evaluate("[...document.querySelectorAll('.nodi-turn[data-turn=\"%d\"] .nodi-turn-body > *')].map(n => n.className.split(' ')[0])" % last)
-        assert body == ["nodi-input", "nodi-thinking", "nodi-prose", "nodi-tool", "nodi-prose"], body
-        assert pg.locator(".nodi-turn[data-turn='%d'] .nodi-tool[data-status='ok']" % last).count() == 1
-        assert not [e for e in pg.errors if "WebSocket" not in e and "websocket" not in e and "ERR_" not in e], pg.errors
-        pg.close()
-
-        pg = fresh()
-        attend(pg, door(12), MAIN, 3)
-        pg.wait_for_selector(".nodi-turn[data-turn='3']")
-        pg.wait_for_timeout(300)
-        assert hostile_findings(pg) == [], hostile_findings(pg)
-        text = pg.locator(".nodi-turn[data-turn='3']").inner_text()
-        assert EVIL in text, "hostile markup shows up as the characters it is"
-        assert "U+202E" in text and "U+200B" in text, "bidi and zero width marks are boxed"
-        assert pg.locator(".nodi-turn[data-turn='3'] .nodi-a[href^='javascript']").count() == 0
-        pg.locator(".figchat-side").evaluate("n => n.hidden") 
-        send(pg, EVIL)
-        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-input")
-        pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])", timeout=10000)
-        assert hostile_findings(pg) == [], hostile_findings(pg)
-        assert EVIL in pg.locator(".nodi-turn[data-turn='27'] .nodi-input").inner_text()
-        assert not pg.errors, pg.errors
-        pg.close()
-
-        pg = fresh()
-        slow = door(150)
-        attend(pg, slow, MAIN)
-        send(pg, "please run the build")
-        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool", timeout=15000)
-        pg.locator(".figchat-stop:not(.figchat-stop-clear)").click()
-        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-end", timeout=10000)
-        assert "interrupted" in pg.locator(".nodi-turn[data-turn='27'] .nodi-end").inner_text()
-        until(pg, "!document.querySelector('#app').figchat.state().running")
-        assert slow.state()["interrupts"] == ["keep"], slow.state()
-        send(pg, "second run the tests")
-        pg.wait_for_selector(".nodi-turn[data-turn='28'] .nodi-thinking", timeout=15000)
-        send(pg, "queued thought")
-        until(pg, "document.querySelector('#app').figchat.state().running")
-        pg.locator(".figchat-stop-clear").click()
-        until(pg, "!document.querySelector('#app').figchat.state().running", timeout=10000)
-        assert slow.state()["interrupts"] == ["keep", "clear"], slow.state()
-        assert pg.locator(".nodi-turn[data-turn='29']").count() == 0, "a cleared queue starts no turn"
-        pg.close()
-
-        pg = fresh()
-        attend(pg, door(150), MAIN)
-        send(pg, "start a long run please")
-        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='running']", timeout=20000)
-        send(pg, "also mind the dark theme")
-        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-steering", timeout=20000)
-        assert "also mind the dark theme" in pg.locator(".nodi-turn[data-turn='27'] .nodi-steering").inner_text()
-        assert pg.locator(".nodi-turn[data-turn='27'] .nodi-steering .nodi-who").inner_text() == "You"
-        pg.close()
-
-        pg = fresh()
-        attend(pg, door(12), MAIN)
-        pg.locator(".figchat-fork").click()
-        until(pg, "location.hash.startsWith('#/gluck/') && !location.hash.includes('%s')" % MAIN, timeout=10000)
-        until(pg, "document.querySelector('#app').figchat.state().link === 'live' && document.querySelector('#app').figchat.state().aria !== '%s'" % MAIN)
-        assert pg.locator(".nodi-turn").count() >= 1, "the alternative opens with the history it was cut from"
-        pg.close()
-
-        pg = fresh()
-        door_v = door(12)
-        attend(pg, door_v, MAIN)
-        pg.locator(".figchat-voice").click()
-        assert pg.locator(".figchat-voice").get_attribute("aria-pressed") == "true"
-        send(pg, "just a [plain] hello")
-        pg.wait_for_selector(".nodi-turn[data-turn='27'] .voce[data-for='27']", timeout=15000)
-        assert pg.locator(".nodi-turn[data-turn='27'] .nodi-prose .voce").count() == 1, "one player per turn, inside a prose node"
-        assert pg.locator(".nodi-turn[data-turn='27'] .voce").count() == 1
-        until(pg, "document.querySelector('.voce').dataset.state !== 'none'", 10000)
-        until(pg, "['idle','loading','playing','paused'].includes(document.querySelector('.voce').dataset.state)", 15000)
-        sans_free(pg, "voice player")
-        assert door_v.state()["audio"] >= 1, "the gateway audio socket was opened by the voice toggle"
-        pg.close()
-
-        mic_door = door(12)
-        ctx = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
-        pg = ctx.new_page()
-        pg.errors = []
-        pg.on("pageerror", lambda e: pg.errors.append(str(e)))
-        attend(pg, mic_door, MAIN)
-        assert pg.locator(".figchat-mic").is_enabled()
-        pg.locator(".figchat-input").fill("typed first")
-        pg.locator(".figchat-mic").tap()
-        until(pg, "document.querySelector('#app').dataset.mic === 'recording'", 10000)
-        pg.wait_for_timeout(600)
-        pg.locator(".figchat-mic").tap()
-        until(pg, "document.querySelector('.figchat-input').value.includes('crossing count')", 10000)
-        assert pg.locator(".figchat-input").input_value() == "typed first what is the crossing count", pg.locator(".figchat-input").input_value()
-        posts = mic_door.state()["stt"]
-        assert len(posts) == 1 and posts[0]["type"].startswith("audio/") and posts[0]["size"] > 0, posts
-        assert posts[0]["aria"] == "gluck/" + MAIN, posts
-        assert mic_door.state()["sent"] == [], "the transcript is not sent until Gluck sends it"
-        pg.locator(".figchat-input").fill("edited words")
-        pg.locator(".figchat-send").tap()
-        until(pg, "document.querySelector(\"[data-turn='27']\")", 10000)
-        assert mic_door.state()["sent"][0]["text"] == "edited words"
-        sans_free(pg, "composer after the mic")
-        pg.evaluate("document.querySelector('.figchat-send').style.fontFamily = 'Arial'")
-        assert pg.evaluate(SANS), "negative control: a button set to Arial must be caught"
-        assert not pg.errors, pg.errors
-        ctx.close()
-
-        refused = fresh()
-        refused.goto(fast.url + "#/gluck/" + "f" * 32)
-        until(refused, "document.querySelector('#app').dataset.link === 'gone'", timeout=10000)
-        assert "No such aria" in refused.locator(".figchat-main").inner_text()
-        refused.goto("about:blank")
-        refused.goto(fast.url + "#/nowhere/" + MAIN)
-        refused.wait_for_selector(".figchat-main")
-        refused.close()
-
-        tmpapp = os.path.join(tmp, "sabotage")
-        shutil.copytree(bundle, tmpapp)
-        target = os.path.join(tmpapp, "nodi.js")
-        src = open(target).read()
-        needle = "else if (n.lastChild && n.lastChild.nodeType === 3) n.lastChild.appendData(p.plain);\n        else n.appendChild(doc.createTextNode(p.plain));"
-        assert src.count(needle) == 1, "the one text sink is still where the sabotage expects it"
-        open(target, "w").write(src.replace(needle, "else n.insertAdjacentHTML('beforeend', p.plain);"))
-        bad = Door(tmpapp, 12)
-        try:
-            s = fresh()
-            attend(s, bad, MAIN, 3)
-            s.wait_for_selector(".nodi-turn[data-turn='3']")
-            s.wait_for_timeout(300)
-            assert any(f.startswith("element") for f in hostile_findings(s)), "negative control: with the text sink swapped for HTML the hostile turn must inject an element"
-            s.close()
-        finally:
-            bad.stop()
 
         browser.close()
-    print("figchat web: ok")
+    print("figaro web: ok")
 finally:
     for d in doors:
         d.stop()
-    shutil.rmtree(tmp, ignore_errors=True)

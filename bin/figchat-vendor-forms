@@ -1,0 +1,36 @@
+#!/usr/bin/env node
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const cp = require('child_process');
+
+const ref = process.argv[2];
+if (!ref || ref === '-h' || ref === '--help') {
+  process.stdout.write('usage: figchat-vendor-forms REF\n\nREF is a figaro-forms tag (v0.6.0) or a full ref (refs/heads/feat/x). Builds the npm tarball\nwith `nix build <figaro-forms on keel>?ref=REF#tarball`, copies figaro-forms-<version>.tgz into web/vendor,\nwrites web/vendor/SOURCE.json (ref, rev, integrity) and points web/package.json at the file.\nRun `npm install` in web/ afterwards to refresh the lockfile.\n');
+  process.exit(ref ? 0 : 2);
+}
+const full = ref.startsWith('refs/') ? ref : 'refs/tags/' + ref;
+const remote = process.env.FIGARO_FORMS_REMOTE || 'git+ssh://git@spain/var/lib/keel/jack/figaro-forms.git';
+const flake = remote + '?ref=' + full;
+const run = (...a) => cp.execFileSync('nix', a, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }).trim();
+const rev = JSON.parse(run('flake', 'metadata', '--json', flake)).locked.rev;
+const out = run('build', '--no-link', '--print-out-paths', flake + '#tarball').split('\n')[0];
+const file = fs.readdirSync(out).find((f) => /^figaro-forms-\d.*\.tgz$/.test(f));
+if (!file) { process.stderr.write('figchat-vendor-forms: no figaro-forms tarball in ' + out + '\n'); process.exit(1); }
+const web = path.join(__dirname, '..', 'web');
+const vendor = path.join(web, 'vendor');
+fs.mkdirSync(vendor, { recursive: true });
+for (const old of fs.readdirSync(vendor)) if (/^figaro-forms-.*\.tgz$/.test(old)) fs.rmSync(path.join(vendor, old));
+const bytes = fs.readFileSync(path.join(out, file));
+fs.writeFileSync(path.join(vendor, file), bytes);
+fs.chmodSync(path.join(vendor, file), 0o644);
+const integrity = 'sha512-' + crypto.createHash('sha512').update(bytes).digest('base64');
+fs.writeFileSync(path.join(vendor, 'SOURCE.json'), JSON.stringify({ repo: 'figaro-forms', ref: full, rev, file, integrity }, null, 2) + '\n');
+const pkgFile = path.join(web, 'package.json');
+if (fs.existsSync(pkgFile)) {
+  const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf8'));
+  pkg.dependencies['figaro-forms'] = 'file:vendor/' + file;
+  fs.writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + '\n');
+}
+process.stdout.write(file + ' from ' + rev.slice(0, 7) + ' (' + full + ')\n');

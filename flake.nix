@@ -147,11 +147,36 @@
           cp -r ${./assets}/. $out/
         '';
 
-        packages.figchat-shell = pkgs.runCommand "figchat-shell-${version}" {
-          nativeBuildInputs = [ pkgs.nodejs ];
-        } ''
-          ZANNI_ASSETS=${./assets} node ${./bin/figchat-bundle} $out
-        '';
+        packages.figchat-shell = pkgs.buildNpmPackage {
+          pname = "figchat-shell";
+          inherit version;
+          src = pkgs.lib.cleanSourceWith {
+            name = "zanni-source";
+            src = ./.;
+            filter = path: type:
+              let
+                rel = pkgs.lib.removePrefix (toString ./.) (toString path);
+                top = builtins.elemAt (pkgs.lib.splitString "/" rel) 1;
+                base = baseNameOf path;
+              in
+              rel == "" || (builtins.elem top [ "web" "assets" "bin" ] && !(builtins.elem base [ "node_modules" "dist" ]));
+          };
+          sourceRoot = "zanni-source/web";
+          nodejs = pkgs.nodejs_24;
+          npmDepsHash = "sha256-fCaT04bR2MSzFnhOLioxa/nAkC2toqHJm/1cR0P84f8=";
+          makeCacheWritable = true;
+          doCheck = true;
+          checkPhase = ''
+            runHook preCheck
+            npm test
+            runHook postCheck
+          '';
+          installPhase = ''
+            runHook preInstall
+            node ../bin/figchat-bundle $out dist
+            runHook postInstall
+          '';
+        };
 
         # The specimen page, built from source. Also the drift guard: the
         # copy committed at examples/card.html must equal what the tools
@@ -334,11 +359,14 @@
           cp -r ${./examples} examples
           cp -r ${./test} test
           cp -r ${./bin} bin
-          chmod -R u+w assets examples test bin
+          mkdir web
+          cp -r ${./web/vendor} web/vendor
+          cp ${./web/package-lock.json} web/package-lock.json
+          chmod -R u+w assets examples test bin web
           node test/voce.test.js
           node test/nodi.test.js
           node test/figchat.test.js
-          python3 test/figchat.test.py examples/figchat.html 2>&1 | tee $out
+          python3 test/figchat.test.py ${self.packages.${system}.figchat-shell} 2>&1 | tee $out
         '';
 
         checks.rotolo = pkgs.runCommand "zanni-rotolo-test" {

@@ -117,21 +117,41 @@ async function test(name, fn) {
     assert.ok(socks[0].closed);
   });
 
-  await test('bundle: the shell lists exactly the files it needs and every sum matches', () => {
-    const out = fs.mkdtempSync(path.join(os.tmpdir(), 'figchat-bundle-'));
-    cp.execFileSync('node', [path.join(__dirname, '..', 'bin', 'figchat-bundle'), out]);
-    const files = [];
-    (function walk(d) { fs.readdirSync(d, { withFileTypes: true }).forEach((e) => { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else files.push(path.relative(out, p)); }); }(out));
-    ['index.html', 'boot.js', 'figchat.js', 'figchat.css', 'speech.js', 'aria.js', 'aria-source.json', 'nodi.js', 'nodi.css', 'voce.js', 'voce.css', 'SHA256SUMS'].forEach((f) => assert.ok(files.includes(f), f));
+  await test('bundle: the Vite build is flattened so ./assets/<file> in index.html resolves beside it, and every sum matches', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'figchat-dist-'));
+    const dist = path.join(root, 'dist');
+    fs.mkdirSync(path.join(dist, 'assets'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'THIRD-PARTY.txt'), 'notices\n');
+    fs.writeFileSync(path.join(dist, 'assets', 'index-abc.js'), 'export {};\n');
+    fs.writeFileSync(path.join(dist, 'assets', 'style-abc.css'), 'body{}\n');
+    const page = (extra) => '<!doctype html><script type="module" src="./assets/index-abc.js"></script><link rel="stylesheet" href="./assets/style-abc.css">' + extra;
+    fs.writeFileSync(path.join(dist, 'index.html'), page(''));
+    const out = path.join(root, 'out');
+    const bundle = (target) => cp.execFileSync('node', [path.join(__dirname, '..', 'bin', 'figchat-bundle'), target, dist], { stdio: 'pipe' });
+    bundle(out);
+    const files = fs.readdirSync(out).sort();
+    assert.deepStrictEqual(files, ['SHA256SUMS', 'THIRD-PARTY.txt', 'index-abc.js', 'index.html', 'style-abc.css']);
     const index = fs.readFileSync(path.join(out, 'index.html'), 'utf8');
-    (index.match(/(?:src|href)="assets\/[^"]+"/g) || []).forEach((m) => assert.ok(files.includes(m.replace(/^[^"]+"assets\//, '').slice(0, -1)), m));
-    fs.rmSync(out, { recursive: true, force: true });
+    (index.match(/(?:src|href)="\.\/assets\/[^"]+"/g) || []).forEach((m) => assert.ok(files.includes(m.replace(/^[^"]+"\.\/assets\//, '').slice(0, -1)), m));
+    fs.readFileSync(path.join(out, 'SHA256SUMS'), 'utf8').trim().split('\n').forEach((line) => {
+      const [sum, name] = line.split('  ');
+      assert.strictEqual(require('crypto').createHash('sha256').update(fs.readFileSync(path.join(out, name))).digest('hex'), sum, name);
+    });
+    ['<script>alert(1)</script>', '<style>b{}</style>', '<p style="color:red">x</p>', '<p onclick="x()">x</p>'].forEach((bad) => {
+      fs.writeFileSync(path.join(dist, 'index.html'), page(bad));
+      assert.throws(() => bundle(path.join(root, 'bad')), /inline script or style/, bad);
+    });
+    fs.rmSync(root, { recursive: true, force: true });
   });
 
-  await test('vendored client: SOURCE.json names the figaro-forms head the bundle was cut from', () => {
-    const src = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'assets', 'aria', 'SOURCE.json'), 'utf8'));
-    assert.ok(/^[0-9a-f]{40}$/.test(src.sha));
-    assert.strictEqual(src.entry, 'figaro-forms/aria');
+  await test('vendored client: SOURCE.json names the figaro-forms revision the tarball was cut from, and the lockfile pins it', () => {
+    const web = path.join(__dirname, '..', 'web');
+    const src = JSON.parse(fs.readFileSync(path.join(web, 'vendor', 'SOURCE.json'), 'utf8'));
+    assert.ok(/^[0-9a-f]{40}$/.test(src.rev));
+    assert.ok(fs.existsSync(path.join(web, 'vendor', src.file)));
+    const lock = JSON.parse(fs.readFileSync(path.join(web, 'package-lock.json'), 'utf8'));
+    assert.strictEqual(lock.packages['node_modules/figaro-forms'].resolved, 'file:vendor/' + src.file);
+    assert.strictEqual(lock.packages['node_modules/figaro-forms'].integrity, src.integrity);
   });
 
   process.stdout.write(failed ? failed + ' failed\n' : 'figchat: all passed\n');
