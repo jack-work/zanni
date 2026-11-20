@@ -170,18 +170,18 @@ body.figchat-page {
 .figchat-text:empty { display: none; }
 .figchat-msg[data-streaming] .figchat-text:empty { display: block; }
 .figchat-msg[data-streaming] .figchat-text:empty::after, .figchat-msg[data-streaming] .figchat-text > :last-child:is(p, h3, h4, blockquote)::after, .figchat-msg[data-streaming] .figchat-text > :last-child:is(ul, ol) > li:last-child::after, .figchat-msg[data-streaming] .figchat-text > pre:last-child > code::after { content: ""; display: inline-block; width: 0.45em; height: 0.95em; margin-left: 2px; background: var(--z-accent); vertical-align: -0.12em; }
+.figchat-p, .figchat-h, .figchat-quote, .figchat-list, .figchat-pre, .figchat-hr { margin: 0; }
 .figchat-text > * + * { margin-top: 0.55em; }
-.figchat-p, .figchat-h, .figchat-quote, .figchat-list { margin-bottom: 0; }
 .figchat-h { font: 600 1.1875rem / 1.3 var(--figchat-prose); }
 h3.figchat-h { font-size: 1.3125rem; }
 .figchat-list { padding-left: 1.4em; white-space: normal; }
 .figchat-list > li { white-space: pre-wrap; }
 .figchat-list > li + li { margin-top: 0.2em; }
-.figchat-quote { margin-left: 0; margin-right: 0; padding-left: var(--z-space-4, 12px); border-left: 3px solid var(--z-line); color: var(--z-muted); }
+.figchat-quote { padding-left: var(--z-space-4, 12px); border-left: 3px solid var(--z-line); color: var(--z-muted); }
 .figchat-hr { border: 0; border-top: 1px solid var(--z-line); }
 .figchat-code, .figchat-pre { font: 400 1.0625rem / 1.3 var(--figchat-mono); }
 .figchat-code { padding: 0 3px; background: color-mix(in srgb, var(--z-ink) 8%, transparent); border-radius: var(--z-radius-1, 2px); }
-.figchat-pre { margin-bottom: 0; padding: var(--z-space-3, 8px); overflow-x: auto; white-space: pre; background: color-mix(in srgb, var(--z-ink) 6%, transparent); border: 1px solid var(--z-line); border-radius: var(--z-radius-1, 2px); }
+.figchat-pre { padding: var(--z-space-3, 8px); overflow-x: auto; white-space: pre; background: color-mix(in srgb, var(--z-ink) 6%, transparent); border: 1px solid var(--z-line); border-radius: var(--z-radius-1, 2px); }
 .figchat-a { color: var(--accent-ink); text-decoration: underline; text-underline-offset: 2px; }
 .figchat-msg[data-failed] .figchat-bubble { border-color: var(--z-fail); }
 .figchat-tools { list-style: none; display: grid; gap: var(--z-space-1, 2px); min-width: 0; }
