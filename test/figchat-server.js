@@ -25,6 +25,16 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (url.pathname.startsWith('/chat/assets/')) { file(res, url.pathname.slice('/chat/assets/'.length), { 'Cache-Control': 'private, max-age=3600' }); return; }
+  if (url.pathname === '/chat/api/clips' && req.method === 'POST') {
+    let size = 0;
+    req.on('data', (c) => { size += c.length; });
+    req.on('end', () => {
+      const out = core.clip(req.headers['content-type'] || '', size);
+      res.writeHead(out.status, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' });
+      res.end(JSON.stringify(out.json));
+    });
+    return;
+  }
   if (url.pathname.startsWith('/chat/api/')) {
     let body = '';
     req.on('data', (c) => { body += c; });
@@ -51,7 +61,7 @@ const server = http.createServer((req, res) => {
   }
   if (url.pathname === '/__state') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ posts: core.state.posts, received: core.state.received, ranges: seen.ranges, upgrades: seen.upgrades }));
+    res.end(JSON.stringify({ posts: core.state.posts, clips: core.state.clips, received: core.state.received, ranges: seen.ranges, upgrades: seen.upgrades }));
     return;
   }
   res.writeHead(404); res.end('no');

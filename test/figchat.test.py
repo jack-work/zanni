@@ -73,7 +73,7 @@ def voce_of(pg, mid):
 
 
 with sync_playwright() as p:
-    browser = p.chromium.launch(args=["--no-sandbox", "--disable-audio-output"])
+    browser = p.chromium.launch(args=["--no-sandbox", "--disable-audio-output", "--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"])
 
     def fresh(scheme="light", width=390, height=844, init=None):
         phone = width < 600
@@ -338,6 +338,11 @@ with sync_playwright() as p:
     assert current.count() == 1 and current.text_content() == "A fresh thread about wigs"
     assert wide.locator(".figchat-thread-title").first.text_content() == "A fresh thread about wigs", "the newest thread leads the list"
     assert wide.evaluate("mock.state.posts.length") == 1
+    wide.locator(".figchat-input").fill("line one")
+    wide.locator(".figchat-input").press("Shift+Enter")
+    wide.locator(".figchat-input").type("line two")
+    assert wide.locator(".figchat-input").input_value() == "line one\nline two" and wide.evaluate("mock.state.posts.length") == 1, "Shift+Enter is a newline, not a send"
+    wide.locator(".figchat-input").fill("")
     side, pane = wide.locator(".figchat-side").bounding_box(), wide.locator(".figchat-main").bounding_box()
     assert side["x"] + side["width"] <= pane["x"] + 1, "the panes do not overlap"
     no_sideways(wide, 1280, "desk thread")
@@ -347,6 +352,99 @@ with sync_playwright() as p:
     assert wide.locator(".voce-big .voce-play").bounding_box()["height"] >= 64, "the voice-ergonomics size class"
     assert not wide.errors, wide.errors
     wide.close()
+
+    mic = fresh()
+    go(mic, "#/t/c0ffee01")
+    mic.wait_for_function("chat.state().link === 'live'")
+    rec = mic.locator(".figchat-mic")
+    box = rec.bounding_box()
+    assert box["height"] >= 56 and box["width"] >= 56, "the mic is a large target: %s" % box
+    assert rec.text_content() == "Record" and mic.evaluate("chat.state().mic") == "idle"
+    assert mic.locator(".figchat-turn").is_hidden() and mic.locator(".figchat-clip").is_hidden()
+    rec.tap()
+    mic.wait_for_function("chat.state().mic === 'recording'")
+    assert rec.get_attribute("aria-pressed") == "true"
+    mic.wait_for_function("document.querySelector('.figchat-mic').textContent === 'Stop 0:01'", timeout=4000)
+    no_sideways(mic, 390, "composer while recording")
+    rec.tap()
+    mic.wait_for_function("chat.state().clip !== null")
+    clips = mic.evaluate("mock.state.clips")
+    assert len(clips) == 1 and clips[0]["type"].startswith("audio/webm") and clips[0]["size"] > 200, "a real MediaRecorder clip went up: %s" % clips
+    assert mic.locator(".figchat-input").input_value() == "A mock transcript.", "the transcript lands in the composer, not in the thread"
+    assert mic.evaluate("mock.state.posts") == []
+    assert mic.locator(".figchat-clip-text").text_content() == "Recording attached, 0:01"
+    assert rec.text_content() == "Record" and mic.evaluate("chat.state().mic") == "idle"
+    mic.locator(".figchat-input").fill("A mock transcript, edited.")
+    mic.locator(".figchat-send").tap()
+    mic.wait_for_selector('.figchat-msg[data-id="6"]:not([data-streaming])')
+    assert mic.evaluate("mock.state.posts") == [{"thread": "c0ffee01", "body": {"text": "A mock transcript, edited.", "clip_id": "clip1"}}]
+    assert voce_of(mic, 5).count() == 1, "the sent recording has a player"
+    assert mic.locator(".figchat-clip").is_hidden() and mic.evaluate("chat.state().clip") is None and mic.locator(".figchat-input").input_value() == ""
+    assert mic.locator(".figchat-msg").count() == 6, "message.added and the POST answer are one bubble"
+
+    mic.evaluate("mock.state.status = 502")
+    rec.tap()
+    mic.wait_for_function("chat.state().mic === 'recording'")
+    mic.wait_for_timeout(300)
+    rec.tap()
+    mic.wait_for_function("document.querySelector('.figchat-micnote').textContent === 'Not transcribed: mock failure'")
+    assert mic.evaluate("chat.state().mic") == "idle" and mic.evaluate("chat.state().clip") is None, "a refused clip shows the server's words and leaves the mic ready"
+    mic.evaluate("mock.state.status = 0")
+
+    mic.locator(".figchat-input").fill("markdown please")
+    mic.locator(".figchat-send").tap()
+    mic.wait_for_selector('.figchat-msg[data-id="8"] h3')
+    mic.evaluate("document.querySelector('.figchat-msg[data-id=\"8\"] h3').kept = true")
+    assert mic.locator(".figchat-turn").is_visible(), "while a reply streams the composer says a message will steer it"
+    mic.wait_for_selector('.figchat-msg[data-id="8"]:not([data-streaming])')
+    md = mic.locator('.figchat-msg[data-id="8"] .figchat-text')
+    assert md.locator("h3").text_content() == "The list" and md.locator("h3").evaluate("e => e.kept") is True, "a finished block is not rebuilt by later deltas"
+    assert md.locator("strong").text_content() == "two of them sharp" and md.locator("strong code").text_content() == "sharp"
+    assert md.locator("ol > li").all_text_contents() == ["the razor", "the strop"] and md.locator("em").text_content() == "strop"
+    assert md.locator("pre > code").text_content() == "ls -la <b>"
+    assert md.locator("a").count() == 1 and md.locator("a").get_attribute("href") == "https://example.org/a?b=1" and "noopener" in md.locator("a").get_attribute("rel")
+    assert "[this](javascript:alert(1))" in md.text_content(), "a link outside http, https and mailto stays as typed"
+    assert hostile_findings(mic) == [], hostile_findings(mic)
+    assert mic.locator(".figchat-turn").is_hidden()
+    no_sideways(mic, 390, "thread with markdown")
+
+    mic.evaluate("mock.state.step = 120")
+    mic.evaluate("mock.handle('POST', '/chat/api/threads/c0ffee01/messages', JSON.stringify({ text: 'from another tab' }))")
+    mic.wait_for_selector('.figchat-msg[data-id="9"]')
+    assert mic.locator('.figchat-msg[data-id="9"] .figchat-text').text_content() == "from another tab" and mic.locator('.figchat-msg[data-id="9"]').get_attribute("data-role") == "user"
+    mic.wait_for_function("document.querySelector('.figchat-msg[data-id=\"10\"] .figchat-text')?.textContent.length > 20")
+    mic.evaluate("location.hash = '#/t/c0ffee03'")
+    mic.wait_for_function("chat.state().thread === 'c0ffee03' && chat.state().link === 'live'")
+    mic.evaluate("location.hash = '#/t/c0ffee01'")
+    mic.wait_for_selector('.figchat-msg[data-id="10"][data-streaming]')
+    assert mic.locator(".figchat-turn").is_visible(), "a turn already running shows as running when the thread is opened"
+    mic.wait_for_selector('.figchat-msg[data-id="10"]:not([data-streaming])', timeout=10000)
+    mic.wait_for_function("document.querySelector('.figchat-msg[data-id=\"10\"] .figchat-text').textContent.startsWith('You said: from another tab. I checked')")
+    assert mic.locator('.figchat-msg[data-id="10"] .figchat-text').text_content().endswith("sharp."), "a reply joined halfway is whole once it ends"
+
+    mic.locator(".figchat-input").fill("too long")
+    mic.locator(".figchat-send").tap()
+    mic.wait_for_function("document.querySelector('.figchat-msg[data-id=\"12\"] .figchat-text')?.textContent.length > 8")
+    mic.locator(".figchat-stop").tap()
+    mic.wait_for_selector('.figchat-msg[data-id="12"]:not([data-streaming])')
+    assert mic.evaluate("mock.state.received.at(-1)") == {"type": "cancel"}
+    assert not mic.locator('.figchat-msg[data-id="12"] .figchat-text').text_content().endswith("sharp.") and mic.locator(".figchat-turn").is_hidden(), "Stop reply cancels the turn"
+    assert not mic.errors, mic.errors
+    mic.close()
+
+    deny = fresh(init="navigator.mediaDevices.getUserMedia = () => Promise.reject(new DOMException('denied', 'NotAllowedError'))")
+    go(deny, "#/new")
+    deny.locator(".figchat-mic").tap()
+    deny.wait_for_function("document.querySelector('.figchat-micnote').textContent.startsWith('Microphone blocked.')")
+    assert deny.locator(".figchat-mic").is_enabled() and deny.evaluate("chat.state().mic") == "idle"
+    deny.close()
+    bare = fresh(init="Object.defineProperty(window, 'MediaRecorder', { value: undefined })")
+    go(bare, "#/new")
+    assert bare.locator(".figchat-micnote").text_content() == "This browser cannot record audio." and bare.locator(".figchat-mic").is_disabled()
+    bare.locator(".figchat-input").fill("typing still works")
+    bare.locator(".figchat-send").tap()
+    bare.wait_for_function("location.hash.startsWith('#/t/feed')")
+    bare.close()
 
     for scheme in ("light", "dark"):
         c = fresh(scheme)
@@ -403,7 +501,13 @@ with sync_playwright() as p:
         gone = voce_of(csp, 4)
         gone.locator(".voce-play").tap()
         csp.wait_for_selector('.figchat-msg[data-id="4"] .voce[data-state="expired"]')
+        csp.locator(".figchat-mic").tap()
+        csp.wait_for_selector('#app[data-mic="recording"]')
+        csp.wait_for_timeout(400)
+        csp.locator(".figchat-mic").tap()
+        expect(csp.locator(".figchat-input")).to_have_value("A mock transcript.")
         seen = json.loads(urllib.request.urlopen(origin + "/__state").read())
+        assert len(seen["clips"]) == 1 and seen["clips"][0]["type"].startswith("audio/webm") and seen["clips"][0]["size"] > 200, "the recording is POSTed as recorded: %s" % seen["clips"]
         assert seen["posts"] == [{"thread": "c0ffee01", "body": {"text": "over the wire"}}], seen["posts"]
         assert seen["received"] == [{"type": "voice", "on": True}], seen["received"]
         assert seen["upgrades"] == 1 and any(r.startswith("bytes=") for r in seen["ranges"]), seen

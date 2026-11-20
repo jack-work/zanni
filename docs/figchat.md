@@ -6,9 +6,9 @@ description: The figchat web shell. Read before changing its routes, the transpo
 # figchat
 
 The web chat for figaro, a herald plugin's front end: a thread list, a thread
-of Telegram-like bubbles, a composer, a voice toggle, and a voce player on
-every message that has audio. This is the skeleton. Streaming markdown, tool
-blocks, the mic and the voice-ergonomics mode come after it.
+of Telegram-like bubbles, a composer with a mic, a voice toggle, and a voce
+player on every message that has audio. Replies render as markdown while they
+stream. Collapsible tool blocks and the voice-ergonomics mode come later.
 
 ## Laws
 
@@ -19,6 +19,11 @@ blocks, the mic and the voice-ergonomics mode come after it.
   `test/figchat.test.py` swaps that function for an HTML sink and requires
   the hostile-text check to fire.
 - Control, bidi and zero-width characters are shown as a boxed `U+202E` label.
+- Markdown is parsed to a list of blocks and spans (`figchat.blocks`,
+  `figchat.spans`, pure) and built with createElement plus that same text
+  function. scriba is not used here: it writes HTML. The one attribute that
+  carries server text is a link's `href`, and only when it starts with
+  `http://`, `https://` or `mailto:`; any other link stays as typed.
 - The views never touch `fetch` or `WebSocket`. They talk to a transport.
 
 ## Routes
@@ -38,6 +43,7 @@ threads()                       -> Promise {threads:[{id,title,updated}]}
 createThread(title)             -> Promise {id}
 messages(thread, {before,limit})-> Promise {messages:[Message], next_before?}
 send(thread, {text, clip_id?})  -> Promise {id, state}
+clip(blob)                      -> Promise {clip_id, text, duration_ms, audio_id}
 audioURL(audio_id)              -> string, the src of an audio element
 audioStatus(audio_id)           -> Promise status of a one byte Range GET
 connect(thread, after, {open, frame, binary, close}) -> {send(frame), close()}
@@ -54,9 +60,35 @@ messages sort by id, a delta after `message.end` is dropped, binary frames
 belong to the message of the current `audio.start`, a speech error closes the
 audio stream, a reply joined halfway is fetched whole when it ends.
 
+`Message.state` decides what a stored row is: `streaming` is a turn still
+running (shown with the cursor, and the composer says a message will steer
+it), `failed` is shown as failed, `done` is done even when empty. A row
+without a state falls back to "an empty assistant row is running".
+`message.added` is how a user message appears, on every tab; the POST answer
+for the same id adds nothing. Liveness is the protocol ping; the shell sends
+no JSON pong. `after` is still sent on the socket URL and herald ignores it.
+
+## Composer
+
+Enter sends and Shift+Enter is a newline; on a coarse pointer Enter is a
+newline and the Send button sends. Send is refused while the socket is
+offline. While a reply runs the composer shows "Stop reply", which sends
+`{type:"cancel"}`.
+
+The mic button records with MediaRecorder (`audio/webm;codecs=opus`, else
+`audio/mp4`, else `audio/ogg;codecs=opus`, else the browser's default), tap
+to start, tap to stop, five minutes at most. The clip goes to `clip(blob)`
+with the recorder's type as Content-Type, the transcript is appended to the
+composer for editing, and the next send carries `clip_id`. A refused clip
+shows the server's error text. No `mediaDevices` or no `MediaRecorder`:
+the button is disabled and the composer says so. A denied permission says
+how to allow it. `mount` takes `media: {devices, Recorder}` for tests.
+
 The shell reconnects with backoff (0.5 s doubling to 15 s), fetches history
 again and sends the voice wish again. A message waits for the socket to be
-open before its POST, so the reply's first frames are not missed.
+open before its POST, so the reply's first frames are not missed. If a turn
+is running when the socket opens, history is fetched once more, so a turn
+that ended between the first fetch and the socket is not left spinning.
 
 ## Shipping
 

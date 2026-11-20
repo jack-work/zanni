@@ -54,6 +54,8 @@
     return Math.min(15000, 500 * Math.pow(2, Math.max(0, attempt)));
   }
 
+  var MAX_CLIP_MS = 5 * 60000;
+
   function key(id) { return String(id); }
 
   function before(a, b) {
@@ -65,6 +67,111 @@
   function toolState(t) {
     if (t.error) return 'failed';
     return t.state || 'done';
+  }
+
+  var FENCE = /^\s{0,3}(`{3,}|~{3,})\s*([^`\s]*)[^`]*$/;
+  var ITEM = /^\s{0,6}(?:([-*+])|(\d{1,9})[.)])\s+(.*)$/;
+  var INLINE = /(`+)([^`]|[^`][\s\S]*?[^`])\1(?!`)|\*\*([^\s*](?:[\s\S]*?[^\s*])?)\*\*(?!\*)|\*([^\s*](?:[^*]*?[^\s*])?)\*(?!\*)|\[([^\]\n]+)\]\(([^)\s]+)\)|(https?:\/\/[^\s<>]*[^\s<>.,;:!?'")\]])/g;
+
+  function safeHref(raw) {
+    var m = /^(https?:\/\/|mailto:)[^\s]+$/i.exec(raw);
+    return m ? raw : '';
+  }
+
+  function spans(text, depth) {
+    var out = [], last = 0, m, re = new RegExp(INLINE.source, 'g');
+    var plain = function (s) {
+      if (!s) return;
+      if (out.length && out[out.length - 1].kind === 'text') out[out.length - 1].text += s;
+      else out.push({ kind: 'text', text: s });
+    };
+    while ((m = re.exec(text))) {
+      plain(text.slice(last, m.index));
+      last = m.index + m[0].length;
+      if (m[1]) out.push({ kind: 'code', text: m[2] });
+      else if (m[3] != null) out.push({ kind: 'b', spans: depth ? [{ kind: 'text', text: m[3] }] : spans(m[3], 1) });
+      else if (m[4] != null) out.push({ kind: 'i', spans: depth ? [{ kind: 'text', text: m[4] }] : spans(m[4], 1) });
+      else if (m[5] != null) {
+        if (safeHref(m[6])) out.push({ kind: 'a', text: m[5], href: m[6] });
+        else plain(m[0]);
+      } else if (safeHref(m[7])) out.push({ kind: 'a', text: m[7], href: m[7] });
+      else plain(m[0]);
+    }
+    plain(text.slice(last));
+    return out;
+  }
+
+  function blocks(text) {
+    var lines = String(text == null ? '' : text).split('\n'), out = [], para = [], i = 0, m;
+    var flush = function () {
+      if (para.length) out.push({ kind: 'p', text: para.join('\n') });
+      para = [];
+    };
+    while (i < lines.length) {
+      var line = lines[i];
+      if ((m = FENCE.exec(line))) {
+        flush();
+        var body = [], closed = false, mark = m[1];
+        for (i++; i < lines.length; i++) {
+          if (lines[i].trim().indexOf(mark) === 0 && /^\s*[`~]+\s*$/.test(lines[i])) { closed = true; i++; break; }
+          body.push(lines[i]);
+        }
+        out.push({ kind: 'code', lang: m[2], text: body.join('\n'), open: !closed });
+        continue;
+      }
+      if (!line.trim()) { flush(); i++; continue; }
+      if ((m = /^\s{0,3}(#{1,6})\s+(.*?)\s*#*\s*$/.exec(line))) {
+        flush();
+        out.push({ kind: 'h', level: m[1].length, text: m[2] });
+        i++;
+        continue;
+      }
+      if (/^\s{0,3}([-*_])(\s*\1){2,}\s*$/.test(line)) { flush(); out.push({ kind: 'hr' }); i++; continue; }
+      if ((m = ITEM.exec(line))) {
+        flush();
+        var list = { kind: m[2] ? 'ol' : 'ul', start: m[2] ? Number(m[2]) : 1, items: [] };
+        while (i < lines.length && lines[i].trim() && !FENCE.test(lines[i])) {
+          var it = ITEM.exec(lines[i]);
+          if (it && !!it[2] === (list.kind === 'ol')) list.items.push(it[3]);
+          else if (it) break;
+          else list.items[list.items.length - 1] += '\n' + lines[i].trim();
+          i++;
+        }
+        out.push(list);
+        continue;
+      }
+      if (/^\s{0,3}>\s?/.test(line)) {
+        flush();
+        var quote = [];
+        while (i < lines.length && /^\s{0,3}>\s?/.test(lines[i])) quote.push(lines[i++].replace(/^\s{0,3}>\s?/, ''));
+        out.push({ kind: 'quote', text: quote.join('\n') });
+        continue;
+      }
+      para.push(line);
+      i++;
+    }
+    flush();
+    return out;
+  }
+
+  function micType(Recorder) {
+    var wanted = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/ogg;codecs=opus'];
+    if (!Recorder || typeof Recorder.isTypeSupported !== 'function') return '';
+    for (var i = 0; i < wanted.length; i++) if (Recorder.isTypeSupported(wanted[i])) return wanted[i];
+    return '';
+  }
+
+  function micFault(err) {
+    var name = err && err.name ? String(err.name) : '';
+    if (name === 'NotAllowedError' || name === 'SecurityError') return 'Microphone blocked. Allow it for this site in the browser settings, then tap Record again.';
+    if (name === 'NotFoundError' || name === 'OverconstrainedError') return 'No microphone found.';
+    if (name === 'NotReadableError' || name === 'AbortError') return 'The microphone is busy or not readable.';
+    return 'Could not record: ' + (err && err.message ? err.message : name || 'unknown error');
+  }
+
+  function clock(ms) {
+    var s = Math.max(0, Math.floor(ms / 1000));
+    return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
   }
 
   function conversation() {
@@ -82,7 +189,7 @@
     function ensure(id, role) {
       var m = byId[key(id)];
       if (m) return m;
-      return insert({ id: id, role: role || 'assistant', text: '', created: '', audio_id: '', tools: [], streaming: false, done: false, partial: true });
+      return insert({ id: id, role: role || 'assistant', text: '', created: '', audio_id: '', tools: [], streaming: false, done: false, partial: true, failed: false, fault: '' });
     }
 
     function tool(m, id) {
@@ -111,11 +218,14 @@
         var role = raw.role === 'user' ? 'user' : 'assistant';
         var text = typeof raw.text === 'string' ? raw.text : '';
         var list = Array.isArray(raw.tools) ? raw.tools : [];
-        var pending = role === 'assistant' && !text && !list.length && !raw.audio_id;
+        var known = raw.state === 'streaming' || raw.state === 'done' || raw.state === 'failed';
+        var pending = known ? raw.state === 'streaming' : role === 'assistant' && !text && !list.length && !raw.audio_id;
         if (m && !m.done && pending) { m.partial = true; return; }
-        if (!m) m = insert({ id: raw.id, tools: [] });
+        if (!m) m = insert({ id: raw.id, tools: [], text: '', fault: '' });
         m.role = role;
-        m.text = text;
+        m.failed = raw.state === 'failed';
+        m.text = text || (m.failed ? m.text : '');
+        if (m.failed && !m.fault) m.fault = 'This reply failed.';
         m.created = raw.created || '';
         m.audio_id = raw.audio_id || m.audio_id || '';
         m.tools = list.map(function (t) {
@@ -129,14 +239,20 @@
       return touched;
     };
 
+    c.running = function () {
+      return c.messages.some(function (m) { return m.role === 'assistant' && !m.done; });
+    };
+
     c.add = function (raw) {
-      var m = byId[key(raw.id)] || insert({ id: raw.id, tools: [] });
-      m.role = raw.role;
-      m.text = raw.text;
-      m.created = raw.created || '';
-      m.audio_id = raw.audio_id || '';
+      var m = byId[key(raw.id)] || insert({ id: raw.id, tools: [], audio_id: '' });
+      m.role = raw.role === 'assistant' ? 'assistant' : 'user';
+      m.text = typeof raw.text === 'string' ? raw.text : '';
+      m.created = raw.created || m.created || '';
+      m.audio_id = raw.audio_id || m.audio_id || '';
       m.streaming = false;
       m.partial = false;
+      m.failed = false;
+      m.fault = '';
       m.done = true;
       return m;
     };
@@ -145,6 +261,9 @@
       if (!f || typeof f.type !== 'string') return null;
       var m, t;
       switch (f.type) {
+        case 'message.added':
+          if (!f.message || f.message.id == null) return null;
+          return { kind: 'message', message: c.add(f.message) };
         case 'message.start':
           if (f.id == null) return null;
           m = ensure(f.id, f.role === 'user' ? 'user' : 'assistant');
@@ -196,9 +315,11 @@
         case 'error':
           m = f.message_id == null ? null : byId[key(f.message_id)] || null;
           if (m && f.code === 'speech' && c.audio === key(m.id)) c.audio = null;
+          if (m) {
+            if (f.code !== 'speech') m.failed = true;
+            m.fault = (f.code === 'speech' ? 'Speech failed: ' : 'Failed: ') + String(f.text || f.code || 'error');
+          }
           return { kind: 'error', message: m, code: String(f.code || 'error'), text: String(f.text || '') };
-        case 'ping':
-          return { kind: 'ping' };
         default:
           return null;
       }
@@ -237,19 +358,21 @@
     var doFetch = o.fetch || function (u, i) { return win.fetch(u, i); };
     var enc = encodeURIComponent;
 
+    function answer(res) {
+      return res.text().then(function (text) {
+        var j = parseJSON(text);
+        if (res.status >= 200 && res.status < 300 && j) return j;
+        throw fault(res.status, j);
+      });
+    }
+
     function call(method, path, body) {
       var init = { method: method, credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } };
       if (body !== undefined) {
         init.body = JSON.stringify(body);
         init.headers['Content-Type'] = 'application/json';
       }
-      return doFetch(api + path, init).then(function (res) {
-        return res.text().then(function (text) {
-          var j = parseJSON(text);
-          if (res.status >= 200 && res.status < 300 && j) return j;
-          throw fault(res.status, j);
-        });
-      });
+      return doFetch(api + path, init).then(answer);
     }
 
     return {
@@ -261,6 +384,9 @@
         return call('GET', '/threads/' + enc(thread) + '/messages?' + parts.join('&'));
       },
       send: function (thread, body) { return call('POST', '/threads/' + enc(thread) + '/messages', body); },
+      clip: function (blob) {
+        return doFetch(api + '/clips', { method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json', 'Content-Type': blob.type || 'application/octet-stream' }, body: blob }).then(answer);
+      },
       audioURL: function (id) { return audio + '/' + enc(id); },
       audioStatus: function (id) {
         return doFetch(audio + '/' + enc(id), { method: 'GET', credentials: 'same-origin', cache: 'no-store', headers: { Range: 'bytes=0-0' } })
@@ -306,6 +432,10 @@
     var now = opts.now || function () { return Date.now(); };
     var wait = opts.backoff || backoff;
     var state = { threads: [], loaded: false, error: '', voice: false, link: 'idle' };
+    var media = opts.media || { devices: win.navigator && win.navigator.mediaDevices, Recorder: win.MediaRecorder };
+    var canRecord = !!(media.devices && typeof media.devices.getUserMedia === 'function' && media.Recorder);
+    var rec = { state: canRecord ? 'idle' : 'unsupported', recorder: null, stream: null, chunks: [], began: 0, tick: 0, token: 0 };
+    var clip = null;
     var view = null;
     var listeners = [];
     var destroyed = false;
@@ -369,16 +499,30 @@
     main.tabIndex = -1;
     var composer = el('form', 'figchat-composer');
     composer.setAttribute('aria-label', 'Message');
+    var coarse = !!(win.matchMedia && win.matchMedia('(pointer: coarse)').matches);
     var input = el('textarea', 'figchat-input');
     input.rows = 1;
     input.placeholder = 'Message';
     input.setAttribute('aria-label', 'Message');
-    input.setAttribute('enterkeyhint', 'send');
+    if (!coarse) input.setAttribute('enterkeyhint', 'send');
     var send = el('button', 'figchat-send', 'Send');
     send.type = 'submit';
+    var mic = button('figchat-mic', 'Record');
+    mic.setAttribute('aria-pressed', 'false');
+    var turn = el('div', 'figchat-turn');
+    turn.hidden = true;
+    var stop = button('figchat-stop', 'Stop reply');
+    turn.append(el('span', 'figchat-turn-text', 'Figaro is replying. A message now steers it.'), stop);
+    var clipRow = el('div', 'figchat-clip');
+    clipRow.hidden = true;
+    var clipText = el('span', 'figchat-clip-text');
+    var clipDrop = button('figchat-clip-drop', 'Remove');
+    clipRow.append(clipText, clipDrop);
+    var micNote = el('p', 'figchat-sendnote figchat-micnote');
+    micNote.setAttribute('role', 'status');
     var sendNote = el('p', 'figchat-sendnote');
     sendNote.setAttribute('role', 'status');
-    composer.append(sendNote, input, send);
+    composer.append(turn, sendNote, micNote, clipRow, mic, input, send);
     pane.append(main, composer);
 
     var body = el('div', 'figchat-body');
@@ -394,6 +538,110 @@
       if (voice.textContent !== label) voice.textContent = label;
       voice.setAttribute('aria-pressed', state.voice ? 'true' : 'false');
       send.disabled = !!(view && view.sending) || state.link === 'offline';
+      turn.hidden = !(view && view.id && view.conv.running());
+      stop.disabled = !(view && view.socket && state.link === 'live');
+    }
+
+    function paintMic() {
+      host.setAttribute('data-mic', rec.state);
+      var label = rec.state === 'recording' ? 'Stop ' + clock(now() - rec.began) : rec.state === 'transcribing' ? 'Wait' : 'Record';
+      if (mic.textContent !== label) mic.textContent = label;
+      mic.setAttribute('aria-pressed', rec.state === 'recording' ? 'true' : 'false');
+      mic.disabled = rec.state === 'unsupported' || rec.state === 'asking' || rec.state === 'transcribing';
+      var held = clip ? 'Recording attached, ' + clock(clip.ms) : '';
+      if (clipText.textContent !== held) clipText.textContent = held;
+      clipRow.hidden = !clip;
+    }
+
+    function micSay(text) {
+      micNote.replaceChildren();
+      put(micNote, text);
+    }
+
+    function release() {
+      win.clearInterval(rec.tick);
+      if (rec.stream) rec.stream.getTracks().forEach(function (t) { t.stop(); });
+      rec.stream = null;
+      rec.recorder = null;
+    }
+
+    function micIdle(text) {
+      rec.state = 'idle';
+      micSay(text);
+      paintMic();
+    }
+
+    function transcribed(token, ms, res) {
+      if (token !== rec.token) return;
+      var text = String((res && res.text) || '').trim();
+      if (!text || !res.clip_id) { micIdle('Heard no words. Try again.'); return; }
+      clip = { id: String(res.clip_id), ms: Number(res.duration_ms) > 0 ? Number(res.duration_ms) : ms };
+      input.value = (input.value.trim() ? input.value.replace(/\s*$/, ' ') : '') + text;
+      micIdle('');
+      grow();
+      input.focus({ preventScroll: true });
+    }
+
+    function recorded(token, type) {
+      if (token !== rec.token) return;
+      var chunks = rec.chunks, ms = now() - rec.began;
+      release();
+      var blob = new win.Blob(chunks, { type: type });
+      if (!blob.size) { micIdle('Nothing was recorded.'); return; }
+      rec.state = 'transcribing';
+      micSay('Transcribing.');
+      paintMic();
+      transport.clip(blob).then(function (res) { transcribed(token, ms, res); }, function (err) {
+        if (token === rec.token) micIdle('Not transcribed: ' + (err && err.message ? err.message : 'network'));
+      });
+    }
+
+    function stopRecording() {
+      if (rec.recorder && rec.recorder.state !== 'inactive') rec.recorder.stop();
+    }
+
+    function cancelRecording() {
+      rec.token++;
+      stopRecording();
+      release();
+      if (rec.state !== 'unsupported') rec.state = 'idle';
+      paintMic();
+    }
+
+    function startRecording() {
+      var token = ++rec.token;
+      rec.state = 'asking';
+      micSay('');
+      paintMic();
+      media.devices.getUserMedia({ audio: true }).then(function (stream) {
+        if (token !== rec.token || destroyed) { stream.getTracks().forEach(function (t) { t.stop(); }); return; }
+        rec.stream = stream;
+        var type = micType(media.Recorder);
+        var r = type ? new media.Recorder(stream, { mimeType: type }) : new media.Recorder(stream);
+        rec.recorder = r;
+        rec.chunks = [];
+        rec.began = now();
+        r.addEventListener('dataavailable', function (ev) { if (ev.data && ev.data.size) rec.chunks.push(ev.data); });
+        r.addEventListener('stop', function () { recorded(token, r.mimeType || type || 'audio/webm'); });
+        r.start();
+        rec.state = 'recording';
+        rec.tick = win.setInterval(function () {
+          if (now() - rec.began >= MAX_CLIP_MS) stopRecording();
+          else paintMic();
+        }, 250);
+        paintMic();
+      }, function (err) {
+        if (token === rec.token) micIdle(micFault(err));
+      }).catch(function (err) {
+        if (token !== rec.token) return;
+        release();
+        micIdle(micFault(err));
+      });
+    }
+
+    function grow() {
+      if (win.CSS && win.CSS.supports && win.CSS.supports('field-sizing', 'content')) return;
+      input.rows = Math.max(1, Math.min(8, input.value.split('\n').length));
     }
 
     function setLink(s) {
@@ -496,7 +744,7 @@
       bubble.append(who, text, toolList, faultLine);
       var meta = el('span', 'figchat-meta');
       li.append(bubble, meta);
-      node = v.nodes[k] = { li: li, bubble: bubble, text: text, tools: toolList, fault: faultLine, meta: meta, player: null };
+      node = v.nodes[k] = { li: li, bubble: bubble, text: text, tools: toolList, fault: faultLine, meta: meta, player: null, blocks: [], plain: null };
       var anchor = null;
       for (var next = v.conv.next(m); next && !anchor; next = v.conv.next(next)) {
         if (v.nodes[key(next.id)]) anchor = v.nodes[key(next.id)].li;
@@ -505,11 +753,66 @@
       return node;
     }
 
+    function inline(n, list) {
+      list.forEach(function (sp) {
+        var c;
+        if (sp.kind === 'text') { put(n, sp.text); return; }
+        if (sp.kind === 'code') c = el('code', 'figchat-code', sp.text);
+        else if (sp.kind === 'a') {
+          c = el('a', 'figchat-a', sp.text);
+          c.setAttribute('href', sp.href);
+          c.setAttribute('rel', 'noopener noreferrer');
+          c.setAttribute('target', '_blank');
+        } else c = inline(el(sp.kind === 'b' ? 'strong' : 'em'), sp.spans);
+        n.appendChild(c);
+      });
+      return n;
+    }
+
+    function blockEl(b) {
+      var n;
+      switch (b.kind) {
+        case 'code':
+          n = el('pre', 'figchat-pre');
+          n.appendChild(el('code', '', b.text));
+          return n;
+        case 'h': return inline(el(b.level < 3 ? 'h3' : 'h4', 'figchat-h'), spans(b.text));
+        case 'hr': return el('hr', 'figchat-hr');
+        case 'ul':
+        case 'ol':
+          n = el(b.kind, 'figchat-list');
+          if (b.kind === 'ol' && b.start !== 1) n.start = b.start;
+          b.items.forEach(function (t) { n.appendChild(inline(el('li'), spans(t))); });
+          return n;
+        case 'quote': return inline(el('blockquote', 'figchat-quote'), spans(b.text));
+        default: return inline(el('p', 'figchat-p'), spans(b.text));
+      }
+    }
+
+    function paintText(node, m) {
+      if (m.role === 'user') {
+        if (node.plain === m.text) return;
+        node.plain = m.text;
+        node.text.replaceChildren();
+        put(node.text, m.text);
+        return;
+      }
+      var next = blocks(m.text), old = node.blocks;
+      for (var i = 0; i < next.length; i++) {
+        var sig = JSON.stringify(next[i]);
+        if (old[i] && old[i].sig === sig) continue;
+        var made = blockEl(next[i]);
+        if (old[i]) node.text.replaceChild(made, old[i].el);
+        else node.text.appendChild(made);
+        old[i] = { sig: sig, el: made };
+      }
+      while (old.length > next.length) node.text.removeChild(old.pop().el);
+    }
+
     function paintMessage(v, m) {
       var node = nodeFor(v, m);
       node.li.setAttribute('data-role', m.role);
-      node.text.replaceChildren();
-      put(node.text, m.text);
+      paintText(node, m);
       paintTools(node, m);
       paintMeta(node, m);
       if (m.audio_id) {
@@ -520,8 +823,13 @@
     }
 
     function paintMeta(node, m) {
-      if (m.streaming) node.li.setAttribute('data-streaming', '');
+      if (m.streaming || (m.role === 'assistant' && !m.done)) node.li.setAttribute('data-streaming', '');
       else node.li.removeAttribute('data-streaming');
+      if (m.failed) node.li.setAttribute('data-failed', '');
+      else node.li.removeAttribute('data-failed');
+      node.fault.replaceChildren();
+      put(node.fault, m.fault || '');
+      node.fault.hidden = !m.fault;
       var t = Date.parse(m.created);
       var when = isNaN(t) ? '' : new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       if (node.meta.textContent !== when) node.meta.textContent = when;
@@ -538,7 +846,6 @@
       var eff = v.conv.apply(f);
       if (!eff) return;
       var m = eff.message, node;
-      if (eff.kind === 'ping') { v.socket.send({ type: 'pong' }); return; }
       keep(function () {
         switch (eff.kind) {
           case 'message':
@@ -546,7 +853,7 @@
             break;
           case 'delta':
             node = nodeFor(v, m);
-            put(node.text, eff.text);
+            paintText(node, m);
             paintMeta(node, m);
             break;
           case 'tool':
@@ -571,13 +878,12 @@
             if (m) {
               node = nodeFor(v, m);
               if (eff.code === 'speech' && node.player) node.player.fail();
-              node.fault.replaceChildren();
-              put(node.fault, (eff.code === 'speech' ? 'Speech failed: ' : 'Failed: ') + eff.text);
-              node.fault.hidden = false;
+              paintMeta(node, m);
             } else notice(v, 'Error: ' + eff.text);
             break;
         }
       });
+      paintLink();
     }
 
     function history(v, q) {
@@ -589,6 +895,7 @@
         if (older || v.cursor === undefined) v.cursor = page && page.next_before != null ? page.next_before : null;
         v.older.hidden = v.cursor == null;
         if (older && first) win.scrollBy(0, first.getBoundingClientRect().top - anchorTop);
+        paintLink();
         return page;
       });
     }
@@ -603,6 +910,7 @@
           setLink('live');
           if (state.voice) v.socket.send({ type: 'voice', on: true });
           v.waiting.splice(0).forEach(function (go) { go(); });
+          if (v.conv.running()) history(v).catch(function () {});
         },
         frame: function (f) { if (view === v) frame(v, f); },
         binary: function (data) {
@@ -706,6 +1014,7 @@
       else h = openList();
       host.setAttribute('data-route', rt && rt.thread ? 'thread' : rt && rt.fresh ? 'fresh' : 'list');
       composer.hidden = !rt;
+      if (!rt) cancelRecording();
       sendNote.replaceChildren();
       paintThreads();
       paintLink();
@@ -731,25 +1040,29 @@
       say('Not sent: ' + (err && err.message ? err.message : 'network'));
     }
 
-    function post(v, text) {
+    function post(v, text, held) {
       v.sending = true;
       say('');
       paintLink();
-      whenLive(v).then(function () { return transport.send(v.id, { text: text }); }).then(function (res) {
+      whenLive(v).then(function () { return transport.send(v.id, held ? { text: text, clip_id: held.id } : { text: text }); }).then(function (res) {
         v.sending = false;
-        if (view !== v) return;
-        paintMessage(v, v.conv.add({ id: res.id, role: 'user', text: text, created: new Date(now()).toISOString() }));
+        if (clip === held) clip = null;
         if (input.value.trim() === text) input.value = '';
+        grow();
+        paintMic();
+        if (view !== v) return;
+        if (!v.conv.get(res.id)) paintMessage(v, v.conv.add({ id: res.id, role: 'user', text: text, created: new Date(now()).toISOString(), audio_id: held ? held.id : '' }));
         paintLink();
         toBottom();
       }, function (err) { unsent(v, err); });
     }
 
     function submit() {
-      var v = view, text = input.value.trim();
+      var v = view, text = input.value.trim(), held = clip;
       if (!v || v.sending || !text) return;
+      if (state.link === 'offline') { say('Offline. Reconnecting.'); return; }
       if (V) V.unlock(win);
-      if (v.id) { post(v, text); return; }
+      if (v.id) { post(v, text, held); return; }
       v.sending = true;
       paintLink();
       transport.createThread(titleFrom(text)).then(function (res) {
@@ -758,7 +1071,7 @@
         route();
         input.focus({ preventScroll: true });
         loadThreads();
-        post(view, text);
+        post(view, text, held);
       }, function (err) { unsent(v, err); });
     }
 
@@ -767,10 +1080,22 @@
       submit();
     });
     on(input, 'keydown', function (ev) {
-      if (ev.key !== 'Enter' || ev.shiftKey || ev.isComposing) return;
-      if (win.matchMedia && win.matchMedia('(pointer: coarse)').matches) return;
+      if (ev.key !== 'Enter' || ev.shiftKey || ev.isComposing || coarse) return;
       ev.preventDefault();
       submit();
+    });
+    on(input, 'input', grow);
+    on(mic, 'click', function () {
+      if (V) V.unlock(win);
+      if (rec.state === 'recording') stopRecording();
+      else if (rec.state === 'idle') startRecording();
+    });
+    on(clipDrop, 'click', function () {
+      clip = null;
+      paintMic();
+    });
+    on(stop, 'click', function () {
+      if (view && view.socket) view.socket.send({ type: 'cancel' });
     });
     on(voice, 'click', function () {
       if (V) V.unlock(win);
@@ -791,23 +1116,27 @@
     on(doc, 'visibilitychange', function () { if (doc.visibilityState === 'visible') loadThreads(); });
 
     var api = {
-      state: function () { return { threads: state.threads, voice: state.voice, link: state.link, thread: view ? view.id : null }; },
+      state: function () { return { threads: state.threads, voice: state.voice, link: state.link, thread: view ? view.id : null, mic: rec.state, clip: clip ? clip.id : null }; },
       player: function (id) {
         var node = view && view.nodes[key(id)];
         return node ? node.player : null;
       },
       detach: function () {
         destroyed = true;
+        cancelRecording();
         closeView();
         listeners.forEach(function (off) { off(); });
         host.replaceChildren();
         host.classList.remove('figchat');
         host.removeAttribute('data-route');
         host.removeAttribute('data-link');
+        host.removeAttribute('data-mic');
         delete host.figchat;
       }
     };
     host.figchat = api;
+    if (!canRecord) micSay('This browser cannot record audio.');
+    paintMic();
     route();
     loadThreads();
     return api;
@@ -817,6 +1146,10 @@
     mount: mount,
     httpTransport: httpTransport,
     conversation: conversation,
+    blocks: blocks,
+    spans: spans,
+    micType: micType,
+    micFault: micFault,
     reveal: reveal,
     routeFor: routeFor,
     parseRoute: parseRoute,

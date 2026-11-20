@@ -40,7 +40,7 @@
   function seed(kind, now) {
     var min = 60000;
     var say = function (id, role, text, at, extra) {
-      return Object.assign({ id: id, role: role, text: text, created: iso(at), tools: [] }, extra || {});
+      return Object.assign({ id: id, role: role, text: text, created: iso(at), tools: [], state: 'done' }, extra || {});
     };
     if (kind === 'empty') return [];
     if (kind === 'hostile') {
@@ -83,6 +83,8 @@
       audio: { 'seed-reply': wav(chirp(3.2)), 'seed-clip': wav(chirp(1.6)), 'seed-expired': null },
       sockets: [],
       posts: [],
+      clips: [],
+      transcript: 'A mock transcript.',
       received: [],
       step: opts.step == null ? 40 : opts.step,
       seconds: opts.seconds || 2.4,
@@ -112,6 +114,7 @@
     }
 
     function replyTo(text) {
+      if (/^markdown/i.test(text)) return ['## The list\n\n', 'Three things, **two of them `sharp`**:\n\n1. the razor\n2. the *strop*\n\n```sh\nls -la <b>\n```\n\nSee [the almanac](https://example.org/a?b=1), not [this](javascript:alert(1)).\nAll is sharp.'];
       return ['You said: ' + text + '. ', 'I checked the clock for you. It is a fine day in Seville,\nand the razor is sharp.'];
     }
 
@@ -119,7 +122,7 @@
       if (t.running) return;
       t.running = true;
       var id = t.messages.length ? t.messages[t.messages.length - 1].id + 1 : 1;
-      var msg = { id: id, thread: t.id, role: 'assistant', text: '', created: iso(now()), tools: [] };
+      var msg = { id: id, thread: t.id, role: 'assistant', text: '', created: iso(now()), tools: [], state: 'streaming' };
       t.messages.push(msg);
       var speak = state.sockets.some(function (s) { return s.thread === t.id && s.voice; });
       var parts = replyTo(asked);
@@ -163,6 +166,7 @@
       steps.push(function () {
         msg.text = text;
         msg.tools = tools;
+        msg.state = 'done';
         emit(t, { type: 'message.end', id: id });
       });
       for (var rest = chunks.length; rest > 0 && speak; rest--) steps.push(sound());
@@ -171,7 +175,7 @@
         var audio = 'a' + (++state.serial);
         state.audio[audio] = wav(pcm);
         msg.audio_id = audio;
-        emit(t, { type: 'audio.end', message_id: id, audio_id: audio }, true);
+        emit(t, { type: 'audio.end', message_id: id, audio_id: audio });
       });
       steps.push(function () { t.running = false; t.updated = iso(now()); });
       var run = function () {
@@ -210,24 +214,32 @@
         if (method === 'POST') {
           if (!String(req.text || '').trim()) return { status: 400, json: { error: 'text is required', code: 'bad_request' } };
           var id = t.messages.length ? t.messages[t.messages.length - 1].id + 1 : 1;
-          var msg = { id: id, role: 'user', text: req.text, created: iso(now()), tools: [] };
+          var msg = { id: id, role: 'user', text: req.text, created: iso(now()), tools: [], state: 'done' };
+          if (req.clip_id && !state.audio[req.clip_id]) return { status: 400, json: { error: 'unknown clip', code: 'bad_request' } };
           if (req.clip_id) msg.audio_id = req.clip_id;
           t.messages.push(msg);
           t.updated = msg.created;
           state.posts.push({ thread: t.id, body: req });
+          emit(t, { type: 'message.added', message: Object.assign({ thread: t.id }, msg) });
           if (!state.silent) turn(t, req.text);
           return { status: 200, json: { id: id, state: 'accepted' } };
         }
       }
-      if (url[0] === '/chat/api/clips' && method === 'POST') {
-        var clip = 'clip' + (++state.serial);
-        state.audio[clip] = wav(chirp(1));
-        return { status: 200, json: { clip_id: clip, text: 'A mock transcript.', duration_ms: 1000, audio_id: clip } };
-      }
+      if (url[0] === '/chat/api/clips' && method === 'POST') return clip('audio/webm', 1);
       if ((m = /^\/chat\/api\/clips\/([^/]+)\/retranscribe$/.exec(url[0])) && method === 'POST') {
         return state.audio[decodeURIComponent(m[1])] ? { status: 200, json: { text: 'A mock transcript, again.' } } : { status: 404, json: { error: 'no such audio', code: 'not_found' } };
       }
       return { status: 404, json: { error: 'no route', code: 'not_found' } };
+    }
+
+    function clip(type, size) {
+      state.clips.push({ type: type, size: size });
+      if (state.status) return { status: state.status, json: { error: 'mock failure', code: 'mock' } };
+      if (!/^audio\/(webm|ogg|mp4)(;|$)/.test(type)) return { status: 415, json: { error: 'record as audio/webm, audio/ogg or audio/mp4', code: 'unsupported_type' } };
+      if (!size) return { status: 502, json: { error: 'speech: http 400: empty clip', code: 'speech' } };
+      var id = 'clip' + (++state.serial);
+      state.audio[id] = wav(chirp(1));
+      return { status: 200, json: { clip_id: id, text: state.transcript, duration_ms: 1000, audio_id: id } };
     }
 
     function audio(id) {
@@ -246,7 +258,12 @@
           if (f.type === 'voice') s.voice = !!f.on;
           if (f.type === 'cancel') {
             var t = thread(threadId);
-            if (t && t.running) { clear(t.timer); t.running = false; emit(t, { type: 'message.end', id: t.messages[t.messages.length - 1].id }); }
+            if (t && t.running) {
+              clear(t.timer);
+              t.running = false;
+              t.messages[t.messages.length - 1].state = 'done';
+              emit(t, { type: 'message.end', id: t.messages[t.messages.length - 1].id });
+            }
           }
         },
         close: function () {
@@ -260,7 +277,7 @@
       state.sockets.splice(0).forEach(function (s) { s.sink.close(); });
     }
 
-    return { state: state, handle: handle, audio: audio, attach: attach, drop: drop, thread: thread };
+    return { state: state, handle: handle, clip: clip, audio: audio, attach: attach, drop: drop, thread: thread };
   }
 
   function transport(core, win) {
@@ -283,6 +300,16 @@
         return answer('GET', '/chat/api/threads/' + enc(thread) + '/messages?limit=' + ((q && q.limit) || 50) + (q && q.before != null ? '&before=' + enc(q.before) : ''));
       },
       send: function (thread, body) { return answer('POST', '/chat/api/threads/' + enc(thread) + '/messages', body); },
+      clip: function (blob) {
+        return new Promise(function (resolve, reject) {
+          var res = core.clip(blob.type, blob.size);
+          if (res.status === 200) { resolve(res.json); return; }
+          var e = new Error(res.json.error);
+          e.status = res.status;
+          e.code = res.json.code;
+          reject(e);
+        });
+      },
       audioURL: function (id) {
         if (urls[id]) return urls[id];
         var a = core.audio(id);

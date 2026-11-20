@@ -66,8 +66,8 @@ assert.equal(figchat.ago('garbage', t0), '');
   assert.equal(feed({ type: 'keepalive' }), null);
   assert.equal(feed({ type: 'something.new', id: 9 }), null, 'unknown frame types are ignored');
   assert.equal(feed(null), null);
-  assert.equal(feed({ type: 'ping' }).kind, 'ping');
-  assert.deepEqual(kinds, ['message', 'delta', 'audio.start', 'tool', 'tool', 'delta', 'end', 'audio.end', null, null, null, null, 'ping']);
+  assert.equal(feed({ type: 'ping' }), null, 'liveness is the protocol ping: a JSON ping is just an unknown frame');
+  assert.deepEqual(kinds, ['message', 'delta', 'audio.start', 'tool', 'tool', 'delta', 'end', 'audio.end', null, null, null, null, null]);
 
   feed({ type: 'message.delta', id: 6, text: 'tail of a reply' });
   assert.equal(c.get(6).partial, true);
@@ -91,6 +91,33 @@ assert.equal(figchat.ago('garbage', t0), '');
   c.load([{ id: 7, role: 'assistant', text: 'abcdef-gap-xyz', tools: [] }]);
   assert.equal(c.get(7).text, 'abcdef-gap-xyz');
 
+  c.load([{ id: 20, role: 'assistant', text: 'has text already', tools: [], state: 'streaming' }]);
+  assert.deepEqual([c.get(20).done, c.get(20).partial, c.running()], [false, true, true], 'state says a turn is running, whatever the row holds');
+  feed({ type: 'message.delta', id: 20, text: ' tail' });
+  assert.equal(feed({ type: 'message.end', id: 20 }).refetch, true);
+  c.load([{ id: 20, role: 'assistant', text: 'whole', tools: [], state: 'done' }]);
+  assert.deepEqual([c.get(20).text, c.get(20).done, c.running()], ['whole', true, false]);
+  c.load([{ id: 21, role: 'assistant', text: '', tools: [], state: 'done' }]);
+  assert.equal(c.get(21).done, true, 'an empty reply that is done is not a running turn');
+  c.load([{ id: 22, role: 'assistant', text: '', tools: [], state: 'failed' }]);
+  assert.deepEqual([c.get(22).done, c.get(22).failed, c.get(22).fault], [true, true, 'This reply failed.']);
+
+  const added = { id: 23, thread: 't', role: 'user', text: 'from the other tab', created: '2026-11-20T12:00:00Z', audio_id: 'clip9', tools: [], state: 'done' };
+  assert.equal(feed({ type: 'message.added', message: added }).kind, 'message');
+  c.add({ id: 23, role: 'user', text: 'from the other tab' });
+  feed({ type: 'message.added', message: added });
+  assert.equal(c.messages.filter((m) => m.id === 23).length, 1, 'message.added and the POST answer are one message');
+  assert.deepEqual([c.get(23).audio_id, c.get(23).created, c.get(23).done], ['clip9', '2026-11-20T12:00:00Z', true]);
+  assert.equal(feed({ type: 'message.added' }), null);
+
+  feed({ type: 'message.start', id: 24, role: 'assistant' });
+  feed({ type: 'message.delta', id: 24, text: 'half' });
+  feed({ type: 'error', message_id: 24, code: 'figaro', text: 'aria died' });
+  feed({ type: 'message.end', id: 24 });
+  assert.deepEqual([c.get(24).failed, c.get(24).fault, c.get(24).done, c.get(24).text], [true, 'Failed: aria died', true, 'half']);
+  c.load([{ id: 24, role: 'assistant', text: '', tools: [], state: 'failed' }]);
+  assert.equal(c.get(24).text, 'half', 'a failed reply keeps what was heard when the stored row is empty');
+
   feed({ type: 'message.start', id: 8, role: 'assistant' });
   feed({ type: 'audio.start', message_id: 8, format: 'pcm' });
   const err = feed({ type: 'error', message_id: 8, code: 'speech', text: 'tts down' });
@@ -99,6 +126,36 @@ assert.equal(figchat.ago('garbage', t0), '');
   feed({ type: 'audio.start', message_id: 8, format: 'pcm' });
   assert.equal(c.cut().id, 8, 'a dropped socket hands back the message whose audio was cut');
   assert.equal(c.get(8).streaming, false);
+}
+
+{
+  const kinds = (t) => figchat.blocks(t).map((b) => b.kind);
+  assert.deepEqual(figchat.blocks('one\ntwo\n\nthree'), [{ kind: 'p', text: 'one\ntwo' }, { kind: 'p', text: 'three' }]);
+  assert.deepEqual(figchat.blocks('a\n```js\nx = "<b>"\n\n**not bold**'), [{ kind: 'p', text: 'a' }, { kind: 'code', lang: 'js', text: 'x = "<b>"\n\n**not bold**', open: true }], 'a fence still streaming holds everything after it as code');
+  assert.deepEqual(figchat.blocks('```\nx\n```\nafter'), [{ kind: 'code', lang: '', text: 'x', open: false }, { kind: 'p', text: 'after' }]);
+  assert.deepEqual(figchat.blocks('# T\n- a\n- b\n  more\n1. x\n2) y\n\n---\n> q\n> r'), [
+    { kind: 'h', level: 1, text: 'T' }, { kind: 'ul', start: 1, items: ['a', 'b\nmore'] }, { kind: 'ol', start: 1, items: ['x', 'y'] }, { kind: 'hr' }, { kind: 'quote', text: 'q\nr' }
+  ]);
+  assert.deepEqual(kinds(''), []);
+  assert.deepEqual(kinds('#hashtag and 2 * 3 * 4'), ['p']);
+  const sp = (t) => figchat.spans(t).map((x) => x.kind === 'text' ? x.text : [x.kind, x.text || x.spans.map((y) => y.text).join('|'), x.href].filter(Boolean));
+  assert.deepEqual(sp('a **b `c`** *d* `e*f*` 2 * 3 * 4'), ['a ', ['b', 'b |c'], ' ', ['i', 'd'], ' ', ['code', 'e*f*'], ' 2 * 3 * 4']);
+  assert.deepEqual(sp('[ok](https://a.example/x) [bad](javascript:alert(1)) [data](data:text/html,x) see https://b.example/y.'), [
+    ['a', 'ok', 'https://a.example/x'], ' [bad](javascript:alert(1)) [data](data:text/html,x) see ', ['a', 'https://b.example/y', 'https://b.example/y'], '.'
+  ], 'only http, https and mailto become links; the rest stays as typed');
+  assert.deepEqual(sp('<img src=x onerror="a*b*c">'), ['<img src=x onerror="a', ['i', 'b'], 'c">'], 'markup is only ever span text');
+  let longest = 0;
+  const big = ('word '.repeat(40) + '\n\n').repeat(400);
+  const t0 = Date.now();
+  for (let i = 0; i < big.length; i += 4000) longest = Math.max(longest, figchat.blocks(big.slice(0, i)).length);
+  assert.ok(longest >= 300 && Date.now() - t0 < 2000, 'parsing an 80 KiB reply at every 4 KiB step stays cheap');
+
+  const R = (ok) => ({ isTypeSupported: (t) => ok.includes(t) });
+  assert.equal(figchat.micType(R(['audio/webm;codecs=opus', 'audio/mp4'])), 'audio/webm;codecs=opus');
+  assert.equal(figchat.micType(R(['audio/mp4'])), 'audio/mp4', 'Safari records mp4');
+  assert.equal(figchat.micType(R([])), '');
+  assert.equal(figchat.micType(null), '');
+  assert.ok(/blocked/.test(figchat.micFault({ name: 'NotAllowedError' })) && /No microphone/.test(figchat.micFault({ name: 'NotFoundError' })));
 }
 
 {
@@ -125,18 +182,21 @@ assert.equal(figchat.ago('garbage', t0), '');
   assert.equal(page.messages.length, 50);
   assert.equal(page.next_before, 71, 'next_before is the oldest id on the page');
   assert.equal(core.handle('GET', '/chat/api/threads/c0ffee02/messages?limit=200&before=71', '').json.next_before, undefined);
-  assert.deepEqual(Object.keys(page.messages[0]).sort(), ['created', 'id', 'role', 'text', 'thread', 'tools']);
+  assert.deepEqual(Object.keys(page.messages[0]).sort(), ['created', 'id', 'role', 'state', 'text', 'thread', 'tools']);
   assert.equal(core.handle('GET', '/chat/api/threads/nope/messages', '').status, 404);
   assert.equal(core.handle('POST', '/chat/api/threads/c0ffee01/messages', '{"text":"  "}').status, 400);
 
   const sent = core.handle('POST', '/chat/api/threads/c0ffee01/messages', JSON.stringify({ text: 'ciao' }));
   assert.deepEqual(sent.json, { id: 5, state: 'accepted' });
+  assert.equal(core.handle('GET', '/chat/api/threads/c0ffee01/messages', '').json.messages[5].state, 'streaming', 'a reply is streaming, with empty text, while its turn runs');
   flush();
+  assert.equal(core.handle('GET', '/chat/api/threads/c0ffee01/messages', '').json.messages[5].state, 'done');
 
   const tag = (f) => (f instanceof ArrayBuffer ? 'pcm' : f.type);
   const order = loud.seen.map(tag);
   const first = (name) => order.indexOf(name), last = (name) => order.lastIndexOf(name);
-  assert.equal(order[0], 'message.start');
+  assert.deepEqual(order.slice(0, 2), ['message.added', 'message.start'], 'the user message reaches every socket before the reply starts');
+  assert.deepEqual([loud.seen[0].message.id, loud.seen[0].message.role, loud.seen[0].message.state, loud.seen[0].message.thread], [5, 'user', 'done', 'c0ffee01']);
   assert.ok(first('message.delta') > first('message.start') && last('message.delta') < first('message.end'), 'deltas sit between message.start and message.end');
   assert.ok(first('audio.start') > first('message.delta'), 'audio.start follows the first sentence');
   assert.ok(first('pcm') > first('audio.start') && last('pcm') < first('audio.end'), 'PCM sits between audio.start and audio.end');
@@ -153,8 +213,11 @@ assert.equal(figchat.ago('garbage', t0), '');
   assert.equal(core.audio('seed-expired').status, 404);
 
   const calm = quiet.seen.map(tag);
-  assert.ok(!calm.includes('pcm') && !calm.includes('audio.start') && !calm.includes('audio.end'), 'a socket that did not ask for voice gets text only');
-  assert.deepEqual(calm, order.filter((x) => !/^audio|^pcm/.test(x)), 'and the same text frames in the same order');
+  assert.ok(!calm.includes('pcm') && !calm.includes('audio.start'), 'a socket that did not ask for voice gets no PCM');
+  assert.equal(quiet.seen[calm.indexOf('audio.end')].audio_id, endFrame.audio_id, 'but it learns the audio_id, so it can replay');
+  assert.deepEqual(calm, order.filter((x) => !/^audio\.start|^pcm/.test(x)), 'and the same text frames in the same order');
+  assert.equal(core.clip('audio/webm;codecs=opus', 9).json.text, 'A mock transcript.');
+  assert.equal(core.clip('audio/wav', 9).status, 415);
 
   const c = figchat.conversation();
   let bytes = 0;
@@ -208,6 +271,12 @@ assert.equal(figchat.ago('garbage', t0), '');
     await tr.send('t/1', { text: 'hi' }).catch(() => null);
     await tr.createThread('').catch(() => null);
     assert.equal(await tr.audioStatus('zz'), 404);
+    const blob = { type: 'audio/mp4', size: 3 };
+    await assert.rejects(tr.clip(blob), (e) => e.status === 404);
+    answers['chat/api/clips'] = { status: 415, body: '{"error":"record as audio/webm, audio/ogg or audio/mp4","code":"unsupported_type"}' };
+    await assert.rejects(tr.clip(blob), (e) => e.status === 415 && e.code === 'unsupported_type' && /audio\/webm/.test(e.message), 'the server refusal text reaches the page');
+    assert.deepEqual([calls[5][0], calls[5][1], calls[5][2], calls[5][3]['Content-Type']], ['POST', 'chat/api/clips', blob, 'audio/mp4'], 'a clip goes up as recorded, typed as recorded');
+    calls.length = 5;
     assert.deepEqual(calls.map((c) => c[0] + ' ' + c[1]), [
       'GET chat/api/threads',
       'GET chat/api/threads/gone/messages?before=9&limit=20',
