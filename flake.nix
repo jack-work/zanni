@@ -336,6 +336,7 @@
           cp -r ${./bin} bin
           chmod -R u+w assets examples test bin
           node test/voce.test.js
+          node test/nodi.test.js
           node test/figchat.test.js
           python3 test/figchat.test.py examples/figchat.html 2>&1 | tee $out
         '';

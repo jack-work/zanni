@@ -3,12 +3,14 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const mock = require('../examples/figchat-mock.js');
+const mock = require('../examples/aria-mock.js');
+const speech = require('../assets/figchat/speech.js');
 
 const dir = process.argv[2];
-const core = mock.create({ seed: 'demo', step: 15 });
-const seen = { ranges: [], upgrades: 0 };
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.woff2': 'font/woff2' };
+const step = process.argv[3] ? Number(process.argv[3]) : 15;
+const core = mock.create({ step, pageBytes: 3000 });
+const seen = { upgrades: 0, refused: 0, audio: 0, stt: [] };
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.woff2': 'font/woff2', '.json': 'application/json' };
 const csp = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; media-src 'self' blob:; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
 function file(res, rel, extra) {
@@ -18,50 +20,47 @@ function file(res, rel, extra) {
   fs.createReadStream(full).pipe(res);
 }
 
+const sockets = new Set();
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
-  if (url.pathname === '/chat/') {
-    file(res, 'index.html', { 'Content-Security-Policy': csp, 'Permissions-Policy': 'microphone=(self)', 'Cache-Control': 'private, no-cache' });
-    return;
-  }
-  if (url.pathname.startsWith('/chat/assets/')) { file(res, url.pathname.slice('/chat/assets/'.length), { 'Cache-Control': 'private, max-age=3600' }); return; }
-  if (url.pathname === '/chat/api/clips' && req.method === 'POST') {
-    let size = 0;
-    req.on('data', (c) => { size += c.length; });
-    req.on('end', () => {
-      const out = core.clip(req.headers['content-type'] || '', size);
-      res.writeHead(out.status, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' });
-      res.end(JSON.stringify(out.json));
-    });
-    return;
-  }
-  if (url.pathname.startsWith('/chat/api/')) {
-    let body = '';
-    req.on('data', (c) => { body += c; });
-    req.on('end', () => {
-      const out = core.handle(req.method, url.pathname + url.search, body);
-      res.writeHead(out.status, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' });
-      res.end(JSON.stringify(out.json));
-    });
-    return;
-  }
-  if (url.pathname.startsWith('/chat/audio/')) {
-    const a = core.audio(decodeURIComponent(url.pathname.slice('/chat/audio/'.length)));
-    if (req.headers.range) seen.ranges.push(req.headers.range);
-    if (a.status !== 200) { res.writeHead(404, { 'Content-Type': 'application/json' }); res.end('{"error":"no such audio","code":"not_found"}'); return; }
-    const all = Buffer.from(a.bytes);
-    const head = { 'Content-Type': a.type, 'Accept-Ranges': 'bytes', 'Cache-Control': 'private, no-store' };
-    const m = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
-    if (!m) { res.writeHead(200, Object.assign(head, { 'Content-Length': all.length })); res.end(all); return; }
-    const from = m[1] ? Number(m[1]) : all.length - Number(m[2]);
-    const to = m[1] && m[2] ? Math.min(Number(m[2]), all.length - 1) : all.length - 1;
-    res.writeHead(206, Object.assign(head, { 'Content-Range': 'bytes ' + from + '-' + to + '/' + all.length, 'Content-Length': to - from + 1 }));
-    res.end(all.subarray(from, to + 1));
-    return;
-  }
+  if (url.pathname === '/chat/') { file(res, 'index.html', { 'Content-Security-Policy': csp, 'Cache-Control': 'private, no-cache' }); return; }
+  if (url.pathname.startsWith('/chat/assets/')) { file(res, url.pathname.slice('/chat/assets/'.length), { 'Cache-Control': 'private, no-cache' }); return; }
   if (url.pathname === '/__state') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ posts: core.state.posts, clips: core.state.clips, received: core.state.received, ranges: seen.ranges, upgrades: seen.upgrades }));
+    res.end(JSON.stringify({ ids: core.ids, sent: core.sent || [], interrupts: core.interrupts || [], dropped: core.dropped, upgrades: seen.upgrades, audio: seen.audio, stt: seen.stt, calls: core.calls.map((c) => c.method) }));
+    return;
+  }
+  if (url.pathname === '/__drop') {
+    const n = core.drop();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ dropped: n }));
+    return;
+  }
+  if (url.pathname === '/chat/stt' && req.method === 'POST') {
+    let size = 0;
+    const type = req.headers['content-type'] || '';
+    req.on('data', (c) => { size += c.length; });
+    req.on('end', () => {
+      seen.stt.push({ type, size, aria: url.searchParams.get('aria') });
+      const ok = /^audio\/(webm|mp4|ogg)/.test(type);
+      const code = !ok ? 415 : size > 10 * 1024 * 1024 ? 413 : 200;
+      res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' });
+      res.end(JSON.stringify(code === 200 ? { text: 'what is the crossing count', duration_ms: 1500, audio_id: 'stt-1' } : { error: code === 415 ? 'unsupported audio type' : 'too large' }));
+    });
+    return;
+  }
+  if (url.pathname.startsWith('/audio/key/')) {
+    const pcm = Buffer.concat(speech.chunks('replay').map((b) => Buffer.from(b)));
+    const wav = Buffer.alloc(44 + pcm.length);
+    wav.write('RIFF', 0); wav.writeUInt32LE(36 + pcm.length, 4); wav.write('WAVEfmt ', 8); wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22);
+    wav.writeUInt32LE(24000, 24); wav.writeUInt32LE(48000, 28); wav.writeUInt16LE(2, 32); wav.writeUInt16LE(16, 34); wav.write('data', 36); wav.writeUInt32LE(pcm.length, 40);
+    pcm.copy(wav, 44);
+    const m = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+    const head = { 'Content-Type': 'audio/wav', 'Accept-Ranges': 'bytes', 'Cache-Control': 'private, no-store' };
+    if (!m) { res.writeHead(200, Object.assign(head, { 'Content-Length': wav.length })); res.end(wav); return; }
+    const from = m[1] ? Number(m[1]) : 0, to = m[2] ? Math.min(Number(m[2]), wav.length - 1) : wav.length - 1;
+    res.writeHead(206, Object.assign(head, { 'Content-Range': 'bytes ' + from + '-' + to + '/' + wav.length, 'Content-Length': to - from + 1 }));
+    res.end(wav.subarray(from, to + 1));
     return;
   }
   res.writeHead(404); res.end('no');
@@ -69,23 +68,19 @@ const server = http.createServer((req, res) => {
 
 function frame(opcode, payload) {
   const n = payload.length;
-  const head = n < 126 ? Buffer.from([0x80 | opcode, n]) : n < 65536 ? Buffer.from([0x80 | opcode, 126, n >> 8, n & 255]) : null;
-  if (!head) throw new Error('frame too large for the test server');
+  let head;
+  if (n < 126) head = Buffer.from([0x80 | opcode, n]);
+  else if (n < 65536) head = Buffer.from([0x80 | opcode, 126, n >> 8, n & 255]);
+  else { head = Buffer.alloc(10); head[0] = 0x80 | opcode; head[1] = 127; head.writeBigUInt64BE(BigInt(n), 2); }
   return Buffer.concat([head, payload]);
 }
 
-server.on('upgrade', (req, socket) => {
-  const url = new URL(req.url, 'http://x');
-  const origin = req.headers.origin || '';
-  if (url.pathname !== '/chat/ws' || origin !== 'http://' + req.headers.host || !core.thread(url.searchParams.get('thread'))) { socket.destroy(); return; }
-  seen.upgrades++;
+function handshake(req, socket) {
   const accept = crypto.createHash('sha1').update(req.headers['sec-websocket-key'] + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
   socket.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ' + accept + '\r\n\r\n');
-  const conn = core.attach(url.searchParams.get('thread'), url.searchParams.get('after'), {
-    text: (s) => socket.write(frame(1, Buffer.from(s))),
-    binary: (b) => socket.write(frame(2, Buffer.from(b))),
-    close: () => socket.destroy()
-  });
+}
+
+function reader(socket, onText) {
   let buf = Buffer.alloc(0);
   socket.on('data', (d) => {
     buf = Buffer.concat([buf, d]);
@@ -93,19 +88,78 @@ server.on('upgrade', (req, socket) => {
       if (buf.length < 2) return;
       let len = buf[1] & 127, at = 2;
       if (len === 126) { if (buf.length < 4) return; len = buf.readUInt16BE(2); at = 4; }
+      else if (len === 127) { if (buf.length < 10) return; len = Number(buf.readBigUInt64BE(2)); at = 10; }
       if (buf.length < at + 4 + len) return;
       const mask = buf.subarray(at, at + 4);
       const data = Buffer.from(buf.subarray(at + 4, at + 4 + len));
       for (let i = 0; i < data.length; i++) data[i] ^= mask[i % 4];
       const opcode = buf[0] & 15;
       buf = buf.subarray(at + 4 + len);
-      if (opcode === 1) conn.receive(data.toString('utf8'));
+      if (opcode === 1) onText(data.toString('utf8'));
       else if (opcode === 8) { socket.end(frame(8, Buffer.alloc(0))); return; }
       else if (opcode === 9) socket.write(frame(10, data));
     }
   });
-  socket.on('close', () => conn.close());
-  socket.on('error', () => conn.close());
+}
+
+function audioSocket(req, socket, aria) {
+  seen.audio++;
+  handshake(req, socket);
+  sockets.add(socket);
+  const send = (o) => { if (!socket.destroyed) socket.write(frame(1, Buffer.from(JSON.stringify(o)))); };
+  const turns = {};
+  send({ type: 'ready', aria, store: 'gluck' });
+  const tap = (e) => {
+    if (e.aria !== aria || socket.destroyed) return;
+    const key = 'gluck/' + aria + ':' + e.turn + '/out';
+    if (e.type === 'begin') { turns[e.turn] = { fed: 0, offset: 0, started: false, node: null }; return; }
+    const t = turns[e.turn];
+    if (!t) return;
+    if (e.type === 'prose') {
+      if (t.node !== e.node) { t.node = e.node; t.fed = 0; }
+      for (;;) {
+        const cut = speech.sentences(e.text, t.fed);
+        if (cut < 0) break;
+        const piece = e.text.slice(t.fed, cut).trim();
+        t.fed = cut;
+        if (!piece) continue;
+        if (!t.started) { t.started = true; send({ type: 'audio.start', turn: e.turn, key, format: 'pcm', rate: 24000, bits: 16, channels: 1, node: e.node, cursor: e.turn + '.' + (e.node + 1) }); }
+        speech.chunks(piece).forEach((pcm) => {
+          send({ type: 'audio.chunk', turn: e.turn, node: e.node, cursor: e.turn + '.' + (e.node + 1), offset: t.offset, bytes: pcm.byteLength });
+          socket.write(frame(2, Buffer.from(pcm)));
+          t.offset += pcm.byteLength;
+        });
+      }
+    } else if (e.type === 'seal' && t.started) {
+      if (e.reason === 'interrupted') send({ type: 'audio.cancel', turn: e.turn, key, why: 'interrupt' });
+      else send({ type: 'audio.end', turn: e.turn, key });
+      delete turns[e.turn];
+    }
+  };
+  core.taps.push(tap);
+  const done = () => { sockets.delete(socket); const i = core.taps.indexOf(tap); if (i >= 0) core.taps.splice(i, 1); };
+  reader(socket, (text) => { try { if (JSON.parse(text).type === 'cancel') Object.keys(turns).forEach((k) => { send({ type: 'audio.cancel', turn: Number(k), key: 'gluck/' + aria + ':' + k + '/out', why: 'client' }); delete turns[k]; }); } catch (e) {} });
+  socket.on('close', done);
+  socket.on('error', done);
+}
+
+server.on('upgrade', (req, socket) => {
+  const url = new URL(req.url, 'http://x');
+  const origin = req.headers.origin || '';
+  const same = origin === 'http://' + req.headers.host;
+  const am = /^\/audio\/([0-9a-f]{32})$/.exec(url.pathname);
+  if (same && am) { audioSocket(req, socket, am[1]); return; }
+  if (url.pathname !== '/door' || !same) { seen.refused++; socket.destroy(); return; }
+  seen.upgrades++;
+  sockets.add(socket);
+  handshake(req, socket);
+  const conn = core.attach({
+    text: (s) => { if (!socket.destroyed) socket.write(frame(1, Buffer.from(s))); },
+    close: () => socket.destroy()
+  });
+  reader(socket, (text) => conn.receive(text));
+  socket.on('close', () => { sockets.delete(socket); conn.close(); });
+  socket.on('error', () => { sockets.delete(socket); conn.close(); });
 });
 
 server.listen(0, '127.0.0.1', () => { process.stdout.write(String(server.address().port) + '\n'); });
