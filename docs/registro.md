@@ -65,6 +65,8 @@ Link `v2/z2-scope.js` after `v2/z2.js` for thin-client Scope views:
   before a tip opens (110 ms unless set; Scope uses 250); `skipDelay` (500 ms)
   is the window after a tip closes in which the next one opens at once, so a
   sweep across a row of cards does not flash and a second look does not wait.
+  A tip opened by keyboard focus leaves when focus does, unless it is pinned
+  or the pointer is inside it.
 - Legends drawn by `z2.uplotSync` share one gesture: click shows or hides a
   series, shift, ctrl or cmd click solos it, and the same again brings all
   back. Rows are focusable; Enter and Space do the same. A compact legend

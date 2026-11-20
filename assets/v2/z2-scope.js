@@ -1203,6 +1203,14 @@
         if (trig) triggerEnter(trig, false);
       });
 
+      document.addEventListener("focusout", function (e) {
+        var trig = findTrigger(e.target);
+        if (!trig) return;
+        for (var i = 0; i < stack.length; i++) {
+          if (stack[i].anchor === trig) scheduleLeave(stack[i], stack[i].locked ? bridgeGrace : 120);
+        }
+      });
+
       document.addEventListener("keydown", function (e) {
         if (e.key === "Escape" && stack.length) {
           e.stopPropagation();
