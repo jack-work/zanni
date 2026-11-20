@@ -58,7 +58,8 @@ body.figchat-page {
 .figchat[data-link="offline"] .figchat-link { color: var(--z-warn); }
 .figchat[data-link="offline"] .figchat-link::before { background: var(--z-warn); }
 
-.figchat-voice, .figchat-mic, .figchat-new, .figchat-send, .figchat-button, .figchat-older,   display: inline-flex;
+.figchat-voice, .figchat-mic, .figchat-new, .figchat-send, .figchat-button, .figchat-older, .figchat-stop {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: var(--figchat-hit);
@@ -78,7 +79,9 @@ body.figchat-page {
 .figchat-voice { min-width: 6.4rem; padding: 0 var(--z-space-4, 12px); }
 .figchat-voice[aria-pressed="true"], .figchat-send { background: var(--z-accent); color: var(--z-on-accent); }
 .figchat-send { font-size: 1.375rem; }
-.figchat-send, .figchat-stop, .figchat :is(button):disabled { opacity: 0.45; cursor: not-allowed; }
+.figchat-send, .figchat-mic { min-height: var(--figchat-mic); }
+.figchat-stop { flex: none; padding: 0 var(--z-space-4, 12px); }
+.figchat :is(button):disabled { opacity: 0.45; cursor: not-allowed; }
 
 .figchat-body { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .figchat-side {

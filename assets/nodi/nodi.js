@@ -178,7 +178,30 @@
     return null;
   }
 
-  function model(turns) {
+  function fromView(view, ends) {
+    var msgs = (view.closed || []).map(function (m) { return { m: m, open: false }; });
+    if (view.open) msgs.push({ m: view.open, open: true });
+    var order = [], by = {};
+    msgs.forEach(function (x) {
+      var k = x.m.turn;
+      if (!by[k]) { by[k] = { turn: k, nodes: [], open: false, input: null }; order.push(k); }
+      var t = by[k];
+      if (x.open) t.open = true;
+      var segs = x.m.inquirySegments;
+      if (!t.input && (x.m.inquiry !== undefined && x.m.inquiry !== '' || segs && segs.length)) t.input = { inquiry: x.m.inquiry, inquiry_segments: segs, at: x.m.at };
+      (x.m.nodes || []).forEach(function (n, i) {
+        t.nodes.push(Object.assign({}, n, { node: x.m.from + i, settled: !x.open }));
+      });
+    });
+    return order.map(function (k) {
+      var t = by[k], done = ends && ends[k];
+      var end = done ? endOf({ reason: done.reason, failed: String(done.reason || '').indexOf('error') === 0 }) : null;
+      return { key: 't' + k, turn: k, input: inputOf(t.input), items: t.nodes.map(function (n) { return itemOf(native(n, !t.open)); }), end: end, open: t.open && !done, sealed: !t.open };
+    });
+  }
+
+  function model(turns, ends) {
+    if (turns && !Array.isArray(turns) && (turns.closed || turns.open)) return fromView(turns, ends);
     return (turns || []).map(function (t) {
       var isNative = t.inquiry !== undefined || t.inquiry_segments !== undefined;
       return {
@@ -510,7 +533,7 @@
     }
 
     api.update = function (turnViews) {
-      var ms = model(turnViews), live = {}, want = [];
+      var ms = turnViews && turnViews[0] && turnViews[0].items ? turnViews : model(turnViews), live = {}, want = [];
       ms.forEach(function (m) {
         var t = turnFor(m), keep = {}, kids = [];
         live[m.key] = true;

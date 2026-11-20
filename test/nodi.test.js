@@ -101,6 +101,29 @@ function clientFor(core) {
     assert.strictEqual(m.items[0].settled, false);
   });
 
+  await test('view: closed and open messages of one turn draw as one turn, the open suffix unsettled', () => {
+    const view = {
+      closed: [
+        { turn: 7, from: 0, inquiry: 'q', inquirySegments: [{ sender: 'king', name: 'the King', text: 'q' }], role: 'input', nodes: [] },
+        { turn: 7, from: 0, role: 'output', nodes: [{ type: 'thinking', markdown: 'm' }, { type: 'prose', markdown: 'done part' }] }
+      ],
+      open: { turn: 7, from: 2, role: 'output', nodes: [{ type: 'prose', markdown: 'still going' }] }
+    };
+    const m = nodi.model(view, {});
+    assert.strictEqual(m.length, 1);
+    assert.strictEqual(m[0].open, true);
+    assert.deepStrictEqual(m[0].items.map((i) => [i.kind, i.node, i.settled]), [['thinking', 0, true], ['prose', 1, true], ['prose', 2, false]]);
+    assert.deepStrictEqual(m[0].input.parts.map((p) => p.role + ':' + p.label), ['caller:the King']);
+  });
+
+  await test('view: a done entry closes the turn, an error one is kept', () => {
+    const view = { closed: [{ turn: 1, from: 0, inquiry: 'q', role: 'input', nodes: [] }, { turn: 2, from: 0, inquiry: 'q2', role: 'input', nodes: [{ type: 'prose', markdown: 'x' }] }] };
+    const m = nodi.model(view, { 2: { reason: 'error: gateway: HTTP 400', idle: true } });
+    assert.strictEqual(m[1].end.kind, 'error');
+    assert.strictEqual(m[1].open, false);
+    assert.strictEqual(m[0].end, null);
+  });
+
   await test('stream: the tail read pages back through older turns in order, no duplicates', async () => {
     const core = mock.create({ step: 1 });
     const c = clientFor(core);

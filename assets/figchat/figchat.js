@@ -371,9 +371,13 @@
       win.scrollTo(0, doc.documentElement.scrollHeight);
     }
 
-    function runningOf(snap) {
-      var last = snap.turns[snap.turns.length - 1];
-      return !!last && !last.end && !last.sealed;
+    function modelOf(v, snap) {
+      return snap.view ? N.model(snap.view, v.ends) : N.model(snap.turns);
+    }
+
+    function runningOf(m) {
+      var last = m[m.length - 1];
+      return !!last && last.open;
     }
 
     function paintAria(v) {
@@ -381,15 +385,16 @@
       var snap = v.stream.snapshot();
       var stick = nearBottom();
       var first = v.body.firstElementChild, top0 = first ? first.getBoundingClientRect().top : 0, firstTurn = first ? first.getAttribute('data-turn') : null;
-      v.log.update(snap.turns);
+      var m = modelOf(v, snap);
+      v.log.update(m);
       var again = firstTurn && v.body.querySelector('[data-turn="' + firstTurn + '"]');
       if (v.paging && again) win.scrollBy(0, again.getBoundingClientRect().top - top0);
       v.metrics.update(snap.metrics);
       var was = v.running;
-      v.running = runningOf(snap);
+      v.running = runningOf(m);
       if (was && !v.running) loadListSoon();
       v.older.hidden = snap.olderAvailable !== true;
-      var note = snap.refusal ? refusalText(snap.refusal) : snap.turns.length || snap.phase !== 'live' ? '' : 'Nothing said yet.';
+      var note = snap.refusal ? refusalText(snap.refusal) : m.length || snap.phase !== 'live' ? '' : 'Nothing said yet.';
       v.status.replaceChildren();
       put(v.status, note);
       v.status.hidden = !note;
@@ -449,7 +454,7 @@
         watch: function (fn) {
           return v.stream.onChange(function () {
             if (v.stream.state !== 'live') return;
-            fn(N.model(v.stream.snapshot().turns));
+            fn(modelOf(v, v.stream.snapshot()));
           });
         }
       };
@@ -532,7 +537,7 @@
       closeView();
       cancelRecording();
       var c = client();
-      var v = view = { id: id, store: store, stream: null, closed: false, sending: false, forking: false, running: false, want: turn || 0, followed: false, paging: false, loading: false, players: {} };
+      var v = view = { id: id, store: store, stream: null, closed: false, sending: false, forking: false, running: false, want: turn || 0, followed: false, paging: false, loading: false, players: {}, ends: {} };
       v.heading = el('h1', 'figchat-h1');
       v.heading.tabIndex = -1;
       paintHeading(v);
@@ -560,6 +565,14 @@
       }
       v.stream = c.attach(id, {});
       v.stream.onChange(function () { paintAria(v); });
+      if (v.stream.onDone) {
+        v.stream.onDone(function (done) {
+          var m = modelOf(v, v.stream.snapshot());
+          var last = m.length ? m[m.length - 1].turn : 0;
+          if (last) v.ends[last] = done;
+          paintAria(v);
+        });
+      }
       v.older.addEventListener('click', function () { loadOlder(v).catch(function () {}); });
       if (win.IntersectionObserver) {
         v.watch = new win.IntersectionObserver(function (entries) {
@@ -687,7 +700,7 @@
     var api = {
       state: function () {
         var snap = view && view.stream ? view.stream.snapshot() : null;
-        return { rows: state.rows.length, voice: state.voice, link: state.link, aria: view ? view.id : null, store: storeName, turns: snap ? snap.turns.length : 0, running: !!(view && view.running), cursor: snap ? snap.cursor : '' };
+        return { rows: state.rows.length, voice: state.voice, link: state.link, aria: view ? view.id : null, store: storeName, turns: snap ? modelOf(view, snap).length : 0, running: !!(view && view.running), cursor: snap ? snap.cursor : '' };
       },
       stream: function () { return view ? view.stream : null; },
       player: function (key) { return view && view.players[key] ? view.players[key] : null; },
