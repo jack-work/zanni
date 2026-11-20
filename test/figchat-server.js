@@ -21,8 +21,10 @@ function file(res, rel, extra) {
 }
 
 const sockets = new Set();
+const gatewayPath = (pathname) => /^\/chat\/(door|audio|stt)(\/|$)/.test(pathname) ? pathname.slice('/chat'.length) : pathname;
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
+  url.pathname = gatewayPath(url.pathname);
   if (url.pathname === '/chat/') { file(res, 'index.html', { 'Content-Security-Policy': csp, 'Cache-Control': 'private, no-cache' }); return; }
   if (url.pathname.startsWith('/chat/assets/')) { file(res, url.pathname.slice('/chat/assets/'.length), { 'Cache-Control': 'private, no-cache' }); return; }
   if (url.pathname === '/__state') {
@@ -36,7 +38,7 @@ const server = http.createServer((req, res) => {
     res.end(JSON.stringify({ dropped: n }));
     return;
   }
-  if (url.pathname === '/chat/stt' && req.method === 'POST') {
+  if (url.pathname === '/stt' && req.method === 'POST') {
     let size = 0;
     const type = req.headers['content-type'] || '';
     req.on('data', (c) => { size += c.length; });
@@ -145,6 +147,7 @@ function audioSocket(req, socket, aria) {
 
 server.on('upgrade', (req, socket) => {
   const url = new URL(req.url, 'http://x');
+  url.pathname = gatewayPath(url.pathname);
   const origin = req.headers.origin || '';
   const same = origin === 'http://' + req.headers.host;
   const am = /^\/audio\/([0-9a-f]{32})$/.exec(url.pathname);
