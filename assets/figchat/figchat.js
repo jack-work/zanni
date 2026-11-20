@@ -66,6 +66,44 @@
     return words[r.kind] || 'Refused.';
   }
 
+  var MAX_CLIP_MS = 5 * 60000;
+
+  function micType(Recorder) {
+    var wanted = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/ogg;codecs=opus'];
+    if (!Recorder || typeof Recorder.isTypeSupported !== 'function') return '';
+    for (var i = 0; i < wanted.length; i++) if (Recorder.isTypeSupported(wanted[i])) return wanted[i];
+    return '';
+  }
+
+  function micFault(err) {
+    var name = err && err.name ? String(err.name) : '';
+    if (name === 'NotAllowedError' || name === 'SecurityError') return 'Microphone blocked. Allow it for this site in the browser settings, then tap Record again.';
+    if (name === 'NotFoundError' || name === 'OverconstrainedError') return 'No microphone found.';
+    if (name === 'NotReadableError' || name === 'AbortError') return 'The microphone is busy or not readable.';
+    return 'Could not record: ' + (err && err.message ? err.message : name || 'unknown error');
+  }
+
+  function clock(ms) {
+    var s = Math.max(0, Math.floor(ms / 1000));
+    return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
+  }
+
+  function sttTransport(o) {
+    var win = o.window, url = o.url || 'stt';
+    return function (blob, target) {
+      return win.fetch(url + '?aria=' + encodeURIComponent(target), { method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json', 'Content-Type': blob.type || 'application/octet-stream' }, body: blob }).then(function (res) {
+        return res.text().then(function (text) {
+          var j = null;
+          try { j = JSON.parse(text); } catch (e) {}
+          if (res.status >= 200 && res.status < 300 && j) return j;
+          var err = new Error(j && j.error ? String(j.error) : 'HTTP ' + res.status);
+          err.status = res.status;
+          throw err;
+        });
+      });
+    };
+  }
+
   function mount(host, opts) {
     if (!host || host.figchat) throw new Error('figchat needs an unused host');
     opts = opts || {};
@@ -81,6 +119,10 @@
     var listeners = [];
     var destroyed = false;
     var d = N.dom(doc), put = d.put, el = d.el;
+    var media = opts.media || { devices: win.navigator && win.navigator.mediaDevices, Recorder: win.MediaRecorder };
+    var canRecord = !!(media.devices && typeof media.devices.getUserMedia === 'function' && media.Recorder);
+    var stt = opts.stt || sttTransport({ window: win, url: host.getAttribute('data-stt') || 'stt' });
+    var rec = { state: canRecord ? 'idle' : 'unsupported', recorder: null, stream: null, chunks: [], began: 0, tick: 0, token: 0 };
 
     function on(target, name, fn) {
       target.addEventListener(name, fn);
@@ -129,6 +171,10 @@
     input.rows = 1;
     input.placeholder = 'Message';
     input.setAttribute('aria-label', 'Message');
+    var mic = button('figchat-mic', 'Record');
+    mic.setAttribute('aria-pressed', 'false');
+    var micNote = el('p', 'figchat-sendnote figchat-micnote');
+    micNote.setAttribute('role', 'status');
     var send = el('button', 'figchat-send', 'Send');
     send.type = 'submit';
     var forkAll = button('figchat-fork', 'Fork');
@@ -141,7 +187,7 @@
     turnBar.append(el('span', 'figchat-turn-text', 'Figaro is replying. A message now steers it.'), stops);
     var sendNote = el('p', 'figchat-sendnote');
     sendNote.setAttribute('role', 'status');
-    composer.append(turnBar, sendNote, forkAll, input, send);
+    composer.append(turnBar, sendNote, micNote, forkAll, input, mic, send);
     pane.append(main, composer);
 
     var body = el('div', 'figchat-body');
@@ -163,6 +209,106 @@
       forkAll.disabled = !live || !!(view && view.forking);
       turnBar.hidden = !(view && view.running);
       stop.disabled = stopClear.disabled = !live;
+      paintMic();
+    }
+
+    function paintMic() {
+      host.setAttribute('data-mic', rec.state);
+      var label = rec.state === 'recording' ? 'Stop ' + clock(now() - rec.began) : rec.state === 'transcribing' ? 'Wait' : 'Record';
+      if (mic.textContent !== label) mic.textContent = label;
+      mic.setAttribute('aria-pressed', rec.state === 'recording' ? 'true' : 'false');
+      mic.disabled = rec.state === 'unsupported' || rec.state === 'asking' || rec.state === 'transcribing' || !view;
+    }
+
+    function micSay(text) {
+      micNote.replaceChildren();
+      put(micNote, text);
+    }
+
+    function releaseMic() {
+      win.clearInterval(rec.tick);
+      if (rec.stream) rec.stream.getTracks().forEach(function (t) { t.stop(); });
+      rec.stream = null;
+      rec.recorder = null;
+    }
+
+    function micIdle(text) {
+      rec.state = 'idle';
+      micSay(text);
+      paintMic();
+    }
+
+    function grow() {
+      if (win.CSS && win.CSS.supports && win.CSS.supports('field-sizing', 'content')) return;
+      input.rows = Math.max(1, Math.min(8, input.value.split('\n').length));
+    }
+
+    function transcribed(token, res) {
+      if (token !== rec.token) return;
+      var text = String((res && res.text) || '').trim();
+      if (!text) { micIdle('Heard no words. Try again.'); return; }
+      input.value = (input.value.trim() ? input.value.replace(/\s*$/, ' ') : '') + text;
+      micIdle('');
+      grow();
+      input.focus({ preventScroll: true });
+    }
+
+    function recorded(token, type) {
+      if (token !== rec.token) return;
+      var chunks = rec.chunks;
+      releaseMic();
+      var blob = new win.Blob(chunks, { type: type });
+      if (!blob.size) { micIdle('Nothing was recorded.'); return; }
+      var v = view;
+      rec.state = 'transcribing';
+      micSay('Transcribing.');
+      paintMic();
+      Promise.resolve().then(function () { return stt(blob, v ? v.store + '/' + v.id : ''); }).then(function (res) { transcribed(token, res); }, function (err) {
+        if (token === rec.token) micIdle('Not transcribed: ' + (err && err.message ? err.message : 'network'));
+      });
+    }
+
+    function stopRecording() {
+      if (rec.recorder && rec.recorder.state !== 'inactive') rec.recorder.stop();
+    }
+
+    function cancelRecording() {
+      rec.token++;
+      stopRecording();
+      releaseMic();
+      if (rec.state !== 'unsupported') rec.state = 'idle';
+      paintMic();
+    }
+
+    function startRecording() {
+      var token = ++rec.token;
+      rec.state = 'asking';
+      micSay('');
+      paintMic();
+      media.devices.getUserMedia({ audio: true }).then(function (stream) {
+        if (token !== rec.token || destroyed) { stream.getTracks().forEach(function (t) { t.stop(); }); return; }
+        rec.stream = stream;
+        var type = micType(media.Recorder);
+        var r = type ? new media.Recorder(stream, { mimeType: type }) : new media.Recorder(stream);
+        rec.recorder = r;
+        rec.chunks = [];
+        rec.began = now();
+        r.addEventListener('dataavailable', function (ev) { if (ev.data && ev.data.size) rec.chunks.push(ev.data); });
+        r.addEventListener('stop', function () { recorded(token, r.mimeType || type || 'audio/webm'); });
+        r.start();
+        rec.state = 'recording';
+        rec.tick = win.setInterval(function () {
+          if (now() - rec.began >= MAX_CLIP_MS) stopRecording();
+          else paintMic();
+        }, 250);
+        paintMic();
+      }, function (err) {
+        if (token === rec.token) micIdle(micFault(err));
+      }).catch(function (err) {
+        if (token !== rec.token) return;
+        releaseMic();
+        micIdle(micFault(err));
+      });
     }
 
     function paintList() {
@@ -303,32 +449,57 @@
         }
       };
       v.stream.onChange(function () { if (v.stream.state === 'live') live = true; });
+      var audio = opts.audioURL || function (key) { return 'audio/key/' + key.split('/').map(encodeURIComponent).join('/'); };
       function playerFor(c) {
-        var key = c.turn + '.' + c.node;
-        if (players[key] || !V) return players[key] || null;
+        if (players[c.turn] || !V) return players[c.turn] || null;
         var slot = v.log.slot(c.turn, c.node);
         if (!slot) return null;
-        var p = V.create(doc, { audioId: '', src: opts.audioSrc || function (id) { return 'audio/' + encodeURIComponent(id); }, status: opts.audioStatus || function () { return Promise.resolve(200); }, label: 'Spoken reply' });
-        p.el.setAttribute('data-for', key);
+        var p = V.create(doc, { audioId: '', src: audio, status: opts.audioStatus || function (key) {
+          return win.fetch(audio(key), { method: 'GET', credentials: 'same-origin', cache: 'no-store', headers: { Range: 'bytes=0-0' } }).then(function (r) { return r.status; });
+        }, label: 'Spoken reply' });
+        p.el.setAttribute('data-for', String(c.turn));
         slot.appendChild(p.el);
-        players[key] = p;
+        players[c.turn] = p;
         return p;
       }
+      function speaking(turn, node) {
+        var turnEl = v.log.turnEl(turn);
+        if (!turnEl) return;
+        var old = turnEl.querySelectorAll('[data-speaking]');
+        for (var i = 0; i < old.length; i++) old[i].removeAttribute('data-speaking');
+        var n = node == null ? null : v.log.nodeEl(turn, node);
+        if (n) n.setAttribute('data-speaking', '');
+      }
+      function quiet(turn) { speaking(turn, null); }
       v.players = players;
       v.voiceConn = speech.open(ctx, {
+        ready: function () {},
+        start: function (e) {
+          if (view !== v) return;
+          var p = playerFor(e);
+          if (p) p.start({ format: e.format, rate: e.rate, bits: e.bits, channels: e.channels });
+        },
         chunk: function (c) {
           if (view !== v) return;
           var p = playerFor(c);
           if (!p) return;
-          if (c.seq === 0) p.start(c.format);
+          speaking(c.turn, c.node);
           p.push(c.pcm);
         },
         end: function (e) {
-          var p = players[e.turn + '.' + e.node];
-          if (p) p.end(e.audio_id || '');
+          var p = players[e.turn];
+          quiet(e.turn);
+          if (p) p.end(e.audio_id || e.key || '');
+        },
+        cancel: function (e) {
+          var p = players[e.turn];
+          quiet(e.turn);
+          if (p) { p.stop(); p.end(''); }
         },
         error: function (e) {
-          var p = players[e.turn + '.' + e.node];
+          if (e.turn == null) return;
+          var p = players[e.turn];
+          quiet(e.turn);
           if (p) p.fail();
         }
       });
@@ -355,6 +526,7 @@
 
     function openAria(store, id, turn) {
       closeView();
+      cancelRecording();
       var c = client();
       var v = view = { id: id, store: store, stream: null, closed: false, sending: false, forking: false, running: false, want: turn || 0, followed: false, paging: false, loading: false, players: {} };
       v.heading = el('h1', 'figchat-h1');
@@ -405,6 +577,7 @@
 
     function openList() {
       closeView();
+      cancelRecording();
       var h = el('h1', 'figchat-h1', 'figchat');
       h.tabIndex = -1;
       main.replaceChildren(h, el('p', 'figchat-note', 'Pick an aria to attend.'));
@@ -472,6 +645,7 @@
     function interrupt(queue) {
       var v = view;
       if (!v || !v.stream) return;
+      if (v.voiceConn) v.voiceConn.cancel();
       v.stream.interrupt({ queue: queue }).catch(function (err) {
         if (view === v) say('Not stopped: ' + (err && err.message ? err.message : 'network'));
       });
@@ -481,10 +655,16 @@
       ev.preventDefault();
       submit();
     });
+    on(input, 'input', grow);
     on(input, 'keydown', function (ev) {
       if (ev.key !== 'Enter' || ev.shiftKey || ev.isComposing || coarse) return;
       ev.preventDefault();
       submit();
+    });
+    on(mic, 'click', function () {
+      if (V) V.unlock(win);
+      if (rec.state === 'recording') stopRecording();
+      else if (rec.state === 'idle') startRecording();
     });
     on(stop, 'click', function () { interrupt('keep'); });
     on(stopClear, 'click', function () { interrupt('clear'); });
@@ -510,6 +690,7 @@
       player: function (key) { return view && view.players[key] ? view.players[key] : null; },
       detach: function () {
         destroyed = true;
+        cancelRecording();
         win.clearTimeout(listTimer);
         closeView();
         listeners.forEach(function (off) { off(); });
@@ -521,6 +702,7 @@
       }
     };
     host.figchat = api;
+    if (!canRecord) micSay('This browser cannot record audio.');
     paintChrome();
     route();
     loadList(false);
@@ -534,6 +716,9 @@
     depths: depths,
     labelOf: labelOf,
     ago: ago,
-    refusalText: refusalText
+    refusalText: refusalText,
+    micType: micType,
+    micFault: micFault,
+    clock: clock
   };
 }));

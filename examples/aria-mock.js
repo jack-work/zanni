@@ -110,7 +110,7 @@
     var step = o.step == null ? 60 : o.step;
     var clock = o.now || function () { return Date.now(); };
     var timers = o.timers || { set: function (f, ms) { return setTimeout(f, ms); }, clear: function (h) { clearTimeout(h); } };
-    var core = { conns: [], calls: [], arias: {}, order: [], pageBytes: o.pageBytes || 6000, dropped: 0, ids: { main: aid(1), lane: aid(2), spain: aid(3), engineer: aid(4), forms: aid(5) } };
+    var core = { conns: [], calls: [], arias: {}, order: [], pageBytes: o.pageBytes || 6000, dropped: 0, taps: [], ids: { main: aid(1), lane: aid(2), spain: aid(3), engineer: aid(4), forms: aid(5) } };
     var metricsOf = {};
     var base = clock() - 4 * 86400000;
 
@@ -200,6 +200,8 @@
       });
     }
 
+    function tell(e) { core.taps.slice().forEach(function (fn) { fn(e); }); }
+
     function emit(a, t, deltas) {
       if (!t.open) t.open = { v: 0 };
       var v = t.open.v++;
@@ -209,6 +211,10 @@
       if (v === 0) part.inquiry = t.inquiry;
       metricsOf[a.row.id].context_tokens += 6;
       pushPage(a.row.id, part);
+      deltas.forEach(function (d) {
+        var n = t.nodes[d.id];
+        if (n && n.type === 'prose' && (d.set && d.set.markdown !== undefined || d.patch)) tell({ type: 'prose', aria: a.row.id, turn: t.id, node: d.id, text: n.markdown });
+      });
     }
 
     function closeRound(a, t) {
@@ -285,6 +291,7 @@
       a.row.message_count = a.turns.length;
       a.row.last_active = clock();
       pushAll(a.row.id, 'turn.done', q ? { reason: reason, idle: false } : { reason: reason, idle: true });
+      tell({ type: 'seal', aria: a.row.id, turn: t.id, reason: reason });
       if (q && reason !== 'interrupted') begin(a, a.queue.shift());
     }
 
@@ -294,6 +301,7 @@
       a.row.state = 'active';
       var run = a.run = { turn: t, script: [], timer: null, failure: '' };
       pushPage(a.row.id, { turn: t.id, inquiry: text, sealed: false, from: 0, at: t.at });
+      tell({ type: 'begin', aria: a.row.id, turn: t.id });
       run.script = plan(a, t, text);
       var next = function () {
         if (a.run !== run) return;

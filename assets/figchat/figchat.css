@@ -58,7 +58,7 @@ body.figchat-page {
 .figchat[data-link="offline"] .figchat-link { color: var(--z-warn); }
 .figchat[data-link="offline"] .figchat-link::before { background: var(--z-warn); }
 
-.figchat-voice, .figchat-new, .figchat-send, .figchat-button, .figchat-older,   display: inline-flex;
+.figchat-voice, .figchat-mic, .figchat-new, .figchat-send, .figchat-button, .figchat-older,   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: var(--figchat-hit);
@@ -216,3 +216,22 @@ body.figchat-page {
 .figchat-composer .figchat-input { grid-column: 2; grid-row: 3; }
 .figchat-composer .figchat-send { grid-column: 3; grid-row: 3; }
 .figchat .nodi-turns { margin-top: var(--z-space-4, 12px); }
+
+.figchat-composer { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+.figchat-composer .figchat-input { grid-column: 2; grid-row: 4; }
+.figchat-composer .figchat-fork { grid-column: 1; grid-row: 4; }
+.figchat-composer .figchat-mic { grid-column: 3; grid-row: 4; }
+.figchat-composer .figchat-send { grid-column: 4; grid-row: 4; }
+.figchat-mic { min-width: 6.5rem; min-height: var(--figchat-mic); gap: 6px; font-size: 1.375rem; }
+.figchat-mic::before { content: ""; flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--z-fail); }
+.figchat-mic[aria-pressed="true"] { background: var(--z-fail); border-color: var(--z-fail); color: var(--z-ground); }
+.figchat-mic[aria-pressed="true"]::before { border-radius: 0; background: currentColor; }
+.figchat[data-mic="recording"] .figchat-input { border-color: var(--z-fail); }
+.nodi-prose[data-speaking] { box-shadow: inset 3px 0 0 var(--z-accent); padding-left: var(--z-space-3, 8px); }
+@media (max-width: 480px) {
+  .figchat-composer { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .figchat-composer .figchat-input { grid-column: 1; grid-row: 4; }
+  .figchat-composer .figchat-fork { grid-column: 1 / -1; grid-row: 5; justify-self: start; }
+  .figchat-composer .figchat-mic { grid-column: 2; }
+  .figchat-composer .figchat-send { grid-column: 3; }
+}

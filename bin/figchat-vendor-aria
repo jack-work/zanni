@@ -34,7 +34,7 @@ const git = (...a) => cp.execFileSync('git', ['-C', path.resolve(repo), ...a], {
   const chunk = res.output.find((o) => o.type === 'chunk');
   fs.mkdirSync(out, { recursive: true });
   fs.writeFileSync(path.join(out, 'aria.js'), chunk.code);
-  fs.writeFileSync(path.join(out, 'SOURCE.json'), JSON.stringify({ repo: 'figaro-forms', branch: git('rev-parse', '--abbrev-ref', 'HEAD'), sha: git('rev-parse', 'HEAD'), entry: 'figaro-forms/aria' }, null, 2) + '\n');
+  fs.writeFileSync(path.join(out, 'SOURCE.json'), JSON.stringify({ repo: 'figaro-forms', ref: (() => { try { return git('describe', '--tags', '--exact-match'); } catch (e) { return git('rev-parse', '--abbrev-ref', 'HEAD'); } })(), sha: git('rev-parse', 'HEAD'), entry: 'figaro-forms/aria' }, null, 2) + '\n');
   fs.rmSync(tmp, { recursive: true, force: true });
   process.stdout.write('aria.js ' + chunk.code.length + ' bytes from ' + git('rev-parse', '--short', 'HEAD') + '\n');
 })().catch((e) => { process.stderr.write(String(e && e.stack || e) + '\n'); process.exit(1); });
