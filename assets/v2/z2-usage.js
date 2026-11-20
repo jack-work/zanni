@@ -867,5 +867,5 @@
     return { root: band, update: update, fail: fail, detail: detail, fold: fold, repaint: function () { if (data) paint(); }, data: function () { return data; } };
   }
 
-  root.z2 = Object.assign(root.z2 || {}, { usageBand: usageBand, usageWindowName: windowName, usageSeats: seatsOf, usagePrimary: primaryOf });
+  root.z2 = Object.assign(root.z2 || {}, { usageBand: usageBand, usageWindowName: windowName, usageSeats: seatsOf, usagePrimary: primaryOf, usageSpoken: spoken });
 })(typeof window !== "undefined" ? window : globalThis);

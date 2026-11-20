@@ -27,4 +27,15 @@ assert.equal(usagePrimary(recent([["a", [5, "2026-11-19T05:10:00Z"]], ["b", [5, 
 assert.deepEqual(usagePrimary(recent([["a", [12, null]], ["b", [0, null]]])), {}, "one plan ran: nothing to choose between, no primary");
 assert.deepEqual(usagePrimary(null), {});
 
+function tree(kids, attrs = {}) {
+  const node = { nodeType: 1, attrs, hasAttribute: k => k in attrs, getAttribute: k => attrs[k] ?? null, firstChild: null };
+  kids.forEach((k, i) => { k.nextSibling = kids[i + 1] || null; });
+  node.firstChild = kids[0] || null;
+  return node;
+}
+const text = (s) => ({ nodeType: 3, nodeValue: s });
+const { usageSpoken } = globalThis.z2;
+assert.equal(usageSpoken(tree([text("Anthropic"), tree([text("Claude  Max")]), tree([text("98")]), tree([text("%")]), tree([text("hidden")], { "data-off": "" }), tree([text("deco")], { "aria-hidden": "true" })])),
+  "Anthropic, Claude Max, 98%", "a usage name joins visible parts, keeps a figure with its percent sign, and skips folded or hidden parts");
+
 console.log("v2-usage: ok");
