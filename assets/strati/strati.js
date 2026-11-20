@@ -764,10 +764,19 @@ var strati = (function () {
 
   function summarizeCharter(text) {
     if (!text || typeof text !== 'string') return '';
-    const line = text.replace(/[*_`#>]+/g, '').replace(/\s+/g, ' ').trim();
+    const listed = /^\*\*([^*\n]+?):?\*\*:?\s*\n[-*] ([^\n]+)/.exec(text);
+    const line = (listed ? listed[1] + ' ' + listed[2].replace(/[;,.]$/, '') + '. ' : text).replace(/[*_`#>]+/g, '').replace(/\s+/g, ' ').trim();
     const stop = line.indexOf('. ');
     const first = stop > 0 && stop <= 120 ? line.slice(0, stop + 1) : line;
     return first.length > 120 ? first.slice(0, 117).trimEnd() + '...' : first;
+  }
+
+  function charterList(text, heading) {
+    const lines = String(text || '').split('\n'), start = lines.findIndex(l => l.replace(/[*_:]/g, '').trim() === heading);
+    if (start < 0) return [];
+    const items = [];
+    for (let i = start + 1; i < lines.length && /^[-*] /.test(lines[i]); i++) items.push(lines[i].slice(2).replace(/[*_`]/g, '').replace(/[;.]$/, '').trim());
+    return items;
   }
 
   function fromForms(snapshot, options = {}) {
@@ -798,9 +807,9 @@ var strati = (function () {
       const reportsTo = includeReportsTo ? cleanParent(state['reports-to'] ?? item['reports-to']) : null;
       const lc = state.lifecycle ?? item.lifecycle;
       const lifecycleStatus = typeof lc === 'string' ? lc : (lc && typeof lc === 'object' ? String(lc.status || '') : '');
-      const charter = typeof state.charter === 'string' ? state.charter.replace(/\s+/g, ' ').trim() : '';
+      const charter = typeof state.charter === 'string' ? state.charter.split('\n').map(line => line.replace(/\s+/g, ' ').trim()).join('\n').replace(/\n{3,}/g, '\n\n').trim() : '';
       const summary = typeof state.summary === 'string' ? state.summary.trim() : summarizeCharter(charter);
-      const owns = Array.isArray(state.owns) ? state.owns.map(String) : (summary ? [summary] : []);
+      const owns = Array.isArray(state.owns) ? state.owns.map(String) : charterList(charter, 'Owns');
       sanitized.set(id, {
         id,
         handle: item.handle ? String(item.handle) : '',
@@ -964,22 +973,13 @@ var strati = (function () {
         occupant: occ
           ? { handle: occ.handle || occ.id.slice(0, 8), mantra: occ.mantra || '' }
           : (f.targetAria ? { handle: f.targetAria.slice(0, 8), mantra: '' } : undefined),
-        aliases: aliasForms.length ? aliasForms.map(a => ({ id: a.id, handle: a.handle, title: a.title })) : undefined
+        aliases: aliasForms.length ? aliasForms.map(a => ({ id: a.id, handle: a.handle, title: a.title })) : undefined,
+        lanes: f.lanes.length && options.includeLanes !== false ? f.lanes.map(([name, handle]) => ({ name, handle })) : undefined
       });
     }
 
-    const roleIds = new Set(roles.map(r => r.id));
-    if (options.includeLanes !== false) {
-      for (const f of candidates) {
-        if (!roleIds.has(f.id)) continue;
-        for (const [lane, handle] of f.lanes) {
-          const id = f.id + '#lane:' + lane;
-          if (roleIds.has(id)) continue;
-          roleIds.add(id);
-          roles.push({ id, title: lane, manager: f.id, kind: 'Lane', summary: handle || undefined, owns: handle ? [handle] : undefined, lifecycle: 'Lane' });
-        }
-      }
-    }
+    const tier = new Map(candidates.map(f => [f.id, f.treeDepth]));
+    roles.sort((a, b) => tier.get(a.id) - tier.get(b.id) || a.title.localeCompare(b.title, 'en') || (a.id < b.id ? -1 : 1));
 
     const holderToRole = new Map();
     for (const f of candidates) {
@@ -1034,8 +1034,8 @@ var strati = (function () {
           id: a.id,
           title: a.handle || a.id.slice(0, 8),
           manager,
-          summary: a.mantra || 'Transient aria',
-          lifecycle: a.state || 'live'
+          summary: typeof a.mantra === 'string' ? a.mantra : '',
+          lifecycle: typeof a.state === 'string' && a.state ? a.state : 'live'
         });
       }
     }

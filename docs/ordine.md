@@ -1,36 +1,49 @@
 # Ordine
 
-Read-only command graph and ownership cards. The host supplies one authorized
-public projection. Ordine has no socket, credential store, routing policy or
-runtime registry. It cannot create, bind, arrange or retire a role.
+Read-only command chart, ownership list and inspector. The host supplies one
+authorized public projection. Ordine has no socket, credential store, routing
+policy or runtime registry. It cannot create, bind, arrange or retire a role.
 
 ## Use
 
-Load `assets/strati/strati.js`, `assets/ordine/ordine.css` and
-`assets/ordine/ordine.js`, together with `gesso` and `fontpack`. They can also
-be injected with `zanni-inline` using `--component strati --component ordine`.
-Call `ordine.mount(element)` once, then call `update` when the host's authorized
-projection changes. `detach()` removes the view and listeners.
+A marker page inlines `gesso`, `fontpack`, `rotolo`, `registro`, `strati` and
+`ordine`, wears `data-theme="registro"` and `class="rotolo"` on the root, and
+names a host. `examples/order-site/index.html` is that page, with no script,
+style or handler of its own; `packages.order-site` builds it.
 
-`ordine.fromForms(snapshot, options)` derives a clean `publicOrder` model from
-Figaro forms, `@topology` and `arias` (folding routing aliases and companion
-forms onto their primary seat while stripping `system.*` and `handoff` keys).
+```html
+<main data-ordine="hierarchy" data-ordine-drift="drift" data-ordine-title="Order"
+      data-ordine-ui-owner="@flypaper-atlas" data-ordine-interval="30000"></main>
+```
+
+`ordine.auto(document)` runs when the script loads: every `[data-ordine]` host
+is mounted and bound with `ordine.feed`. The attribute value is the hierarchy
+URL. `data-ordine-drift`, `-root`, `-ui-owner`, `-deployment-owner`,
+`-interval`, `-title` and `-heading` are optional.
+
+A host that owns its own transport mounts by hand:
 
 ```js
-const order = ordine.mount(document.getElementById('order'));
+const order = ordine.mount(document.getElementById('order'), { title: 'Order' });
 order.update({ status: 'resyncing' });
-order.update({ status: 'current', model: publicOrder });
+order.update({ status: 'current', model: publicOrder, observedAt });
 ```
+
+`mount` returns `update`, `select(id)`, `expand(id)`, `show('map' | 'owners')`
+and `detach()`. `ordine.fromForms(snapshot, options)` derives a clean
+`publicOrder` from Figaro forms, `@topology` and `arias`, folding routing
+aliases and companion forms onto their primary seat and stripping `system.*`
+and `handoff` keys.
 
 `status` accepts `loading`, `resyncing`, `stale`, `unavailable`, `empty`, `denied`,
 `signedout` and `current`. Only `current` renders data. Every other state clears
-the graph, detail text, search and transient expansion immediately. `empty`
-means the server confirmed no owned orders, not a failed request. The host
-retains its login/challenge and denied/not-found behavior.
+the chart, detail text, search and expansion immediately. `empty` means the
+server confirmed no owned orders, not a failed request. An unchanged model on a
+later `current` update repaints nothing but the observed time, so a poll does
+not disturb focus, an open tooltip or an open lead.
 
 On logout or principal change, destroy the old transport and projection caches,
 then detach the view. An open connection alone never justifies `current`.
-Wait for the current generation's authorized seed and freshness contract.
 
 ## Binding to the hierarchy projection
 
@@ -70,74 +83,89 @@ handoff targets until the flake supplies communication rules; a
 ```js
 const publicOrder = {
   root: 'visible-root-id',
-  expandedTeam: 'visible-team-id',
   roles: [
     { id: 'visible-root-id', title: 'Command', manager: null },
-    { id: 'visible-team-id', title: 'Systems', manager: 'visible-root-id' }
+    { id: 'lead-id', title: 'Systems', manager: 'visible-root-id',
+      lanes: [{ name: 'keel', handle: 'fleet.lane.backend.keel' }] }
   ],
-  workers: [],
+  workers: [{ id: 'aria-id', title: 'handle', manager: 'lead-id', summary: 'mantra', lifecycle: 'active' }],
   communications: []
 };
 ```
 
 Role IDs are exact stable identities supplied by the host, not display names.
 `manager` is an authorized visible hierarchy link. The projection supplies one
-visible root per order. It must omit hidden endpoints rather than making the
-browser reconstruct hidden ancestry. Multiple authorized orders are selected
-by the host, not joined through an invented supervisor.
+visible root per order and omits hidden endpoints.
 
-Optional role fields are `summary`, `owns` (string array), `boundary`, `charter`
-(string), declared `kind`, declared `lifecycle`, and independently visible
-`occupant.handle` / `occupant.mantra`. Text is rendered with `textContent`.
-The component renders no arbitrary HTML or links. Project links and metrics are
-not part of this slice. An optional `observedAt` on the update state is displayed
-as source text, not calculated into a freshness or authorization claim.
+Optional role fields are `summary`, `charter` (plain text; `**Heading:**`
+lines, `- ` lists and backticks are laid out, nothing else is interpreted),
+`owns`, `boundary`, `kind`, `lifecycle`, `occupant.handle`, `occupant.mantra`
+and `lanes`. A lane is a name and a captains-log handle on its lead. It is
+never a role and never a card on the overview. `fromForms` reads lanes from the
+role form's `lanes` key and orders siblings by title.
 
-`workers` uses the same card fields. Its `manager` links identify actual visible
-transient descendants, including nested workers. Managed roles remain the compact
-overview. Selecting an owner offers a separate transient-tree expansion below
-the overview only if visible live descendants exist. Prospective task lists do
-not become worker nodes or counts. Lifecycle filtering is the server's job.
+`workers` are live arias under a role or under another worker. A worker whose
+`lifecycle` is `dormant` is counted as resting and not drawn. All text reaches
+the page through `textContent`.
 
 Each communication declaration has `from`, `to`, `kind` (`ui` or `deployment`)
-and an optional text `label`. Both endpoints must be visible standing roles.
-Selecting a role shows its outgoing declarations, with arrowheads at the target.
-UI edges are dotted; deployment edges use a long/short dash. Detail text states
-the exact direction. Ordine does not choose a UI or deployment owner. The flake
-rules must explicitly route those handoffs to the intended roles. Drawing an
-edge neither grants access nor claims that a message occurred.
+and an optional `label`. Both endpoints must be visible roles. The Handoffs
+tool draws the selected role's outgoing declarations, off by default. A drawn
+handoff neither grants access nor claims that a message occurred.
 
-Unknown or invalid hierarchy/endpoints fail closed with an unavailable view.
-This input validation is not an authorization layer. Selecting public keys in
-browser JavaScript is not an authorized projection.
+Unknown or invalid hierarchy, workers, lanes or endpoints fail closed with an
+unavailable view. This input validation is not an authorization layer.
 
-## Layout and visual treatment
+## Layout
 
-The accepted eleven-position composition is retained for its original shape:
-a root, one two-person standing team on the left and direct officers on a
-three-column grid to the right. IDs, names and operational assignments are not
-baked into the component. More direct officers extend the grid downwards.
-When the authorized managed hierarchy has a different shape or deeper tiers,
-the component uses `strati`'s width-bounded Sugiyama layered layout (dummy
-chains, barycentric crossing reduction and orthogonal channel/track routing)
-rather than discarding nodes or sprawling horizontally. Transient expansion uses
-the same width-bounded layered layout separately, so opening actual forks does
-not turn the accepted overview into a registry dump.
+`ordine.layout(model, { expanded })` is pure and deterministic. It is the
+composition Gluck approved on 2026-11-15 (figaro bb76aea, archived in
+captains-log `2026/11/15/order-ui-accepted/`), generalized:
 
-Hierarchy segments merge only within the same supervisor's branch. Handoffs
-route orthogonally around node boxes and preserve their target direction.
-Their crossings do not create hierarchy junctions.
+- The root card sits top centre. Its direct reports stand on a three-column
+  grid of 200 by 118 cards, 230 apart across and 196 down, in model order.
+  One bus at y 178 feeds a gutter trunk left of each column; a stub leaves the
+  trunk above each card and drops into its top.
+- With no lead open the grid is centred under the root.
+- With a lead open, that lead takes the 224-wide slot on the left inside a
+  tinted region, and the others close ranks on the grid to the right, exactly
+  the approved sheet. The root does not move.
+- Inside the region: standing staff as two columns of 160 by 118 cards under a
+  shared bus, as approved; then lanes and live forks as rows on a rail that
+  turns off the lead's trunk. A fork of a fork is inset under its parent.
+- Strokes of one owner are merged before drawing, so nothing is drawn twice,
+  and junction dots mark only real branches.
 
-Gesso supplies the ground and semantic colors. Jacquard is reserved for the
-visible root and inspector heading, EB Garamond for readable card text, VT323
-for technical labels at a 14px floor before canvas zoom. Compact graph cards
-retain the accepted dimensions; selecting one exposes its complete text in
-the inspector. The ownership view is unscaled and is the mobile default.
-There is no second header, theme toggle, player or site navigation in Ordine.
+`layout` returns `nodes` (`kind` is `root`, `lead`, `staff`, `lane` or `fork`),
+`edges`, merged `segments`, `junctions`, `groups` with their caption box,
+`labels` and the sheet size. Given the archived eleven-position model it
+returns the archived coordinates, edges, segments and junctions.
+`ordine.members(model, id)` lists a role's staff, lanes, live forks and resting
+forks.
 
-`examples/ordine.html` is explicitly synthetic. Its role labels are not Spain's
-formation and it has no backend connection. The archived accepted review stays
-in captains-log as historical provenance; it is not a live fallback registry.
+## View
+
+Clicking a lead selects it and opens it; clicking the root, Close or Escape
+returns the overview. The foot of a lead card toggles its region without
+losing the selection. Leads that move slide, new rows fade in, 190 ms,
+transform and opacity only, and not at all under `prefers-reduced-motion`.
+The zoom is fitted to the overview and held while a lead is open; the panel
+grows downward instead of shrinking the type.
+
+The inspector shows the selected role's charter, holder, lanes with handles,
+live forks, drift and declared handoffs. Who owns what is the phone default:
+one tile per role, and the selected tile carries the inspector inline. Find
+matches titles, charters, lane names and handles, fork handles and mantras;
+Enter selects a single match.
+
+The page wears the Scope registro: its tokens, buttons, segments, fields and
+`z2.tips` tooltips (`data-tip-text`), cards on `--z-ground-2` with an accent
+top edge, a gesso ground and rotolo scrollbars, light and dark. Type is
+fontpack's three faces and no other: Jacquard 24 for names and titles, EB
+Garamond for prose, VT323 for handles, states and labels. Ordine overrides
+registro's text face inside its host and in the tooltips it raises.
+
+`examples/ordine.html` is synthetic and has no backend connection.
 
 ## Order capability boundary
 
@@ -164,10 +192,14 @@ authentication and deployment retain their separate Spain authorization.
 
 ```sh
 node test/ordine.test.js
-python3 test/ordine.browser.py examples/ordine.html
+node test/ordine-feed.test.js
+node test/ordine-drift.test.js
+nix build .#checks.x86_64-linux.strati .#checks.x86_64-linux.order-site
 ```
 
-The pure check retains the approved overview coordinates and checks directional
-handoff routing around nodes. The browser check covers selection, nested forks
-and clearing retained data during resync/denial, including a mobile ownership
-view. Neither is authenticated production acceptance.
+`ordine.test.js` pins the approved coordinates, then checks the six-role shape
+and 160 random orders with every lead opened: no node overlap, no command
+stroke through a node or drawn twice, no crossing between owners, each region
+holding only its own lead and items, and closing returning the same overview.
+`checks.order-site` builds the page through `zanni-inline` and `zanni-check`
+and refuses an authored page with inline script, style or handlers.

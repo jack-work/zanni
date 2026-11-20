@@ -1,33 +1,18 @@
 <!doctype html>
-<html lang="en" data-scheme="light">
+<html lang="en" class="rotolo" data-theme="registro">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>Order</title>
-<style>
-body { margin: 0; padding: 20px; }
-@media (max-width: 680px) { body { padding: 8px; } }
-</style>
 </head>
 <body class="gesso">
 <!-- zanni:gesso -->
 <!-- zanni:fontpack -->
+<!-- zanni:rotolo -->
+<!-- zanni:registro -->
 <!-- zanni:strati -->
 <!-- zanni:ordine -->
-<main id="order"></main>
-<script>
-(function () {
-  var view = ordine.mount(document.getElementById('order'));
-  var feed = ordine.feed(view, {
-    url: 'hierarchy',
-    driftUrl: 'drift',
-    uiOwner: '@flypaper-atlas',
-    deploymentOwner: '@frosting-pushup',
-    interval: 30000
-  });
-  document.addEventListener('visibilitychange', function () { if (!document.hidden) feed.poll(); });
-}());
-</script>
+<main data-ordine="hierarchy" data-ordine-drift="drift" data-ordine-title="Order" data-ordine-ui-owner="@flypaper-atlas" data-ordine-interval="30000"></main>
 </body>
 </html>

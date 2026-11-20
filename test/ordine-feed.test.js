@@ -50,7 +50,7 @@ const current = { status: 'current', observed_at: '2026-11-17T04:00:00Z', orders
   assert.deepEqual(view.states.map(s => s.status), ['loading', 'current']);
   const model = view.last().model;
   assert.equal(model.root, '@king');
-  assert.deepEqual(model.roles.map(r => r.id), ['@king', '@eng', '@zanni', '@zap']);
+  assert.deepEqual(model.roles.map(r => r.id), ['@king', '@zap', '@eng', '@zanni']);
   assert.deepEqual(model.workers.map(w => w.id), ['aria-w1']);
   assert.ok(model.communications.some(c => c.from === '@eng' && c.to === '@zanni' && c.kind === 'ui'));
   assert.ok(model.communications.some(c => c.from === '@zanni' && c.to === '@zap' && c.kind === 'deployment'));

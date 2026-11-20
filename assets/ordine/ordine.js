@@ -74,85 +74,89 @@ var ordine = (function () {
     return [...candidates.values()].filter(p => p.directions.size > 2).map(({ owner, x, y }) => ({ owner, x, y }));
   }
 
-  function finish(nodes, edges, groups = [], compact = false) {
-    const segments = mergeSegments(edges);
-    return { width: Math.max(compact ? 1124 : 0, ...nodes.map(b => b.x + b.width + 28)), height: Math.max(compact ? 816 : 0, ...nodes.map(b => b.y + b.height + 80)), nodes, edges, segments, junctions: junctions(segments), groups, compact };
-  }
 
-  function treeLayout(model) {
-    const { children } = hierarchy(model), widths = new Map(), nodes = [], edges = [];
-    function measure(id) {
-      const branch = children.get(id);
-      const width = Math.max(224, branch.reduce((n, child) => n + measure(child), 0) + Math.max(0, branch.length - 1) * 36);
-      widths.set(id, width);
-      return width;
+  const SHEET = { width: 1124, axis: 562, bus: 178, top: 224, pitch: 230, row: 196, columns: 3 };
+  const STAFF = { width: 160, height: 118, lead: 32, drop: 46, columns: [28, 214] };
+  const ROWS = { rail: 32, x: 50, width: 324, gap: 6, lane: 34, fork: 52 };
+
+  function members(model, id) {
+    const { roles, children } = hierarchy(model), owner = roles.get(id);
+    if (!owner) return { staff: [], lanes: [], forks: [], resting: [] };
+    const staff = [];
+    if (id !== model.root) (function walk(parent) { for (const child of children.get(parent)) { staff.push(roles.get(child)); walk(child); } }(id));
+    const lanes = [];
+    for (const role of [owner, ...staff]) for (const lane of role.lanes || []) {
+      if (!lane || typeof lane.name !== 'string' || !lane.name) continue;
+      const key = role.id + '#lane:' + lane.name;
+      if (!lanes.some(l => l.id === key)) lanes.push({ id: key, owner: role.id, name: lane.name, handle: typeof lane.handle === 'string' ? lane.handle : '' });
     }
-    measure(model.root);
-    function place(id, left, depth) {
-      const box = { id, x: left + (widths.get(id) - 224) / 2, y: 32 + depth * 196, width: 224, height: 118 };
-      nodes.push(box);
-      let cursor = left;
-      for (const child of children.get(id)) {
-        const next = place(child, cursor, depth + 1), y = box.y + 157;
-        edges.push({ from: id, to: child, points: [{ x: box.x + 112, y: box.y + 118 }, { x: box.x + 112, y }, { x: next.x + 112, y }, { x: next.x + 112, y: next.y }] });
-        cursor += widths.get(child) + 36;
+    const forks = [], resting = [], seen = new Set();
+    function gather(parent) {
+      for (const worker of model.workers || []) if (worker.manager === parent && !seen.has(worker.id)) {
+        seen.add(worker.id);
+        (String(worker.lifecycle || '').toLowerCase() === 'dormant' ? resting : forks).push(worker);
+        gather(worker.id);
       }
-      return box;
     }
-    place(model.root, 28, 0);
-    return finish(nodes, edges);
-  }
-
-  function layeredLayout(model, options = {}) {
-    if (model && Array.isArray(model.nodes) && !model.roles) {
-      if (!engine) throw new Error('Missing strati layered engine');
-      return engine.layoutLayered(model, options);
-    }
-    hierarchy(model);
-    if (!engine) return treeLayout(model);
-    const nodes = model.roles.map((r, i) => ({
-      id: r.id,
-      width: r.width ?? 224,
-      height: r.height ?? (r.id === model.root ? 104 : 118),
-      order: i
-    }));
-    const edges = model.roles.filter(r => r.id !== model.root).map(r => ({ from: r.manager, to: r.id }));
-    const result = engine.layoutLayered({ nodes, edges }, {
-      width: options.width ?? 1380,
-      maxColumns: options.maxColumns ?? 5,
-      nodeGap: options.nodeGap ?? 36,
-      layerGap: options.layerGap ?? 68,
-      padding: options.padding ?? 28,
-      sweeps: options.sweeps ?? 24
-    });
-    return { ...result, groups: [], compact: false };
+    for (const role of [owner, ...staff]) gather(role.id);
+    return { staff, lanes, forks, resting };
   }
 
   function layout(model, options = {}) {
-    const { roles, children } = hierarchy(model);
-    if (options.layered) return layeredLayout(model, options);
-    const team = roles.get(model.expandedTeam);
-    if (!team || team.manager !== model.root || children.get(team.id).length !== 2 || model.roles.some(r => r.id !== model.root && r.manager !== model.root && r.manager !== team.id)) {
-      return layeredLayout(model, options);
+    const { children } = hierarchy(model), leads = children.get(model.root);
+    const wanted = options.expanded === undefined ? model.expandedTeam : options.expanded;
+    const expanded = leads.includes(wanted) ? wanted : null;
+    const nodes = [{ id: model.root, kind: 'root', x: 450, y: 32, width: 224, height: 104 }], edges = [], groups = [], labels = [];
+    const axis = SHEET.axis, foot = 136, grid = leads.filter(id => id !== expanded);
+    const columns = expanded ? SHEET.columns : Math.max(1, Math.min(SHEET.columns, grid.length));
+    const left = expanded ? 440 : axis - (columns * 200 + (columns - 1) * 30) / 2;
+    grid.forEach((id, i) => {
+      const column = i % columns, box = { id, kind: 'lead', x: left + column * SHEET.pitch, y: SHEET.top + Math.floor(i / columns) * SHEET.row, width: 200, height: 118 };
+      const gutter = box.x - 20, centre = box.x + 100;
+      nodes.push(box);
+      edges.push({ from: model.root, to: id, points: [{ x: axis, y: foot }, { x: axis, y: SHEET.bus }, { x: gutter, y: SHEET.bus }, { x: gutter, y: box.y - 24 }, { x: centre, y: box.y - 24 }, { x: centre, y: box.y }] });
+    });
+    if (expanded) {
+      const lead = { id: expanded, kind: 'lead', x: 90, y: SHEET.top, width: 224, height: 118 }, trunk = 202, base = lead.y + lead.height;
+      nodes.push(lead);
+      edges.push({ from: model.root, to: expanded, points: [{ x: axis, y: foot }, { x: axis, y: SHEET.bus }, { x: trunk, y: SHEET.bus }, { x: trunk, y: lead.y }] });
+      const inside = members(model, expanded);
+      let cursor = base;
+      inside.staff.forEach((role, i) => {
+        const column = i % 2;
+        if (!column) cursor += STAFF.lead;
+        const bus = cursor, box = { id: role.id, kind: 'staff', x: STAFF.columns[column], y: bus + STAFF.drop, width: STAFF.width, height: STAFF.height };
+        nodes.push(box);
+        edges.push({ from: expanded, to: role.id, points: [{ x: trunk, y: base }, { x: trunk, y: bus }, { x: box.x + 80, y: bus }, { x: box.x + 80, y: box.y }] });
+        if (column || i === inside.staff.length - 1) cursor = box.y + box.height;
+      });
+      const workers = new Map((model.workers || []).map(w => [w.id, w]));
+      function depth(item) {
+        let n = 0;
+        for (let w = workers.get(item.manager); w && n < 3; w = workers.get(w.manager)) n++;
+        return n;
+      }
+      let turn = null;
+      function rows(kind, items, text) {
+        if (!items.length) return;
+        if (turn === null) { turn = cursor + 18; cursor += 14; }
+        labels.push({ kind, x: ROWS.x, y: cursor + 16, text });
+        cursor += 40;
+        items.forEach((item, i) => {
+          if (i) cursor += ROWS.gap;
+          const inset = kind === 'fork' ? depth(item) * 16 : 0, box = { id: item.id, kind, x: ROWS.x + inset, y: cursor, width: ROWS.width - inset, height: ROWS[kind] }, mid = box.y + box.height / 2;
+          nodes.push(box);
+          edges.push({ from: expanded, to: item.id, points: [{ x: trunk, y: base }, { x: trunk, y: turn }, { x: ROWS.rail, y: turn }, { x: ROWS.rail, y: mid }, { x: box.x, y: mid }] });
+          cursor = box.y + box.height;
+        });
+      }
+      rows('lane', inside.lanes, 'Lanes');
+      rows('fork', inside.forks, 'Live forks');
+      groups.push({ id: expanded, x: 16, y: 204, width: 370, height: cursor + 80 - 204, caption: { x: 34, y: cursor + 18, width: 334 }, staff: inside.staff.length, lanes: inside.lanes.length, forks: inside.forks.length });
     }
-    const staff = children.get(team.id).map(id => roles.get(id));
-    const direct = model.roles.filter(r => r.manager === model.root && r.id !== team.id);
-    const boxes = new Map();
-    boxes.set(model.root, { id: model.root, x: 450, y: 32, width: 224, height: 104 });
-    boxes.set(team.id, { id: team.id, x: 90, y: 224, width: 224, height: 118 });
-    staff.forEach((r, i) => boxes.set(r.id, { id: r.id, x: 28 + i * 186, y: 420, width: 160, height: 118 }));
-    direct.forEach((r, i) => boxes.set(r.id, { id: r.id, x: 440 + i % 3 * 230, y: 224 + Math.floor(i / 3) * 196, width: 200, height: 118, column: i % 3 }));
-    const root = boxes.get(model.root), teamBox = boxes.get(team.id), center = b => b.x + b.width / 2;
-    const edges = [{ from: model.root, to: team.id, points: [{ x: center(root), y: root.y + root.height }, { x: center(root), y: 178 }, { x: center(teamBox), y: 178 }, { x: center(teamBox), y: teamBox.y }] }];
-    for (const r of direct) {
-      const b = boxes.get(r.id), gutter = 420 + b.column * 230;
-      edges.push({ from: model.root, to: r.id, points: [{ x: center(root), y: root.y + root.height }, { x: center(root), y: 178 }, { x: gutter, y: 178 }, { x: gutter, y: b.y - 24 }, { x: center(b), y: b.y - 24 }, { x: center(b), y: b.y }] });
-    }
-    for (const r of staff) {
-      const b = boxes.get(r.id);
-      edges.push({ from: team.id, to: r.id, points: [{ x: center(teamBox), y: teamBox.y + teamBox.height }, { x: center(teamBox), y: 374 }, { x: center(b), y: 374 }, { x: center(b), y: b.y }] });
-    }
-    return finish([...boxes.values()], edges, [{ id: team.id, x: 16, y: 204, width: 370, height: 414 }], true);
+    const segments = mergeSegments(edges);
+    const height = Math.max(...nodes.map(b => b.y + b.height + 80), ...groups.map(g => g.y + g.height + 28));
+    return { width: SHEET.width, height, nodes, edges, segments, junctions: junctions(segments), groups, labels, expanded, compact: true };
   }
 
   function hits(a, b, box) {
@@ -266,12 +270,39 @@ var ordine = (function () {
     return roles.length > 1 ? { root: id, roles } : null;
   }
 
+
+  function clock(value) {
+    if (typeof value === 'string') return value;
+    if (typeof value !== 'number' || !isFinite(value)) return '';
+    const d = new Date(value), two = n => String(n).padStart(2, '0');
+    return two(d.getHours()) + ':' + two(d.getMinutes()) + ':' + two(d.getSeconds());
+  }
+
+  function charterBlocks(text) {
+    const blocks = [];
+    for (const raw of String(text || '').split('\n')) {
+      const line = raw.trim(), last = blocks.at(-1);
+      if (!line) { blocks.push(null); continue; }
+      const heading = /^\*\*([^*]+?):?\*\*:?$/.exec(line) || /^#+\s+(.+)$/.exec(line);
+      if (heading) blocks.push({ kind: 'heading', text: heading[1] });
+      else if (/^[-*] /.test(line)) {
+        if (last && last.kind === 'list') last.items.push(line.slice(2));
+        else blocks.push({ kind: 'list', items: [line.slice(2)] });
+      } else if (last && last.kind === 'text') last.text += ' ' + line;
+      else blocks.push({ kind: 'text', text: line });
+    }
+    return blocks.filter(Boolean);
+  }
+
+  const MESSAGES = { loading: 'Waiting for the authorized order', resyncing: 'Resyncing the authorized order', stale: 'Order unavailable: waiting for a current projection', unavailable: 'Order unavailable', empty: 'No owned orders', denied: 'Order unavailable', signedout: 'Sign in to view your order' };
+
   function mount(host, options = {}) {
     if (!host || host.ordine) throw new Error('Order view requires an unused host');
     const doc = host.ownerDocument, win = doc.defaultView, ns = 'http://www.w3.org/2000/svg';
-    let model = null, graph = null, selected = null, view = 'map', query = '', expanded = false, showHandoffs = true, driftOnly = false;
-    let zoom = 1, pan = { x: 0, y: 0 }, frame = 0, destroyed = false;
+    let model = null, graph = null, selected = null, expanded = null, view = 'map', query = '', showHandoffs = false, driftOnly = false;
+    let zoom = 1, pan = { x: 0, y: 0 }, held = false, frame = 0, destroyed = false, signature = '', counts = '', sheet = 0;
     const listeners = [];
+    const still = win.matchMedia('(prefers-reduced-motion: reduce)'), narrow = win.matchMedia('(max-width: 1160px)');
     function el(tag, text, cls) {
       const n = doc.createElement(tag);
       if (text !== undefined) n.textContent = text;
@@ -287,54 +318,87 @@ var ordine = (function () {
       target.addEventListener(name, fn, opts);
       listeners.push(() => target.removeEventListener(name, fn, opts));
     }
-    function button(text, action, cls = 'ordine-button') {
+    function button(text, action, cls = 'z2-btn', tipText) {
       const n = el('button', text, cls);
       n.type = 'button';
-      n.onclick = action;
+      n.addEventListener('click', action);
+      if (tipText) n.setAttribute('data-tip-text', tipText);
       return n;
     }
-    const bar = el('div', undefined, 'ordine-bar'), tabs = el('div', undefined, 'ordine-tabs');
+    function tipped(n, title, text) {
+      if (!text) return n;
+      n.setAttribute('data-tip-title', title);
+      n.setAttribute('data-tip-text', text);
+      return n;
+    }
+    function place(n, box) {
+      Object.assign(n.style, { left: box.x + 'px', top: box.y + 'px', width: box.width + 'px', height: box.height + 'px' });
+      return n;
+    }
+    function move(n, frames, delay = 0) {
+      if (still.matches || typeof n.animate !== 'function') return;
+      n.animate(frames, { duration: 190, delay, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' });
+    }
+    if (win.z2 && typeof win.z2.tips === 'function' && !doc.documentElement.ordineTips) doc.documentElement.ordineTips = win.z2.tips({ lockDelay: 700 });
+
+    const mast = el('header', undefined, 'ordine-mast z2-scope');
+    const crumb = el('span', '', 'ordine-crumb'), status = el('span', MESSAGES.loading, 'ordine-status');
+    status.setAttribute('role', 'status');
+    const live = el('span', undefined, 'ordine-live');
+    live.append(el('i', undefined, 'ordine-dot'), status);
+    const find = el('label', undefined, 'z2-field ordine-find'), search = el('input');
+    search.type = 'search';
+    search.placeholder = 'Owner, lane or capability';
+    search.autocomplete = 'off';
+    find.append(el('span', 'Find', 'ordine-find-label'), search);
+    mast.append(el('span', options.title || 'Order', 'ordine-mark'), crumb, find, live);
+
+    const head = el('div', undefined, 'ordine-head'), sub = el('p', '', 'ordine-sub');
+    head.append(el('p', 'Command structure', 'ordine-eyebrow'), el('h1', options.heading || 'Standing order', 'ordine-title'), sub);
+
+    const shell = el('section', undefined, 'ordine-shell'), bar = el('div', undefined, 'ordine-bar'), tabs = el('div', undefined, 'z2-seg ordine-tabs');
     tabs.setAttribute('role', 'group');
     tabs.setAttribute('aria-label', 'Order views');
-    const mapTab = button('Command map', () => setView('map')), ownerTab = button('Who owns what', () => setView('owners'));
+    const mapTab = button('Command map', () => setView('map'), 'z2-seg-b'), ownerTab = button('Who owns what', () => setView('owners'), 'z2-seg-b');
     tabs.append(mapTab, ownerTab);
-    const tools = el('div', undefined, 'ordine-tools'), searchLabel = el('label', 'Find an owner', 'ordine-find');
-    const search = el('input');
-    search.type = 'search';
-    search.placeholder = 'Owner or capability';
-    searchLabel.append(search);
-    const handoffs = button('Declared handoffs', () => { showHandoffs = !showHandoffs; renderLines(); syncTools(); });
-    const driftToggle = button('Drift only', () => { driftOnly = !driftOnly; renderCards(); syncTools(); });
+    const tools = el('div', undefined, 'ordine-tools');
+    const driftToggle = button('Drift only', () => { driftOnly = !driftOnly; render(); }, 'z2-btn', 'Dim every seat that matches its outfit.');
+    const handoffs = button('Handoffs', () => { showHandoffs = !showHandoffs; renderLines(); syncTools(); }, 'z2-btn', 'Draw the declared UI and deployment handoffs of the selected role. Declared rules, not message traffic or access.');
     const zoomLabel = el('output', '100%', 'ordine-zoom');
-    const less = button('−', () => zoomAt(zoom / 1.15)), more = button('+', () => zoomAt(zoom * 1.15));
+    const less = button('−', () => zoomAt(zoom / 1.15), 'z2-btn ordine-step', 'Zoom out.'), more = button('+', () => zoomAt(zoom * 1.15), 'z2-btn ordine-step', 'Zoom in.');
     less.setAttribute('aria-label', 'Zoom out');
     more.setAttribute('aria-label', 'Zoom in');
-    tools.append(driftToggle, handoffs, less, zoomLabel, more, button('Fit', fit));
-    bar.append(tabs, searchLabel, tools);
-    const status = el('p', 'Waiting for authorized order', 'ordine-status');
-    status.setAttribute('role', 'status');
+    tools.append(driftToggle, handoffs, less, zoomLabel, more, button('Fit', () => { held = false; fit(); }, 'z2-btn', 'Fit the chart to the panel.'));
+    bar.append(tabs, tools);
+
     const body = el('div', undefined, 'ordine-body'), stage = el('div', undefined, 'ordine-stage');
     const viewport = el('div', undefined, 'ordine-viewport'), scene = el('div', undefined, 'ordine-scene');
     viewport.tabIndex = 0;
-    viewport.setAttribute('aria-label', 'Command graph. Drag to pan. Use buttons or pinch to zoom.');
+    viewport.setAttribute('aria-label', 'Command map. Drag to pan. Use the buttons or pinch to zoom.');
     const groups = el('div'), lines = svg('svg', { class: 'ordine-lines', 'aria-hidden': 'true' }), cards = el('div');
     scene.append(groups, lines, cards);
-    viewport.append(scene);
+    const meta = el('p', '', 'ordine-meta'), hint = el('p', 'Select a lead to open its lanes and live forks', 'ordine-hint');
+    viewport.append(scene, meta, hint);
     const legend = el('div', undefined, 'ordine-legend');
-    legend.append(el('span', '↓ Reports to', 'ordine-legend-command'), el('span', '⇢ UI handoff', 'ordine-legend-ui'), el('span', '⇢ Deployment handoff', 'ordine-legend-deployment'), el('span', 'Declared rules, not message traffic or access grants'));
-    const owners = el('div', undefined, 'ordine-owners'), branch = el('section', undefined, 'ordine-branch');
+    legend.append(el('span', 'Reports to', 'ordine-legend-command'), el('span', 'Lane', 'ordine-legend-lane'), el('span', 'Live fork', 'ordine-legend-fork'), el('span', 'UI handoff', 'ordine-legend-ui'), el('span', 'Deployment handoff', 'ordine-legend-deployment'), el('span', 'A fork is temporary work, never another standing role.', 'ordine-legend-note'));
+    const owners = el('div', undefined, 'ordine-owners');
     const details = el('aside', undefined, 'ordine-details');
     details.setAttribute('aria-label', 'Selected owner');
-    stage.append(viewport, owners, legend, branch);
+    stage.append(viewport, owners, legend);
     body.append(stage, details);
+    shell.append(bar, body);
     host.classList.add('ordine');
-    host.replaceChildren(bar, status, body);
-    body.hidden = true;
+    const blank = el('p', MESSAGES.loading, 'ordine-blank');
+    blank.setAttribute('aria-hidden', 'true');
+    host.replaceChildren(mast, blank, head, shell);
+    shell.hidden = true;
+    head.hidden = true;
 
     function roles() { return new Map(model.roles.map(r => [r.id, r])); }
+    function leads() { return model.roles.filter(r => r.manager === model.root).map(r => r.id); }
     function driftSummary(d) {
       if (!d) return '';
-      if (d.state !== 'ok') return ' · drift check unavailable: ' + (d.reason || 'no answer');
+      if (d.state !== 'ok') return 'Drift check unavailable: ' + (d.reason || 'no answer');
       let differ = 0, unseated = 0, errors = 0;
       for (const id of Object.keys(d.roles)) {
         const r = d.roles[id];
@@ -343,63 +407,58 @@ var ordine = (function () {
         else if (r.status !== 'ok') differ++;
       }
       const out = d.outside.length;
-      return ' · drift: ' + differ + ' differ, ' + unseated + ' unseated, ' + errors + ' errors' + (out ? ', ' + out + ' outside the order' : '') + (d.generatedAt ? ' (checked ' + d.generatedAt + ')' : '');
+      return 'Drift: ' + differ + ' differ, ' + unseated + ' unseated, ' + errors + ' errors' + (out ? ', ' + out + ' outside the order' : '') + (d.generatedAt ? ' (checked ' + d.generatedAt + ')' : '');
     }
     function driftOf(id) { return model && model.drift && model.drift.state === 'ok' ? model.drift.roles[id] || null : null; }
     function driftTag(dr) {
-      if (!model || !model.drift) return null;
-      if (model.drift.state !== 'ok') return null;
       if (!dr) return null;
       if (dr.unseated) return { text: 'unseated', tone: 'warn' };
-      if (dr.status === 'error') return { text: 'check error', tone: 'fail' };
+      if (dr.status === 'error') return { text: 'unchecked', tone: 'fail' };
       if (dr.status === 'drift') return { text: 'drift ' + dr.changes.length, tone: 'warn' };
       if (dr.status === 'missing') return { text: 'missing', tone: 'fail' };
       if (dr.status === 'extra') return { text: 'extra', tone: 'warn' };
       return null;
     }
-    function driftSection(id) {
-      const d = model && model.drift;
-      if (!d) return;
-      const n = el('section');
-      n.append(el('h3', 'Drift from outfit'));
-      if (d.state !== 'ok') { n.append(el('p', 'The drift check did not run: ' + (d.reason || 'unavailable') + '. This is not a clean result.')); details.append(n); return; }
-      const dr = d.roles[id];
-      if (!dr || (dr.status === 'ok' && !dr.unseated)) { n.append(el('p', 'In line with its outfit at ' + (d.generatedAt || 'the last check') + '.')); details.append(n); return; }
-      if (dr.unseated) n.append(el('p', 'No holder is seated in this role.'));
-      if (dr.status === 'error') n.append(el('p', 'Check error: ' + (dr.error || 'unknown')));
-      if (dr.changes.length) {
-        const list = el('ul', undefined, 'ordine-drift-list');
-        for (const c of dr.changes) {
-          const li = el('li');
-          li.append(el('code', c.key, 'ordine-drift-key'), el('span', 'now', 'ordine-drift-label'), el('code', c.live, 'ordine-drift-live'), el('span', 'should be', 'ordine-drift-label'), el('code', c.want, 'ordine-drift-want'));
-          list.append(li);
-        }
-        n.append(list);
-      }
-      details.append(n);
+    function seat(role) {
+      const state = String(role.lifecycle || '').replace(/^Seat /, '').toLocaleLowerCase();
+      return { handle: role.occupant && role.occupant.handle ? role.occupant.handle : '', state: ['active', 'idle', 'dormant'].includes(state) ? state : '' };
+    }
+    function tally(inside) {
+      const parts = [];
+      if (inside.staff.length) parts.push(inside.staff.length + ' staff');
+      if (inside.lanes.length) parts.push(inside.lanes.length + (inside.lanes.length === 1 ? ' lane' : ' lanes'));
+      if (inside.forks.length) parts.push(inside.forks.length + (inside.forks.length === 1 ? ' live fork' : ' live forks'));
+      return parts.join(' · ');
     }
     function matches(role) {
       const words = query.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
-      const text = [role.title, role.summary, ...(role.owns || [])].filter(Boolean).join(' ').toLocaleLowerCase();
+      const inside = members(model, role.id);
+      const text = [role.title, role.summary, role.charter, role.handle, role.occupant && role.occupant.handle, role.occupant && role.occupant.mantra, ...(role.owns || []), ...inside.lanes.flatMap(l => [l.name, l.handle]), ...inside.forks.flatMap(f => [f.title, f.summary])].filter(Boolean).join(' ').toLocaleLowerCase();
       return words.every(w => text.includes(w));
     }
     function syncTools() {
       mapTab.setAttribute('aria-pressed', String(view === 'map'));
       ownerTab.setAttribute('aria-pressed', String(view === 'owners'));
       handoffs.setAttribute('aria-pressed', String(showHandoffs));
+      handoffs.hidden = !(model && (model.communications || []).length);
       handoffs.disabled = !selected;
       driftToggle.setAttribute('aria-pressed', String(driftOnly));
       driftToggle.hidden = !(model && model.drift && model.drift.state === 'ok');
       tools.hidden = view !== 'map';
+      hint.hidden = !!expanded;
     }
     function applyCamera() {
       scene.style.transform = `translate(${pan.x}px,${pan.y}px) scale(${zoom})`;
       zoomLabel.textContent = Math.round(zoom * 100) + '%';
     }
     function fit() {
-      if (!graph || view !== 'map' || !viewport.clientWidth || body.hidden) return;
-      zoom = Math.max(.3, Math.min(1, (viewport.clientWidth - 32) / graph.width, (viewport.clientHeight - 32) / graph.height));
-      pan = { x: (viewport.clientWidth - graph.width * zoom) / 2, y: Math.max(16, (viewport.clientHeight - graph.height * zoom) / 2) };
+      if (!graph || view !== 'map' || !viewport.clientWidth || shell.hidden) return;
+      const room = Math.max(560, Math.min(920, win.innerHeight - 250));
+      if (!held) zoom = Math.max(.55, Math.min(1, (viewport.clientWidth - 32) / graph.width, (room - 76) / sheet));
+      const tall = Math.max(room, Math.ceil(graph.height * zoom) + 76) + 'px';
+      if (viewport.style.height !== tall) viewport.style.height = tall;
+      const spare = viewport.clientWidth - graph.width * zoom, open = graph.groups[0];
+      if (!held) pan = { x: spare < 0 && open ? 8 - open.x * zoom : spare / 2, y: 16 };
       applyCamera();
     }
     function scheduleFit() {
@@ -408,6 +467,7 @@ var ordine = (function () {
     }
     function zoomAt(value, x = viewport.clientWidth / 2, y = viewport.clientHeight / 2) {
       const old = zoom;
+      held = true;
       zoom = Math.max(.2, Math.min(2, value));
       pan = { x: x - (x - pan.x) * zoom / old, y: y - (y - pan.y) * zoom / old };
       applyCamera();
@@ -417,19 +477,18 @@ var ordine = (function () {
       viewport.hidden = view !== 'map';
       legend.hidden = view !== 'map';
       owners.hidden = view !== 'owners';
-      syncTools();
-      scheduleFit();
+      renderOwners(); renderDetails(); syncTools(); scheduleFit();
     }
     function polyline(points) { return points.map((p, i) => `${i ? 'L' : 'M'}${p.x},${p.y}`).join(' '); }
     function tip(points, cls) {
       const a = points.at(-2), b = points.at(-1), angle = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
-      return svg('path', { d: 'M-8,-4L0,0L-8,4', class: cls, transform: `translate(${b.x},${b.y}) rotate(${angle})` });
+      return svg('path', { d: 'M-8,-4L-1,0L-8,4Z', class: cls + ' ordine-tip', transform: `translate(${b.x},${b.y}) rotate(${angle})` });
     }
     function renderLines() {
       if (!graph) return;
       lines.replaceChildren();
       for (const s of graph.segments) lines.append(svg('path', { d: `M${s.x1},${s.y1}L${s.x2},${s.y2}`, class: 'ordine-command' }));
-      for (const p of graph.junctions) lines.append(svg('circle', { cx: p.x, cy: p.y, r: 2.1, class: 'ordine-junction' }));
+      for (const p of graph.junctions) lines.append(svg('circle', { cx: p.x, cy: p.y, r: 2.4, class: 'ordine-junction' }));
       for (const e of graph.edges) lines.append(tip(e.points, 'ordine-command'));
       if (!selected) return;
       const active = graph.edges.filter(e => e.from === selected || e.to === selected);
@@ -448,153 +507,303 @@ var ordine = (function () {
         lines.append(path, tip(route.points, cls));
       }
     }
-    function card(role, box, action, root = model.root) {
-      const n = button(undefined, action, 'ordine-node');
-      n.dataset.role = role.id;
-      n.setAttribute('aria-pressed', String(role.id === selected));
-      n.classList.toggle('ordine-root', role.id === root);
-      n.classList.toggle('ordine-small', box.width < 200);
-      n.classList.toggle('ordine-match', !!query && matches(role));
-      const dr = driftOf(role.id);
-      n.classList.toggle('ordine-quiet', driftOnly && !(dr && dr.status !== 'ok'));
-      Object.assign(n.style, { left: box.x + 'px', top: box.y + 'px', width: box.width + 'px', height: box.height + 'px' });
-      n.append(el('strong', role.title, 'ordine-name'));
-      const parent = roles().get(role.manager);
-      n.append(el('span', parent ? 'Reports to ' + parent.title : (role.kind || 'Visible root'), 'ordine-rank'));
-      const tag = driftTag(dr);
+    function rank(role) {
+      const s = seat(role), n = el('span', undefined, 'ordine-rank'), parent = roles().get(role.manager);
+      if (s.state) n.append(el('i', undefined, 'ordine-dot ordine-' + s.state));
+      n.append(el('span', s.handle || (parent ? 'Reports to ' + parent.title : (role.kind || 'Visible root'))));
+      const tag = model.drift && model.drift.state === 'ok' ? driftTag(driftOf(role.id)) : null;
       if (tag) n.append(el('span', tag.text, 'ordine-drift ordine-drift-' + tag.tone));
-      if (role.summary) n.append(el('span', role.summary, 'ordine-summary'));
-      const count = (model.workers || []).filter(w => w.manager === role.id).length;
-      if (count) n.append(el('span', count + (count === 1 ? ' visible fork' : ' visible forks'), 'ordine-count'));
+      else if (s.state) n.append(el('span', s.state, 'ordine-state'));
       return n;
     }
-    function renderCards() {
+    function roleCard(role, box) {
+      const n = place(el('article', undefined, 'ordine-node ordine-' + box.kind), box), inside = members(model, role.id), dr = driftOf(role.id);
+      n.dataset.role = role.id;
+      n.classList.toggle('ordine-open', role.id === expanded);
+      n.classList.toggle('ordine-picked', role.id === selected);
+      n.classList.toggle('ordine-match', !!query.trim() && matches(role));
+      n.classList.toggle('ordine-quiet', driftOnly && !(dr && dr.status !== 'ok'));
+      const pick = button(undefined, () => choose(role.id), 'ordine-pick');
+      pick.setAttribute('aria-pressed', String(role.id === selected));
+      pick.append(el('strong', role.title, 'ordine-name'), rank(role));
+      if (role.summary) pick.append(el('span', role.summary, 'ordine-summary'));
+      tipped(pick, role.title, [role.summary, role.occupant && role.occupant.mantra ? 'Holder says: ' + role.occupant.mantra : ''].filter(Boolean).join(' '));
+      n.append(pick);
+      const count = tally(inside);
+      if (box.kind === 'lead' && count) {
+        const fold = button(undefined, () => toggle(role.id), 'ordine-fold', role.id === expanded ? 'Close this lead and return to the overview.' : 'Open the lanes and live forks of this lead.');
+        fold.setAttribute('aria-expanded', String(role.id === expanded));
+        fold.setAttribute('aria-label', (role.id === expanded ? 'Close ' : 'Open ') + role.title + ': ' + count);
+        fold.append(el('span', undefined, 'z2-caret'), el('span', count));
+        n.append(fold);
+      }
+      return n;
+    }
+    function laneRow(lane, box) {
+      const n = place(el('div', undefined, 'ordine-node ordine-lane'), box);
+      n.tabIndex = 0;
+      n.dataset.item = lane.id;
+      n.append(el('span', lane.name, 'ordine-lane-name'), el('span', lane.handle, 'ordine-handle'));
+      return tipped(n, lane.name, lane.handle ? 'Lane index ' + lane.handle + '. Entries about this lane are cited under that captains-log handle.' : 'This lane names no captains-log index.');
+    }
+    function forkLine(fork) {
+      const state = String(fork.lifecycle || '').toLocaleLowerCase(), top = el('span', undefined, 'ordine-fork-top');
+      top.append(el('i', undefined, 'ordine-dot ordine-' + (['active', 'idle', 'dormant'].includes(state) ? state : 'dormant')), el('span', fork.title, 'ordine-handle'), el('span', state, 'ordine-fork-state'));
+      return top;
+    }
+    function forkTip(fork) {
+      const all = new Map(model.roles.concat(model.workers || []).map(r => [r.id, r])), parent = all.get(fork.manager);
+      return [fork.summary || 'No mantra.', parent ? 'Fork of ' + parent.title + '.' : '', fork.lifecycle ? 'State: ' + fork.lifecycle + '.' : ''].filter(Boolean).join(' ');
+    }
+    function forkRow(fork, box) {
+      const n = place(el('div', undefined, 'ordine-node ordine-fork'), box);
+      n.tabIndex = 0;
+      n.dataset.item = fork.id;
+      n.append(forkLine(fork), el('span', fork.summary || 'No mantra', 'ordine-fork-task'));
+      return tipped(n, fork.title, forkTip(fork));
+    }
+    function renderCards(before) {
+      const focus = doc.activeElement && cards.contains(doc.activeElement) ? doc.activeElement : null;
+      const focusId = focus ? (focus.closest('[data-role]') || focus).dataset.role || focus.dataset.item : null, focusFold = !!(focus && focus.classList.contains('ordine-fold'));
       cards.replaceChildren();
-      const byId = roles();
-      for (const box of graph.nodes) cards.append(card(byId.get(box.id), box, () => select(box.id)));
+      groups.replaceChildren();
+      const byId = roles(), inside = graph.expanded ? members(model, graph.expanded) : { lanes: [], forks: [] };
+      const items = new Map(inside.lanes.concat(inside.forks).map(x => [x.id, x]));
+      for (const group of graph.groups) {
+        const n = place(el('div', undefined, 'ordine-group'), group), total = tally(members(model, group.id));
+        const caption = el('div', undefined, 'ordine-caption');
+        Object.assign(caption.style, { left: group.caption.x - group.x + 'px', top: group.caption.y - group.y + 'px', width: group.caption.width + 'px' });
+        caption.append(el('strong', total ? total + '.' : 'No lanes or live forks.'), el('p', group.lanes || group.forks ? 'A lane is standing work with a captains-log index. A fork is temporary.' : 'Standing staff under this lead.'));
+        n.append(caption);
+        groups.append(n);
+        if (before) move(n, [{ opacity: 0 }, { opacity: 1 }], 60);
+      }
+      for (const label of graph.labels) {
+        const n = el('span', label.text, 'ordine-label');
+        Object.assign(n.style, { left: label.x + 'px', top: label.y + 'px' });
+        groups.append(n);
+        if (before) move(n, [{ opacity: 0 }, { opacity: 1 }], 90);
+      }
+      let fresh = 0;
+      for (const box of graph.nodes) {
+        const n = box.kind === 'lane' ? laneRow(items.get(box.id), box) : box.kind === 'fork' ? forkRow(items.get(box.id), box) : roleCard(byId.get(box.id), box);
+        cards.append(n);
+        if (!before) continue;
+        const was = before.get(box.id);
+        if (was && (was.x !== box.x || was.y !== box.y)) move(n, [{ transform: `translate(${was.x - box.x}px,${was.y - box.y}px)` }, { transform: 'none' }]);
+        else if (!was) move(n, [{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], 60 + Math.min(fresh++, 10) * 16);
+      }
+      if (before) move(lines, [{ opacity: 0 }, { opacity: 1 }], 110);
+      if (focusId) {
+        const again = [...cards.querySelectorAll('[data-role],[data-item]')].find(n => (n.dataset.role || n.dataset.item) === focusId);
+        const target = again && (again.dataset.item ? again : again.querySelector(focusFold ? '.ordine-fold' : '.ordine-pick') || again.querySelector('.ordine-pick'));
+        if (target) target.focus({ preventScroll: true });
+      }
+    }
+    function inner(role, into) {
+      const inside = members(model, role.id);
+      if (inside.lanes.length) {
+        const list = el('ul', undefined, 'ordine-lanes');
+        for (const lane of inside.lanes) {
+          const li = el('li');
+          li.append(el('span', lane.name, 'ordine-lane-name'), el('span', lane.handle, 'ordine-handle'));
+          list.append(li);
+        }
+        into.append(el('h3', inside.lanes.length === 1 ? 'Lane' : 'Lanes'), list);
+      }
+      if (inside.forks.length) {
+        const list = el('ul', undefined, 'ordine-forks');
+        for (const fork of inside.forks) {
+          const li = el('li');
+          li.append(forkLine(fork), el('span', fork.summary || 'No mantra', 'ordine-fork-task'));
+          list.append(li);
+        }
+        into.append(el('h3', 'Live forks'), list);
+      }
+      return inside;
     }
     function renderOwners() {
       owners.replaceChildren();
+      if (!model || view !== 'owners') return;
       for (const role of model.roles.filter(matches)) {
-        const n = button(undefined, () => select(role.id), 'ordine-owner');
-        n.setAttribute('aria-pressed', String(role.id === selected));
-        n.append(el('strong', role.title));
-        if (role.summary) n.append(el('span', role.summary));
+        const n = el('article', undefined, 'ordine-owner'), inside = members(model, role.id), count = tally(inside);
+        n.dataset.owner = role.id;
+        n.classList.toggle('ordine-picked', role.id === selected);
+        const pick = button(undefined, () => choose(role.id === selected ? null : role.id), 'ordine-pick');
+        pick.setAttribute('aria-expanded', String(role.id === selected));
+        pick.append(el('strong', role.title, 'ordine-name'), rank(role));
+        if (role.summary) pick.append(el('span', role.summary, 'ordine-summary'));
+        if (count) pick.append(el('span', count, 'ordine-count'));
+        n.append(pick);
         owners.append(n);
       }
-      if (!owners.childElementCount) owners.append(el('p', 'No visible owner matches.'));
+      if (!owners.childElementCount) owners.append(el('p', 'No visible owner matches.', 'ordine-none'));
     }
-    function section(title, value) {
+    function section(title, fill) {
       const n = el('section');
       n.append(el('h3', title));
-      if (Array.isArray(value)) {
-        const list = el('ul');
-        for (const item of value) list.append(el('li', item));
-        n.append(list);
-      } else n.append(el('p', value));
+      fill(n);
       details.append(n);
+      return n;
+    }
+    function prose(into, text) {
+      for (const block of charterBlocks(text)) {
+        if (block.kind === 'heading') into.append(el('h4', block.text));
+        else if (block.kind === 'list') {
+          const list = el('ul');
+          for (const item of block.items) list.append(rich(el('li'), item));
+          into.append(list);
+        } else into.append(rich(el('p'), block.text));
+      }
+    }
+    function rich(into, text) {
+      String(text).replace(/\*\*/g, '').split('`').forEach((part, i) => { if (part) into.append(i % 2 ? el('code', part) : doc.createTextNode(part)); });
+      return into;
+    }
+    function driftSection(id) {
+      const d = model && model.drift;
+      if (!d) return;
+      section('Drift from outfit', n => {
+        if (d.state !== 'ok') { n.append(el('p', 'The drift check did not run: ' + (d.reason || 'unavailable') + '. This is not a clean result.')); return; }
+        const dr = d.roles[id];
+        if (!dr || (dr.status === 'ok' && !dr.unseated)) { n.append(el('p', 'In line with its outfit at ' + (d.generatedAt || 'the last check') + '.')); return; }
+        if (dr.unseated) n.append(el('p', 'No holder is seated in this role.'));
+        if (dr.status === 'error') n.append(el('p', 'Check error: ' + (dr.error || 'unknown')));
+        if (!dr.changes.length) return;
+        const list = el('ul', undefined, 'ordine-drift-list');
+        for (const c of dr.changes) {
+          const li = el('li');
+          li.append(el('code', c.key, 'ordine-drift-key'), el('span', 'now', 'ordine-drift-label'), el('code', c.live, 'ordine-drift-live'), el('span', 'should be', 'ordine-drift-label'), el('code', c.want, 'ordine-drift-want'));
+          list.append(li);
+        }
+        n.append(list);
+      });
+    }
+    function renderRoster() {
+      const byId = roles(), top = el('div', undefined, 'ordine-details-top');
+      top.append(el('span', 'The order', 'ordine-eyebrow'));
+      details.append(top, el('h2', byId.get(model.root).title), el('p', 'Select a role to read its charter, lanes and live forks.', 'ordine-reports'));
+      const list = el('ul', undefined, 'ordine-roster');
+      for (const role of model.roles.filter(r => r.id === model.root || r.manager === model.root)) {
+        const li = el('li'), pick = button(undefined, () => choose(role.id), 'ordine-roster-pick');
+        pick.append(el('span', role.title, 'ordine-lane-name'), el('span', tally(members(model, role.id)) || seat(role).handle, 'ordine-handle'));
+        li.append(pick);
+        list.append(li);
+      }
+      section('Roles', n => n.append(list));
+      if (model.drift) section('Drift from outfit', n => n.append(el('p', driftSummary(model.drift))));
     }
     function renderDetails() {
       details.replaceChildren();
-      details.hidden = !selected;
-      body.classList.toggle('ordine-selected', !!selected);
-      if (!selected) return;
-      const role = roles().get(selected);
-      details.append(button('Close details', () => { select(null); cards.querySelector('[data-role]')?.focus(); }), el('h2', role.title));
-      const parent = roles().get(role.manager);
-      if (parent) details.append(button('Reports to ' + parent.title, () => select(parent.id)));
-      if (role.owns?.length) section('Owns', role.owns);
-      if (role.boundary) section('Scope boundary', role.boundary);
-      if (role.charter) section('Charter', role.charter);
-      if (role.lifecycle) section('Lifecycle', role.lifecycle);
+      const inline = view === 'owners' && narrow.matches;
+      details.hidden = !model || (!selected && narrow.matches);
+      body.classList.toggle('ordine-selected', !details.hidden && !inline);
+      if (!selected || !model) {
+        if (details.parentNode !== body) body.append(details);
+        if (!details.hidden) renderRoster();
+        return;
+      }
+      const role = roles().get(selected), tile = inline ? [...owners.children].find(n => n.dataset.owner === selected) : null;
+      if (tile) tile.append(details);
+      else if (details.parentNode !== body) body.append(details);
+      const top = el('div', undefined, 'ordine-details-top');
+      top.append(el('span', role.id === model.root ? 'Commander' : 'Accountable owner', 'ordine-eyebrow'), button('Close', () => { choose(null); const first = cards.querySelector('.ordine-pick'); if (first) first.focus(); }, 'z2-btn ordine-close'));
+      details.append(top, el('h2', role.title));
+      const parent = roles().get(role.manager), s = seat(role), line = el('p', undefined, 'ordine-reports');
+      if (parent) line.append(el('span', 'Reports to '), button(parent.title, () => choose(parent.id), 'ordine-link'));
+      if (s.handle) line.append(el('span', (parent ? ' · held by ' : 'Held by ') + s.handle + (s.state ? ', ' + s.state : ''), 'ordine-held'));
+      if (line.childNodes.length) details.append(line);
+      if (role.occupant && role.occupant.mantra) details.append(el('p', role.occupant.mantra, 'ordine-mantra'));
+      if (role.charter) section('Charter', n => prose(n, role.charter));
+      else if (role.summary) section('Summary', n => n.append(el('p', role.summary)));
+      if (role.owns && role.owns.length && !(role.charter || '').includes(role.owns[0])) section('Owns', n => { const list = el('ul'); for (const item of role.owns) list.append(el('li', item)); n.append(list); });
+      if (role.boundary) section('Scope boundary', n => n.append(el('p', role.boundary)));
+      const holder = el('section'), inside = inner(role, holder);
+      if (holder.childNodes.length) details.append(holder);
+      if (inside.staff.length) section('Standing staff', n => { const list = el('ul'); for (const r of inside.staff) list.append(el('li', r.title)); n.append(list); });
       driftSection(role.id);
-      if (role.occupant) section('Visible occupant', [role.occupant.handle, role.occupant.mantra].filter(Boolean));
       const edges = (model.communications || []).filter(e => e.from === selected || e.to === selected);
-      if (edges.length) section('Declared handoffs', edges.map(e => {
-        const from = roles().get(e.from), to = roles().get(e.to);
-        return `${from.title} → ${to.title}: ${e.label || (e.kind === 'ui' ? 'UI handoff' : 'Deployment handoff')}`;
-      }));
-      const workerTree = workerBranch(model, selected);
-      if (workerTree) {
-        const b = button(expanded ? 'Collapse transient work' : 'Expand transient work', () => { expanded = !expanded; renderDetails(); renderBranch(); });
-        b.setAttribute('aria-expanded', String(expanded));
+      if (edges.length) section('Declared handoffs', n => {
+        const list = el('ul');
+        for (const e of edges) list.append(el('li', `${roles().get(e.from).title} → ${roles().get(e.to).title}: ${e.label || (e.kind === 'ui' ? 'UI handoff' : 'Deployment handoff')}`));
+        n.append(list);
+      });
+      if (leads().includes(role.id) && tally(inside) && view === 'map') {
+        const b = button(expanded === role.id ? 'Return to the overview' : 'Open lanes and forks on the map', () => toggle(role.id));
+        b.setAttribute('aria-expanded', String(expanded === role.id));
         details.append(b);
       }
-      details.append(el('p', role.id, 'ordine-id'));
+      details.append(el('p', [role.handle, role.id].filter(Boolean).join(' · '), 'ordine-id'));
     }
-    function renderBranch() {
-      branch.replaceChildren();
-      const data = expanded && selected ? workerBranch(model, selected) : null;
-      branch.hidden = !data;
-      if (!data) return;
-      const tree = layeredLayout(data, { width: 880, maxColumns: 3, nodeGap: 30, layerGap: 60, padding: 24 }), byId = new Map(data.roles.map(r => [r.id, r]));
-      branch.append(el('h3', 'Transient work: ' + byId.get(selected).title), el('p', 'Visible live descendants. This expansion does not add standing positions.'));
-      const scroll = el('div', undefined, 'ordine-branch-scroll'), content = el('div', undefined, 'ordine-branch-scene');
-      Object.assign(content.style, { width: tree.width + 'px', height: tree.height + 'px' });
-      const wires = svg('svg', { width: tree.width, height: tree.height, class: 'ordine-lines', 'aria-hidden': 'true' });
-      for (const s of tree.segments) wires.append(svg('path', { d: `M${s.x1},${s.y1}L${s.x2},${s.y2}`, class: 'ordine-command' }));
-      for (const edge of tree.edges) wires.append(tip(edge.points, 'ordine-command'));
-      content.append(wires);
-      for (const box of tree.nodes) {
-        const role = byId.get(box.id), n = el('article', undefined, 'ordine-node');
-        Object.assign(n.style, { left: box.x + 'px', top: box.y + 'px', width: box.width + 'px', height: box.height + 'px' });
-        n.append(el('strong', role.title, 'ordine-name'));
-        const parent = byId.get(role.manager);
-        if (parent) n.append(el('span', 'Reports to ' + parent.title, 'ordine-rank'));
-        if (role.summary) n.append(el('span', role.summary, 'ordine-summary'));
-        if (role.lifecycle) n.append(el('span', role.lifecycle, 'ordine-count'));
-        content.append(n);
-      }
-      scroll.append(content);
-      branch.append(scroll);
+    function render(before) {
+      scene.style.width = graph.width + 'px'; scene.style.height = graph.height + 'px';
+      lines.setAttribute('width', graph.width); lines.setAttribute('height', graph.height); lines.setAttribute('viewBox', `0 0 ${graph.width} ${graph.height}`);
+      renderCards(before); renderLines(); renderOwners(); renderDetails(); syncTools(); fit();
     }
-    function select(id) {
+    function relayout() {
+      const before = new Map(graph.nodes.map(b => [b.id, b]));
+      graph = layout(model, { expanded });
+      render(before);
+      if (options.onSelect) options.onSelect(selected, expanded);
+    }
+    function choose(id) {
       selected = id;
-      expanded = false;
-      renderCards(); renderLines(); renderOwners(); renderDetails(); renderBranch(); syncTools(); scheduleFit();
-      if (options.onSelect) options.onSelect(id);
+      if (!id || id === model.root) expanded = null;
+      else if (leads().includes(id) && tally(members(model, id))) expanded = id;
+      relayout();
     }
-    function clear() {
-      model = null; graph = null; selected = null; expanded = false;
-      body.hidden = true;
-      cards.replaceChildren(); lines.replaceChildren(); groups.replaceChildren(); owners.replaceChildren(); details.replaceChildren(); branch.replaceChildren();
+    function toggle(id) {
+      expanded = expanded === id ? null : id;
+      selected = id;
+      relayout();
+    }
+    function clear(text) {
+      model = null; graph = null; selected = null; expanded = null; signature = '';
+      shell.hidden = true; head.hidden = true; blank.hidden = false; blank.textContent = text;
+      cards.replaceChildren(); lines.replaceChildren(); groups.replaceChildren(); owners.replaceChildren(); details.replaceChildren();
       query = ''; search.value = ''; search.disabled = true;
-      bar.hidden = true;
+      crumb.textContent = ''; meta.textContent = ''; sub.textContent = '';
+      live.dataset.state = 'off';
+      status.textContent = text;
     }
     function update(state) {
       if (destroyed) throw new Error('Detached order view');
-      if (state.status !== 'current') {
-        clear();
-        const messages = { loading: 'Waiting for authorized order', resyncing: 'Resyncing authorized order', stale: 'Order unavailable: waiting for a current projection', unavailable: 'Order unavailable', empty: 'No owned orders', denied: 'Order unavailable', signedout: 'Sign in to view your order' };
-        status.textContent = messages[state.status] || 'Order unavailable';
-        return;
-      }
-      let next;
+      if (state.status !== 'current') { clear(MESSAGES[state.status] || 'Order unavailable'); return; }
+      let next, keep = expanded;
       try {
-        next = layout(state.model);
         const ids = new Set(state.model.roles.map(r => r.id));
+        if (!ids.has(keep) || state.model.roles.find(r => r.id === keep).manager !== state.model.root) keep = null;
+        next = layout(state.model, { expanded: model ? keep : (options.expanded === undefined ? state.model.expandedTeam || null : options.expanded) });
         if ((state.model.communications || []).some(e => !ids.has(e.from) || !ids.has(e.to) || !['ui', 'deployment'].includes(e.kind))) throw new Error('Invalid public handoff');
         const workers = state.model.workers || [], workerIds = new Set(workers.map(w => w.id));
         if (workerIds.size !== workers.length || workers.some(w => ids.has(w.id) || (!ids.has(w.manager) && !workerIds.has(w.manager)))) throw new Error('Invalid visible worker');
-        const combined = { ...state.model, roles: state.model.roles.concat(workers) };
-        hierarchy(combined);
-      } catch (_) { clear(); status.textContent = 'Order unavailable: invalid public projection'; return; }
-      model = state.model; graph = next;
-      if (!model.roles.some(r => r.id === selected)) { selected = null; expanded = false; }
-      body.hidden = false; bar.hidden = false; search.disabled = false;
-      status.textContent = model.roles.length + ' visible positions' + (state.observedAt ? ' · observed ' + state.observedAt : '') + driftSummary(model.drift);
-      scene.style.width = graph.width + 'px'; scene.style.height = graph.height + 'px';
-      lines.setAttribute('width', graph.width); lines.setAttribute('height', graph.height); lines.setAttribute('viewBox', `0 0 ${graph.width} ${graph.height}`);
-      groups.replaceChildren();
-      for (const group of graph.groups) {
-        const n = el('div', undefined, 'ordine-group');
-        Object.assign(n.style, { left: group.x + 'px', top: group.y + 'px', width: group.width + 'px', height: group.height + 'px' });
-        groups.append(n);
-      }
-      renderCards(); renderLines(); renderOwners(); renderDetails(); renderBranch(); setView(view);
+        if (state.model.roles.some(r => r.lanes !== undefined && (!Array.isArray(r.lanes) || r.lanes.some(l => !l || typeof l.name !== 'string')))) throw new Error('Invalid lane');
+        hierarchy({ ...state.model, roles: state.model.roles.concat(workers) });
+      } catch (_) { clear('Order unavailable: invalid public projection'); return; }
+      const seen = clock(state.observedAt), mark = JSON.stringify(state.model);
+      status.textContent = 'Live' + (seen ? ' · observed ' + seen : '');
+      live.dataset.state = 'live';
+      if (mark === signature) return;
+      const first = !model, before = model && graph ? new Map(graph.nodes.map(b => [b.id, b])) : null;
+      model = state.model; graph = next; signature = mark; expanded = next.expanded; sheet = layout(model, { expanded: null }).height;
+      if (!model.roles.some(r => r.id === selected)) selected = null;
+      shell.hidden = false; head.hidden = false; blank.hidden = true; search.disabled = false;
+      const all = leads().map(id => members(model, id)), lanes = all.reduce((n, m) => n + m.lanes.length, 0), forks = all.reduce((n, m) => n + m.forks.length, 0);
+      counts = model.roles.length + (model.roles.length === 1 ? ' role' : ' roles') + (lanes ? ' · ' + lanes + ' lanes' : '') + (forks ? ' · ' + forks + ' live forks' : '');
+      crumb.textContent = roles().get(model.root).title;
+      sub.textContent = counts + '. Temporary work stays with its owner.';
+      meta.textContent = driftSummary(model.drift);
+      meta.hidden = !meta.textContent;
+      if (first) { viewport.hidden = view !== 'map'; legend.hidden = view !== 'map'; owners.hidden = view !== 'owners'; }
+      render(before);
     }
-    listen(search, 'input', () => { query = search.value; renderCards(); renderOwners(); });
-    listen(host, 'keydown', e => { if (e.key === 'Escape' && selected) { e.stopPropagation(); select(null); } });
+    listen(search, 'input', () => { query = search.value; renderCards(); renderOwners(); renderDetails(); });
+    listen(search, 'keydown', e => {
+      if (e.key !== 'Enter' || !model) return;
+      const found = model.roles.filter(matches);
+      if (query.trim() && found.length === 1) choose(found[0].id);
+    });
+    listen(host, 'keydown', e => { if (e.key === 'Escape' && (selected || expanded) && e.target !== search) { e.stopPropagation(); choose(null); } });
     const pointers = new Map();
     let drag = null, pinch = null;
     listen(viewport, 'pointerdown', e => {
@@ -614,7 +823,8 @@ var ordine = (function () {
       if (pointers.size === 2 && pinch?.distance) {
         const [a, b] = [...pointers.values()], r = viewport.getBoundingClientRect();
         zoomAt(pinch.zoom * Math.hypot(a.x - b.x, a.y - b.y) / pinch.distance, (a.x + b.x) / 2 - r.left, (a.y + b.y) / 2 - r.top);
-      } else if (drag) {
+      } else if (drag && (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 3 || held)) {
+        held = true;
         pan = { x: drag.px + e.clientX - drag.x, y: drag.py + e.clientY - drag.y };
         applyCamera();
       }
@@ -629,17 +839,22 @@ var ordine = (function () {
       const r = viewport.getBoundingClientRect();
       zoomAt(zoom * Math.exp(-e.deltaY * .004), e.clientX - r.left, e.clientY - r.top);
     }, { passive: false });
+    listen(narrow, 'change', () => { if (model) { renderOwners(); renderDetails(); scheduleFit(); } });
     const observer = new win.ResizeObserver(scheduleFit);
     observer.observe(viewport);
-    view = win.matchMedia('(max-width:680px)').matches ? 'owners' : 'map';
+    listen(win, 'resize', scheduleFit);
+    view = options.view || (win.matchMedia('(max-width:680px)').matches ? 'owners' : 'map');
     const api = {
       update,
+      select: id => { if (model && (id === null || model.roles.some(r => r.id === id))) choose(id); },
+      expand: id => { if (model && (id === null || leads().includes(id))) { expanded = id; if (id) selected = id; relayout(); } },
+      show: next => { if (next === 'map' || next === 'owners') setView(next); },
       detach() {
         destroyed = true;
         observer.disconnect();
         if (frame) win.cancelAnimationFrame(frame);
         listeners.forEach(remove => remove());
-        clear(); host.replaceChildren(); host.classList.remove('ordine'); delete host.ordine;
+        clear(''); host.replaceChildren(); host.classList.remove('ordine'); delete host.ordine;
       }
     };
     host.ordine = api;
@@ -747,7 +962,7 @@ var ordine = (function () {
         } catch (_) { driftReason = 'no answer'; }
         if (mine !== generation || closed) return 'superseded';
       }
-      observed = typeof body.observed_at === 'string' ? body.observed_at : '';
+      observed = typeof body.observed_at === 'string' || typeof body.observed_at === 'number' ? body.observed_at : '';
       return render(observed);
     }
     function select(root) {
@@ -771,11 +986,27 @@ var ordine = (function () {
     return { refresh: () => refresh(false), poll: () => refresh(true), select, withdraw, close, roots: () => orders.map(o => o.root), status: () => last };
   }
 
-  return { layout, layeredLayout, treeLayout, mergeSegments, junctions, handoffRoute, workerBranch, fromForms, driftFor, feed, mount };
+  function auto(doc) {
+    const made = [];
+    for (const host of doc.querySelectorAll('[data-ordine]')) {
+      if (host.ordine) continue;
+      const d = host.dataset, view = mount(host, { title: d.ordineTitle, heading: d.ordineHeading });
+      const bound = feed(view, { url: d.ordine || 'hierarchy', driftUrl: d.ordineDrift || '', root: d.ordineRoot || '', uiOwner: d.ordineUiOwner, deploymentOwner: d.ordineDeploymentOwner, interval: Number(d.ordineInterval) || 0 });
+      doc.addEventListener('visibilitychange', () => { if (!doc.hidden) bound.poll(); });
+      made.push({ view, feed: bound });
+    }
+    return made;
+  }
+
+  return { layout, members, mergeSegments, junctions, handoffRoute, workerBranch, charterBlocks, fromForms, driftFor, feed, mount, auto };
 }());
 if (typeof self !== 'undefined') {
   self.ordine = ordine;
   self.zanni = self.zanni || {};
   self.zanni.ordine = ordine;
+  if (self.document) {
+    if (self.document.readyState === 'loading') self.document.addEventListener('DOMContentLoaded', () => ordine.auto(self.document));
+    else ordine.auto(self.document);
+  }
 }
 if (typeof module === 'object' && module.exports) module.exports = ordine;

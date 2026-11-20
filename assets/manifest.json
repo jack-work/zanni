@@ -482,15 +482,42 @@
       "docs": "docs/strati.md"
     },
     "ordine": {
-      "summary": "Read-only command graph and ownership cards from an authorized public projection or Figaro forms snapshot, backed by strati Sugiyama layered layout for general hierarchies. Declared UI and deployment handoffs remain separate from hierarchy; visible transient descendants expand on demand.",
+      "summary": "Read-only command chart from an authorized public projection or Figaro forms snapshot: the root above its leads on the approved three-column grid with shared command strokes, and one lead at a time opened into a grouped region of its lanes and live forks. Declared UI and deployment handoffs stay separate from hierarchy.",
       "marker": "<!-- zanni:ordine -->",
       "standalone": true,
-      "classes": ["ordine", "ordine-node", "ordine-details", "ordine-branch"],
-      "files": ["ordine.css", "ordine.js"],
+      "classes": [
+        "ordine",
+        "ordine-node",
+        "ordine-details",
+        "ordine-group",
+        "ordine-lane",
+        "ordine-fork"
+      ],
+      "files": [
+        "ordine.css",
+        "ordine.js"
+      ],
       "docs": "docs/ordine.md",
-      "requires": ["gesso", "fontpack", "strati"],
+      "requires": [
+        "gesso",
+        "fontpack",
+        "rotolo",
+        "registro",
+        "strati"
+      ],
       "constructed": true,
-      "knobs": ["--ordine-ground", "--ordine-panel", "--ordine-ink", "--ordine-muted", "--ordine-line", "--ordine-accent", "--ordine-ui", "--ordine-deployment"]
+      "knobs": [
+        "--ordine-ground",
+        "--ordine-panel",
+        "--ordine-ink",
+        "--ordine-muted",
+        "--ordine-rule",
+        "--ordine-line",
+        "--ordine-accent",
+        "--ordine-ui",
+        "--ordine-deployment"
+      ],
+      "activator": "data-ordine"
     },
     "rotolo": {
       "summary": "Thin scrollbars on the page and every scroll container under it: a dark track and an accent thumb that lights on hover, Firefox and Chromium alike.",

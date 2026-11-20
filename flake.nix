@@ -182,6 +182,26 @@
           touch $out
         '';
 
+        packages.order-site = self.lib.mkBoiledSite {
+          inherit pkgs version;
+          pname = "zanni-order-site";
+          src = ./examples/order-site;
+          components = [ "gesso" "fontpack" "rotolo" "registro" "strati" "ordine" ];
+        };
+
+        checks.order-site = pkgs.runCommand "zanni-order-site-check" {
+          nativeBuildInputs = [ pkgs.gnugrep ];
+        } ''
+          if grep -nEi '<script|<style|[[:space:]]on[a-z]+=|[[:space:]]style=' ${./examples/order-site/index.html}; then
+            echo "the authored order page carries an inline script, style or handler"; exit 1
+          fi
+          if grep -nE 'innerHTML|outerHTML|insertAdjacentHTML|document\.write' ${./assets/ordine/ordine.js} ${./assets/strati/strati.js}; then
+            echo "ordine or strati writes text as markup"; exit 1
+          fi
+          grep -q 'data-ordine="hierarchy"' ${self.packages.${system}.order-site}/index.html
+          touch $out
+        '';
+
         checks.fontpack-stylesheet = pkgs.runCommand "zanni-fontpack-stylesheet" {
           nativeBuildInputs = [ pkgs.nodejs pkgs.diffutils ];
         } ''

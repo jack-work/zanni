@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-scheme="light">
+<html lang="en" class="rotolo" data-theme="registro" data-scheme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,14 +8,19 @@
 <link rel="stylesheet" href="../assets/gesso/gesso.css">
 <link rel="stylesheet" href="../assets/fontpack/fonts.css">
 <link rel="stylesheet" href="../assets/fontpack/fontpack.css">
+<link rel="stylesheet" href="../assets/v2/z2-tokens.css">
+<link rel="stylesheet" href="../assets/v2/z2.css">
+<link rel="stylesheet" href="../assets/rotolo/rotolo.css">
+<link rel="stylesheet" href="../assets/v2/z2-registro.css">
 <link rel="stylesheet" href="../assets/ordine/ordine.css">
 <style>
-body{margin:0;padding:24px}header{display:flex;align-items:baseline;gap:20px;flex-wrap:wrap;margin-bottom:20px}h1{margin:0;font:400 40px var(--fontpack-display)}header p{font:18px var(--fontpack-prose);margin:0}header button{font:16px var(--fontpack-prose);min-height:44px;background:var(--z-ground-2);color:var(--z-ink);border:1px solid var(--z-line);padding:8px 14px}header button:focus-visible{outline:3px solid var(--z-focus);outline-offset:3px}@media(max-width:680px){body{padding:10px}}
+.specimen{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 16px;font:17px var(--fontpack-prose)}
 </style>
 </head>
 <body class="gesso">
-<header><h1>Ordine</h1><p>Synthetic data. No runtime binding or authorization claim.</p><button id="scheme" type="button">Change scheme</button><button id="resync" type="button">Simulate resync</button></header>
+<div class="specimen"><span>Synthetic data. No runtime binding or authorization claim.</span><button class="z2-btn" id="scheme" type="button">Change scheme</button><button class="z2-btn" id="resync" type="button">Simulate resync</button></div>
 <main id="order"></main>
+<script src="../assets/v2/z2-scope.js"></script>
 <script src="../assets/strati/strati.js"></script>
 <script src="../assets/ordine/ordine.js"></script>
 <script>
@@ -31,7 +36,7 @@ const roles = [
   { id: 'forge', title: 'Forge', manager: 'command', summary: 'CI and review capabilities' },
   { id: 'media', title: 'Media', manager: 'command', summary: 'Backends and receivers' },
   { id: 'editorial', title: 'Editorial', manager: 'command', summary: 'Content and publishing' }
-].map(r => ({ ...r, owns: [r.summary], boundary: 'Synthetic responsibilities, not an operational assignment.' }));
+].map(r => ({ ...r, owns: [r.summary], boundary: 'Synthetic responsibilities, not an operational assignment.', lanes: r.id === 'runtime' ? [{ name: 'forms', handle: 'synthetic.lane.runtime.forms' }, { name: 'instruments', handle: 'synthetic.lane.runtime.instruments' }] : undefined }));
 const sample = {
   root: 'command', expandedTeam: 'systems', roles,
   communications: roles.filter(r => !['command', 'interface'].includes(r.id)).map(r => ({ from: r.id, to: 'interface', kind: 'ui' })).concat(roles.filter(r => !['command', 'deploy'].includes(r.id)).map(r => ({ from: r.id, to: 'deploy', kind: 'deployment' }))),
@@ -41,7 +46,7 @@ const sample = {
     { id: 'worker-c', title: 'Nested worker', manager: 'worker-a', summary: 'A visible deeper tier', lifecycle: 'Active' }
   ]
 };
-const order = ordine.mount(document.getElementById('order'));
+const order = ordine.mount(document.getElementById('order'), { title: 'Ordine', heading: 'Synthetic order' });
 order.update({ status: 'current', model: sample });
 document.getElementById('scheme').onclick = () => { document.documentElement.dataset.scheme = document.documentElement.dataset.scheme === 'dark' ? 'light' : 'dark'; };
 let resyncing = false;

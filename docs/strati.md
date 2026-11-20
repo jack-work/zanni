@@ -70,6 +70,11 @@ forms snapshot (`{ root, forms, topology, arias }`):
   retired/reaped and `SUCCEEDED:` predecessors by default.
 - Generates declared `ui` and `deployment` handoff edges when `uiOwner` or
   `deploymentOwner` is supplied.
+- Reads a role form's `lanes` key (lane name to captains-log handle) onto
+  `role.lanes` as `{ name, handle }`. A lane is not a role.
+- Keeps the charter's lines, takes `owns` from its `**Owns:**` list when the
+  form has no `owns` key, and orders siblings by title so the chart does not
+  follow form ids.
 
 ## Checks
 

@@ -150,17 +150,30 @@ const formsSnapshot = {
 
 const projected = ordine.fromForms(formsSnapshot, { uiOwner: '@flypaper-atlas', deploymentOwner: '@frosting-pushup' });
 assert.equal(projected.root, '@king');
-assert.deepEqual(projected.roles.map(r => r.id), ['@king', '@eng', '@zanni', '@zap']);
+assert.deepEqual(projected.roles.map(r => r.id), ['@king', '@zap', '@eng', '@zanni'], 'siblings read in title order whatever order the feed lists them');
 assert.ok(!JSON.stringify(projected).includes('secret-never-copy'));
 assert.ok(!JSON.stringify(projected).includes('/private/path'));
 assert.equal(projected.workers.length, 2);
 assert.ok(projected.communications.some(c => c.from === '@eng' && c.to === '@zanni' && c.kind === 'ui'));
 assert.ok(projected.communications.some(c => c.from === '@zanni' && c.to === '@zap' && c.kind === 'deployment'));
-const laidOut = ordine.layout(projected);
-validateOrthogonal(laidOut, laidOut.width);
+assert.deepEqual(ordine.layout(projected).nodes.map(n => n.id), ['@king', '@zap', '@eng', '@zanni']);
 
 const allForms = ordine.fromForms(formsSnapshot, { includeInactive: true });
 assert.ok(allForms.roles.some(r => r.id === '@arch'));
-validateOrthogonal(ordine.layout(allForms), ordine.layout(allForms).width);
+assert.ok(!ordine.layout(allForms).nodes.some(n => n.id === '@arch'), 'the overview keeps to the root and its leads');
+assert.equal(ordine.layout(allForms, { expanded: '@eng' }).nodes.find(n => n.id === '@arch').kind, 'staff');
+
+const laned = ordine.fromForms({ root: '@king', forms: [
+  { id: '@king', parent: null, target_aria: 'a', state: { name: 'King' } },
+  { id: '@rel', parent: '@king', target_aria: 'b', state: { name: 'Release', charter: '**Owns:**\n- the intent queue;\n- the cut.\n\n**Never:**\n- writes feature code.' } },
+  { id: '@back', parent: '@king', target_aria: 'c', state: { name: 'Backend', charter: 'Lead of the backend. Runs lanes.', lanes: { rou2: 'fleet.lane.backend.rou2', keel: 'fleet.lane.backend.keel', bad: 7 } } }
+] });
+assert.deepEqual(laned.roles.map(r => r.id), ['@king', '@back', '@rel'], 'a lane is not a role');
+assert.deepEqual(laned.roles[1].lanes, [{ name: 'rou2', handle: 'fleet.lane.backend.rou2' }, { name: 'keel', handle: 'fleet.lane.backend.keel' }]);
+assert.equal(laned.roles[2].lanes, undefined);
+assert.deepEqual(laned.roles[2].owns, ['the intent queue', 'the cut']);
+assert.equal(laned.roles[2].summary, 'Owns the intent queue.');
+assert.ok(laned.roles[2].charter.includes('\n- the cut.'), 'the charter keeps its lines for the inspector');
+assert.equal(laned.roles[1].summary, 'Lead of the backend.');
 
 console.log('strati: orthogonal and bundled Sugiyama layout, bands, cycle policy, A* routing and Figaro forms projection pass');
