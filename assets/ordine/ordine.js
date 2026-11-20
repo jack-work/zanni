@@ -118,8 +118,8 @@ var ordine = (function () {
     }));
     const edges = model.roles.filter(r => r.id !== model.root).map(r => ({ from: r.manager, to: r.id }));
     const result = engine.layoutLayered({ nodes, edges }, {
-      width: options.width ?? 1380,
-      maxColumns: options.maxColumns ?? 5,
+      width: options.width ?? 1160,
+      maxColumns: options.maxColumns ?? 4,
       nodeGap: options.nodeGap ?? 36,
       layerGap: options.layerGap ?? 68,
       padding: options.padding ?? 28,
@@ -448,6 +448,11 @@ var ordine = (function () {
         lines.append(path, tip(route.points, cls));
       }
     }
+    function countLabel(id) {
+      const mine = (model.workers || []).filter(w => w.manager === id);
+      const lanes = mine.filter(w => w.kind === 'Lane').length, forks = mine.length - lanes;
+      return [lanes ? lanes + (lanes === 1 ? ' lane' : ' lanes') : '', forks ? forks + (forks === 1 ? ' visible fork' : ' visible forks') : ''].filter(Boolean).join(' · ');
+    }
     function card(role, box, action, root = model.root) {
       const n = button(undefined, action, 'ordine-node');
       n.dataset.role = role.id;
@@ -465,7 +470,7 @@ var ordine = (function () {
       if (tag) n.append(el('span', tag.text, 'ordine-drift ordine-drift-' + tag.tone));
       if (role.summary) n.append(el('span', role.summary, 'ordine-summary'));
       const count = (model.workers || []).filter(w => w.manager === role.id).length;
-      if (count) n.append(el('span', count + (count === 1 ? ' visible fork' : ' visible forks'), 'ordine-count'));
+      if (count) n.append(el('span', countLabel(role.id), 'ordine-count'));
       return n;
     }
     function renderCards() {
@@ -516,7 +521,7 @@ var ordine = (function () {
       }));
       const workerTree = workerBranch(model, selected);
       if (workerTree) {
-        const b = button(expanded ? 'Collapse transient work' : 'Expand transient work', () => { expanded = !expanded; renderDetails(); renderBranch(); });
+        const b = button(expanded ? 'Collapse lanes and forks' : 'Expand lanes and forks', () => { expanded = !expanded; renderDetails(); renderBranch(); });
         b.setAttribute('aria-expanded', String(expanded));
         details.append(b);
       }
@@ -528,7 +533,7 @@ var ordine = (function () {
       branch.hidden = !data;
       if (!data) return;
       const tree = layeredLayout(data, { width: 880, maxColumns: 3, nodeGap: 30, layerGap: 60, padding: 24 }), byId = new Map(data.roles.map(r => [r.id, r]));
-      branch.append(el('h3', 'Transient work: ' + byId.get(selected).title), el('p', 'Visible live descendants. This expansion does not add standing positions.'));
+      branch.append(el('h3', 'Lanes and forks: ' + byId.get(selected).title), el('p', 'Lanes from the role form and visible live forks. Neither adds a standing position.'));
       const scroll = el('div', undefined, 'ordine-branch-scroll'), content = el('div', undefined, 'ordine-branch-scene');
       Object.assign(content.style, { width: tree.width + 'px', height: tree.height + 'px' });
       const wires = svg('svg', { width: tree.width, height: tree.height, class: 'ordine-lines', 'aria-hidden': 'true' });
@@ -549,8 +554,8 @@ var ordine = (function () {
       branch.append(scroll);
     }
     function select(id) {
+      expanded = Boolean(id) && id !== selected && Boolean(workerBranch(model, id));
       selected = id;
-      expanded = false;
       renderCards(); renderLines(); renderOwners(); renderDetails(); renderBranch(); syncTools(); scheduleFit();
       if (options.onSelect) options.onSelect(id);
     }

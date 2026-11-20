@@ -968,18 +968,6 @@ var strati = (function () {
       });
     }
 
-    const roleIds = new Set(roles.map(r => r.id));
-    if (options.includeLanes !== false) {
-      for (const f of candidates) {
-        if (!roleIds.has(f.id)) continue;
-        for (const [lane, handle] of f.lanes) {
-          const id = f.id + '#lane:' + lane;
-          if (roleIds.has(id)) continue;
-          roleIds.add(id);
-          roles.push({ id, title: lane, manager: f.id, kind: 'Lane', summary: handle || undefined, owns: handle ? [handle] : undefined, lifecycle: 'Lane' });
-        }
-      }
-    }
 
     const holderToRole = new Map();
     for (const f of candidates) {
@@ -989,6 +977,15 @@ var strati = (function () {
     }
 
     const workers = [];
+    const roleIds = new Set(roles.map(r => r.id));
+    if (options.includeLanes !== false) {
+      for (const f of candidates) {
+        if (!roleIds.has(f.id)) continue;
+        for (const [lane, handle] of f.lanes) {
+          workers.push({ id: f.id + '#lane:' + lane, title: lane, manager: f.id, kind: 'Lane', summary: handle || undefined, lifecycle: 'Lane' });
+        }
+      }
+    }
     if (options.includeWorkers !== false && arias.length) {
       const parentAriaOf = a => {
         if (Object.prototype.hasOwnProperty.call(topology, a.id)) {
