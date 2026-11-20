@@ -191,6 +191,22 @@ const plain = many.openAt({ key: "plain", depth: 0, anchorRect: { left: 10, top:
 assert.equal(plain.titleEl.hidden, true, "a tip with no title shows no stand-in heading");
 assert.equal(plain.titleEl.textContent, "");
 many.closeAll();
+const desc = z2.tips({ hoverIntent: 0, mount: new FakeNode("div"), now: () => fakeNow, raf: () => 1, caf: () => {} });
+const cellA = new FakeNode("td"), cellB = new FakeNode("td");
+cellA.removeAttribute = k => { delete cellA.attrs[k]; };
+cellB.removeAttribute = k => { delete cellB.attrs[k]; };
+const swapped = desc.openAt({ key: "a", group: "cells", anchor: cellA, anchorRect: { left: 10, top: 10, bottom: 30, right: 60 }, spec: { title: "A" } });
+assert.equal(cellA.getAttribute("aria-describedby"), swapped.slotId, "an open tip describes its trigger");
+const same = desc.openAt({ key: "b", group: "cells", anchor: cellB, anchorRect: { left: 10, top: 40, bottom: 60, right: 60 }, spec: { title: "B" } });
+assert.equal(same, swapped, "a tip in the same group is refilled, not reopened");
+assert.equal(cellA.getAttribute("aria-describedby"), null, "the old trigger stops pointing at a tip that now speaks for another");
+assert.equal(cellB.getAttribute("aria-describedby"), swapped.slotId, "the new trigger is described by the refilled tip");
+desc.openAt({ key: "c", group: "cells", anchorRect: { left: 10, top: 70, bottom: 90, right: 60 }, spec: { title: "C" } });
+assert.equal(cellB.getAttribute("aria-describedby"), null, "a point tip with no trigger leaves no trigger described");
+desc.closeAll();
+assert.equal(cellA.getAttribute("aria-describedby"), null);
+assert.equal(cellB.getAttribute("aria-describedby"), null);
+
 delete global.document.styleSheets;
 
 console.log("v2-scope.test: ok");

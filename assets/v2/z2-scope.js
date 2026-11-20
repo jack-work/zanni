@@ -887,7 +887,17 @@
         if (entry.leaveTimer) clearTimeout(entry.leaveTimer);
         if (entry.swapTimer) clearTimeout(entry.swapTimer);
         if (entry.node && entry.node.parentNode) entry.node.parentNode.removeChild(entry.node);
-        if (entry.describes && entry.describes.removeAttribute && entry.describes.getAttribute("aria-describedby") === entry.slotId) entry.describes.removeAttribute("aria-describedby");
+        describe(entry, null);
+      }
+    }
+
+    function describe(entry, anchor) {
+      var prev = entry.describes;
+      if (prev && prev.removeAttribute && prev.getAttribute("aria-describedby") === entry.slotId) prev.removeAttribute("aria-describedby");
+      entry.describes = null;
+      if (anchor && anchor.setAttribute && anchor.removeAttribute) {
+        entry.describes = anchor;
+        anchor.setAttribute("aria-describedby", entry.slotId);
       }
     }
 
@@ -1000,6 +1010,7 @@
       entry.key = cfg.key;
       entry.anchor = cfg.anchor || null;
       entry.anchorRect = cfg.anchorRect;
+      describe(entry, entry.anchor);
       entry.titleEl.textContent = spec.title || "";
       entry.titleEl.hidden = !spec.title;
       entry.bodyHost.replaceChildren();
@@ -1166,10 +1177,7 @@
       entry.coords = rules.place(slotId, placed.left, placed.top, 40 + depth);
 
       stack.push(entry);
-      if (cfg.anchor && cfg.anchor.setAttribute && cfg.anchor.removeAttribute) {
-        entry.describes = cfg.anchor;
-        cfg.anchor.setAttribute("aria-describedby", slotId);
-      }
+      describe(entry, cfg.anchor);
 
       if (cfg.pin) lockEntry(entry, true);
       else startTimer(entry);
