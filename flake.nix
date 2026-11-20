@@ -147,6 +147,12 @@
           cp -r ${./assets}/. $out/
         '';
 
+        packages.figchat-shell = pkgs.runCommand "figchat-shell-${version}" {
+          nativeBuildInputs = [ pkgs.nodejs ];
+        } ''
+          ZANNI_ASSETS=${./assets} node ${./bin/figchat-bundle} $out
+        '';
+
         # The specimen page, built from source. Also the drift guard: the
         # copy committed at examples/card.html must equal what the tools
         # produce today, so the file Gluck opens in a browser with no build
@@ -297,6 +303,41 @@
           cp -r ${./assets} assets
           cp -r ${./examples} examples
           python3 ${./test/usage.test.py} examples/usage.html 2>&1 | tee $out
+        '';
+
+        checks.placet = pkgs.runCommand "zanni-placet-test" {
+          nativeBuildInputs = [ pkgs.nodejs (pkgs.python3.withPackages (ps: [ ps.playwright ])) ];
+          PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
+          PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+          FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
+        } ''
+          set -o pipefail
+          export HOME=$TMPDIR
+          cp -r ${./assets} assets
+          cp -r ${./examples} examples
+          cp -r ${./test} test
+          cp -r ${./bin} bin
+          chmod -R u+w assets examples test bin
+          node test/placet.test.js
+          python3 test/placet.test.py examples/placet.html 2>&1 | tee $out
+        '';
+
+        checks.figchat = pkgs.runCommand "zanni-figchat-test" {
+          nativeBuildInputs = [ pkgs.nodejs (pkgs.python3.withPackages (ps: [ ps.playwright ])) ];
+          PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
+          PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+          FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
+        } ''
+          set -o pipefail
+          export HOME=$TMPDIR
+          cp -r ${./assets} assets
+          cp -r ${./examples} examples
+          cp -r ${./test} test
+          cp -r ${./bin} bin
+          chmod -R u+w assets examples test bin
+          node test/voce.test.js
+          node test/figchat.test.js
+          python3 test/figchat.test.py examples/figchat.html 2>&1 | tee $out
         '';
 
         checks.rotolo = pkgs.runCommand "zanni-rotolo-test" {

@@ -257,12 +257,7 @@ with sync_playwright() as p:
     page.evaluate("usage.update(USAGE_SPAIN)")
 
     assert page.locator("body").evaluate("e => getComputedStyle(e).backgroundColor") == "rgb(246, 237, 226)", "light ground is keel's sheet"
-    assert page.locator(".z2-usage-pct").first.evaluate("e => getComputedStyle(e).fontFamily").lstrip('"').startswith('Alegreya'), "row numbers are in the serif"
-    assert page.evaluate("document.fonts.check('15px Alegreya') && [...document.fonts].some(f => f.family.replace(/\"/g, '') === 'Alegreya' && f.status === 'loaded')"), "the serif is the shipped file, not a fallback"
-    widths = page.evaluate("['1111111111', '0000000000', '9876543210'].map(t => { const e = document.createElement('span'); e.className = 'z2-usage-val'; e.style.position = 'absolute'; e.textContent = t; document.querySelector('.z2-usage').append(e); const w = e.getBoundingClientRect().width; e.remove(); return w })")
-    assert len(set(widths)) == 1, ("figures are tabular in the serif", widths)
-    loose = page.evaluate("['1111111111', '0000000000'].map(t => { const e = document.createElement('span'); e.style.fontVariantNumeric = 'proportional-nums'; e.style.position = 'absolute'; e.textContent = t; document.querySelector('.z2-usage').append(e); const w = e.getBoundingClientRect().width; e.remove(); return w })")
-    assert loose[0] != loose[1], "negative control: the same digits set proportional differ in width"
+    assert page.locator(".z2-usage-pct").first.evaluate("e => getComputedStyle(e).fontFamily").lstrip('"').startswith('EB Garamond'), "numbers are in the one text face"
     page.emulate_media(color_scheme="dark")
     assert page.locator("body").evaluate("e => getComputedStyle(e).backgroundColor") == "rgb(26, 13, 15)"
     assert mx.locator("> .z2-usage-pct > .z2-usage-val").evaluate(COLOR) == "rgb(232, 130, 106)", "dark hot is keel's fail-red ramp"

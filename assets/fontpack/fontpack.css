@@ -9,8 +9,6 @@
  *   VT323         everything technical: commands, labels, chips, timestamps.
  *                 A CRT terminal face. NEVER below ~13px CSS — it is a
  *                 bitmap-derived design and it disintegrates when small.
- *   Inter         dashboards: labels and every number, tabular figures.
- *                 Not inlined by default (fontpack.faces adds it).
  *
  * The rule that makes it read as one voice rather than three fonts: each
  * face owns a job, and no element borrows another's. Display type is not
@@ -21,7 +19,6 @@
   --fontpack-display: 'Jacquard 24', 'Cormorant Garamond', serif;
   --fontpack-prose: 'EB Garamond', Georgia, 'Times New Roman', serif;
   --fontpack-mono: 'VT323', ui-monospace, 'Courier New', monospace;
-  --fontpack-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
 .fontpack-display {
