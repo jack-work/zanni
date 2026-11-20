@@ -463,6 +463,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+.z2-uplot .u-over:focus-visible {
+  outline: 2px solid var(--z-focus);
+  outline-offset: -2px;
+}
+
 .z2-uplot .u-select {
   background: var(--z-tint);
   border-left: 1px solid var(--z-focus);
@@ -751,6 +756,9 @@ tr[data-tip-text] td:first-child,
   gap: var(--z-space-3);
 }
 
+.z2-tip-title[hidden] { display: none; }
+.z2-tip-head > .z2-pager-actions { margin-left: auto; }
+
 .z2-tip-title {
   margin: 0;
   font-size: var(--z-fs-md);
@@ -949,4 +957,12 @@ tr[data-tip-text] td:first-child,
 
 html.z2-rhold .z2-tip:not([data-locked="true"]) {
   display: none;
+}
+
+[data-theme="registro"] .z2-scroll {
+  background:
+    linear-gradient(to right, var(--z-ground-2) 40%, transparent) left center / 2.5rem 100% no-repeat local,
+    linear-gradient(to left, var(--z-ground-2) 40%, transparent) right center / 2.5rem 100% no-repeat local,
+    linear-gradient(to right, color-mix(in srgb, var(--z-ink) 26%, transparent), transparent) left center / 0.8rem 100% no-repeat scroll,
+    linear-gradient(to left, color-mix(in srgb, var(--z-ink) 26%, transparent), transparent) right center / 0.8rem 100% no-repeat scroll;
 }

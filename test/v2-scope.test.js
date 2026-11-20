@@ -173,4 +173,24 @@ checkNoInlineStyle(entry1.node);
 tipCtl.closeAll();
 assert.equal(tipCtl._stack.length, 0);
 
+const sheet = {
+  cssRules: [],
+  insertRule(text, at) {
+    this.cssRules.splice(at, 0, { selectorText: text.slice(0, text.indexOf(" {")), style: { setProperty() {} } });
+    return at;
+  }
+};
+global.document.styleSheets = [sheet];
+const many = z2.tips({ hoverIntent: 0, mount: new FakeNode("div"), now: () => fakeNow, raf: () => 1, caf: () => {} });
+for (let i = 0; i < 200; i++) {
+  many.openAt({ key: "k" + i, depth: 0, anchorRect: { left: 10, top: 10, bottom: 30, right: 60 }, spec: { title: "t" + i } });
+  many.closeAll();
+}
+assert.equal(sheet.cssRules.length, 1, "a tip slot is reused per depth: 200 tips leave one rule, not 200");
+const plain = many.openAt({ key: "plain", depth: 0, anchorRect: { left: 10, top: 10, bottom: 30, right: 60 }, spec: { body: "no title" } });
+assert.equal(plain.titleEl.hidden, true, "a tip with no title shows no stand-in heading");
+assert.equal(plain.titleEl.textContent, "");
+many.closeAll();
+delete global.document.styleSheets;
+
 console.log("v2-scope.test: ok");

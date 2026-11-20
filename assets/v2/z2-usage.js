@@ -188,6 +188,21 @@
     want.forEach(function (n, i) { if (parent.children[i] !== n) parent.insertBefore(n, parent.children[i] || null); });
   }
 
+  function spoken(n) {
+    var parts = [];
+    (function walk(x) {
+      for (var c = x.firstChild; c; c = c.nextSibling) {
+        if (c.nodeType === 3) {
+          var t = c.nodeValue.replace(/\s+/g, " ").trim();
+          if (t) parts.push(t);
+        } else if (c.nodeType === 1 && !c.hasAttribute("data-off") && c.getAttribute("aria-hidden") !== "true") {
+          walk(c);
+        }
+      }
+    })(n);
+    return parts.join(", ").replace(/(\d), %/g, "$1%");
+  }
+
   function usageBand(host, opts) {
     opts = opts || {};
     var now = opts.now || Date.now;
@@ -542,7 +557,7 @@
       }
       off(s.state, !s.state.textContent);
       off(s.reset, !s.reset.textContent);
-      n.setAttribute("aria-label", n.textContent.replace(/\s+/g, " ").trim() || pl.plan);
+      n.setAttribute("aria-label", spoken(n) || pl.plan);
     }
 
     function disagreement(pl, a) {
@@ -582,7 +597,7 @@
       var d = disagreement(it.pl, a);
       off(s.seen, !d);
       tipText(s.seen, "This path disagrees", d ? d.charAt(0).toUpperCase() + d.slice(1) + ", not what the plan row shows." : "");
-      n.setAttribute("aria-label", n.textContent.replace(/\s+/g, " ").trim());
+      n.setAttribute("aria-label", spoken(n));
     }
 
     function makeItem(it) { return it.kind === "plan" ? makePlan() : makeAccess(); }
@@ -632,7 +647,7 @@
         setText(s.where, (pv.plans || []).map(function (pl) { return planLabel(pv, pl) + " " + pl.plan; }).join(", ") + (gws.length ? " \u00b7 " + gws.join(" + ") : ""));
         tipText(s.label, pv.label || pv.provider, "Pay as you go: " + s.where.textContent + ".");
         fillNumbers(s.nums, all);
-        n.setAttribute("aria-label", n.textContent.replace(/\s+/g, " ").trim());
+        n.setAttribute("aria-label", spoken(n));
         return;
       }
       setText(s.title, pv.label || pv.provider);
@@ -645,7 +660,7 @@
       var seat = seats(pv);
       var top = leadOf(pv);
       fillFig(s.fig, pv, top, top ? seat[top.pl.plan] : null, lowOf(pv, top && top.pl));
-      s.head.setAttribute("aria-label", (pv.label || pv.provider) + ", " + (pv.plans || []).length + " plans" + (top ? ", " + s.fig.textContent.replace(/\s+/g, " ").trim() : ""));
+      s.head.setAttribute("aria-label", (pv.label || pv.provider) + ", " + (pv.plans || []).length + " plans" + (top ? ", " + spoken(s.fig) : ""));
       (pv.plans || []).forEach(function (pl) {
         items.push({ key: "p:" + pl.plan, kind: "plan", pv: pv, pl: pl, seat: seat[pl.plan] || null, ref: { kind: "plan", provider: pv.provider, plan: pl.plan } });
         var paths = pl.access || [];
@@ -698,7 +713,7 @@
       var others = provs.length - (lead ? 1 : 0);
       setText(sumMore, bandOpen ? "fold" : (lead ? "and " + others + " more\u2026" : provs.length + " providers\u2026"));
       off(sumMore, !provs.length);
-      sum.setAttribute("aria-label", "Usage: " + sum.textContent.replace(/\s+/g, " ").trim());
+      sum.setAttribute("aria-label", "Usage: " + spoken(sum));
     }
 
     function update(next, recent) {

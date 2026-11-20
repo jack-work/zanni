@@ -302,14 +302,14 @@
    "tickColor": "#C2A690",
    "labelColor": "#5A3D32",
    "titleColor": "#2B1A15",
-   "labelFontSize": 12,
-   "titleFontSize": 13
+   "labelFontSize": 13,
+   "titleFontSize": 14
   },
   "legend": {
    "labelColor": "#5A3D32",
    "titleColor": "#2B1A15",
-   "labelFontSize": 12,
-   "titleFontSize": 13
+   "labelFontSize": 13,
+   "titleFontSize": 14
   },
   "view": {
    "stroke": "#D9C3AE"
@@ -374,14 +374,14 @@
    "tickColor": "#5C3A3A",
    "labelColor": "#A5887B",
    "titleColor": "#F0DFC8",
-   "labelFontSize": 12,
-   "titleFontSize": 13
+   "labelFontSize": 13,
+   "titleFontSize": 14
   },
   "legend": {
    "labelColor": "#A5887B",
    "titleColor": "#F0DFC8",
-   "labelFontSize": 12,
-   "titleFontSize": 13
+   "labelFontSize": 13,
+   "titleFontSize": 14
   },
   "view": {
    "stroke": "#3D2224"

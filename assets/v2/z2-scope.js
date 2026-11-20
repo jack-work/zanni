@@ -368,6 +368,7 @@
         existing.height = height;
       }
       existing.plot.setData(data);
+      if (existing.describe) existing.describe(data);
       existing.bucket = opts.bucket || 0;
       return existing.plot;
     }
@@ -378,7 +379,7 @@
       stroke: tk.muted,
       grid: { stroke: tk.rule, width: 1 },
       ticks: { stroke: tk.line, width: 1 },
-      font: "11px " + tk.mono
+      font: "12px " + tk.mono
     };
     var axes = opts.axes ? opts.axes(axisBase, tk) : [
       Object.assign({}, axisBase, opts.categorical ? { values: function (u, vals) { return vals.map(function (i) { return (opts.labels || [])[i] || ""; }); } } : {}),
@@ -413,11 +414,39 @@
             : function (u, v) { return v == null ? "" : (opts.xfmt ? opts.xfmt(v * 1000) : new Date(v * 1000).toLocaleTimeString()); }
         }
       ].concat(seriesDefs),
-      legend: { live: false }
+      legend: { live: false, markers: { fill: function (uInst, si) { var d = seriesDefs[si - 1]; return d ? (d.fill || d.stroke) : null; } } }
     };
+    var legRows = [];
+    var legOffset = 0;
+    conf.hooks.setSeries = [function (uInst, si) {
+      var rowEl = si ? legRows[si - 1 + legOffset] : null;
+      if (rowEl) rowEl.setAttribute("aria-pressed", String(uInst.series[si].show !== false));
+    }];
     var u = new uPlot(conf, data, host);
-    var rec = { plot: u, sig: sig, width: width, height: height, bucket: opts.bucket || 0, dragMoved: false, hoverKey: "", ro: null, frame: 0 };
+    var rec = { plot: u, sig: sig, width: width, height: height, bucket: opts.bucket || 0, dragMoved: false, hoverKey: "", ro: null, frame: 0, describe: null };
     cache[id] = rec;
+    rec.describe = function (d) {
+      var parts = [];
+      for (var si = 0; si < seriesDefs.length; si++) {
+        var col = d[si + 1] || [];
+        var last = null, lastAt = -1, lo = null, hi = null;
+        for (var k = 0; k < col.length; k++) {
+          var v = col[k];
+          if (v == null || !Number.isFinite(v)) continue;
+          last = v; lastAt = k;
+          if (lo == null || v < lo) lo = v;
+          if (hi == null || v > hi) hi = v;
+        }
+        var say = function (v, at) { return seriesDefs[si].value ? seriesDefs[si].value(u, v, si + 1, at) : String(v); };
+        parts.push(seriesDefs[si].label + (last == null ? " no data" : " latest " + say(last, lastAt) + (seriesDefs.length <= 6 ? ", low " + say(lo, lastAt) + ", high " + say(hi, lastAt) : "")));
+      }
+      var xs = d[0] || [];
+      var span = opts.categorical || !xs.length ? "" : " " + xs.length + " points, " + (opts.xfmt ? opts.xfmt(xs[0] * 1000) + " to " + opts.xfmt(xs[xs.length - 1] * 1000) : "") + ".";
+      u.over.setAttribute("aria-label", (opts.title ? opts.title + ". " : "") + parts.join("; ") + "." + span + " Arrow keys read values" + (canZoom ? ", shift and arrows select, Enter zooms." : "."));
+    };
+    u.over.setAttribute("role", "img");
+    u.over.tabIndex = 0;
+    rec.describe(data);
     if (typeof ResizeObserver !== "undefined") {
       rec.ro = new ResizeObserver(function () {
         if (rec.frame) return;
@@ -436,8 +465,8 @@
       rec.ro.observe(host);
     }
 
-    var legRows = host.querySelectorAll(".u-legend .u-series");
-    var legOffset = legRows.length > seriesDefs.length ? 1 : 0;
+    legRows = host.querySelectorAll(".u-legend .u-series");
+    legOffset = legRows.length > seriesDefs.length ? 1 : 0;
     if (legOffset) legRows[0].classList.add("z2-ux");
     for (var lr = legOffset; lr < legRows.length; lr++) {
       var sd = seriesDefs[lr - legOffset];
@@ -479,6 +508,7 @@
         if (!sDef) return;
         rowEl.tabIndex = 0;
         rowEl.setAttribute("role", "button");
+        rowEl.setAttribute("aria-pressed", "true");
         if (!opts.tipEngine) return;
         var info = (opts.seriesTips && opts.seriesTips[sDef.label]) || sDef.tip || null;
         rowEl.setAttribute("data-tip-text", sDef.label);
@@ -492,16 +522,9 @@
       })(legRows[li], seriesDefs[li - legOffset]);
     }
 
-    var downX = 0;
-    u.over.addEventListener("pointerdown", function (ev) { downX = ev.clientX; rec.dragMoved = false; });
-    u.over.addEventListener("pointermove", function (ev) {
-      if (ev.buttons && Math.abs(ev.clientX - downX) >= 8) rec.dragMoved = true;
-      if (!opts.tipEngine || ev.buttons) return;
-      var idx = u.cursor.idx;
-      if (idx == null || !u.data[0] || u.data[0][idx] == null) {
-        if (rec.hoverKey) { opts.tipEngine.leaveKey(rec.hoverKey); rec.hoverKey = ""; }
-        return;
-      }
+    var downX = 0, pointerType = "mouse", kbAnchor = -1;
+    var tipAt = function (idx, pin) {
+      if (!opts.tipEngine || idx == null || !u.data[0] || u.data[0][idx] == null) return false;
       var xVal = u.data[0][idx];
       var key = "uplot:" + id + ":" + idx;
       rec.hoverKey = key;
@@ -524,6 +547,7 @@
         group: "uplot:" + id,
         lockDelay: 900,
         depth: 0,
+        pin: Boolean(pin),
         anchorRect: { left: cx - 4, right: cx + 4, top: cy - 8, bottom: cy + 8 },
         build: function () {
           var actions = [];
@@ -533,6 +557,15 @@
               onClick: function () { opts.onPointClick(xVal * 1000, rec.bucket); }
             });
           }
+          if (canZoom) {
+            actions.push({
+              label: "Zoom in here",
+              onClick: function () {
+                var half = (u.scales.x.max - u.scales.x.min) / 8;
+                opts.onZoom(Math.round((xVal - half) * 1000), Math.round((xVal + half) * 1000));
+              }
+            });
+          }
           return {
             title: (opts.title ? opts.title + " · " : "") + titleStr,
             kv: kv,
@@ -540,22 +573,74 @@
           };
         }
       });
+      return true;
+    };
+    var leaveTip = function () {
+      if (!opts.tipEngine) return;
+      if (opts.tipEngine.leaveGroup) opts.tipEngine.leaveGroup("uplot:" + id);
+      else if (rec.hoverKey) opts.tipEngine.leaveKey(rec.hoverKey);
+      rec.hoverKey = "";
+    };
+    u.over.addEventListener("pointerdown", function (ev) { downX = ev.clientX; rec.dragMoved = false; pointerType = ev.pointerType || "mouse"; });
+    u.over.addEventListener("pointermove", function (ev) {
+      if (ev.buttons && Math.abs(ev.clientX - downX) >= 8) rec.dragMoved = true;
+      if (!opts.tipEngine || ev.buttons || ev.pointerType === "touch") return;
+      if (!tipAt(u.cursor.idx, false) && rec.hoverKey) { opts.tipEngine.leaveKey(rec.hoverKey); rec.hoverKey = ""; }
     });
-    u.over.addEventListener("pointerleave", function () {
-      if (opts.tipEngine) {
-        if (opts.tipEngine.leaveGroup) opts.tipEngine.leaveGroup("uplot:" + id);
-        else if (rec.hoverKey) opts.tipEngine.leaveKey(rec.hoverKey);
-        rec.hoverKey = "";
+    u.over.addEventListener("pointerleave", leaveTip);
+    u.over.addEventListener("click", function (ev) {
+      if (rec.dragMoved) { rec.dragMoved = false; return; }
+      var idx = u.cursor.idx;
+      if (idx == null || !u.data[0] || u.data[0][idx] == null) return;
+      if (pointerType === "touch" && opts.tipEngine) {
+        ev.stopPropagation();
+        tipAt(idx, true);
+        return;
+      }
+      if (!opts.categorical && opts.onPointClick) opts.onPointClick(u.data[0][idx] * 1000, rec.bucket);
+    });
+    var keyTo = function (idx) {
+      var xs = u.data[0] || [];
+      if (!xs.length) return -1;
+      idx = Math.max(0, Math.min(xs.length - 1, idx));
+      u.setCursor({ left: u.valToPos(xs[idx], "x"), top: u.over.clientHeight / 2 });
+      return idx;
+    };
+    u.over.addEventListener("keydown", function (ev) {
+      var xs = u.data[0] || [];
+      var cur = u.cursor.idx == null ? xs.length : u.cursor.idx;
+      var step = ev.key === "ArrowLeft" ? -1 : ev.key === "ArrowRight" ? 1 : ev.key === "PageUp" ? -10 : ev.key === "PageDown" ? 10 : 0;
+      if (step || ev.key === "Home" || ev.key === "End") {
+        ev.preventDefault();
+        var from = u.cursor.idx == null ? (step < 0 ? xs.length - 1 : 0) : cur;
+        var to = keyTo(ev.key === "Home" ? 0 : ev.key === "End" ? xs.length - 1 : (u.cursor.idx == null ? from : cur + step));
+        if (to < 0) return;
+        if (ev.shiftKey && canZoom) {
+          if (kbAnchor < 0) kbAnchor = from;
+          var a = u.valToPos(xs[Math.min(kbAnchor, to)], "x"), b = u.valToPos(xs[Math.max(kbAnchor, to)], "x");
+          u.setSelect({ left: a, width: Math.max(0, b - a), top: 0, height: u.over.clientHeight }, false);
+        } else if (kbAnchor >= 0) {
+          kbAnchor = -1;
+          u.setSelect({ left: 0, width: 0, top: 0, height: 0 }, false);
+        }
+        tipAt(to, false);
+      } else if (ev.key === "Enter" || ev.key === " ") {
+        if (u.cursor.idx == null) return;
+        ev.preventDefault();
+        if (kbAnchor >= 0 && kbAnchor !== u.cursor.idx && canZoom) {
+          var t0 = xs[Math.min(kbAnchor, u.cursor.idx)] * 1000, t1 = xs[Math.max(kbAnchor, u.cursor.idx)] * 1000;
+          kbAnchor = -1;
+          u.setSelect({ left: 0, width: 0, top: 0, height: 0 }, false);
+          if (t1 > t0 + 1000) opts.onZoom(Math.round(t0), Math.round(t1));
+        } else if (!opts.categorical && opts.onPointClick) {
+          opts.onPointClick(xs[u.cursor.idx] * 1000, rec.bucket);
+        }
       }
     });
-    if (!opts.categorical && opts.onPointClick) {
-      u.over.addEventListener("click", function () {
-        if (rec.dragMoved) { rec.dragMoved = false; return; }
-        var idx = u.cursor.idx;
-        if (idx == null || !u.data[0] || u.data[0][idx] == null) return;
-        opts.onPointClick(u.data[0][idx] * 1000, rec.bucket);
-      });
-    }
+    u.over.addEventListener("blur", function () {
+      leaveTip();
+      if (kbAnchor >= 0) { kbAnchor = -1; u.setSelect({ left: 0, width: 0, top: 0, height: 0 }, false); }
+    });
     return u;
   }
 
@@ -730,7 +815,7 @@
     };
   }
 
-  var tipSlotCounter = 0;
+  var tipEngineCounter = 0;
 
   function tips(opts) {
     opts = opts || {};
@@ -740,6 +825,8 @@
     var swapGrace = opts.swapGrace != null ? opts.swapGrace : 320;
     var skipDelay = opts.skipDelay != null ? opts.skipDelay : 500;
     var lastClose = -1e9;
+    var engineId = ++tipEngineCounter;
+    var quiet = 0;
     var storeKey = opts.storeKey || "z2.tips";
     var enabled = opts.enabled !== false;
     try { if (typeof localStorage !== "undefined" && localStorage.getItem(storeKey) === "off") enabled = false; } catch (_) {}
@@ -800,6 +887,7 @@
         if (entry.leaveTimer) clearTimeout(entry.leaveTimer);
         if (entry.swapTimer) clearTimeout(entry.swapTimer);
         if (entry.node && entry.node.parentNode) entry.node.parentNode.removeChild(entry.node);
+        if (entry.describes && entry.describes.removeAttribute && entry.describes.getAttribute("aria-describedby") === entry.slotId) entry.describes.removeAttribute("aria-describedby");
       }
     }
 
@@ -840,8 +928,10 @@
       }
       var text = target.getAttribute && target.getAttribute("data-tip-text");
       if (text) {
+        var own = (target.getAttribute("aria-label") || target.textContent || "").replace(/\s+/g, " ").trim();
+        if (own.length > 48 || own === text) own = "";
         return {
-          title: (target.getAttribute && target.getAttribute("data-tip-title")) || "",
+          title: target.getAttribute("data-tip-title") || own,
           body: text
         };
       }
@@ -910,7 +1000,8 @@
       entry.key = cfg.key;
       entry.anchor = cfg.anchor || null;
       entry.anchorRect = cfg.anchorRect;
-      entry.titleEl.textContent = spec.title || "Details";
+      entry.titleEl.textContent = spec.title || "";
+      entry.titleEl.hidden = !spec.title;
       entry.bodyHost.replaceChildren();
       renderSpecInto(entry.bodyHost, spec);
       placeEntry(entry);
@@ -957,7 +1048,7 @@
       closeFrom(depth);
       cancelAncestorsLeave(depth);
 
-      var slotId = "z2-tip-slot-" + (++tipSlotCounter);
+      var slotId = "z2-tip-slot-" + engineId + "-" + depth;
       var tip = el("div", "z2-tip");
       tip.id = slotId;
       tip.setAttribute("role", "tooltip");
@@ -971,7 +1062,8 @@
 
       var inner = el("div", "z2-tip-inner");
       var head = el("div", "z2-tip-head");
-      var titleEl = el("p", "z2-tip-title", spec.title || "Details");
+      var titleEl = el("p", "z2-tip-title", spec.title || "");
+      titleEl.hidden = !spec.title;
       var rightHead = el("div", "z2-pager-actions");
       var badge = el("span", "z2-tip-badge", "Rest to lock");
       var closeBtn = el("button", "z2-tip-close", "x");
@@ -1074,6 +1166,10 @@
       entry.coords = rules.place(slotId, placed.left, placed.top, 40 + depth);
 
       stack.push(entry);
+      if (cfg.anchor && cfg.anchor.setAttribute && cfg.anchor.removeAttribute) {
+        entry.describes = cfg.anchor;
+        cfg.anchor.setAttribute("aria-describedby", slotId);
+      }
 
       if (cfg.pin) lockEntry(entry, true);
       else startTimer(entry);
@@ -1120,9 +1216,24 @@
     }
 
     if (typeof document !== "undefined" && document.addEventListener) {
+      var pressTimer = 0;
+      var isAction = function (t) {
+        return Boolean(t && t.matches && t.matches("button, a[href], select, input, [role=button]") && !(t.classList && t.classList.contains("z2-term")));
+      };
       document.addEventListener("pointerdown", function (e) {
         held = e.buttons || 1;
         lastPointer = e.pointerType || "mouse";
+        clearTimeout(pressTimer);
+        if (e.pointerType === "touch") {
+          var pressed = findTrigger(e.target);
+          if (pressed && isAction(pressed)) {
+            pressTimer = setTimeout(function () {
+              pressTimer = 0;
+              closeFrom(depthForTrigger(pressed));
+              triggerEnter(pressed, true);
+            }, 500);
+          }
+        }
         if (e.target && e.target.closest && e.target.closest(".z2-tip")) return;
         for (var i = stack.length - 1; i >= 0; i--) {
           if (!stack[i].locked) closeFrom(i);
@@ -1130,8 +1241,8 @@
         clearTimeout(intentTimer);
         pendingTarget = null;
       }, true);
-      document.addEventListener("pointerup", function (e) { held = e.buttons || 0; }, true);
-      document.addEventListener("pointercancel", function () { held = 0; }, true);
+      document.addEventListener("pointerup", function (e) { held = e.buttons || 0; clearTimeout(pressTimer); }, true);
+      document.addEventListener("pointercancel", function () { held = 0; clearTimeout(pressTimer); }, true);
       document.addEventListener("contextmenu", function () { held = 0; }, true);
 
       document.addEventListener("pointerover", function (e) {
@@ -1179,7 +1290,9 @@
         if (lastPointer === "touch") {
           var open = -1;
           for (var oi = 0; oi < stack.length; oi++) if (stack[oi].anchor === trig) open = oi;
-          if (trig && open < 0) {
+          if (trig && isAction(trig)) {
+            if (open < 0) closeFrom(depthForTrigger(trig));
+          } else if (trig && open < 0) {
             closeFrom(depthForTrigger(trig));
             triggerEnter(trig, true);
           } else {
@@ -1198,7 +1311,7 @@
       });
 
       document.addEventListener("focusin", function (e) {
-        if (!enabled || held) return;
+        if (!enabled || held || quiet || lastPointer === "touch") return;
         var trig = findTrigger(e.target);
         if (trig) triggerEnter(trig, false);
       });
@@ -1212,6 +1325,7 @@
       });
 
       document.addEventListener("keydown", function (e) {
+        lastPointer = "keyboard";
         if (e.key === "Escape" && stack.length) {
           e.stopPropagation();
           closeFrom(stack.length - 1);
@@ -1255,6 +1369,10 @@
         });
       },
       enabled: function () { return enabled; },
+      silent: function (fn) {
+        quiet++;
+        try { return fn(); } finally { quiet--; }
+      },
       setEnabled: function (on) {
         enabled = Boolean(on);
         try { if (typeof localStorage !== "undefined") localStorage.setItem(storeKey, enabled ? "on" : "off"); } catch (_) {}

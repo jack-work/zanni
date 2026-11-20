@@ -75,8 +75,8 @@
   --z-warn: light-dark(#87580F, #E2B25C);
   --z-fail: light-dark(#A8322A, #EC7A64);
   --z-hot: light-dark(#7D2E2E, #E8826A);
-  --z-fs-xs: 12px;
-  --z-fs-sm: 13px;
+  --z-fs-xs: 13px;
+  --z-fs-sm: 14px;
   --z-fs-base: 15px;
   --z-fs-md: 17px;
   --z-fs-lg: 19px;

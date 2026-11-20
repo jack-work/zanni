@@ -66,7 +66,19 @@ Link `v2/z2-scope.js` after `v2/z2.js` for thin-client Scope views:
   is the window after a tip closes in which the next one opens at once, so a
   sweep across a row of cards does not flash and a second look does not wait.
   A tip opened by keyboard focus leaves when focus does, unless it is pinned
-  or the pointer is inside it.
+  or the pointer is inside it. While open, a tip is its trigger's
+  `aria-describedby`. A trigger with only `data-tip-text` takes its own label
+  or text as the tip title; with neither, the tip has no title line.
+  `silent(fn)` runs a programmatic focus without opening a focus tip.
+  On touch, a tap on a term, heading or cell pins its tip and a tap elsewhere
+  closes it; a button, link or field acts on tap and shows its tip on a half
+  second press. Each depth has one positioning rule, reused for every tip.
+- A chart drawn by `z2.uplotSync` is `role="img"` with a label that names the
+  card (`opts.title`), each series with its latest, low and high, and the
+  span. The plot is one tab stop: arrow keys walk the points and open the
+  same tip a pointer gets, Enter inspects, shift with arrows selects and
+  Enter zooms to the selection. On touch a tap pins the tip, whose actions
+  inspect or zoom. Legend rows carry `aria-pressed`.
 - Legends drawn by `z2.uplotSync` share one gesture: click shows or hides a
   series, shift, ctrl or cmd click solos it, and the same again brings all
   back. Rows are focusable; Enter and Space do the same. A compact legend
@@ -93,7 +105,11 @@ anywhere else and wants the full row.
 Two faces. Jacquard 24, the pixel gothic, sets the mark, panel titles and the
 usage band's one headline figure. Alegreya sets everything else, with lining
 tabular figures on numbers so columns hold. Mono stays for ids, model names
-and log rows.
+and log rows. Alegreya sits low on its body, so registro's two smallest steps
+are 13 and 14 px where band's are 12 and 13.
+
+A `.z2-scroll` box shades the edge it can still scroll toward, so a table cut
+by its card says so.
 
 ## Chrome
 
