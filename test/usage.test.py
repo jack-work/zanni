@@ -7,6 +7,11 @@ page_url = "file://" + os.path.abspath(sys.argv[1])
 
 RIGHT_EDGES = "[...document.querySelectorAll('.z2-usage-access [data-col=req], .z2-usage-quiet [data-col=req]')].map(e => Math.round(e.getBoundingClientRect().right))"
 BOXES = "[...document.querySelectorAll('.z2-usage-plan, .z2-usage-access, .z2-usage-quiet, .z2-usage-prov-h')].map(e => { const r = e.getBoundingClientRect(); return [r.x, r.y, r.width, r.height].map(Math.round).join(',') }).join(';')"
+def boxes(pg):
+    pg.wait_for_function("document.getAnimations().length === 0")
+    return pg.evaluate(BOXES)
+
+
 COLOR = "e => getComputedStyle(e).color"
 
 with sync_playwright() as p:
@@ -127,11 +132,11 @@ with sync_playwright() as p:
     page.evaluate("usage.update(USAGE_SPAIN, null)")
     primary = "[...document.querySelectorAll('.z2-usage-plan')].filter(e => e.querySelector('.z2-usage-primary').offsetParent).map(e => e.dataset.key)"
     assert page.evaluate(primary) == [], "negative control: before a last-hour answer arrives nothing is marked"
-    before_primary = page.evaluate(BOXES)
+    before_primary = boxes(page)
     page.evaluate("usage.update(USAGE_SPAIN, USAGE_RECENT)")
     assert page.evaluate(primary) == ["p:anthropic-kic-2"], "a primary only where two or more plans of a provider ran in the hour"
     assert page.locator(".z2-usage-plan[data-key='p:gemini'] .z2-usage-primary").is_hidden(), "Gemini ran on one plan: no marker"
-    assert page.evaluate(BOXES) == before_primary, "the marker arrives without moving a row"
+    assert boxes(page) == before_primary, "the marker arrives without moving a row"
     assert kic2.get_attribute("data-primary") == "true" and kic.get_attribute("data-primary") is None
     assert kic2.locator(".z2-usage-primary").get_attribute("data-tip-text") == "Carried 41 of 72 Anthropic requests in the last 60 min, more than any other plan."
     assert page.locator(".z2-usage-prov[data-key=openai_subscription] .z2-usage-primary").is_hidden(), "nothing ran in the hour: no marker"
@@ -213,14 +218,14 @@ with sync_playwright() as p:
     assert unid.locator(".z2-usage-state").get_attribute("data-tip-text") == "No limit window was reported or seen in headers for this plan; its last request was 9 h ago."
 
     kic.evaluate("e => { e.dataset.witness = 'same-node' }")
-    before = page.evaluate(BOXES)
+    before = boxes(page)
     page.evaluate("""(() => { const d = structuredClone(USAGE_SPAIN); const pl = d.providers[0].plans[0];
       pl.windows[0].used_percent = 18; pl.access[0].requests = 151; pl.access[0].last_seen = d.generated_at; d.generated_at = '2026-11-19T06:34:19Z'; usage.update(d) })()""")
     assert kic.locator("> .z2-usage-pct").text_content() == "82% left"
     assert kic.get_attribute("data-witness") == "same-node", "a refresh updates the row in place"
-    assert page.evaluate(BOXES) == before, "no layout shift on refresh"
+    assert boxes(page) == before, "no layout shift on refresh"
     page.evaluate("(() => { const d = structuredClone(USAGE_SPAIN); d.providers[0].plans.shift(); usage.update(d) })()")
-    assert page.evaluate(BOXES) != before, "negative control: the box witness sees a row leave"
+    assert boxes(page) != before, "negative control: the box witness sees a row leave"
     page.evaluate("usage.update(USAGE_SPAIN)")
 
     kic = page.locator(".z2-usage-plan[data-key='p:anthropic-kic']")
@@ -327,6 +332,34 @@ with sync_playwright() as p:
     gh.locator("h3").tap()
     assert gh.get_attribute("aria-expanded") == "true", "negative control: a tap on the name does"
     assert tp.evaluate("document.documentElement.scrollWidth <= innerWidth")
+
+    used98 = {
+        "generated_at": "2026-11-19T06:34:14Z", "from": "2026-11-18T06:34:14Z", "to": "2026-11-19T06:34:14Z", "sources": {},
+        "providers": [{"provider": "anthropic", "label": "Anthropic", "plans": [{
+            "plan": "anthropic-max", "binding": "seven_day",
+            "windows": [{"window": "seven_day", "used_percent": 98, "status": "allowed_warning", "reset_at": "2026-11-21T06:00:00Z", "stale": False},
+                        {"window": "five_hour", "used_percent": 40, "status": "allowed", "reset_at": "2026-11-19T10:00:00Z", "stale": False}],
+            "access": [{"path": "direct", "requests": 10}]}]}]}
+    for width in (1280, 390):
+        pg = browser.new_page(viewport={"width": width, "height": 900}, color_scheme="light")
+        pg.goto(page_url + "?hold")
+        pg.evaluate("u => usage.update(u, null)", used98)
+        pg.locator(".z2-usage [aria-expanded]").first.click()
+        pg.locator(".z2-usage-prov-h").first.click()
+        shown = pg.evaluate("""() => [...document.querySelectorAll('.z2-usage-left, .z2-usage-pct b')].map(e => e.textContent)""")
+        assert "2" in shown and "98" not in shown, "%d px: 98 percent used reads 2 left, not 98: %s" % (width, shown)
+        assert pg.locator(".z2-usage-left").first.text_content() == "2"
+        text = pg.locator(".z2-usage").inner_text()
+        assert "98% left" not in text and "98 % left" not in text and "98\n% left" not in text.replace("\n\n", "\n"), "no 98 left anywhere in the band"
+        meters = pg.evaluate("""() => [...document.querySelectorAll('.z2-usage [role=meter], .z2-usage [role=progressbar]')].map(m => [m.getAttribute('aria-valuenow'), m.getAttribute('aria-label')])""")
+        assert meters and all(("left" in (lab or "")) for _, lab in meters), meters
+        assert not [v for v, lab in meters if v == "98"], "no meter claims 98 left: %s" % meters
+        assert text.count("98") == 0 or "98\n% used" in text, "98 appears only as used"
+        assert [v for v, lab in meters if v == "2"], "the 98 percent used window is a meter of 2: %s" % meters
+        tip = pg.evaluate("[...document.querySelectorAll('[data-tip-text]')].map(e => e.getAttribute('data-tip-text')).join(' | ')")
+        assert "98% used, 2% left" in tip, "the tooltip states both, in order: " + tip
+        assert "98% left" not in tip
+        pg.close()
     phone.close()
     browser.close()
 
