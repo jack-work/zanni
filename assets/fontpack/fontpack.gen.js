@@ -9,6 +9,8 @@ const FACES = {
     { family: 'EB Garamond', style: 'italic', weight: '400', file: 'eb-garamond-italic.woff2' },
   ],
   mono: [{ family: 'VT323', style: 'normal', weight: '400', file: 'vt323.woff2' }],
+  ui: [{ family: 'Inter', style: 'normal', weight: '100 900', file: 'inter.woff2' }],
+  serif: [{ family: 'Alegreya', style: 'normal', weight: '400 900', file: 'alegreya.woff2' }],
 };
 
 function faces(list) {

@@ -47,3 +47,121 @@ provider's balance. z2-capacity-account is monospace; numbers never use Jacquard
 Example: examples/registro.html. Browser test: test/registro.test.py, including
 keyboard opening and closing of narrow navigation and a removed-stylesheet
 negative control. checks.registro runs it in Chromium.
+
+## Scope helpers (v2/z2-scope.js)
+
+Link `v2/z2-scope.js` after `v2/z2.js` for thin-client Scope views:
+- `z2.tokens(el)` and `z2.onSchemeChange(fn)`: read resolved `--z-*` tokens at
+  paint time and re-render canvas or uPlot surfaces when scheme changes.
+- `z2.uplotSync(cache, id, host, series, data, opts)`: updates uPlot via
+  `setData` when series and width match rather than rebuilding DOM on each poll.
+- `z2.waterfallSVG(rows, opts)` and `z2.meterSVG(percent, state, opts)`: pure
+  SVG bars without inline style attributes so `style-src 'self'` stays strict.
+- `z2.logList(host, opts)`: structured log stream with severity pills, wrapped
+  messages, expandable `<dl>` attributes, delta `prepend` and cursor `append`.
+- `z2.relTime(isoOrMs, nowMs)` and `z2.copyChip(command)`: relative horizon
+  text and clipboard command chip.
+- `z2.tips(opts)`: one tooltip engine per page. `hoverIntent` is the rest
+  before a tip opens (110 ms unless set; Scope uses 250); `skipDelay` (500 ms)
+  is the window after a tip closes in which the next one opens at once, so a
+  sweep across a row of cards does not flash and a second look does not wait.
+  A tip opened by keyboard focus leaves when focus does, unless it is pinned
+  or the pointer is inside it. While open, a tip is its trigger's
+  `aria-describedby`. A trigger with only `data-tip-text` takes its own label
+  or text as the tip title; with neither, the tip has no title line.
+  `silent(fn)` runs a programmatic focus without opening a focus tip.
+  On touch, a tap on a term, heading or cell pins its tip and a tap elsewhere
+  closes it; a button, link or field acts on tap and shows its tip on a half
+  second press. Each depth has one positioning rule, reused for every tip.
+- A chart drawn by `z2.uplotSync` is `role="img"` with a label that names the
+  card (`opts.title`), each series with its latest, low and high, and the
+  span. The plot is one tab stop: arrow keys walk the points and open the
+  same tip a pointer gets, Enter inspects, shift with arrows selects and
+  Enter zooms to the selection. On touch a tap pins the tip, whose actions
+  inspect or zoom. Legend rows carry `aria-pressed`.
+- Legends drawn by `z2.uplotSync` share one gesture: click shows or hides a
+  series, shift, ctrl or cmd click solos it, and the same again brings all
+  back. Rows are focusable; Enter and Space do the same. A compact legend
+  wraps to two rows before it offers "more".
+- `z2.logList` keeps at most `maxRows` rows in both directions: `prepend`
+  drops the oldest, `append` drops the newest and forgets their keys.
+
+## Cards and motion
+
+`.z2-kpis.z2-kpi-cards` turns the hairline strip into separate cards on
+ground-2. `.z2-unfold` plays the 150 ms unfold on anything that goes from
+hidden to shown, and tips wear it; both stop under reduced motion. An expand
+control carries a `.z2-caret` child, the stair glyph, which turns when its
+parent says `aria-expanded="true"`.
+
+`.z2-usage-hero` on the usage band's host lays the folded band out as a card:
+title and "and N more" on the first line, the gothic figure, meter and reset
+on the second, provider and plan on the third. The skeleton is not shown, so
+the card keeps one height from first paint. Unfolded, the band is the same as
+anywhere else and wants the full row.
+
+## Type
+
+Two faces. Jacquard 24, the pixel gothic, sets the mark, panel titles and the
+usage band's one headline figure. Alegreya sets everything else, with lining
+tabular figures on numbers so columns hold. Mono stays for ids, model names
+and log rows. Alegreya sits low on its body, so registro's two smallest steps
+are 13 and 14 px where band's are 12 and 13.
+
+A `.z2-scroll` box shades the edge it can still scroll toward, so a table cut
+by its card says so.
+
+## Chrome
+
+One accent rule, under the header. Panels carry a single hairline. A
+`.z2-kpis` strip is divided by hairlines with no tile fill or edge: label,
+value, then the note on its own line so it never truncates; `.warn` and `.bad`
+colour the value only, and sparklines are muted ink. A pressed segment keeps
+its fill under the pointer.
+
+## Usage band (z2-usage.css, z2-usage.js)
+
+`z2.usageBand(host, opts)` draws provider > plan > access path from figscope's
+`GET /api/plans` and returns `update(data, recent)`, `fail(err)`, `detail(ref)`,
+`fold(open, providers)` and `repaint()`.
+
+Three depths, each folded until asked. On load the band is one row: the title,
+one plan, its percent left on its binding window in the gothic, a meter and
+when it resets, then "and N more...". That unfolds to one row per provider,
+each with the same figure for its own leading plan. A provider row unfolds to
+its plans and access paths. A pay as you go provider is a name and a request
+count until opened.
+
+Which plan leads (`opts.lead`): `current`, the default, is the plan the fleet
+sent the most requests to in the last hour (from `recent`), falling back to the
+busiest in the range; `range` ignores the last hour; `least` is the fresh plan
+with the least left. A lozenge beside the figure says some other plan is
+running low, and its tip names it.
+
+Rows carry values, tips carry sentences: the reset's wall time, why a plan
+leads, what a path last saw, windows that have a status and no percent. Every
+figure in the band is percent left, and meters drain. Tone is the provider's
+status (`allowed`, `allowed_warning`, `rejected`), never a threshold of ours,
+plus hot at 10% left. A stale reading is a muted value and a dotted ring; the
+age and the last status are in the ring's tip. Plan rows share one set of
+columns, access lines another, and `update` reuses rows by key, so a refresh
+moves nothing. The headline, provider headers and rows are focusable; Enter or
+Space folds or calls `opts.onOpen(ref)`, arrows move between rows, and
+`detail(ref)` returns the drill-down node for a drawer.
+
+Seats: plans of one provider that share a name and an account are numbered in
+the account chip ("kic · seat 2"), by the number their upstream ends in, or by
+name order when it has none. Primary: `recent` is a second `/api/plans` answer
+over the last hour; in each provider the plan whose access lines carried the
+most requests gets the one filled `primary` chip. No requests in the hour, or
+`recent` null, marks nothing; leaving `recent` out keeps the last answer.
+`z2.usageSeats` and `z2.usagePrimary` are the two rules as pure functions.
+
+`opts`: `title`, `planLabel(provider, plan)`, `onOpen(ref, node)`, `now()`,
+`timeZone`, `emptyText`, `lead`, `open`.
+
+Example: examples/usage.html (the 11-19 spain answer plus a second KIC seat,
+a last-hour answer, and synthetic stale, unidentified and quiet rows). Browser
+test: test/usage.test.py, with negative controls for tone, staleness, seats,
+the primary marker, alignment, in-place refresh and the keyboard; checks.usage
+runs it in Chromium. test/v2-usage.test.js covers the two rules in node.

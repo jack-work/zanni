@@ -266,6 +266,19 @@
           python3 ${./test/registro.test.py} examples/registro.html 2>&1 | tee $out
         '';
 
+        checks.usage = pkgs.runCommand "zanni-usage-test" {
+          nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.playwright ])) ];
+          PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
+          PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+          FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
+        } ''
+          set -o pipefail
+          export HOME=$TMPDIR
+          cp -r ${./assets} assets
+          cp -r ${./examples} examples
+          python3 ${./test/usage.test.py} examples/usage.html 2>&1 | tee $out
+        '';
+
         checks.rotolo = pkgs.runCommand "zanni-rotolo-test" {
           nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.playwright ps.pillow ])) ];
           PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
