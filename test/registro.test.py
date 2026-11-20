@@ -22,7 +22,7 @@ with sync_playwright() as p:
     current = nav.locator("[aria-current='page']")
     assert current.evaluate("e => getComputedStyle(e).borderBottomColor") == "rgb(217, 169, 78)"
     assert page.locator(".z2-scope [data-slot='mark']").evaluate("e => getComputedStyle(e).fontFamily").startswith('"Jacquard 24"'), "the display face stays on the mark"
-    assert page.locator("h2").evaluate("e => getComputedStyle(e).fontFamily").lstrip('"').startswith("Inter"), "panel titles are in the UI face, not blackletter"
+    assert page.locator("h2").evaluate("e => getComputedStyle(e).fontFamily").lstrip('"').startswith("EB Garamond"), "panel titles are in the text face, not blackletter"
     assert page.locator(".z2-capacity-value").first.inner_text() == "Unavailable"
     assert page.locator(".z2-capacity-state").inner_text() == "Stale"
     assert page.locator("h3").all_text_contents() == ["Provider reported", "Observed headers", "Local usage"]

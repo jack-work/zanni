@@ -172,7 +172,7 @@ with sync_playwright() as p:
     page.evaluate("usage.update(USAGE_SPAIN)")
 
     assert page.locator("body").evaluate("e => getComputedStyle(e).backgroundColor") == "rgb(246, 237, 226)", "light ground is keel's sheet"
-    assert page.locator(".z2-usage-pct").first.evaluate("e => getComputedStyle(e).fontFamily").lstrip('"').startswith('Inter'), "numbers are in the one UI face"
+    assert page.locator(".z2-usage-pct").first.evaluate("e => getComputedStyle(e).fontFamily").lstrip('"').startswith('EB Garamond'), "numbers are in the one text face"
     page.emulate_media(color_scheme="dark")
     assert page.locator("body").evaluate("e => getComputedStyle(e).backgroundColor") == "rgb(26, 13, 15)"
     assert mx.locator(".z2-usage-pct").evaluate(COLOR) == "rgb(232, 130, 106)", "dark hot is keel's fail-red ramp"

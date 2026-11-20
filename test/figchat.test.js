@@ -314,7 +314,7 @@ function rest() {
   execFileSync(process.execPath, [path.join(root, 'bin/figchat-bundle'), out], { stdio: 'pipe' });
   const listed = fs.readFileSync(path.join(out, 'SHA256SUMS'), 'utf8').trim().split('\n').map((l) => l.split('  '));
   assert.deepEqual(listed.map((l) => l[1]).sort(), [
-    'boot.js', 'figaro-head.png', 'figchat.css', 'figchat.js', 'fonts.css', 'fonts/eb-garamond.woff2', 'fonts/inter.woff2',
+    'boot.js', 'figaro-head.png', 'figchat.css', 'figchat.js', 'fonts.css', 'fonts/eb-garamond-italic.woff2', 'fonts/eb-garamond.woff2',
     'fonts/jacquard-24.woff2', 'fonts/vt323.woff2', 'index.html', 'rotolo.css', 'voce.css', 'voce.js', 'z2-tokens.css'
   ]);
   for (const [sum, file] of listed) assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(out, file))).digest('hex'), sum, file);

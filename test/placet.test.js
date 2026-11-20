@@ -71,7 +71,7 @@ assert.ok(!/https?:\/\//.test(page.replace(/<noscript>[\s\S]*?<\/noscript>/, '')
 const out = fs.mkdtempSync(path.join(os.tmpdir(), 'placet-'));
 execFileSync(process.execPath, [path.join(root, 'bin/placet-bundle'), out], { stdio: 'pipe' });
 const listed = fs.readFileSync(path.join(out, 'SHA256SUMS'), 'utf8').trim().split('\n').map((l) => l.split('  '));
-assert.deepEqual(listed.map((l) => l[1]).sort(), ['boot.js', 'figaro-head.png', 'fonts.css', 'fonts/inter.woff2', 'fonts/jacquard-24.woff2', 'index.html', 'placet.css', 'placet.js', 'rotolo.css', 'z2-tokens.css']);
+assert.deepEqual(listed.map((l) => l[1]).sort(), ['boot.js', 'figaro-head.png', 'fonts.css', 'fonts/eb-garamond-italic.woff2', 'fonts/eb-garamond.woff2', 'fonts/jacquard-24.woff2', 'index.html', 'placet.css', 'placet.js', 'rotolo.css', 'z2-tokens.css']);
 for (const [sum, file] of listed) assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(out, file))).digest('hex'), sum, file);
 for (const file of ['placet.css', 'fonts.css', 'rotolo.css', 'z2-tokens.css']) {
   const css = fs.readFileSync(path.join(out, file), 'utf8');

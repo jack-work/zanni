@@ -11,7 +11,7 @@ if (!out || out === '-h' || out === '--help') {
 }
 const assets = process.env.ZANNI_ASSETS || path.join(__dirname, '..', 'assets');
 const manifest = JSON.parse(fs.readFileSync(path.join(assets, 'manifest.json'), 'utf8'));
-const fonts = ['fonts/inter.woff2', 'fonts/eb-garamond.woff2', 'fonts/vt323.woff2', 'fonts/jacquard-24.woff2'];
+const fonts = ['fonts/eb-garamond.woff2', 'fonts/eb-garamond-italic.woff2', 'fonts/vt323.woff2', 'fonts/jacquard-24.woff2'];
 const files = [
   ['figchat/index.html', 'index.html'],
   ['figchat/boot.js', 'boot.js'],

@@ -1,7 +1,7 @@
 :where(:root[data-theme="registro"]) { color-scheme: light dark; }
 
 [data-theme="registro"] {
-  --z-font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --z-font: "EB Garamond", Georgia, "Times New Roman", serif;
   --z-display: "Jacquard 24", Georgia, serif;
   --z-utility: var(--z-font);
   --z-code: ui-monospace, "SF Mono", Menlo, Consolas, monospace;

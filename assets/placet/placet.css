@@ -3,7 +3,7 @@
 body.placet-page { margin: 0; background: var(--z-ground); }
 
 .placet {
-  --placet-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --placet-ui: "EB Garamond", Georgia, "Times New Roman", serif;
   --placet-display: "Jacquard 24", Georgia, serif;
   --placet-code: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --placet-bar: 56px;

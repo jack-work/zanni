@@ -2,7 +2,7 @@
   --voce-hit: 44px;
   --voce-thumb: 14px;
   --voce-bar: 6px;
-  --voce-face: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --voce-face: "VT323", ui-monospace, "Courier New", monospace;
   --voce-play: polygon(0 0,14.286% 0,14.286% 14.286%,42.857% 14.286%,42.857% 28.571%,71.429% 28.571%,71.429% 42.857%,100% 42.857%,100% 57.143%,71.429% 57.143%,71.429% 71.429%,42.857% 71.429%,42.857% 85.714%,14.286% 85.714%,14.286% 100%,0 100%);
   --voce-pause: polygon(0 0,36% 0,36% 100%,0 100%,0 0,64% 0,64% 100%,100% 100%,100% 0,64% 0);
   --voce-stop: polygon(0 0,100% 0,100% 100%,0 100%);
@@ -12,14 +12,13 @@
   column-gap: var(--z-space-3, 8px);
   min-width: 14rem;
   color: var(--z-ink);
-  font: var(--z-fs-sm, 13px) / 1.2 var(--voce-face);
-  font-variant-numeric: tabular-nums lining-nums;
+  font: 400 1.0625rem / 1.2 var(--voce-face);
   -webkit-user-select: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
 .voce, .voce * { box-sizing: border-box; }
-.voce-big { --voce-hit: 64px; --voce-thumb: 20px; --voce-bar: 8px; font-size: var(--z-fs-md, 17px); }
+.voce-big { --voce-hit: 64px; --voce-thumb: 20px; --voce-bar: 8px; font-size: 1.375rem; }
 
 .voce-play {
   display: grid;
@@ -108,8 +107,8 @@
 
 .voce-time { color: var(--z-muted); white-space: nowrap; }
 .voce-elapsed { color: var(--z-ink); }
-.voce-note { grid-column: 2 / -1; color: var(--z-muted); font-size: var(--z-fs-xs, 12px); letter-spacing: 0.02em; }
+.voce-note { grid-column: 2 / -1; color: var(--z-muted); font-size: 1rem; letter-spacing: 0.02em; }
 .voce-note:empty { display: none; }
-.voce[data-state="expired"] .voce-note, .voce[data-state="error"] .voce-note, .voce[data-state="lost"] .voce-note { color: var(--z-warn); font-weight: 600; }
+.voce[data-state="expired"] .voce-note, .voce[data-state="error"] .voce-note, .voce[data-state="lost"] .voce-note { color: var(--z-warn); }
 .voce[data-state="expired"] .voce-track, .voce[data-state="expired"] .voce-time,
 .voce[data-state="lost"] .voce-track, .voce[data-state="lost"] .voce-time { opacity: 0.45; }

@@ -11,7 +11,7 @@ if (!out || out === '-h' || out === '--help') {
 }
 const assets = process.env.ZANNI_ASSETS || path.join(__dirname, '..', 'assets');
 const manifest = JSON.parse(fs.readFileSync(path.join(assets, 'manifest.json'), 'utf8'));
-const faces = ['Inter', 'Jacquard 24'];
+const faces = ['EB Garamond', 'Jacquard 24'];
 const files = [
   ['placet/index.html', 'index.html'],
   ['placet/boot.js', 'boot.js'],
@@ -26,7 +26,7 @@ fs.mkdirSync(path.join(out, 'fonts'), { recursive: true });
 for (const [from, to] of files) fs.copyFileSync(path.join(assets, from), path.join(out, to));
 const css = fs.readFileSync(path.join(assets, 'fontpack/fonts.css'), 'utf8').split('\n')
   .filter((line) => faces.some((f) => line.includes("font-family: '" + f + "'")));
-if (css.length !== faces.length) { process.stderr.write('placet-bundle: font faces not found in fonts.css\n'); process.exit(1); }
+if (!faces.every((f) => css.some((line) => line.includes("font-family: '" + f + "'")))) { process.stderr.write('placet-bundle: font faces not found in fonts.css\n'); process.exit(1); }
 fs.writeFileSync(path.join(out, 'fonts.css'), css.join('\n') + '\n');
 for (const line of css) {
   const m = /url\(([^)]+)\)/.exec(line);

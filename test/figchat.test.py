@@ -478,7 +478,7 @@ with sync_playwright() as p:
         csp.on("console", lambda m: violations.append(m.text) if "Content Security Policy" in m.text or "Refused to" in m.text else None)
         csp.goto(origin + "/chat/")
         csp.wait_for_selector(".figchat-thread")
-        for face in ("Inter", "EB Garamond", "VT323", "Jacquard 24"):
+        for face in ("EB Garamond", "VT323", "Jacquard 24"):
             csp.evaluate("f => document.fonts.load('16px \"' + f + '\"')", face)
             assert csp.evaluate("f => document.fonts.check('16px \"' + f + '\"')", face), face + " loads from the bundle under font-src self"
         assert csp.locator(".figchat-head").evaluate("e => e.naturalWidth") > 0, "the mark loads under img-src self"
