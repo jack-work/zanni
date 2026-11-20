@@ -110,6 +110,24 @@ const chunkSeconds = 2048 / 24000;
   assert.equal(q.done, true, 'an empty stream finishes at once');
 }
 
+{
+  const eng = voce.engine({});
+  const heard = [];
+  const player = (name) => { const p = { name, live: false, speaking: () => p.live, yield: () => heard.push('yield ' + name), resume: () => { heard.push('resume ' + name); eng.claim(p); p.live = true; } }; return p; };
+  const a = player('a'), b = player('b'), c = player('c');
+  eng.claim(a); a.live = true;
+  assert.equal(eng.busy(b), true, 'a speaking reply makes the engine busy for others');
+  eng.wait(b); eng.wait(c); eng.wait(b);
+  assert.deepEqual(heard, [], 'an arriving reply waits; nothing is cut off');
+  a.live = false; eng.release(a);
+  assert.deepEqual(heard, ['resume b'], 'the next waiting reply starts when the speaker finishes');
+  b.live = false; eng.release(b);
+  assert.deepEqual(heard, ['resume b', 'resume c'], 'replies play in arrival order');
+  eng.wait(a); eng.drop(a);
+  c.live = false; eng.release(c);
+  assert.equal(eng.current, null, 'a dropped waiter never plays');
+}
+
 const walk = (from, events) => events.reduce((s, e) => voce.transition(s, e), from);
 assert.equal(walk('none', ['start', 'end', 'drained']), 'idle', 'live reply: start, end, drain, then replay is ready');
 assert.equal(walk('none', ['start', 'end']), 'draining', 'audio.end alone does not finish playback');
