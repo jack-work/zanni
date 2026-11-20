@@ -92,13 +92,13 @@ async function test(name, fn) {
       send(x) { this.sent.push(x); }
       close() { this.closed = true; }
     }
-    const g = speech.gateway({ WebSocket: FakeSocket, base: 'https://fig.example/chat/', url: '/audio', window: {} });
+    const g = speech.gateway({ WebSocket: FakeSocket, base: 'https://fig.example/chat/', url: 'audio', window: {} });
     const out = [];
     const conn = g.open({ aria: 'c0ffee01c0ffee01c0ffee01c0ffee01' }, { ready: (e) => out.push(['ready', e.store]), start: (e) => out.push(['start', e.turn, e.key, e.node, e.cursor, e.rate]), chunk: (c) => out.push(['chunk', c.turn, c.node, c.cursor, c.offset, c.pcm.byteLength]), end: (e) => out.push(['end', e.key]), cancel: (e) => out.push(['cancel', e.why]), error: (e) => out.push(['error', e.code]) });
     assert.strictEqual(socks.length, 0, 'no socket until voice is on');
     conn.voice(true);
     assert.strictEqual(socks.length, 1);
-    assert.strictEqual(socks[0].url, 'wss://fig.example/audio/c0ffee01c0ffee01c0ffee01c0ffee01');
+    assert.strictEqual(socks[0].url, 'wss://fig.example/chat/audio/c0ffee01c0ffee01c0ffee01c0ffee01');
     const t = (o) => socks[0].emit('message', { data: JSON.stringify(o) });
     t({ type: 'ready', aria: 'x', store: 'gluck' });
     t({ type: 'audio.start', turn: 5, key: 'gluck/x:5/out', format: 'pcm', rate: 24000, bits: 16, channels: 1, node: 2, cursor: '5.3' });
