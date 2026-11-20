@@ -158,7 +158,7 @@
     }
 
     function pageOf(a, req) {
-      var turns = a.turns, limit = req.limit || core.pageBytes, parts = [], used = 0, i, part;
+      var turns = a.turns, limit = Math.min(req.limit || core.pageBytes, core.pageBytes), parts = [], used = 0, i, part;
       var at = req.at || { turn: 0, node: 0 };
       var page = { more: {}, metrics: metricsNow(a.row.id) };
       if (req.backward) {

@@ -34,8 +34,9 @@
     rows.forEach(function (r) { by[r.id] = r; });
     function depth(r, guard) {
       if (out[r.id] != null) return out[r.id];
-      var p = r.parent && by[r.parent];
+      var p = r.parent && r.parent !== r.id && by[r.parent];
       var d = p && guard < 32 ? depth(p, guard + 1) + 1 : 0;
+      if (d > 6) d = 6;
       out[r.id] = d;
       return d;
     }
