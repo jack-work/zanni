@@ -118,8 +118,8 @@ var ordine = (function () {
     }));
     const edges = model.roles.filter(r => r.id !== model.root).map(r => ({ from: r.manager, to: r.id }));
     const result = engine.layoutLayered({ nodes, edges }, {
-      width: options.width ?? 1160,
-      maxColumns: options.maxColumns ?? 4,
+      width: options.width ?? 1380,
+      maxColumns: options.maxColumns ?? 5,
       nodeGap: options.nodeGap ?? 36,
       layerGap: options.layerGap ?? 68,
       padding: options.padding ?? 28,
@@ -699,7 +699,10 @@ var ordine = (function () {
     }
     function current() {
       if (!orders.length) return null;
-      return orders.find(o => o.root === selected) || orders[0];
+      const chosen = orders.find(o => o.root === selected);
+      if (chosen) return chosen;
+      const standing = o => o.forms.filter(f => f && f.target_aria && f.state && (f.state.charter || f.state['role-name'])).length;
+      return orders.reduce((best, o) => standing(o) > standing(best) || (standing(o) === standing(best) && o.forms.length > best.forms.length) ? o : best, orders[0]);
     }
     function render(observedAt) {
       const order = current();

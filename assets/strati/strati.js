@@ -764,7 +764,7 @@ var strati = (function () {
 
   function summarizeCharter(text) {
     if (!text || typeof text !== 'string') return '';
-    const line = text.replace(/\s+/g, ' ').trim();
+    const line = text.replace(/[*_`#>]+/g, '').replace(/\s+/g, ' ').trim();
     const stop = line.indexOf('. ');
     const first = stop > 0 && stop <= 120 ? line.slice(0, stop + 1) : line;
     return first.length > 120 ? first.slice(0, 117).trimEnd() + '...' : first;
@@ -813,7 +813,10 @@ var strati = (function () {
         summary,
         owns,
         boundary: typeof state.boundary === 'string' ? state.boundary.trim() : '',
-        kind: typeof state.kind === 'string' ? state.kind.trim() : ''
+        kind: typeof state.kind === 'string' ? state.kind.trim() : '',
+        lanes: state.lanes && typeof state.lanes === 'object' && !Array.isArray(state.lanes)
+          ? Object.entries(state.lanes).filter(([k, v]) => typeof v === 'string' && k).map(([k, v]) => [String(k), v.trim()])
+          : []
       });
     }
 
@@ -963,6 +966,19 @@ var strati = (function () {
           : (f.targetAria ? { handle: f.targetAria.slice(0, 8), mantra: '' } : undefined),
         aliases: aliasForms.length ? aliasForms.map(a => ({ id: a.id, handle: a.handle, title: a.title })) : undefined
       });
+    }
+
+    const roleIds = new Set(roles.map(r => r.id));
+    if (options.includeLanes !== false) {
+      for (const f of candidates) {
+        if (!roleIds.has(f.id)) continue;
+        for (const [lane, handle] of f.lanes) {
+          const id = f.id + '#lane:' + lane;
+          if (roleIds.has(id)) continue;
+          roleIds.add(id);
+          roles.push({ id, title: lane, manager: f.id, kind: 'Lane', summary: handle || undefined, owns: handle ? [handle] : undefined, lifecycle: 'Lane' });
+        }
+      }
     }
 
     const holderToRole = new Map();
