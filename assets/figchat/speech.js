@@ -177,7 +177,7 @@
             } else if (pending && ev.data instanceof ArrayBuffer && h.chunk) {
               var c = pending;
               pending = null;
-              if (ev.data.byteLength % 2 === 0) h.chunk({ aria: ctx.aria, turn: c.turn, node: c.node, cursor: c.cursor, offset: c.offset, bytes: c.bytes, pcm: ev.data });
+              if (ev.data.byteLength % 2 === 0) h.chunk({ aria: ctx.aria, turn: c.turn, node: c.node, chars: c.chars, cursor: c.cursor, offset: c.offset, bytes: c.bytes, pcm: ev.data });
             }
           });
           s.addEventListener('close', function () {

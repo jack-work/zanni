@@ -473,13 +473,16 @@
         players[c.turn] = p;
         return p;
       }
-      function speaking(turn, node) {
+      function speaking(turn, node, chars) {
         var turnEl = v.log.turnEl(turn);
         if (!turnEl) return;
         var old = turnEl.querySelectorAll('[data-speaking]');
         for (var i = 0; i < old.length; i++) old[i].removeAttribute('data-speaking');
         var n = node == null ? null : v.log.nodeEl(turn, node);
-        if (n) n.setAttribute('data-speaking', '');
+        if (n) {
+          n.setAttribute('data-speaking', '');
+          if (chars != null) n.setAttribute('data-spoken-chars', String(chars));
+        }
       }
       function quiet(turn) { speaking(turn, null); }
       v.players = players;
@@ -494,7 +497,7 @@
           if (view !== v) return;
           var p = playerFor(c);
           if (!p) return;
-          speaking(c.turn, c.node);
+          speaking(c.turn, c.node, c.chars);
           p.push(c.pcm);
         },
         end: function (e) {
