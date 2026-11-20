@@ -484,6 +484,14 @@
       "constructed": true,
       "knobs": ["--placet-ui", "--placet-display", "--placet-code", "--placet-bar", "--placet-width", "--placet-hit"]
     },
+    "voce": {
+      "summary": "The per-message audio player: live PCM (24 kHz 16-bit mono) scheduled through WebAudio behind a 120 ms jitter buffer, with no MediaSource, and replay of the stored copy on a plain audio element with a scrubber. An odd-length frame stops the live stream; a 404 on the stored copy reads audio expired.",
+      "classes": ["voce", "voce-big", "voce-play", "voce-track", "voce-fill", "voce-seek", "voce-time", "voce-note"],
+      "files": ["voce.js", "voce.css"],
+      "docs": "docs/voce.md",
+      "constructed": true,
+      "knobs": ["--voce-hit", "--voce-thumb", "--voce-bar", "--voce-face"]
+    },
     "rotolo": {
       "summary": "Thin scrollbars on the page and every scroll container under it: a dark track and an accent thumb that lights on hover, Firefox and Chromium alike.",
       "marker": "<!-- zanni:rotolo -->",
