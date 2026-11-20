@@ -82,6 +82,10 @@
   background: none;
   box-shadow: 1px 0 0 var(--z-rule), 0 1px 0 var(--z-rule);
 }
+[data-theme="registro"] .z2-kpis.z2-kpi-cards { gap: var(--z-space-3); overflow: visible; border-block: 0; }
+[data-theme="registro"] .z2-kpi-cards > .z2-kpi { background: var(--z-ground-2); border: 1px solid var(--z-rule); box-shadow: none; }
+[data-theme="registro"] .z2-kpi .z2-kv,
+[data-theme="registro"] .z2-kpi .z2-kn { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 [data-theme="registro"] .z2-kpi .z2-kl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 [data-theme="registro"] .z2-kpi .z2-kv { font-weight: 650; letter-spacing: -0.01em; }
 [data-theme="registro"] .z2-kpi .z2-kn { font-size: var(--z-fs-sm); }
@@ -352,6 +356,12 @@
   color: var(--z-muted);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+
+.z2-log-host {
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .z2-log-msg {
@@ -692,6 +702,11 @@ tr[data-tip-text] td:first-child,
   pointer-events: none;
 }
 
+.z2-tip { animation: z2-unfold var(--z-unfold, 150ms) ease-out backwards; }
+@media (prefers-reduced-motion: reduce) {
+  .z2-tip { animation: none; }
+}
+
 .z2-tip[data-locked="true"] {
   pointer-events: auto;
   border-color: var(--z-focus);
@@ -844,10 +859,20 @@ tr[data-tip-text] td:first-child,
 .z2-legend-compact,
 .z2-legend-compact > tbody {
   display: flex;
-  flex-wrap: nowrap !important;
+  flex-wrap: wrap !important;
   gap: var(--z-space-1) var(--z-space-2);
   min-width: 0;
+  max-height: calc(3.4rem + var(--z-space-1) + 2px);
   overflow: hidden;
+}
+
+.z2-uplot .u-legend .u-series {
+  min-height: 1.7rem;
+  margin-right: 0;
+}
+
+.z2-uplot .u-legend .u-series > * {
+  padding: 0 var(--z-space-1);
 }
 
 .z2-legend-compact > tbody {
@@ -858,6 +883,11 @@ tr[data-tip-text] td:first-child,
 .z2-legend-compact .u-series {
   flex: 0 1 auto;
   min-width: 0;
+}
+
+.z2-uplot .u-legend .u-series:focus-visible {
+  outline: 2px solid var(--z-focus);
+  outline-offset: 1px;
 }
 
 .z2-legend-compact .u-series > th,
@@ -885,7 +915,7 @@ tr[data-tip-text] td:first-child,
 
 .z2-legend-shell.z2-open > .z2-legend-compact,
 .z2-legend-shell.z2-open > .z2-legend-compact > tbody {
-  flex-wrap: wrap !important;
+  max-height: none;
   overflow: visible;
 }
 
@@ -897,6 +927,8 @@ tr[data-tip-text] td:first-child,
 
 .z2-legend-more {
   flex: none;
+  min-width: 24px;
+  min-height: 24px;
   margin-top: var(--z-space-2);
   padding: 1px var(--z-space-2);
   border: 1px dashed var(--z-line);

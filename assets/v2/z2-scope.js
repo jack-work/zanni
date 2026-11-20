@@ -250,6 +250,10 @@
         }
       }
       var hostEl = el("span", "z2-log-host", entry.host || "local");
+      if (entry.host && entry.host.length > 16) {
+        hostEl.setAttribute("data-tip-title", "Host");
+        hostEl.setAttribute("data-tip-text", entry.host);
+      }
       var msgEl = el("span", "z2-log-msg", entry.body || "");
       head.append(timeEl, sevEl, hostEl, msgEl);
 
@@ -261,7 +265,10 @@
         var chips = el("div", "z2-log-chips");
         keys.slice(0, 5).forEach(function (k) {
           var v = typeof attrs[k] === "object" ? JSON.stringify(attrs[k]) : String(attrs[k]);
-          chips.appendChild(el("span", "z2-chip", k + "=" + v));
+          var chip = el("span", "z2-chip", k + "=" + v);
+          chip.setAttribute("data-tip-title", k);
+          chip.setAttribute("data-tip-text", v.length > 600 ? v.slice(0, 600) + "..." : v || k);
+          chips.appendChild(chip);
         });
         if (keys.length > 5) chips.appendChild(el("span", "z2-chip", "+" + (keys.length - 5) + " more"));
         head.appendChild(chips);
@@ -329,6 +336,12 @@
           frag.appendChild(built.node);
         });
         container.appendChild(frag);
+        while (container.children.length > maxRows) {
+          var first = container.children[0];
+          if (!first) break;
+          if (first.dataset && first.dataset.key) seen.delete(first.dataset.key);
+          container.removeChild(first);
+        }
       }
     };
   }
@@ -432,22 +445,51 @@
     }
     var legEl = host.querySelector(".u-legend");
     if (legEl && opts.compactLegend !== false) compactLegend(legEl);
-    if (opts.tipEngine && opts.seriesTips) {
-      for (var li = legOffset; li < legRows.length; li++) {
-        (function (rowEl, sDef) {
-          if (!sDef) return;
-          var info = opts.seriesTips[sDef.label] || sDef.tip;
-          if (!info) return;
-          rowEl.setAttribute("data-tip-text", sDef.label);
-          opts.tipEngine.bind(rowEl, function () {
-            return {
-              title: sDef.label,
-              body: typeof info === "string" ? info : info.body,
-              kv: [["Click", "Toggle series visibility"], ["Shift / Ctrl + Click", "Isolate series"]]
-            };
-          });
-        })(legRows[li], seriesDefs[li - legOffset]);
-      }
+    var rowSeries = function (rowEl) {
+      var at = Array.prototype.indexOf.call(legRows, rowEl);
+      return at < legOffset ? 0 : at + 1 - legOffset;
+    };
+    var solo = function (si) {
+      var others = u.series.some(function (s, i) { return i > 0 && i !== si && s.show; });
+      u.batch(function () {
+        u.series.forEach(function (s, i) { if (i > 0) u.setSeries(i, { show: others ? i === si : true }); });
+      });
+    };
+    if (legEl) {
+      legEl.addEventListener("click", function (ev) {
+        var rowEl = ev.target.closest && ev.target.closest(".u-series");
+        var si = rowEl ? rowSeries(rowEl) : 0;
+        if (!si || !(ev.shiftKey || ev.ctrlKey || ev.metaKey)) return;
+        ev.stopPropagation();
+        ev.preventDefault();
+        solo(si);
+      }, true);
+      legEl.addEventListener("keydown", function (ev) {
+        if (ev.key !== "Enter" && ev.key !== " ") return;
+        var rowEl = ev.target.closest && ev.target.closest(".u-series");
+        var si = rowEl ? rowSeries(rowEl) : 0;
+        if (!si) return;
+        ev.preventDefault();
+        if (ev.shiftKey || ev.ctrlKey || ev.metaKey) solo(si);
+        else u.setSeries(si, { show: !u.series[si].show });
+      });
+    }
+    for (var li = legOffset; li < legRows.length; li++) {
+      (function (rowEl, sDef) {
+        if (!sDef) return;
+        rowEl.tabIndex = 0;
+        rowEl.setAttribute("role", "button");
+        if (!opts.tipEngine) return;
+        var info = (opts.seriesTips && opts.seriesTips[sDef.label]) || sDef.tip || null;
+        rowEl.setAttribute("data-tip-text", sDef.label);
+        opts.tipEngine.bind(rowEl, function () {
+          return {
+            title: sDef.label,
+            body: info ? (typeof info === "string" ? info : info.body) : null,
+            kv: [["Click", "Show or hide"], ["Shift or Ctrl click", "Solo, again for all"]]
+          };
+        });
+      })(legRows[li], seriesDefs[li - legOffset]);
     }
 
     var downX = 0;
@@ -493,7 +535,6 @@
           }
           return {
             title: (opts.title ? opts.title + " · " : "") + titleStr,
-            body: canZoom ? "Drag across chart to zoom window; click legend pills to toggle series." : null,
             kv: kv,
             actions: actions
           };
@@ -608,7 +649,8 @@
       if (open) { more.hidden = false; more.textContent = "less"; return; }
       var labels = legend.querySelectorAll(".u-label, .z2-lbl");
       var body = legend.querySelector(":scope > tbody");
-      var cut = legend.scrollWidth > legend.clientWidth + 1 || Boolean(body && body.scrollWidth > body.clientWidth + 1);
+      var over = function (n) { return n.scrollWidth > n.clientWidth + 1 || n.scrollHeight > n.clientHeight + 1; };
+      var cut = over(legend) || Boolean(body && over(body));
       for (var i = 0; !cut && i < labels.length; i++) if (labels[i].scrollWidth > labels[i].clientWidth + 1) cut = true;
       more.hidden = !cut;
       more.textContent = "more";
@@ -696,6 +738,8 @@
     var hoverIntent = opts.hoverIntent != null ? opts.hoverIntent : 110;
     var bridgeGrace = opts.bridgeGrace != null ? opts.bridgeGrace : 340;
     var swapGrace = opts.swapGrace != null ? opts.swapGrace : 320;
+    var skipDelay = opts.skipDelay != null ? opts.skipDelay : 500;
+    var lastClose = -1e9;
     var storeKey = opts.storeKey || "z2.tips";
     var enabled = opts.enabled !== false;
     try { if (typeof localStorage !== "undefined" && localStorage.getItem(storeKey) === "off") enabled = false; } catch (_) {}
@@ -749,6 +793,7 @@
     }
 
     function closeFrom(depth) {
+      if (stack.length > depth) lastClose = nowFn();
       while (stack.length > depth) {
         var entry = stack.pop();
         if (entry.rafId) caf(entry.rafId);
@@ -1100,7 +1145,7 @@
           pendingTarget = null;
           if (held || !enabled) return;
           triggerEnter(trig, false);
-        }, hoverIntent);
+        }, stack.length || nowFn() - lastClose < skipDelay ? Math.min(hoverIntent, 60) : hoverIntent);
       });
 
       document.addEventListener("pointerout", function (e) {

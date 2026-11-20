@@ -61,6 +61,30 @@ Link `v2/z2-scope.js` after `v2/z2.js` for thin-client Scope views:
   messages, expandable `<dl>` attributes, delta `prepend` and cursor `append`.
 - `z2.relTime(isoOrMs, nowMs)` and `z2.copyChip(command)`: relative horizon
   text and clipboard command chip.
+- `z2.tips(opts)`: one tooltip engine per page. `hoverIntent` is the rest
+  before a tip opens (110 ms unless set; Scope uses 250); `skipDelay` (500 ms)
+  is the window after a tip closes in which the next one opens at once, so a
+  sweep across a row of cards does not flash and a second look does not wait.
+- Legends drawn by `z2.uplotSync` share one gesture: click shows or hides a
+  series, shift, ctrl or cmd click solos it, and the same again brings all
+  back. Rows are focusable; Enter and Space do the same. A compact legend
+  wraps to two rows before it offers "more".
+- `z2.logList` keeps at most `maxRows` rows in both directions: `prepend`
+  drops the oldest, `append` drops the newest and forgets their keys.
+
+## Cards and motion
+
+`.z2-kpis.z2-kpi-cards` turns the hairline strip into separate cards on
+ground-2. `.z2-unfold` plays the 150 ms unfold on anything that goes from
+hidden to shown, and tips wear it; both stop under reduced motion. An expand
+control carries a `.z2-caret` child, the stair glyph, which turns when its
+parent says `aria-expanded="true"`.
+
+`.z2-usage-hero` on the usage band's host lays the folded band out as a card:
+title and "and N more" on the first line, the gothic figure, meter and reset
+on the second, provider and plan on the third. The skeleton is not shown, so
+the card keeps one height from first paint. Unfolded, the band is the same as
+anywhere else and wants the full row.
 
 ## Type
 

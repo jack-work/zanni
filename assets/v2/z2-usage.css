@@ -179,3 +179,15 @@
 @media (prefers-reduced-motion: reduce) {
   .z2-usage * { animation: none !important; }
 }
+
+.z2-usage-hero { align-content: center; }
+.z2-usage-hero > .z2-usage[data-state] > .z2-usage-skel { display: none; }
+.z2-usage-hero > .z2-usage[data-open="false"] > .z2-usage-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: var(--z-space-2) var(--z-space-4); }
+.z2-usage-hero > .z2-usage[data-open="false"] > .z2-usage-head > h2 { grid-area: 1 / 1; justify-self: start; position: relative; z-index: 1; }
+.z2-usage-hero > .z2-usage[data-open="false"] .z2-usage-sum { grid-area: 1 / 1 / 4 / 3; display: grid; grid-template-columns: subgrid; grid-template-rows: subgrid; align-items: baseline; }
+.z2-usage-hero > .z2-usage[data-open="false"] .z2-usage-sum-more { grid-area: 1 / 2; margin-left: 0; }
+.z2-usage-hero > .z2-usage[data-open="false"] .z2-usage-sum > .z2-usage-fig { grid-area: 2 / 1 / 3 / 3; grid-template-columns: auto auto 1.75rem minmax(2rem, 1fr) auto; }
+.z2-usage-hero > .z2-usage[data-open="false"] .z2-usage-sum > .z2-usage-fig > .z2-usage-meter { display: block; }
+.z2-usage-hero > .z2-usage[data-open="false"] .z2-usage-sum > .z2-usage-fig > .z2-usage-reset { display: inline; grid-column: 5; font-size: var(--z-fs-sm); }
+.z2-usage-hero > .z2-usage[data-open="false"] .z2-usage-sum-who { grid-area: 3 / 1 / 4 / 3; flex-wrap: nowrap; font-size: var(--z-fs-base); white-space: nowrap; overflow: hidden; }
+.z2-usage-hero > .z2-usage[data-open="false"] .z2-usage-sum-plan { min-width: 0; overflow: hidden; text-overflow: ellipsis; }

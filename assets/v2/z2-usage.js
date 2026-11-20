@@ -214,6 +214,7 @@
 
     var band = el("section", "z2-usage");
     band.dataset.state = "loading";
+    band.dataset.open = bandOpen ? "true" : "false";
     band.setAttribute("aria-busy", "true");
     band.setAttribute("aria-label", opts.title || "Plans and usage");
     var head = el("header", "z2-usage-head");

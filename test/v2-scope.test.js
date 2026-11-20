@@ -112,6 +112,17 @@ assert.equal(firstDl.hidden, false);
 logs.prepend([{ id: "4", t: 4000, severity: "INFO", host: "gluck", body: "tick", attrs: {} }]);
 assert.equal(listNode.children.length, 3);
 
+logs.append([
+  { id: "0", t: 500, severity: "INFO", host: "spain", body: "older", attrs: {} },
+  { id: "00", t: 400, severity: "INFO", host: "spain", body: "oldest", attrs: {} }
+]);
+assert.equal(listNode.children.length, 3, "older pages never grow the list past maxRows");
+assert.equal(listNode.children[2].dataset.key, "00", "the page just asked for stays");
+assert.notEqual(listNode.children[0].dataset.key, "4", "the newest rows make way");
+logs.prepend([{ id: "4", t: 4000, severity: "INFO", host: "gluck", body: "tick", attrs: {} }]);
+assert.equal(listNode.children[0].dataset.key, "4", "a trimmed key is forgotten, so the row can come back");
+assert.equal(listNode.children.length, 3);
+
 let fakeNow = 1000;
 let pendingRaf = null;
 const mountBox = new FakeNode("div");

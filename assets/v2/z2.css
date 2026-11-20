@@ -52,6 +52,7 @@
 .z2-table td.num, .z2-table th.num { text-align: right; }
 .z2-table thead th { position: sticky; top: 0; background: var(--z-ground-2); color: var(--z-muted); font-weight: 400;
   font-size: var(--z-fs-xs); text-transform: uppercase; letter-spacing: 0.08em; }
+.z2-table thead th { height: 1.6rem; }
 .z2-table th[aria-sort] { cursor: pointer; user-select: none; }
 .z2-table th[aria-sort]::after { content: " \2195"; color: var(--z-line); }
 .z2-table th[aria-sort="ascending"]::after { content: " \2191"; color: var(--z-focus); }
@@ -180,6 +181,9 @@
   transition: transform var(--z-unfold) steps(4, end);
 }
 [aria-expanded="true"] > .z2-caret::before, [data-open="true"] > .z2-usage-more::before, [data-open="true"] > * > .z2-usage-more::before { transform: rotate(90deg); }
+.z2-caret { display: inline-grid; place-items: center; flex: none; line-height: 1; }
+.z2-unfold { animation: z2-unfold var(--z-unfold) ease-out backwards; }
 @media (prefers-reduced-motion: reduce) {
   .z2-caret::before, .z2-usage-more::before { transition: none; }
+  .z2-unfold { animation: none; }
 }
