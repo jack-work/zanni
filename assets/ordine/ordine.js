@@ -269,7 +269,7 @@ var ordine = (function () {
   function mount(host, options = {}) {
     if (!host || host.ordine) throw new Error('Order view requires an unused host');
     const doc = host.ownerDocument, win = doc.defaultView, ns = 'http://www.w3.org/2000/svg';
-    let model = null, graph = null, selected = null, view = 'map', query = '', expanded = false, showHandoffs = true;
+    let model = null, graph = null, selected = null, view = 'map', query = '', expanded = false, showHandoffs = true, driftOnly = false;
     let zoom = 1, pan = { x: 0, y: 0 }, frame = 0, destroyed = false;
     const listeners = [];
     function el(tag, text, cls) {
@@ -304,11 +304,12 @@ var ordine = (function () {
     search.placeholder = 'Owner or capability';
     searchLabel.append(search);
     const handoffs = button('Declared handoffs', () => { showHandoffs = !showHandoffs; renderLines(); syncTools(); });
+    const driftToggle = button('Drift only', () => { driftOnly = !driftOnly; renderCards(); syncTools(); });
     const zoomLabel = el('output', '100%', 'ordine-zoom');
     const less = button('−', () => zoomAt(zoom / 1.15)), more = button('+', () => zoomAt(zoom * 1.15));
     less.setAttribute('aria-label', 'Zoom out');
     more.setAttribute('aria-label', 'Zoom in');
-    tools.append(handoffs, less, zoomLabel, more, button('Fit', fit));
+    tools.append(driftToggle, handoffs, less, zoomLabel, more, button('Fit', fit));
     bar.append(tabs, searchLabel, tools);
     const status = el('p', 'Waiting for authorized order', 'ordine-status');
     status.setAttribute('role', 'status');
@@ -331,6 +332,52 @@ var ordine = (function () {
     body.hidden = true;
 
     function roles() { return new Map(model.roles.map(r => [r.id, r])); }
+    function driftSummary(d) {
+      if (!d) return '';
+      if (d.state !== 'ok') return ' · drift check unavailable: ' + (d.reason || 'no answer');
+      let differ = 0, unseated = 0, errors = 0;
+      for (const id of Object.keys(d.roles)) {
+        const r = d.roles[id];
+        if (r.unseated) unseated++;
+        if (r.status === 'error') errors++;
+        else if (r.status !== 'ok') differ++;
+      }
+      const out = d.outside.length;
+      return ' · drift: ' + differ + ' differ, ' + unseated + ' unseated, ' + errors + ' errors' + (out ? ', ' + out + ' outside the order' : '') + (d.generatedAt ? ' (checked ' + d.generatedAt + ')' : '');
+    }
+    function driftOf(id) { return model && model.drift && model.drift.state === 'ok' ? model.drift.roles[id] || null : null; }
+    function driftTag(dr) {
+      if (!model || !model.drift) return null;
+      if (model.drift.state !== 'ok') return null;
+      if (!dr) return null;
+      if (dr.unseated) return { text: 'unseated', tone: 'warn' };
+      if (dr.status === 'error') return { text: 'check error', tone: 'fail' };
+      if (dr.status === 'drift') return { text: 'drift ' + dr.changes.length, tone: 'warn' };
+      if (dr.status === 'missing') return { text: 'missing', tone: 'fail' };
+      if (dr.status === 'extra') return { text: 'extra', tone: 'warn' };
+      return null;
+    }
+    function driftSection(id) {
+      const d = model && model.drift;
+      if (!d) return;
+      const n = el('section');
+      n.append(el('h3', 'Drift from outfit'));
+      if (d.state !== 'ok') { n.append(el('p', 'The drift check did not run: ' + (d.reason || 'unavailable') + '. This is not a clean result.')); details.append(n); return; }
+      const dr = d.roles[id];
+      if (!dr || (dr.status === 'ok' && !dr.unseated)) { n.append(el('p', 'In line with its outfit at ' + (d.generatedAt || 'the last check') + '.')); details.append(n); return; }
+      if (dr.unseated) n.append(el('p', 'No holder is seated in this role.'));
+      if (dr.status === 'error') n.append(el('p', 'Check error: ' + (dr.error || 'unknown')));
+      if (dr.changes.length) {
+        const list = el('ul', undefined, 'ordine-drift-list');
+        for (const c of dr.changes) {
+          const li = el('li');
+          li.append(el('code', c.key, 'ordine-drift-key'), el('span', 'now', 'ordine-drift-label'), el('code', c.live, 'ordine-drift-live'), el('span', 'should be', 'ordine-drift-label'), el('code', c.want, 'ordine-drift-want'));
+          list.append(li);
+        }
+        n.append(list);
+      }
+      details.append(n);
+    }
     function matches(role) {
       const words = query.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
       const text = [role.title, role.summary, ...(role.owns || [])].filter(Boolean).join(' ').toLocaleLowerCase();
@@ -341,6 +388,8 @@ var ordine = (function () {
       ownerTab.setAttribute('aria-pressed', String(view === 'owners'));
       handoffs.setAttribute('aria-pressed', String(showHandoffs));
       handoffs.disabled = !selected;
+      driftToggle.setAttribute('aria-pressed', String(driftOnly));
+      driftToggle.hidden = !(model && model.drift && model.drift.state === 'ok');
       tools.hidden = view !== 'map';
     }
     function applyCamera() {
@@ -406,10 +455,14 @@ var ordine = (function () {
       n.classList.toggle('ordine-root', role.id === root);
       n.classList.toggle('ordine-small', box.width < 200);
       n.classList.toggle('ordine-match', !!query && matches(role));
+      const dr = driftOf(role.id);
+      n.classList.toggle('ordine-quiet', driftOnly && !(dr && dr.status !== 'ok'));
       Object.assign(n.style, { left: box.x + 'px', top: box.y + 'px', width: box.width + 'px', height: box.height + 'px' });
       n.append(el('strong', role.title, 'ordine-name'));
       const parent = roles().get(role.manager);
       n.append(el('span', parent ? 'Reports to ' + parent.title : (role.kind || 'Visible root'), 'ordine-rank'));
+      const tag = driftTag(dr);
+      if (tag) n.append(el('span', tag.text, 'ordine-drift ordine-drift-' + tag.tone));
       if (role.summary) n.append(el('span', role.summary, 'ordine-summary'));
       const count = (model.workers || []).filter(w => w.manager === role.id).length;
       if (count) n.append(el('span', count + (count === 1 ? ' visible fork' : ' visible forks'), 'ordine-count'));
@@ -454,6 +507,7 @@ var ordine = (function () {
       if (role.boundary) section('Scope boundary', role.boundary);
       if (role.charter) section('Charter', role.charter);
       if (role.lifecycle) section('Lifecycle', role.lifecycle);
+      driftSection(role.id);
       if (role.occupant) section('Visible occupant', [role.occupant.handle, role.occupant.mantra].filter(Boolean));
       const edges = (model.communications || []).filter(e => e.from === selected || e.to === selected);
       if (edges.length) section('Declared handoffs', edges.map(e => {
@@ -528,7 +582,7 @@ var ordine = (function () {
       model = state.model; graph = next;
       if (!model.roles.some(r => r.id === selected)) { selected = null; expanded = false; }
       body.hidden = false; bar.hidden = false; search.disabled = false;
-      status.textContent = model.roles.length + ' visible positions' + (state.observedAt ? ' · observed ' + state.observedAt : '');
+      status.textContent = model.roles.length + ' visible positions' + (state.observedAt ? ' · observed ' + state.observedAt : '') + driftSummary(model.drift);
       scene.style.width = graph.width + 'px'; scene.style.height = graph.height + 'px';
       lines.setAttribute('width', graph.width); lines.setAttribute('height', graph.height); lines.setAttribute('viewBox', `0 0 ${graph.width} ${graph.height}`);
       groups.replaceChildren();
@@ -598,6 +652,35 @@ var ordine = (function () {
     return engine.fromForms(snapshot, options);
   }
 
+  function sameForm(a, b) {
+    const x = String(a || '').replace(/^@/, ''), y = String(b || '').replace(/^@/, '');
+    if (!x || !y) return false;
+    const n = Math.min(x.length, y.length);
+    return n >= 8 && x.slice(0, n) === y.slice(0, n);
+  }
+
+  function driftFor(model, body) {
+    if (!body || typeof body !== 'object' || !Array.isArray(body.roles)) return { state: 'failed', reason: 'unreadable answer', roles: {}, outside: [] };
+    const out = { state: 'ok', generatedAt: typeof body.generated_at === 'string' ? body.generated_at : '', source: typeof body.source === 'string' ? body.source : '', roles: {}, outside: [] };
+    const known = (model.roles || []).map(r => ({ id: r.id, alias: (r.aliases || []).map(a => a.id) }));
+    for (const r of body.roles) {
+      if (!r || typeof r.id !== 'string') continue;
+      const status = ['ok', 'drift', 'error', 'missing', 'extra'].includes(r.status) ? r.status : 'error';
+      const changes = Array.isArray(r.changes) ? r.changes.filter(c => c && typeof c.key === 'string').map(c => ({ key: c.key, live: typeof c.live === 'string' ? c.live : JSON.stringify(c.live === undefined ? null : c.live), want: typeof c.want === 'string' ? c.want : JSON.stringify(c.want === undefined ? null : c.want) })) : [];
+      const entry = { status, changes, unseated: r.unseated === true, error: typeof r.error === 'string' ? r.error : '', role: typeof r.role === 'string' ? r.role : '' };
+      const hit = known.find(k => sameForm(k.id, r.id) || k.alias.some(a => sameForm(a, r.id)));
+      if (!hit) { out.outside.push({ id: r.id, ...entry }); continue; }
+      const prior = out.roles[hit.id];
+      if (!prior) { out.roles[hit.id] = entry; continue; }
+      const rank = ['ok', 'extra', 'missing', 'drift', 'error'];
+      prior.changes = prior.changes.concat(entry.changes);
+      if (rank.indexOf(entry.status) > rank.indexOf(prior.status)) prior.status = entry.status;
+      prior.unseated = prior.unseated || entry.unseated;
+      prior.error = prior.error || entry.error;
+    }
+    return out;
+  }
+
   const REFUSALS = { 401: 'signedout', 403: 'denied', 503: 'unavailable' };
 
   function feed(view, options = {}) {
@@ -605,8 +688,9 @@ var ordine = (function () {
     const fetchFn = options.fetch || (typeof fetch === 'function' ? fetch.bind(globalThis) : null);
     if (!fetchFn) throw new Error('Order feed requires fetch');
     const url = options.url || 'hierarchy';
+    const driftUrl = options.driftUrl === undefined ? '' : options.driftUrl;
     const project = { uiOwner: options.uiOwner, deploymentOwner: options.deploymentOwner, includeInactive: Boolean(options.includeInactive), communications: options.communications };
-    let generation = 0, timer = 0, closed = false, orders = [], selected = options.root || '', last = 'loading';
+    let generation = 0, timer = 0, closed = false, orders = [], selected = options.root || '', last = 'loading', driftBody = null, driftReason = '';
     function show(state) {
       last = state.status;
       view.update(state);
@@ -623,6 +707,7 @@ var ordine = (function () {
       let model;
       try { model = fromForms(order, { ...project, root: order.root }); } catch (_) { return show({ status: 'unavailable' }); }
       if (!model.roles.length) return show({ status: 'empty' });
+      if (driftUrl) model.drift = driftBody ? driftFor(model, driftBody) : { state: 'failed', reason: driftReason || 'no answer', roles: {}, outside: [] };
       return show({ status: 'current', model, observedAt });
     }
     let observed = '';
@@ -648,6 +733,17 @@ var ordine = (function () {
       if (body.status !== 'current' || !Array.isArray(body.orders)) return show({ status: 'unavailable' });
       if (body.orders.some(o => !o || typeof o.root !== 'string' || !Array.isArray(o.forms))) return show({ status: 'unavailable' });
       orders = body.orders;
+      if (driftUrl) {
+        driftBody = null;
+        driftReason = '';
+        try {
+          const d = await fetchFn(driftUrl, { headers: options.headers || {}, credentials: 'same-origin', cache: 'no-store' });
+          if (mine !== generation || closed) return 'superseded';
+          if (d.status !== 200) driftReason = 'HTTP ' + d.status;
+          else driftBody = await d.json();
+        } catch (_) { driftReason = 'no answer'; }
+        if (mine !== generation || closed) return 'superseded';
+      }
       observed = typeof body.observed_at === 'string' ? body.observed_at : '';
       return render(observed);
     }
@@ -672,7 +768,7 @@ var ordine = (function () {
     return { refresh: () => refresh(false), poll: () => refresh(true), select, withdraw, close, roots: () => orders.map(o => o.root), status: () => last };
   }
 
-  return { layout, layeredLayout, treeLayout, mergeSegments, junctions, handoffRoute, workerBranch, fromForms, feed, mount };
+  return { layout, layeredLayout, treeLayout, mergeSegments, junctions, handoffRoute, workerBranch, fromForms, driftFor, feed, mount };
 }());
 if (typeof self !== 'undefined') {
   self.ordine = ordine;

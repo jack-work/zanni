@@ -21,6 +21,7 @@ body { margin: 0; padding: 20px; }
   var view = ordine.mount(document.getElementById('order'));
   var feed = ordine.feed(view, {
     url: 'hierarchy',
+    driftUrl: 'drift',
     uiOwner: '@flypaper-atlas',
     deploymentOwner: '@frosting-pushup',
     interval: 30000

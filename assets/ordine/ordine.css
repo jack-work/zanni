@@ -178,3 +178,16 @@
 @media (prefers-reduced-motion: reduce) {
   .ordine * { scroll-behavior: auto !important; }
 }
+
+.ordine-drift { font-family: var(--fontpack-mono, ui-monospace, monospace); font-size: 14px; line-height: 1.1; font-weight: 400; }
+.ordine-drift-warn { color: var(--z-warn); }
+.ordine-drift-fail { color: var(--z-fail); }
+.ordine-root .ordine-drift { color: inherit; }
+.ordine-node .ordine-drift ~ .ordine-summary { -webkit-line-clamp: 1; }
+.ordine-node.ordine-quiet { opacity: 0.4; }
+.ordine-drift-list { list-style: none; padding: 0; }
+.ordine-drift-list li { display: grid; gap: 2px; padding: 8px 0; border-top: 1px solid var(--ordine-line); }
+.ordine-drift-key, .ordine-drift-live, .ordine-drift-want { font-family: var(--fontpack-mono, ui-monospace, monospace); overflow-wrap: anywhere; word-break: break-all; direction: ltr; unicode-bidi: isolate; }
+.ordine-drift-live { text-decoration: line-through; color: var(--ordine-muted); }
+.ordine-drift-want { font-weight: 700; }
+.ordine-drift-label { font-size: 13px; color: var(--ordine-muted); }

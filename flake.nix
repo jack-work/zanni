@@ -177,6 +177,7 @@
           cp -r ${./test} test
           node test/strati.test.js
           node test/ordine.test.js
+          node test/ordine-drift.test.js
           node test/ordine-feed.test.js
           touch $out
         '';
