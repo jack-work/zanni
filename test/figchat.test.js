@@ -94,7 +94,7 @@ async function test(name, fn) {
     }
     const g = speech.gateway({ WebSocket: FakeSocket, base: 'https://fig.example/chat/', url: '/audio', window: {} });
     const out = [];
-    const conn = g.open({ aria: 'c0ffee01c0ffee01c0ffee01c0ffee01' }, { ready: (e) => out.push(['ready', e.store]), start: (e) => out.push(['start', e.turn, e.key, e.node, e.cursor, e.rate]), chunk: (c) => out.push(['chunk', c.turn, c.node, c.cursor, c.offset, c.pcm.byteLength]), end: (e) => out.push(['end', e.key, e.audio_id]), cancel: (e) => out.push(['cancel', e.why]), error: (e) => out.push(['error', e.code]) });
+    const conn = g.open({ aria: 'c0ffee01c0ffee01c0ffee01c0ffee01' }, { ready: (e) => out.push(['ready', e.store]), start: (e) => out.push(['start', e.turn, e.key, e.node, e.cursor, e.rate]), chunk: (c) => out.push(['chunk', c.turn, c.node, c.cursor, c.offset, c.pcm.byteLength]), end: (e) => out.push(['end', e.key]), cancel: (e) => out.push(['cancel', e.why]), error: (e) => out.push(['error', e.code]) });
     assert.strictEqual(socks.length, 0, 'no socket until voice is on');
     conn.voice(true);
     assert.strictEqual(socks.length, 1);
@@ -110,7 +110,7 @@ async function test(name, fn) {
     t({ type: 'audio.end', turn: 5, key: 'gluck/x:5/out' });
     t({ type: 'audio.cancel', turn: 6, key: 'k', why: 'interrupt' });
     t({ type: 'error', turn: 6, code: 'speech', text: 'down' });
-    assert.deepStrictEqual(out, [['ready', 'gluck'], ['start', 5, 'gluck/x:5/out', 2, '5.3', 24000], ['chunk', 5, 2, '5.3', 0, 4], ['end', 'gluck/x:5/out', 'gluck/x:5/out'], ['cancel', 'interrupt'], ['error', 'speech']]);
+    assert.deepStrictEqual(out, [['ready', 'gluck'], ['start', 5, 'gluck/x:5/out', 2, '5.3', 24000], ['chunk', 5, 2, '5.3', 0, 4], ['end', 'gluck/x:5/out'], ['cancel', 'interrupt'], ['error', 'speech']]);
     conn.cancel();
     assert.deepStrictEqual(JSON.parse(socks[0].sent[0]), { type: 'cancel' });
     conn.voice(false);

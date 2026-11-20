@@ -5,22 +5,21 @@ description: One renderer per aria node kind and the keyed list that draws turns
 
 # nodi
 
-Draws a figaro's transcript. Input is what `figaro-forms/aria` already folds:
-`stream.snapshot().turns` (TurnView[]), or events folded by `nodi.events()`.
+Draws a figaro's transcript from figaro-forms/aria's native fold: `snapshot().view`
+(`{closed: Message[], open?: Message}`) and the `done` entries of `snapshot().ends`.
 
 ## Pieces
 
-- `nodi.model(turns)` is pure. A turn becomes `{key, turn, input, items, end, open}`.
-  `input.parts` is one entry per sender segment with `role` (`you` when the
-  sender is absent, `aria` when it looks like an aria id, `caller` for any other
-  label) and `label` (sender name, else the sender, else "You"). `items` are
-  prose, thinking, steering, tool or unknown. `end` is kept only for an error or
-  a stop reason other than `stop`.
-- `nodi.events()` folds AriaEvents into the same turn shape. A delta replaces a
-  node's text, so a node re-sent at a cursor is not repeated. An event kind it
-  does not know becomes an unknown node and counts in `skipped`.
-- `nodi.log(doc, ol, {decorate})` keeps `ol` in step with a TurnView list.
-  `update(turns)` reuses elements by turn and node, only moves what is out of
+- `nodi.model(view, ends)` is pure. Messages of one turn are joined: the inquiry
+  rides the from==0 message, nodes get their number from `from + i`, nodes of the
+  open message are unsettled. A turn is open while `view.open` names it and no
+  done entry is known. `input.parts` is one entry per inquiry segment with `role`
+  (`you` when the sender is absent, `aria` when it looks like an aria id,
+  `caller` for any other label) and `label`. `items` are prose, thinking,
+  steering, tool or unknown, chosen by `node.type` only. `end` is kept only for
+  an error or a reason other than `stop`.
+- `nodi.log(doc, ol, {decorate})` keeps `ol` in step with a model.
+  `update(model)` reuses elements by turn and node, only moves what is out of
   place, and rebuilds only the markdown block a delta lands in. `turnEl(n)`,
   `nodeEl(n, i)`, `slot(n, i)` (the empty `.nodi-voice` inside a prose node, for
   a player) and `on(fn)` (a node element was created) are the hooks.

@@ -372,7 +372,9 @@
     }
 
     function modelOf(v, snap) {
-      return snap.view ? N.model(snap.view, v.ends) : N.model(snap.turns);
+      var ends = {};
+      (snap.ends || []).forEach(function (e) { if (e.done && !e.replayed) ends[e.turn] = e.done; });
+      return N.model(snap.view, ends);
     }
 
     function runningOf(m) {
@@ -498,7 +500,7 @@
         end: function (e) {
           var p = players[e.turn];
           quiet(e.turn);
-          if (p) p.end(e.audio_id || e.key || '');
+          if (p) p.end(e.key || '');
         },
         cancel: function (e) {
           var p = players[e.turn];
@@ -537,7 +539,7 @@
       closeView();
       cancelRecording();
       var c = client();
-      var v = view = { id: id, store: store, stream: null, closed: false, sending: false, forking: false, running: false, want: turn || 0, followed: false, paging: false, loading: false, players: {}, ends: {} };
+      var v = view = { id: id, store: store, stream: null, closed: false, sending: false, forking: false, running: false, want: turn || 0, followed: false, paging: false, loading: false, players: {} };
       v.heading = el('h1', 'figchat-h1');
       v.heading.tabIndex = -1;
       paintHeading(v);
@@ -565,14 +567,6 @@
       }
       v.stream = c.attach(id, {});
       v.stream.onChange(function () { paintAria(v); });
-      if (v.stream.onDone) {
-        v.stream.onDone(function (done) {
-          var m = modelOf(v, v.stream.snapshot());
-          var last = m.length ? m[m.length - 1].turn : 0;
-          if (last) v.ends[last] = done;
-          paintAria(v);
-        });
-      }
       v.older.addEventListener('click', function () { loadOlder(v).catch(function () {}); });
       if (win.IntersectionObserver) {
         v.watch = new win.IntersectionObserver(function (entries) {
@@ -630,7 +624,7 @@
       v.sending = true;
       say('');
       paintChrome();
-      v.stream.prompt(text).then(function () {
+      v.stream.qua(text).then(function () {
         v.sending = false;
         if (input.value.trim() === text) input.value = '';
         paintChrome();
@@ -700,7 +694,7 @@
     var api = {
       state: function () {
         var snap = view && view.stream ? view.stream.snapshot() : null;
-        return { rows: state.rows.length, voice: state.voice, link: state.link, aria: view ? view.id : null, store: storeName, turns: snap ? modelOf(view, snap).length : 0, running: !!(view && view.running), cursor: snap ? snap.cursor : '' };
+        return { rows: state.rows.length, voice: state.voice, link: state.link, aria: view ? view.id : null, store: storeName, turns: snap ? modelOf(view, snap).length : 0, running: !!(view && view.running), cursor: snap ? snap.cursor : 0 };
       },
       stream: function () { return view ? view.stream : null; },
       player: function (key) { return view && view.players[key] ? view.players[key] : null; },

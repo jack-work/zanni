@@ -132,7 +132,7 @@ function audioSocket(req, socket, aria) {
       }
     } else if (e.type === 'seal' && t.started) {
       if (e.reason === 'interrupted') send({ type: 'audio.cancel', turn: e.turn, key, why: 'interrupt' });
-      else send({ type: 'audio.end', turn: e.turn, key, audio_id: key });
+      else send({ type: 'audio.end', turn: e.turn, key });
       delete turns[e.turn];
     }
   };

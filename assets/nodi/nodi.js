@@ -134,40 +134,29 @@
     };
   }
 
-  function native(n, sealed) {
-    var settled = n.settled !== undefined ? !!n.settled : !!sealed;
-    var type = n.type;
-    if (type === 'prose' || type === 'thinking') return { kind: type, node: n.node, text: n.markdown, settled: settled };
-    if (type === 'steering') return { kind: 'steering', node: n.node, text: n.markdown, sender: n.sender, senderName: n.sender_name, settled: settled };
-    if (type === 'tool') {
-      return { kind: 'tool', node: n.node, settled: settled, tool: { name: n.name, status: n.status, summary: n.summary, args: n.args, input: n.input, output: n.output, outputBase: n.output_base, startedAt: n.started_at, finishedAt: n.finished_at } };
-    }
-    return { kind: 'unknown', node: n.node, type: type, text: n.markdown, settled: settled };
-  }
-
   function itemOf(n) {
-    var kind = n && n.kind;
-    if (kind === 'prose' || kind === 'thinking') return { key: 'n' + n.node, kind: kind, node: n.node, text: n.text == null ? '' : String(n.text), settled: !!n.settled };
-    if (kind === 'steering') {
-      var w = who(n.sender, n.senderName);
-      return { key: 'n' + n.node, kind: kind, node: n.node, text: n.text == null ? '' : String(n.text), settled: !!n.settled, role: w.role, label: w.label };
+    var type = n && n.type;
+    var settled = !!(n && n.settled);
+    var key = 'n' + (n && n.node != null ? n.node : '?');
+    if (type === 'prose' || type === 'thinking') return { key: key, kind: type, node: n.node, text: n.markdown == null ? '' : String(n.markdown), settled: settled };
+    if (type === 'steering') {
+      var w = who(n.sender, n.sender_name);
+      return { key: key, kind: 'steering', node: n.node, text: n.markdown == null ? '' : String(n.markdown), settled: settled, role: w.role, label: w.label };
     }
-    if (kind === 'tool') {
-      var t = n.tool || {};
+    if (type === 'tool') {
       return {
-        key: 'n' + n.node, kind: 'tool', node: n.node, settled: !!n.settled,
-        name: t.name == null ? '' : String(t.name),
-        status: t.status === 'ok' || t.status === 'error' ? t.status : 'running',
-        summary: t.summary == null ? '' : String(t.summary),
-        args: t.args === undefined ? '' : JSON.stringify(t.args, null, 2),
-        input: t.input == null ? '' : String(t.input),
-        output: t.output == null ? '' : String(t.output),
-        outputBase: Number(t.outputBase) > 0 ? Number(t.outputBase) : 0,
-        ms: t.startedAt && t.finishedAt && t.finishedAt >= t.startedAt ? t.finishedAt - t.startedAt : 0
+        key: key, kind: 'tool', node: n.node, settled: settled,
+        name: n.name == null ? '' : String(n.name),
+        status: n.status === 'ok' || n.status === 'error' ? n.status : 'running',
+        summary: n.summary == null ? '' : String(n.summary),
+        args: n.args === undefined ? '' : JSON.stringify(n.args, null, 2),
+        input: n.input == null ? '' : String(n.input),
+        output: n.output == null ? '' : String(n.output),
+        outputBase: Number(n.output_base) > 0 ? Number(n.output_base) : 0,
+        ms: n.started_at && n.finished_at && n.finished_at >= n.started_at ? n.finished_at - n.started_at : 0
       };
     }
-    var type = kind === 'unknown' ? n.type : kind;
-    return { key: 'n' + (n && n.node != null ? n.node : '?'), kind: 'unknown', node: n && n.node, type: type == null || type === '' ? 'unnamed' : String(type), text: n && n.text != null ? String(n.text) : '', settled: !!(n && n.settled) };
+    return { key: key, kind: 'unknown', node: n && n.node, type: type == null || type === '' ? 'unnamed' : String(type), text: n && n.markdown != null ? String(n.markdown) : '', settled: settled };
   }
 
   function endOf(end) {
@@ -196,27 +185,12 @@
     return order.map(function (k) {
       var t = by[k], done = ends && ends[k];
       var end = done ? endOf({ reason: done.reason, failed: String(done.reason || '').indexOf('error') === 0 }) : null;
-      return { key: 't' + k, turn: k, input: inputOf(t.input), items: t.nodes.map(function (n) { return itemOf(native(n, !t.open)); }), end: end, open: t.open && !done, sealed: !t.open };
+      return { key: 't' + k, turn: k, input: inputOf(t.input), items: t.nodes.map(itemOf), end: end, open: t.open && !done, sealed: !t.open };
     });
   }
 
-  function model(turns, ends) {
-    if (turns && !Array.isArray(turns) && (turns.closed || turns.open)) return fromView(turns, ends);
-    return (turns || []).map(function (t) {
-      var isNative = t.inquiry !== undefined || t.inquiry_segments !== undefined;
-      return {
-        key: 't' + t.turn,
-        turn: t.turn,
-        input: inputOf(isNative ? t : t.input),
-        items: (t.nodes || []).map(function (n, i) {
-          if (n && n.node === undefined) n = Object.assign({}, n, { node: t.from !== undefined ? t.from + i : i });
-          return itemOf(n && n.kind === undefined && n.type !== undefined ? native(n, t.sealed) : n);
-        }),
-        end: endOf(t.end),
-        open: !t.end && !t.sealed,
-        sealed: !!t.sealed
-      };
-    });
+  function model(view, ends) {
+    return fromView(view || {}, ends);
   }
 
   function metricsLine(m) {

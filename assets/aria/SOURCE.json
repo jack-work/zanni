@@ -1,6 +1,6 @@
 {
   "repo": "figaro-forms",
-  "ref": "v0.3.0",
-  "sha": "979ad39b81d49d717718af59bc7a7946e9b811df",
+  "ref": "lane/aria-native",
+  "sha": "8af90146ec3115a13bcc0f924331df01d52e389f",
   "entry": "figaro-forms/aria"
 }

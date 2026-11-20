@@ -90,7 +90,7 @@
         }
         function finish(t) {
           queue.push(function (done) {
-            if (!closed && !t.cancelled && t.started) h.end({ aria: ctx.aria, turn: t.turn, key: keyOf(store, ctx.aria, t.turn), audio_id: keyOf(store, ctx.aria, t.turn) });
+            if (!closed && !t.cancelled && t.started) h.end({ aria: ctx.aria, turn: t.turn, key: keyOf(store, ctx.aria, t.turn) });
             done();
           });
           pump();
@@ -171,7 +171,7 @@
               if (f.type === 'ready' && h.ready) h.ready(f);
               else if (f.type === 'audio.start' && h.start) h.start(Object.assign({ aria: ctx.aria }, f));
               else if (f.type === 'audio.chunk') pending = f;
-              else if (f.type === 'audio.end' && h.end) h.end(Object.assign({ aria: ctx.aria, audio_id: f.audio_id || f.key }, f));
+              else if (f.type === 'audio.end' && h.end) h.end(Object.assign({ aria: ctx.aria }, f));
               else if (f.type === 'audio.cancel' && h.cancel) h.cancel(Object.assign({ aria: ctx.aria }, f));
               else if (f.type === 'error' && h.error) h.error(Object.assign({ aria: ctx.aria }, f));
             } else if (pending && ev.data instanceof ArrayBuffer && h.chunk) {

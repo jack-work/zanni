@@ -7,7 +7,7 @@ const cp = require('child_process');
 
 const repo = process.argv[2];
 if (!repo || repo === '-h' || repo === '--help') {
-  process.stdout.write('usage: figchat-vendor-aria FIGARO_FORMS_CHECKOUT [OUT_DIR]\n\nBundles figaro-forms/aria (AriaClient, webSocketDial, doorUrl, edgeSession, ariaRefusal,\ncursor helpers) from a figaro-forms checkout into OUT_DIR/aria.js as one classic script that\nsets window.figaroAria (and module.exports under node), and writes OUT_DIR/SOURCE.json with\nthe checkout head. Needs rolldown in the checkout node_modules. Default OUT_DIR is assets/aria.\n');
+  process.stdout.write('usage: figchat-vendor-aria FIGARO_FORMS_CHECKOUT [OUT_DIR]\n\nBundles figaro-forms/aria (AriaClient, AriaStream, Transcript, webSocketDial, doorUrl, edgeSession, ariaRefusal) from a figaro-forms checkout into OUT_DIR/aria.js as one classic script that\nsets window.figaroAria (and module.exports under node), and writes OUT_DIR/SOURCE.json with\nthe checkout head. Needs rolldown in the checkout node_modules. Default OUT_DIR is assets/aria.\n');
   process.exit(repo ? 0 : 2);
 }
 const out = path.resolve(process.argv[3] || path.join(__dirname, '..', 'assets', 'aria'));
@@ -15,7 +15,7 @@ const src = path.join(path.resolve(repo), 'packages', 'figaro-forms', 'src');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'figchat-vendor-'));
 const entry = path.join(tmp, 'entry.ts');
 fs.writeFileSync(entry, [
-  `export { AriaClient, AriaStream, ariaRefusal, AriaUnavailable, parseCursor, formatCursor, compareCursors, anchorOfCursor, spliceBytes, matches, ariaMethod } from ${JSON.stringify(path.join(src, 'aria', 'index.ts'))};`,
+  `export { AriaClient, AriaStream, Transcript, ariaRefusal, AriaUnavailable, spliceBytes } from ${JSON.stringify(path.join(src, 'aria', 'index.ts'))};`,
   `export { webSocketDial } from ${JSON.stringify(path.join(src, 'websocket.ts'))};`,
   `export { doorUrl, edgeSession } from ${JSON.stringify(path.join(src, 'auth', 'index.ts'))};`
 ].join('\n') + '\n');

@@ -39,6 +39,27 @@ def until(pg, js, timeout=10000):
     raise AssertionError("timed out waiting for: %s (last %r)" % (js, last))
 
 
+SANS = """() => {
+  const house = new Set(['EB Garamond','Jacquard 24','VT323']);
+  const generic = new Set(['serif','monospace','Georgia','Times New Roman','Courier New','ui-monospace','SF Mono','Menlo','Consolas']);
+  const bad = [];
+  for (const n of document.querySelectorAll('body, body *')) {
+    const cs = getComputedStyle(n);
+    if (cs.display === 'none') continue;
+    const own = [...n.childNodes].some(c => c.nodeType === 3 && c.textContent.trim()) || ['BUTTON','TEXTAREA','INPUT','SELECT'].includes(n.tagName) || n.tagName === 'TEXTAREA';
+    if (!own) continue;
+    const fams = cs.fontFamily.split(',').map(s => s.trim().replace(/^["']|["']$/g, ''));
+    if (!house.has(fams[0]) || fams.some(f => !house.has(f) && !generic.has(f))) bad.push(n.tagName + '.' + n.className + ' => ' + cs.fontFamily);
+  }
+  return bad;
+}"""
+
+
+def sans_free(pg, what):
+    bad = pg.evaluate(SANS)
+    assert bad == [], "%s draws text outside the house faces: %s" % (what, bad)
+
+
 def no_sideways(pg, width, what):
     got = pg.evaluate("[document.documentElement.scrollWidth, document.body.scrollWidth]")
     assert max(got) <= width, "%s scrolls sideways at %d: %s" % (what, width, got)
@@ -151,6 +172,7 @@ try:
             assert "go test" in tool.locator(".nodi-tool-args").inner_text(), tool.evaluate("n => n.outerHTML")
             assert tool.locator(".nodi-tool-out").is_visible()
             assert "clipped" in tool.locator(".nodi-clipped").inner_text(), "a clipped result says so"
+            sans_free(pg, "history at %d" % width)
             no_sideways(pg, width, "history")
             assert not pg.errors, pg.errors
             pg.close()
@@ -185,6 +207,7 @@ try:
             assert pg.locator(".figchat-input").input_value() == ""
             assert pg.locator(".nodi-metrics").inner_text().startswith("ctx"), "metrics sit quietly above the transcript"
             snap(pg, "live-%s-%d" % (scheme, width))
+            sans_free(pg, "live turn %s %d" % (scheme, width))
             no_sideways(pg, width, "live turn")
             assert not pg.errors, pg.errors
             pg.close()
@@ -278,6 +301,7 @@ try:
         assert pg.locator(".nodi-turn[data-turn='27'] .voce").count() == 1
         until(pg, "document.querySelector('.voce').dataset.state !== 'none'", 10000)
         until(pg, "['idle','loading','playing','paused'].includes(document.querySelector('.voce').dataset.state)", 15000)
+        sans_free(pg, "voice player")
         assert door_v.state()["audio"] >= 1, "the gateway audio socket was opened by the voice toggle"
         pg.close()
 
@@ -303,6 +327,9 @@ try:
         pg.locator(".figchat-send").tap()
         until(pg, "document.querySelector(\"[data-turn='27']\")", 10000)
         assert mic_door.state()["sent"][0]["text"] == "edited words"
+        sans_free(pg, "composer after the mic")
+        pg.evaluate("document.querySelector('.figchat-send').style.fontFamily = 'Arial'")
+        assert pg.evaluate(SANS), "negative control: a button set to Arial must be caught"
         assert not pg.errors, pg.errors
         ctx.close()
 
