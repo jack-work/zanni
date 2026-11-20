@@ -124,16 +124,23 @@
         try { e.ctx = new AC({ sampleRate: RATE, latencyHint: 'interactive' }); } catch (x) { e.ctx = new AC(); }
         e.out = e.ctx.createGain();
         e.out.connect(e.ctx.destination);
-        var session = win.navigator && win.navigator.audioSession;
-        if (session) {
-          try { session.type = 'playback'; } catch (x) { session = null; }
-        }
+        e.session(e.recording ? 'play-and-record' : 'playback');
       }
       if (e.ctx.state !== 'running' && e.ctx.resume) {
         var p = e.ctx.resume();
         if (p && p.catch) p.catch(function () { return null; });
       }
       return e.ctx;
+    };
+    e.recording = false;
+    e.session = function (type) {
+      var session = win.navigator && win.navigator.audioSession;
+      if (!session) return;
+      try { session.type = type; } catch (x) { return; }
+    };
+    e.record = function (on) {
+      e.recording = !!on;
+      e.session(on ? 'play-and-record' : 'playback');
     };
     e.running = function () { return !!e.ctx && e.ctx.state === 'running'; };
     e.claim = function (player) {
@@ -150,6 +157,10 @@
 
   function unlock(win) {
     return engine(win || self).unlock();
+  }
+
+  function record(win, on) {
+    engine(win || self).record(on);
   }
 
   var NOTES = { live: 'speaking', draining: 'speaking', expired: 'audio expired', error: 'audio unavailable', lost: 'audio unavailable' };
@@ -423,6 +434,7 @@
     queue: queue,
     engine: engine,
     unlock: unlock,
+    record: record,
     create: create
   };
 }));

@@ -230,6 +230,7 @@
       if (rec.stream) rec.stream.getTracks().forEach(function (t) { t.stop(); });
       rec.stream = null;
       rec.recorder = null;
+      if (V && V.record) V.record(win, false);
     }
 
     function micIdle(text) {
@@ -285,6 +286,7 @@
       rec.state = 'asking';
       micSay('');
       paintMic();
+      if (V && V.record) V.record(win, true);
       media.devices.getUserMedia({ audio: true }).then(function (stream) {
         if (token !== rec.token || destroyed) { stream.getTracks().forEach(function (t) { t.stop(); }); return; }
         rec.stream = stream;
@@ -303,6 +305,7 @@
         }, 250);
         paintMic();
       }, function (err) {
+        if (V && V.record) V.record(win, false);
         if (token === rec.token) micIdle(micFault(err));
       }).catch(function (err) {
         if (token !== rec.token) return;
