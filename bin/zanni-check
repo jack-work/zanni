@@ -114,6 +114,7 @@ for (const name of want) {
   if (name === 'scriba') scriba();
   if (name === 'stilo') stilo();
   if (name === 'filo') filo();
+  if (name === 'ordine') ordine();
 }
 
 function filo() {
@@ -151,6 +152,14 @@ function filo() {
     'without the debounce a held key is a Range request per repeat');
   check('attaching never plays: only a gesture or a visibility change calls play()',
     !/\.play\(\)/.test(script.replace(/function (toggle|unlock|toBackground|toForeground)\(\) \{[\s\S]*?\n    \}/g, '')));
+}
+
+function ordine() {
+  console.log('[ordine] the order chart');
+  (manifest.components.ordine.requires || []).forEach((dep) =>
+    check('it is inlined together with ' + dep,
+      html.includes('<!-- zanni:' + dep + ' begin'),
+      'without ' + dep + ' the chart arrives unthemed and still passes every other check'));
 }
 
 function stilo() {
