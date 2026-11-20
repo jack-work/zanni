@@ -76,7 +76,7 @@ for (const name of components) {
     die('marker ' + c.marker + ' not found in ' + input +
         ' — nothing would have been injected, so this is an error, not a warning');
   }
-  const dir = path.join(assets, name);
+  const dir = path.join(assets, c.dir || name);
   const read = (f) => fs.readFileSync(path.join(dir, f), 'utf8').trimEnd();
   const parts = ['<!-- zanni:' + name + ' begin (zanni ' + manifest.version + ') -->'];
   const head = [];

@@ -508,6 +508,29 @@
         "--rotolo-track",
         "--rotolo-size"
       ]
+    },
+    "registro": {
+      "summary": "The Scope registro as one inlineable block for marker pages: v2 tokens, the z2 base and registro sheets, and z2-scope.js for z2.tips. The same files the v2 component links; a page wears it with data-theme=\"registro\" on the root.",
+      "marker": "<!-- zanni:registro -->",
+      "standalone": true,
+      "dir": "v2",
+      "files": [
+        "z2-tokens.css",
+        "z2.css",
+        "z2-registro.css",
+        "z2-scope.js"
+      ],
+      "classes": [
+        "z2-btn",
+        "z2-seg",
+        "z2-seg-b",
+        "z2-field",
+        "z2-tip",
+        "z2-caret"
+      ],
+      "constructed": true,
+      "activator": "data-theme",
+      "docs": "docs/registro.md"
     }
   },
   "planned": [

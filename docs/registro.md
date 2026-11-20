@@ -165,3 +165,12 @@ a last-hour answer, and synthetic stale, unidentified and quiet rows). Browser
 test: test/usage.test.py, with negative controls for tone, staleness, seats,
 the primary marker, alignment, in-place refresh and the keyboard; checks.usage
 runs it in Chromium. test/v2-usage.test.js covers the two rules in node.
+
+## Marker pages
+
+A page built with `zanni-inline` wears the same sheets through the `registro`
+component: `<!-- zanni:registro -->` inlines `z2-tokens.css`, `z2.css`,
+`z2-registro.css` and `z2-scope.js` (for `z2.tips`) from `assets/v2`, the files
+a linked page loads itself. `examples/order-site/index.html` is the first
+wearer. A component that wants other faces than registro's sets `--z-font`,
+`--z-display` and `--z-mono` on its own host, as ordine does.
