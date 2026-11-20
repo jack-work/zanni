@@ -368,6 +368,8 @@
         existing.height = height;
       }
       existing.plot.setData(data);
+      existing.seriesDefs = seriesDefs;
+      existing.opts = opts;
       if (existing.describe) existing.describe(data);
       existing.bucket = opts.bucket || 0;
       return existing.plot;
@@ -425,23 +427,26 @@
     var u = new uPlot(conf, data, host);
     var rec = { plot: u, sig: sig, width: width, height: height, bucket: opts.bucket || 0, dragMoved: false, hoverKey: "", ro: null, frame: 0, describe: null };
     cache[id] = rec;
+    rec.seriesDefs = seriesDefs;
+    rec.opts = opts;
     rec.describe = function (d) {
+      var seriesDefs = rec.seriesDefs, opts = rec.opts;
       var parts = [];
       for (var si = 0; si < seriesDefs.length; si++) {
         var col = d[si + 1] || [];
-        var last = null, lastAt = -1, lo = null, hi = null;
+        var last = null, lastAt = -1, lo = null, loAt = -1, hi = null, hiAt = -1;
         for (var k = 0; k < col.length; k++) {
           var v = col[k];
           if (v == null || !Number.isFinite(v)) continue;
           last = v; lastAt = k;
-          if (lo == null || v < lo) lo = v;
-          if (hi == null || v > hi) hi = v;
+          if (lo == null || v < lo) { lo = v; loAt = k; }
+          if (hi == null || v > hi) { hi = v; hiAt = k; }
         }
         var say = function (v, at) { return seriesDefs[si].value ? seriesDefs[si].value(u, v, si + 1, at) : String(v); };
-        parts.push(seriesDefs[si].label + (last == null ? " no data" : " latest " + say(last, lastAt) + (seriesDefs.length <= 6 ? ", low " + say(lo, lastAt) + ", high " + say(hi, lastAt) : "")));
+        parts.push(seriesDefs[si].label + (last == null ? " no data" : " latest " + say(last, lastAt) + (seriesDefs.length <= 6 ? ", low " + say(lo, loAt) + ", high " + say(hi, hiAt) : "")));
       }
       var xs = d[0] || [];
-      var span = opts.categorical || !xs.length ? "" : " " + xs.length + " points, " + (opts.xfmt ? opts.xfmt(xs[0] * 1000) + " to " + opts.xfmt(xs[xs.length - 1] * 1000) : "") + ".";
+      var span = opts.categorical || !xs.length ? "" : " " + xs.length + " points" + (opts.xfmt ? ", " + opts.xfmt(xs[0] * 1000) + " to " + opts.xfmt(xs[xs.length - 1] * 1000) : "") + ".";
       u.over.setAttribute("aria-label", (opts.title ? opts.title + ". " : "") + parts.join("; ") + "." + span + " Arrow keys read values" + (canZoom ? ", shift and arrows select, Enter zooms." : "."));
     };
     u.over.setAttribute("role", "img");
@@ -625,6 +630,7 @@
         }
         tipAt(to, false);
       } else if (ev.key === "Enter" || ev.key === " ") {
+        if (ev.key === " ") ev.preventDefault();
         if (u.cursor.idx == null) return;
         ev.preventDefault();
         if (kbAnchor >= 0 && kbAnchor !== u.cursor.idx && canZoom) {
