@@ -489,8 +489,19 @@
       "classes": ["voce", "voce-big", "voce-play", "voce-track", "voce-fill", "voce-seek", "voce-time", "voce-note"],
       "files": ["voce.js", "voce.css"],
       "docs": "docs/voce.md",
+      "example": "examples/figchat.html",
       "constructed": true,
       "knobs": ["--voce-hit", "--voce-thumb", "--voce-bar", "--voce-face"]
+    },
+    "figchat": {
+      "summary": "The figchat web shell: thread list, a thread of bubbles, a composer, a voice toggle and a voce player on each message with audio, over an injected transport for herald's /chat/api and /chat/ws. Server text only enters as text nodes. Ships as a reviewed flat directory via bin/figchat-bundle.",
+      "classes": ["figchat", "figchat-top", "figchat-side", "figchat-pane", "figchat-main", "figchat-log", "figchat-msg", "figchat-bubble", "figchat-composer", "figchat-voice"],
+      "files": ["figchat.js", "figchat.css"],
+      "docs": "docs/figchat.md",
+      "example": "examples/figchat.html",
+      "requires": ["v2", "voce", "rotolo"],
+      "constructed": true,
+      "knobs": ["--figchat-ui", "--figchat-prose", "--figchat-mono", "--figchat-display", "--figchat-bar", "--figchat-side", "--figchat-width", "--figchat-hit"]
     },
     "rotolo": {
       "summary": "Thin scrollbars on the page and every scroll container under it: a dark track and an accent thumb that lights on hover, Firefox and Chromium alike.",
