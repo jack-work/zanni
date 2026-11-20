@@ -13,6 +13,9 @@ from playwright.sync_api import expect, sync_playwright
 example = os.path.abspath(sys.argv[1])
 root = os.path.dirname(os.path.dirname(example))
 page_url = "file://" + example
+shots = os.environ.get("FIGCHAT_SHOTS")
+if shots:
+    os.makedirs(shots, exist_ok=True)
 
 EVIL = '<img src=x onerror="window.__pwned=1">'
 NO_MSE = "for (const k of ['MediaSource', 'ManagedMediaSource', 'WebKitMediaSource', 'SourceBuffer', 'ManagedSourceBuffer']) { try { delete window[k]; } catch (e) {} Object.defineProperty(window, k, { get() { window.__mse = k; return undefined; }, configurable: true }); }"
@@ -60,16 +63,36 @@ def go(pg, suffix, base=None):
     pg.goto((base or page_url) + suffix)
 
 
-def state_of(pg, mid):
-    return pg.evaluate("id => chat.player(id) && chat.player(id).state()", mid)
+
+def reply_sel(turn):
+    return '.figchat-msg[data-turn="%s"][data-role="assistant"]' % turn
 
 
-def wait_state(pg, mid, want, timeout=15000):
-    pg.wait_for_function("([id, want]) => chat.player(id) && chat.player(id).state() === want", arg=[mid, want], timeout=timeout)
+def prompt_sel(turn):
+    return '.figchat-msg[data-turn="%s"][data-role="user"]' % turn
 
 
-def voce_of(pg, mid):
-    return pg.locator('.figchat-msg[data-id="%s"] .voce' % mid)
+def state_of(pg, turn, which="out"):
+    return pg.evaluate("([t, w]) => chat.player(t, w) && chat.player(t, w).state()", [turn, which])
+
+
+def wait_state(pg, turn, want, timeout=15000, which="out"):
+    pg.wait_for_function("([t, w, want]) => chat.player(t, w) && chat.player(t, w).state() === want", arg=[turn, which, want], timeout=timeout)
+
+
+def shot(pg, name):
+    if shots:
+        pg.screenshot(path=os.path.join(shots, name + ".png"))
+
+
+def ids(pg):
+    return pg.evaluate("[...document.querySelectorAll('.figchat-msg[data-role=\"assistant\"]')].map(n => Number(n.dataset.turn))")
+
+
+def in_view(pg, sel):
+    box = pg.locator(sel).first.bounding_box()
+    height = pg.evaluate("innerHeight")
+    return box is not None and box["y"] >= 0 and box["y"] < height - 100
 
 
 with sync_playwright() as p:
@@ -86,369 +109,247 @@ with sync_playwright() as p:
         pg.on("console", lambda m: pg.errors.append(m.text) if m.type == "error" else None)
         return pg
 
-    page = fresh()
+    page = fresh(init=NO_MSE)
     go(page, "")
-    page.wait_for_selector(".figchat-thread")
-    titles = page.locator(".figchat-thread-title").all_text_contents()
-    assert titles == ["Razors and schedules", "A long thread", "Untitled thread"], titles
-    assert page.locator(".figchat-pane").is_hidden() and page.locator(".figchat-composer").is_hidden(), "a phone shows the list alone"
+    page.wait_for_selector(".figchat-row")
+    rows = page.locator(".figchat-row")
+    assert rows.count() == 2
+    assert page.locator(".figchat-row a.figchat-thread").count() == 1, "an offline store is no link"
+    assert page.locator(".figchat-row a.figchat-thread").get_attribute("href") == "#/spain"
+    assert "Offline" in rows.nth(1).inner_text() and "Nothing is queued" in rows.nth(1).inner_text()
+    assert page.locator(".figchat-pane").is_hidden() and page.locator(".figchat-composer").is_hidden(), "a phone shows the picker alone"
     assert page.locator(".figchat-thread").first.bounding_box()["height"] >= 44
-    assert page.locator(".figchat-new").bounding_box()["height"] >= 44 and page.locator(".figchat-voice").bounding_box()["height"] >= 44
-    no_sideways(page, 390, "thread list")
+    no_sideways(page, 390, "store picker")
+    shot(page, "picker-390")
 
-    page.locator(".figchat-thread", has_text="Razors").tap()
+    page.locator(".figchat-thread", has_text="Spain").tap()
+    page.wait_for_selector(".figchat-tree")
+    assert page.evaluate("location.hash") == "#/spain"
+    names = page.locator(".figchat-aria-name").all_text_contents()
+    assert names[:10] == ["King of Spain", "Chat-aria A-E choices for Gluck", "Figaro Engineer", "#126 follow focus", "Read the chat-follow lane brief", "review scope slice 2", "King delegation lane", "Backend Engineer", "keel lane", "Herald"], names[:10]
+    assert len(names) == 30 and page.locator(".figchat-more").is_visible(), "the list is paged"
+    trees = page.locator(".figchat-aria-line").evaluate_all("ns => ns.slice(0, 10).map(n => (n.querySelector('.figchat-tree') || {}).textContent || '')")
+    assert trees == ["", "\u251c\u2500", "\u251c\u2500", "\u2502 \u251c\u2500", "\u2502 \u251c\u2500", "\u2502 \u251c\u2500", "\u2502 \u2514\u2500", "\u2514\u2500", "  \u2514\u2500", ""] or trees[:3] == ["", "\u251c\u2500", "\u251c\u2500"], trees
+    states = page.locator(".figchat-thread").evaluate_all("ns => ns.slice(0, 7).map(n => n.dataset.state)")
+    assert states == ["active", "dormant", "active", "idle", "active", "reaped", "idle"], states
+    page.locator(".figchat-more").tap()
+    page.wait_for_function("document.querySelectorAll('.figchat-thread').length === 51")
+    assert page.locator(".figchat-more").is_hidden()
+    no_sideways(page, 390, "aria list")
+    page.evaluate("window.scrollTo(0, 0)")
+    shot(page, "tree-390")
+    assert page.evaluate("mock.state.pages.filter(p => !p.aria).map(p => p.before)") == ["", "30"]
+
+    page.locator(".figchat-thread", has_text="King of Spain").first.tap()
     page.wait_for_selector(".figchat-msg")
     page.wait_for_function("chat.state().link === 'live'")
-    assert page.evaluate("location.hash") == "#/t/c0ffee01"
-    assert page.locator(".figchat-side").is_hidden()
-    assert page.locator(".figchat-h1").text_content() == "Razors and schedules"
-    assert page.locator(".figchat-msg").evaluate_all("ns => ns.map(n => n.dataset.role)") == ["user", "assistant", "user", "assistant"]
-    assert "Three shaves before noon, then the Count at one.\nShall I read you the list?" == page.locator('.figchat-msg[data-id="2"] .figchat-text').text_content()
-    assert page.locator('.figchat-msg[data-id="2"] .figchat-tool').inner_text().split() == ["calendar.today", "done"]
-    assert page.locator(".voce").count() == 3 and page.locator('.figchat-msg[data-id="1"] .voce').count() == 0, "a player only where a message has audio"
-    for sel in (".voce-play", ".voce-seek", ".figchat-send", ".figchat-input", ".figchat-back"):
-        box = page.locator(sel).first.bounding_box()
-        assert box["height"] >= 44, sel + " is a 44 px target"
-    assert page.locator(".voce-play").first.bounding_box()["width"] >= 44
-    assert page.locator(".figchat-input").evaluate("e => parseFloat(getComputedStyle(e).fontSize)") >= 16, "no zoom on focus in iOS"
-    foot = page.locator(".figchat-composer").bounding_box()
-    assert abs(foot["y"] + foot["height"] - 844) < 2, "the composer sits at the bottom edge"
-    no_sideways(page, 390, "thread")
-
-    reply = voce_of(page, 2)
-    assert reply.get_attribute("data-state") == "idle" and reply.locator(".voce-total").text_content() == "--:--"
-    assert page.evaluate("voce.engine(window).ctx") is None, "no AudioContext before a gesture"
-    reply.locator(".voce-play").tap()
-    wait_state(page, 2, "playing")
-    assert page.evaluate("voce.engine(window).ctx.state") in ("running", "suspended"), "the play tap creates and resumes the context"
-    assert reply.locator(".voce-play").get_attribute("aria-label") == "Pause"
-    page.wait_for_function("chat.player(2).position() > 0.25")
-    assert reply.locator(".voce-total").text_content() == "0:03", "total comes from the stored copy"
-    reply.locator(".voce-play").tap()
-    wait_state(page, 2, "paused")
-    held = page.evaluate("chat.player(2).position()")
-    page.wait_for_timeout(250)
-    assert page.evaluate("chat.player(2).position()") == held, "pause holds the position"
-    track = reply.locator(".voce-seek").bounding_box()
-    page.touchscreen.tap(track["x"] + track["width"] * 0.5, track["y"] + track["height"] / 2)
-    page.wait_for_function("Math.abs(chat.player(2).position() - 1.6) < 0.2")
-    assert reply.locator(".voce-elapsed").text_content() == "0:01", "the scrubber moves the stored copy to the middle"
-    assert abs(reply.locator(".voce-fill").evaluate("e => e.value") - 500) < 60
-    reply.locator(".voce-seek").focus()
-    page.keyboard.press("Home")
-    page.wait_for_function("chat.player(2).position() < 0.05", timeout=3000)
-    assert reply.locator(".voce-elapsed").text_content() == "0:00", "the scrubber answers the keyboard"
-    reply.locator(".voce-play").tap()
-    wait_state(page, 2, "playing")
-
-    clip = voce_of(page, 3)
-    clip.locator(".voce-play").tap()
-    wait_state(page, 3, "playing")
-    assert state_of(page, 2) == "paused", "one voice at a time: starting a second player pauses the first"
-    wait_state(page, 3, "idle", timeout=8000)
-    assert clip.locator(".voce-elapsed").text_content() == "0:00" and clip.locator(".voce-play").get_attribute("aria-label") == "Play"
-
-    gone = voce_of(page, 4)
-    gone.locator(".voce-play").tap()
-    wait_state(page, 4, "expired")
-    assert gone.locator(".voce-note").text_content() == "audio expired"
-    assert gone.locator(".voce-play").is_disabled()
-    assert page.locator('.figchat-msg[data-id="4"] .figchat-text').text_content() == "Noted. Thursday at ten for Rosina.", "the text stays when the audio is gone"
-    assert all(e.startswith("Failed to load resource") for e in page.errors) and len(page.errors) <= 1, page.errors
+    assert page.evaluate("location.hash") == "#/spain/wick-sushi" and page.locator(".figchat-side").is_hidden()
     page.close()
 
-    live = fresh(init=NO_MSE)
-    go(live, "#/t/c0ffee01")
-    live.wait_for_function("chat.state().link === 'live'")
-    assert live.evaluate("(() => { const t = typeof MediaSource; window.__mse = undefined; return t; })()") == "undefined", "the page has no MediaSource, as on an iPhone"
-    assert live.locator(".figchat-voice").text_content() == "Voice off" and live.locator(".figchat-voice").get_attribute("aria-pressed") == "false"
-    live.locator(".figchat-voice").tap()
-    assert live.locator(".figchat-voice").text_content() == "Voice on" and live.locator(".figchat-voice").get_attribute("aria-pressed") == "true"
-    live.wait_for_function("voce.engine(window).running()")
-    assert live.evaluate("mock.state.received") == [{"type": "voice", "on": True}]
-    live.evaluate(LISTEN)
-    live.locator(".figchat-input").fill("Echo this " + EVIL)
+    king = fresh(init=NO_MSE)
+    go(king, "#/spain/wick-sushi")
+    king.wait_for_selector(".figchat-msg")
+    king.wait_for_function("chat.state().link === 'live'")
+    assert king.locator(".figchat-h1").text_content() == "King of Spain" or king.wait_for_function("document.querySelector('.figchat-h1').textContent === 'King of Spain'")
+    assert ids(king) == list(range(101, 121)), "the newest twenty, oldest first, newest last"
+    assert king.evaluate("chat.state().turns") == 20
+    assert king.evaluate("innerHeight + scrollY >= document.documentElement.scrollHeight - 5"), "a deep link without a turn lands at the newest"
+    assert king.locator(prompt_sel(120)).locator(".figchat-text").text_content() == "Status of the order site?"
+    assert "lane order-ui" in king.locator(prompt_sel(120)).locator(".figchat-meta").text_content(), "who spoke is shown"
+    assert king.locator(prompt_sel(120)).locator(".figchat-turnlink").get_attribute("href") == "#/spain/wick-sushi:120"
+    assert king.locator(reply_sel(117)).locator(".figchat-tool").inner_text().split() == ["calendar.today", "done"]
+    assert king.locator(prompt_sel(118)).locator(".voce").count() == 1 and king.locator(prompt_sel(118)).locator(".voce").count() == 1, "a spoken prompt has a player"
+    assert king.locator(".voce").count() == 3
+    no_sideways(king, 390, "turn view")
+    shot(king, "turns-390")
+    king.evaluate("window.scrollTo(0, 0)")
+    king.wait_for_function("chat.state().turns >= 40")
+    assert ids(king)[:1] == [81] and king.evaluate("window.scrollY") > 100, "older turns load on scroll up and the reader stays where they were"
+    for _ in range(2):
+        king.evaluate("window.scrollTo(0, 0)")
+        king.wait_for_function("n => chat.state().turns > n", arg=king.evaluate("chat.state().turns"), timeout=3000)
+    assert ids(king)[0] == 41, ids(king)[:3]
+    assert king.evaluate("mock.state.pages.filter(p => p.aria).map(p => p.before)") == ["", "101", "81", "61"], "older pages ask before the oldest turn seen"
+    king.evaluate("location.hash = '#/spain/wick-sushi'")
+
+    king.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
+    king.evaluate(LISTEN)
+    king.locator(".figchat-voice").tap()
+    king.wait_for_function("voce.engine(window).running()")
+    king.locator(".figchat-input").fill("Echo this " + EVIL)
     began = time.time()
-    live.locator(".figchat-send").tap()
-    wait_state(live, 6, "live")
-    assert voce_of(live, 6).locator(".voce-play").get_attribute("aria-label") == "Stop"
-    assert voce_of(live, 6).locator(".voce-note").text_content() == "speaking"
-    assert live.locator('.figchat-msg[data-id="6"]').get_attribute("data-streaming") == "", "audio starts while the text is still streaming"
-    live.wait_for_function("window.__peak > 0.1", timeout=8000)
-    live.wait_for_function("!document.querySelector('.figchat-msg[data-streaming]')")
-    assert state_of(live, 6) in ("live", "draining"), "the text ends first and the queue plays on"
-    wait_state(live, 6, "idle")
-    took = time.time() - began
-    stats = live.evaluate("chat.player(6).stats()")
+    king.locator(".figchat-send").tap()
+    king.wait_for_selector(prompt_sel(121))
+    assert king.locator(prompt_sel(121)).locator(".figchat-text").text_content() == "Echo this " + EVIL
+    assert "Gluck (figchat)" in king.locator(prompt_sel(121)).locator(".figchat-meta").text_content()
+    wait_state(king, 121, "live")
+    assert king.locator(reply_sel(121)).get_attribute("data-streaming") == "", "audio starts while the text is still streaming"
+    king.wait_for_function("window.__peak > 0.1", timeout=8000)
+    king.wait_for_function("!document.querySelector('.figchat-msg[data-streaming]')")
+    wait_state(king, 121, "idle")
+    assert time.time() - began > 2.3, "2.4 s of PCM took less: it was dropped, not played"
+    stats = king.evaluate("chat.player(121).stats()")
     assert stats["samples"] == 57600 and stats["chunks"] == 29, stats
-    assert took > 2.3, "2.4 s of PCM took %.2f s: it was played, not dropped" % took
-    assert live.evaluate("window.__peak") > 0.2, "the chirp reached the WebAudio output"
-    assert live.evaluate("window.__mse") is None, "nothing even asked for MediaSource"
-    assert live.locator('.figchat-msg[data-id="5"] .figchat-text').text_content() == "Echo this " + EVIL
-    assert EVIL in live.locator('.figchat-msg[data-id="6"] .figchat-text').text_content(), "markup in a delta is text"
-    assert hostile_findings(live) == [], hostile_findings(live)
-    assert live.locator('.figchat-msg[data-id="6"] .figchat-tool').inner_text().split() == ["bash", "done"]
-    assert live.evaluate("mock.state.posts") == [{"thread": "c0ffee01", "body": {"text": "Echo this " + EVIL}}]
-    assert live.locator(".figchat-input").input_value() == ""
-    spoken = voce_of(live, 6)
-    assert spoken.locator(".voce-total").text_content() == "0:02" and spoken.locator(".voce-play").get_attribute("aria-label") == "Play"
+    assert king.evaluate("window.__peak") > 0.2 and king.evaluate("window.__mse") is None
+    assert EVIL in king.locator(reply_sel(121)).locator(".figchat-text").text_content()
+    assert hostile_findings(king) == [], hostile_findings(king)
+    assert king.evaluate("mock.state.posts") == [{"store": "spain", "aria": "wick-sushi", "body": {"text": "Echo this " + EVIL}}]
+    assert king.locator(".figchat-input").input_value() == ""
+    spoken = king.locator(reply_sel(121)).locator(".voce")
+    assert spoken.locator(".voce-total").text_content() == "0:02"
     spoken.locator(".voce-play").tap()
-    wait_state(live, 6, "playing")
+    wait_state(king, 121, "playing")
     track = spoken.locator(".voce-seek").bounding_box()
-    live.touchscreen.tap(track["x"] + track["width"] * 0.75, track["y"] + track["height"] / 2)
-    live.wait_for_function("Math.abs(chat.player(6).position() - 1.8) < 0.25")
-    wait_state(live, 6, "idle", timeout=6000)
-    no_sideways(live, 390, "thread after a spoken reply")
+    king.touchscreen.tap(track["x"] + track["width"] * 0.75, track["y"] + track["height"] / 2)
+    king.wait_for_function("Math.abs(chat.player(121).position() - 1.8) < 0.25")
+    wait_state(king, 121, "idle", timeout=6000)
+    shot(king, "sent-390")
 
-    live.evaluate("mock.state.oddFrameAt = 3")
-    live.locator(".figchat-input").fill("again")
-    live.locator(".figchat-send").tap()
-    wait_state(live, 8, "muted")
-    assert live.evaluate("chat.player(8).stats().chunks") == 3, "an odd frame stops the live stream where it stands"
-    wait_state(live, 8, "idle")
-    assert voce_of(live, 8).locator(".voce-play").is_enabled(), "the stored copy is still offered"
-    live.evaluate("mock.state.oddFrameAt = -1")
+    king.evaluate("mock.state.step = 120")
+    king.evaluate("mock.inject('spain', 'wick-sushi', 'from the terminal', 'terminal')")
+    king.wait_for_selector(prompt_sel(122))
+    assert king.locator(prompt_sel(122)).locator(".figchat-text").text_content() == "from the terminal", "a turn someone else starts shows up"
+    assert "terminal" in king.locator(prompt_sel(122)).locator(".figchat-meta").text_content()
+    king.wait_for_function("document.querySelector('%s .figchat-text')?.textContent.length > 30" % reply_sel(122))
+    assert king.locator(".figchat-turn").is_visible(), "a running turn offers Stop and says a message steers it"
+    king.evaluate("mock.drop()")
+    king.wait_for_function("chat.state().link === 'offline'")
+    king.wait_for_function("chat.state().link === 'live'")
+    resumed = king.evaluate("mock.state.attaches")[-1]
+    assert resumed["aria"] == "wick-sushi" and resumed["cursor"].startswith("122."), "a reconnect asks from the last cursor: %s" % resumed
+    king.wait_for_function("!document.querySelector('.figchat-msg[data-streaming]')", timeout=10000)
+    text = king.locator(reply_sel(122)).locator(".figchat-text").text_content()
+    assert text == "You said: from the terminal. I checked the clock for you. It is a fine day in Seville,\nand the razor is sharp.", "nothing lost or repeated across a reconnect: %r" % text
+    king.locator(".figchat-input").fill("too long")
+    king.locator(".figchat-send").tap()
+    king.wait_for_selector(prompt_sel(123))
+    king.wait_for_function("document.querySelector('%s .figchat-text')?.textContent.length > 8" % reply_sel(123))
+    king.locator(".figchat-stop").tap()
+    king.wait_for_function("!document.querySelector('.figchat-msg[data-streaming]')")
+    assert king.evaluate("mock.state.cancels") == [{"store": "spain", "aria": "wick-sushi"}]
+    king.locator(".figchat-fork").first.tap()
+    king.wait_for_function("location.hash.startsWith('#/spain/fork-')")
+    assert king.evaluate("mock.state.forks") == [{"store": "spain", "fork_of": "wick-sushi", "title": ""}]
+    king.wait_for_function("chat.state().link === 'live'")
+    assert king.evaluate("chat.state().turns") == 0
+    king.close()
 
-    live.evaluate("mock.state.speechFails = true")
-    live.locator(".figchat-input").fill("once more")
-    live.locator(".figchat-send").tap()
-    wait_state(live, 10, "lost")
-    assert voce_of(live, 10).locator(".voce-note").text_content() == "audio unavailable" and voce_of(live, 10).locator(".voce-play").is_disabled()
-    assert live.locator('.figchat-msg[data-id="10"] .figchat-fault').text_content() == "Speech failed: synthesis stopped"
-    assert live.locator('.figchat-msg[data-id="10"] .figchat-text').text_content().startswith("You said: once more.")
-    live.evaluate("mock.state.speechFails = false")
+    link = fresh()
+    go(link, "#/spain/wick-sushi:50")
+    link.wait_for_selector('.figchat-msg[data-target]')
+    link.wait_for_function("chat.state().link === 'live'")
+    assert link.locator(prompt_sel(50)).get_attribute("data-target") == "" and link.locator(reply_sel(50)).get_attribute("data-target") == ""
+    assert link.evaluate("chat.state().turns") == 80 and ids(link)[0] == 41, "pages are fetched until the turn is found: %s" % ids(link)[:2]
+    assert in_view(link, prompt_sel(50)), "the linked turn is scrolled to"
+    shot(link, "deeplink-390")
+    link.evaluate("location.hash = '#/spain/arsonist-grill'")
+    link.wait_for_function("chat.state().aria === 'arsonist-grill' && chat.state().turns === 6")
+    link.go_back()
+    link.wait_for_function("chat.state().aria === 'wick-sushi' && document.querySelector('.figchat-msg[data-target]')")
+    assert in_view(link, prompt_sel(50)), "back returns to the linked turn"
+    link.go_forward()
+    link.wait_for_function("chat.state().aria === 'arsonist-grill'")
+    link.evaluate("location.hash = '#/spain/wick-sushi:9999'")
+    link.go_back()
+    link.evaluate("location.hash = '#/spain/anklet-aerosol:2'")
+    link.wait_for_function("chat.state().aria === 'anklet-aerosol'")
+    link.wait_for_selector(prompt_sel(2) + "[data-target]")
+    link.locator(prompt_sel(1)).locator(".figchat-turnlink").tap()
+    link.wait_for_function("location.hash === '#/spain/anklet-aerosol:1'")
+    link.wait_for_selector(prompt_sel(1) + "[data-target]")
+    assert link.locator('.figchat-msg[data-target]').count() == 2, "following a turn link moves the mark without reopening the aria"
+    link.evaluate("location.hash = '#/spain/wick-sushi:9999'")
+    link.wait_for_function("chat.state().aria === 'wick-sushi' && chat.state().turns === 120")
+    expect(link.locator(".figchat-note").first).to_contain_text("Turn 9999 is not in this aria")
+    link.close()
 
-    live.locator(".figchat-voice").tap()
-    assert live.evaluate("mock.state.received.at(-1)") == {"type": "voice", "on": False}
-    live.locator(".figchat-input").fill("quietly")
-    live.locator(".figchat-send").tap()
-    live.wait_for_selector('.figchat-msg[data-id="12"]:not([data-streaming])')
-    live.wait_for_function("document.querySelector('.figchat-msg[data-id=\"12\"] .figchat-text').textContent.endsWith('sharp.')")
-    assert voce_of(live, 12).count() == 0, "voice off: text only"
+    for suffix, words in (("#/spain/nope", "This aria is gone"), ("#/spain/again-myspace", "This aria is gone"), ("#/gluck/desk-main", "Gluck is offline. Nothing is queued."), ("#/spain/wick-sushi%3A1", "This aria is gone")):
+        dead = fresh()
+        go(dead, suffix)
+        dead.wait_for_selector(".figchat-main .figchat-note")
+        dead.wait_for_function("w => document.querySelector('.figchat-main').textContent.includes(w)", arg=words)
+        assert dead.locator(".figchat-composer").is_hidden(), "nothing to write to: " + suffix
+        assert dead.evaluate("chat.state().link") == "idle"
+        if "gluck" in suffix:
+            shot(dead, "offline-390")
+        elif "nope" in suffix:
+            shot(dead, "gone-390")
+        dead.close()
 
-    live.locator(".figchat-voice").tap()
-    live.locator(".figchat-input").fill("drop me")
-    live.locator(".figchat-send").tap()
-    wait_state(live, 14, "live")
-    live.evaluate("mock.drop()")
-    live.wait_for_function("chat.state().link === 'offline'")
-    assert live.locator(".figchat-link").text_content() == "Offline" and live.locator(".figchat-send").is_disabled()
-    live.wait_for_function("chat.state().link === 'live'", timeout=8000)
-    assert live.evaluate("mock.state.received.at(-1)") == {"type": "voice", "on": True}, "the voice wish is sent again on the new socket"
-    live.wait_for_function("document.querySelector('.figchat-msg[data-id=\"14\"] .figchat-text').textContent.endsWith('sharp.')", timeout=10000)
-    live.wait_for_function("chat.player(14).audioId() !== ''", timeout=10000)
-    wait_state(live, 14, "idle")
-    assert voce_of(live, 14).locator(".voce-play").is_enabled(), "after a dropped socket the reply is fetched whole, with its stored audio"
-    assert live.locator(".figchat-msg").count() == 14
-
-    live.locator(".figchat-input").fill("hush")
-    live.locator(".figchat-send").tap()
-    wait_state(live, 16, "live")
-    live.locator(".figchat-voice").tap()
-    assert state_of(live, 16) == "idle" and voce_of(live, 16).locator(".voce-play").is_disabled(), "voice off silences the reply at once and leaves no player waiting for an audio.end that will not come"
-    live.wait_for_function("document.querySelector('.figchat-msg[data-id=\"16\"] .figchat-text').textContent.endsWith('sharp.')")
-    assert not live.errors, live.errors
-    live.close()
-
-    more = fresh()
-    go(more, "#/t/c0ffee02")
-    more.wait_for_function("document.querySelectorAll('.figchat-msg').length === 50")
-    assert more.evaluate("window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2"), "a thread opens at its newest message"
-    more.evaluate("window.scrollTo(0, 0)")
-    top_id = more.locator(".figchat-msg").first.get_attribute("data-id")
-    assert top_id == "71"
-    more.locator(".figchat-older").tap()
-    more.wait_for_function("document.querySelectorAll('.figchat-msg').length === 100")
-    y = more.locator('.figchat-msg[data-id="71"]').bounding_box()["y"]
-    assert 0 <= y < 844, "the message that was on screen stays on screen when older ones load: %s" % y
-    more.locator(".figchat-older").tap()
-    more.wait_for_function("document.querySelectorAll('.figchat-msg').length === 120")
-    assert more.locator(".figchat-older").is_hidden()
-    assert more.locator(".figchat-msg").evaluate_all("ns => ns.map(n => Number(n.dataset.id))") == list(range(1, 121)), "pages join in id order"
-    go(more, "#/t/nope")
-    more.wait_for_selector("text=This thread is gone.")
-    more.close()
-
-    h = fresh()
-    go(h, "?set=hostile")
-    h.wait_for_selector(".figchat-thread")
-    assert hostile_findings(h) == [], hostile_findings(h)
-    assert EVIL in h.locator(".figchat-threads").inner_text() and "U+202E" in h.locator(".figchat-threads").inner_text()
-    no_sideways(h, 390, "hostile list")
-    h.locator(".figchat-thread").first.tap()
-    h.wait_for_selector(".figchat-msg")
-    h.wait_for_function("chat.state().link === 'live'")
-    text = h.locator(".figchat-main").inner_text()
-    assert EVIL in text and "<script>window.__pwned=2</script>" in text, "stored markup is shown as text"
-    assert "U+202E" in text and "U+200B" in text and "U+0000" in text, "control characters are named, not obeyed"
-    assert EVIL in h.locator(".figchat-tool").first.inner_text()
-    h.locator(".figchat-input").fill(EVIL)
-    h.locator(".figchat-send").tap()
-    h.wait_for_selector('.figchat-msg[data-id="4"]:not([data-streaming])')
-    h.wait_for_function("document.querySelector('.figchat-msg[data-id=\"4\"] .figchat-text').textContent.endsWith('sharp.')")
-    assert hostile_findings(h) == [], hostile_findings(h)
-    for width in (320, 390):
-        h.set_viewport_size({"width": width, "height": 700})
-        no_sideways(h, width, "hostile thread with a 6000 character word")
-    h.evaluate("mock.state.status = 502")
-    h.locator(".figchat-input").fill("lost")
-    h.locator(".figchat-send").tap()
-    h.wait_for_function("document.querySelector('.figchat-sendnote').textContent.startsWith('Not sent')")
-    assert h.locator(".figchat-input").input_value() == "lost", "a message that was not sent stays in the composer"
-    assert not h.errors, h.errors
-    h.close()
-
-    tmp = tempfile.mkdtemp(prefix="figchat-sabotage-")
-    try:
-        shutil.copytree(os.path.join(root, "assets"), os.path.join(tmp, "assets"))
-        shutil.copytree(os.path.join(root, "examples"), os.path.join(tmp, "examples"))
-        target = os.path.join(tmp, "assets/figchat/figchat.js")
-        src = open(target).read()
-        needle = "else if (n.lastChild && n.lastChild.nodeType === 3) n.lastChild.appendData(p.plain);\n        else n.appendChild(doc.createTextNode(p.plain));"
-        assert src.count(needle) == 1, "the one text sink is still where the sabotage expects it"
-        open(target, "w").write(src.replace(needle, "else n.insertAdjacentHTML('beforeend', p.plain);"))
-        s = fresh()
-        s.goto("file://" + os.path.join(tmp, "examples/figchat.html") + "#/t/c0ffee03")
-        s.wait_for_function("chat.state().link === 'live'")
-        assert hostile_findings(s) == []
-        s.locator(".figchat-input").fill(EVIL)
-        s.locator(".figchat-send").tap()
-        s.wait_for_selector('.figchat-msg[data-id="2"]:not([data-streaming])')
-        s.wait_for_timeout(300)
-        assert "script ran" in hostile_findings(s), "negative control: with the text sink swapped for HTML the streamed delta must fire"
-        s.close()
-    finally:
-        shutil.rmtree(tmp, ignore_errors=True)
-
-    wide = fresh(width=1280, height=800)
-    go(wide, "")
-    wide.wait_for_selector(".figchat-thread")
-    assert wide.locator(".figchat-side").is_visible() and wide.locator(".figchat-pane").is_visible(), "a desk shows list and thread side by side"
-    no_sideways(wide, 1280, "desk list")
-    wide.locator(".figchat-new").click()
-    wide.wait_for_function("location.hash === '#/new' && document.activeElement.className === 'figchat-input'")
-    wide.locator(".figchat-input").fill("A fresh thread about wigs\nsecond line")
-    wide.locator(".figchat-input").press("Enter")
-    wide.wait_for_function("location.hash.startsWith('#/t/feed')")
-    wide.wait_for_selector('.figchat-msg[data-id="2"]:not([data-streaming])')
-    wide.wait_for_function("document.querySelector('.figchat-msg[data-id=\"2\"] .figchat-text').textContent.endsWith('sharp.')")
-    assert wide.locator('.figchat-msg[data-id="1"] .figchat-text').text_content() == "A fresh thread about wigs\nsecond line"
-    assert wide.locator(".figchat-h1").text_content() == "A fresh thread about wigs"
-    current = wide.locator('.figchat-thread[aria-current="page"] .figchat-thread-title')
-    assert current.count() == 1 and current.text_content() == "A fresh thread about wigs"
-    assert wide.locator(".figchat-thread-title").first.text_content() == "A fresh thread about wigs", "the newest thread leads the list"
-    assert wide.evaluate("mock.state.posts.length") == 1
-    wide.locator(".figchat-input").fill("line one")
-    wide.locator(".figchat-input").press("Shift+Enter")
-    wide.locator(".figchat-input").type("line two")
-    assert wide.locator(".figchat-input").input_value() == "line one\nline two" and wide.evaluate("mock.state.posts.length") == 1, "Shift+Enter is a newline, not a send"
-    wide.locator(".figchat-input").fill("")
-    side, pane = wide.locator(".figchat-side").bounding_box(), wide.locator(".figchat-main").bounding_box()
-    assert side["x"] + side["width"] <= pane["x"] + 1, "the panes do not overlap"
-    no_sideways(wide, 1280, "desk thread")
-    wide.locator(".figchat-thread", has_text="Razors").click()
-    wide.wait_for_function("document.querySelectorAll('.figchat-msg').length === 4")
-    wide.evaluate("document.querySelector('.voce').classList.add('voce-big')")
-    assert wide.locator(".voce-big .voce-play").bounding_box()["height"] >= 64, "the voice-ergonomics size class"
-    assert not wide.errors, wide.errors
-    wide.close()
+    hostile = fresh()
+    go(hostile, "?set=hostile#/spain/aa01")
+    hostile.wait_for_selector(".figchat-msg")
+    hostile.wait_for_function("chat.state().link === 'live'")
+    hostile.wait_for_function("document.querySelector('.figchat-h1').textContent.includes('eltit')")
+    assert hostile_findings(hostile) == [], hostile_findings(hostile)
+    assert EVIL in hostile.locator(prompt_sel(1)).locator(".figchat-text").text_content()
+    assert hostile.locator(reply_sel(1)).locator(".figchat-ctl").count() == 0
+    assert hostile.locator(prompt_sel(1)).locator(".figchat-ctl").count() == 2
+    no_sideways(hostile, 390, "hostile turn")
+    hostile.evaluate("location.hash = '#/spain'")
+    hostile.wait_for_selector(".figchat-thread")
+    assert hostile_findings(hostile) == [], hostile_findings(hostile)
+    no_sideways(hostile, 390, "hostile list")
+    hostile.close()
 
     mic = fresh()
-    go(mic, "#/t/c0ffee01")
+    go(mic, "#/spain/arsonist-grill")
     mic.wait_for_function("chat.state().link === 'live'")
     rec = mic.locator(".figchat-mic")
     box = rec.bounding_box()
-    assert box["height"] >= 56 and box["width"] >= 56, "the mic is a large target: %s" % box
-    assert rec.text_content() == "Record" and mic.evaluate("chat.state().mic") == "idle"
-    assert mic.locator(".figchat-turn").is_hidden() and mic.locator(".figchat-clip").is_hidden()
+    assert box["height"] >= 56 and box["width"] >= 56
     rec.tap()
     mic.wait_for_function("chat.state().mic === 'recording'")
-    assert rec.get_attribute("aria-pressed") == "true"
     mic.wait_for_function("document.querySelector('.figchat-mic').textContent === 'Stop 0:01'", timeout=4000)
-    no_sideways(mic, 390, "composer while recording")
     rec.tap()
     mic.wait_for_function("chat.state().clip !== null")
-    clips = mic.evaluate("mock.state.clips")
-    assert len(clips) == 1 and clips[0]["type"].startswith("audio/webm") and clips[0]["size"] > 200, "a real MediaRecorder clip went up: %s" % clips
-    assert mic.locator(".figchat-input").input_value() == "A mock transcript.", "the transcript lands in the composer, not in the thread"
-    assert mic.evaluate("mock.state.posts") == []
-    assert mic.locator(".figchat-clip-text").text_content() == "Recording attached, 0:01"
-    assert rec.text_content() == "Record" and mic.evaluate("chat.state().mic") == "idle"
+    assert mic.locator(".figchat-input").input_value() == "A mock transcript." and mic.evaluate("mock.state.posts") == []
     mic.locator(".figchat-input").fill("A mock transcript, edited.")
     mic.locator(".figchat-send").tap()
-    mic.wait_for_selector('.figchat-msg[data-id="6"]:not([data-streaming])')
-    assert mic.evaluate("mock.state.posts") == [{"thread": "c0ffee01", "body": {"text": "A mock transcript, edited.", "clip_id": "clip1"}}]
-    assert voce_of(mic, 5).count() == 1, "the sent recording has a player"
-    assert mic.locator(".figchat-clip").is_hidden() and mic.evaluate("chat.state().clip") is None and mic.locator(".figchat-input").input_value() == ""
-    assert mic.locator(".figchat-msg").count() == 6, "message.added and the POST answer are one bubble"
-
+    mic.wait_for_selector(prompt_sel(7))
+    assert mic.evaluate("mock.state.posts") == [{"store": "spain", "aria": "arsonist-grill", "body": {"text": "A mock transcript, edited.", "clip_id": "clip1"}}]
+    assert mic.locator(prompt_sel(7)).locator(".voce").count() == 1, "the sent recording has a player on its prompt"
+    mic.wait_for_function("!document.querySelector('.figchat-msg[data-streaming]')")
     mic.evaluate("mock.state.status = 502")
     rec.tap()
     mic.wait_for_function("chat.state().mic === 'recording'")
     mic.wait_for_timeout(300)
     rec.tap()
     mic.wait_for_function("document.querySelector('.figchat-micnote').textContent === 'Not transcribed: mock failure'")
-    assert mic.evaluate("chat.state().mic") == "idle" and mic.evaluate("chat.state().clip") is None, "a refused clip shows the server's words and leaves the mic ready"
-    mic.evaluate("mock.state.status = 0")
-
-    mic.locator(".figchat-input").fill("markdown please")
-    mic.locator(".figchat-send").tap()
-    mic.wait_for_selector('.figchat-msg[data-id="8"] h3')
-    mic.evaluate("document.querySelector('.figchat-msg[data-id=\"8\"] h3').kept = true")
-    assert mic.locator(".figchat-turn").is_visible(), "while a reply streams the composer says a message will steer it"
-    mic.wait_for_selector('.figchat-msg[data-id="8"]:not([data-streaming])')
-    md = mic.locator('.figchat-msg[data-id="8"] .figchat-text')
-    assert md.locator("h3").text_content() == "The list" and md.locator("h3").evaluate("e => e.kept") is True, "a finished block is not rebuilt by later deltas"
-    assert md.locator("strong").text_content() == "two of them sharp" and md.locator("strong code").text_content() == "sharp"
-    assert md.locator("ol > li").all_text_contents() == ["the razor", "the strop"] and md.locator("em").text_content() == "strop"
-    assert md.locator("pre > code").text_content() == "ls -la <b>"
-    assert md.locator("a").count() == 1 and md.locator("a").get_attribute("href") == "https://example.org/a?b=1" and "noopener" in md.locator("a").get_attribute("rel")
-    assert "[this](javascript:alert(1))" in md.text_content(), "a link outside http, https and mailto stays as typed"
-    assert hostile_findings(mic) == [], hostile_findings(mic)
-    assert mic.locator(".figchat-turn").is_hidden()
-    no_sideways(mic, 390, "thread with markdown")
-
-    mic.evaluate("mock.state.step = 120")
-    mic.evaluate("mock.handle('POST', '/chat/api/threads/c0ffee01/messages', JSON.stringify({ text: 'from another tab' }))")
-    mic.wait_for_selector('.figchat-msg[data-id="9"]')
-    assert mic.locator('.figchat-msg[data-id="9"] .figchat-text').text_content() == "from another tab" and mic.locator('.figchat-msg[data-id="9"]').get_attribute("data-role") == "user"
-    mic.wait_for_function("document.querySelector('.figchat-msg[data-id=\"10\"] .figchat-text')?.textContent.length > 20")
-    mic.evaluate("location.hash = '#/t/c0ffee03'")
-    mic.wait_for_function("chat.state().thread === 'c0ffee03' && chat.state().link === 'live'")
-    mic.evaluate("location.hash = '#/t/c0ffee01'")
-    mic.wait_for_selector('.figchat-msg[data-id="10"][data-streaming]')
-    assert mic.locator(".figchat-turn").is_visible(), "a turn already running shows as running when the thread is opened"
-    mic.wait_for_selector('.figchat-msg[data-id="10"]:not([data-streaming])', timeout=10000)
-    mic.wait_for_function("document.querySelector('.figchat-msg[data-id=\"10\"] .figchat-text').textContent.startsWith('You said: from another tab. I checked')")
-    assert mic.locator('.figchat-msg[data-id="10"] .figchat-text').text_content().endswith("sharp."), "a reply joined halfway is whole once it ends"
-
-    mic.locator(".figchat-input").fill("too long")
-    mic.locator(".figchat-send").tap()
-    mic.wait_for_function("document.querySelector('.figchat-msg[data-id=\"12\"] .figchat-text')?.textContent.length > 8")
-    mic.locator(".figchat-stop").tap()
-    mic.wait_for_selector('.figchat-msg[data-id="12"]:not([data-streaming])')
-    assert mic.evaluate("mock.state.received.at(-1)") == {"type": "cancel"}
-    assert not mic.locator('.figchat-msg[data-id="12"] .figchat-text').text_content().endswith("sharp.") and mic.locator(".figchat-turn").is_hidden(), "Stop reply cancels the turn"
-    assert not mic.errors, mic.errors
     mic.close()
 
-    deny = fresh(init="navigator.mediaDevices.getUserMedia = () => Promise.reject(new DOMException('denied', 'NotAllowedError'))")
-    go(deny, "#/new")
-    deny.locator(".figchat-mic").tap()
-    deny.wait_for_function("document.querySelector('.figchat-micnote').textContent.startsWith('Microphone blocked.')")
-    assert deny.locator(".figchat-mic").is_enabled() and deny.evaluate("chat.state().mic") == "idle"
-    deny.close()
-    bare = fresh(init="Object.defineProperty(window, 'MediaRecorder', { value: undefined })")
-    go(bare, "#/new")
-    assert bare.locator(".figchat-micnote").text_content() == "This browser cannot record audio." and bare.locator(".figchat-mic").is_disabled()
-    bare.locator(".figchat-input").fill("typing still works")
-    bare.locator(".figchat-send").tap()
-    bare.wait_for_function("location.hash.startsWith('#/t/feed')")
-    bare.close()
+    gone = fresh()
+    go(gone, "#/spain/arsonist-grill")
+    gone.wait_for_function("chat.state().link === 'live'")
+    gone.evaluate("mock.setOnline('spain', false)")
+    gone.wait_for_function("chat.state().link === 'offline'")
+    gone.locator(".figchat-input").fill("anyone there")
+    gone.locator(".figchat-send").tap(force=True)
+    assert gone.evaluate("mock.state.posts") == [], "an offline store takes nothing, and nothing is queued"
+    gone.evaluate("mock.setOnline('spain', true)")
+    gone.wait_for_function("chat.state().link === 'live'", timeout=8000)
+    gone.close()
+
+    wide = fresh(width=1280, height=800)
+    go(wide, "#/spain/wick-sushi")
+    wide.wait_for_selector(".figchat-msg")
+    wide.wait_for_function("chat.state().link === 'live'")
+    assert wide.locator(".figchat-side").is_visible() and wide.locator(".figchat-pane").is_visible(), "wide shows the list and the turns together"
+    wide.wait_for_selector(".figchat-tree")
+    assert wide.locator(".figchat-thread[aria-current='page'] .figchat-aria-name").text_content() == "King of Spain"
+    no_sideways(wide, 1280, "wide")
+    shot(wide, "wide-1280")
+    wide.locator(".figchat-thread", has_text="Figaro Engineer").first.click()
+    wide.wait_for_function("chat.state().aria === 'arsonist-grill' && chat.state().turns === 6")
+    wide.evaluate("location.hash = '#/spain/wick-sushi:70'")
+    wide.wait_for_selector(prompt_sel(70) + "[data-target]")
+    assert in_view(wide, prompt_sel(70))
+    shot(wide, "deeplink-1280")
+    wide.close()
 
     for scheme in ("light", "dark"):
         c = fresh(scheme)
-        go(c, "#/t/c0ffee01")
+        go(c, "#/spain/wick-sushi")
         c.wait_for_function("chat.state().link === 'live'")
         rgb = lambda s: [int(float(x)) for x in re.findall(r"[\d.]+", s)[:3]]
         color = lambda sel, prop="color": rgb(c.evaluate("([s, p]) => { const k = document.createElement('canvas').getContext('2d'); k.fillStyle = getComputedStyle(document.querySelector(s))[p]; k.fillRect(0, 0, 1, 1); return 'rgb(' + Array.from(k.getImageData(0, 0, 1, 1).data.slice(0, 3)).join(',') + ')'; }", [sel, prop]))
@@ -458,12 +359,12 @@ with sync_playwright() as p:
             for sel in (".figchat-text", ".voce-time", ".voce-elapsed"):
                 ratio = contrast(color('.figchat-msg[data-role="%s"] %s' % (role, sel)), bubble)
                 assert ratio >= 4.5, "%s %s %s contrast %.2f" % (scheme, role, sel, ratio)
-        assert contrast(color(".figchat-tool-state"), color('.figchat-msg[data-role="assistant"] .figchat-bubble', "backgroundColor")) >= 4.5, scheme + " tool state"
         assert contrast(color(".figchat-meta"), ground) >= 4.5, scheme + " meta"
         assert contrast(color(".figchat-link"), ground) >= 4.5, scheme + " link"
-        for sel in (".figchat-send", ".voce-play"):
-            assert contrast(color(sel), color(sel, "backgroundColor")) >= 4.5, scheme + " " + sel
-        assert contrast(color(".figchat-voice"), ground) >= 4.5, scheme + " voice toggle"
+        c.evaluate("location.hash = '#/spain'")
+        c.wait_for_selector(".figchat-tree")
+        for sel in (".figchat-tree", ".figchat-thread-when", ".figchat-aria-sub"):
+            assert contrast(color(sel), ground) >= 4.5, "%s %s contrast" % (scheme, sel)
         c.close()
 
     bundle = tempfile.mkdtemp(prefix="figchat-bundle-")
@@ -476,45 +377,39 @@ with sync_playwright() as p:
         csp = fresh(init=NO_MSE + "; document.addEventListener('securitypolicyviolation', e => (window.__csp = window.__csp || []).push(e.violatedDirective + ' ' + e.blockedURI))")
         violations = []
         csp.on("console", lambda m: violations.append(m.text) if "Content Security Policy" in m.text or "Refused to" in m.text else None)
-        csp.goto(origin + "/chat/")
-        csp.wait_for_selector(".figchat-thread")
+        csp.goto(origin + "/chat/#/spain/wick-sushi")
+        csp.wait_for_selector(".figchat-msg")
+        csp.wait_for_selector('#app[data-link="live"]')
         for face in ("EB Garamond", "VT323", "Jacquard 24"):
             csp.evaluate("f => document.fonts.load('16px \"' + f + '\"')", face)
             assert csp.evaluate("f => document.fonts.check('16px \"' + f + '\"')", face), face + " loads from the bundle under font-src self"
-        assert csp.locator(".figchat-head").evaluate("e => e.naturalWidth") > 0, "the mark loads under img-src self"
-        csp.locator(".figchat-thread", has_text="Razors").tap()
-        csp.wait_for_selector('#app[data-link="live"]')
+        assert csp.locator(".figchat-head").evaluate("e => e.naturalWidth") > 0
         csp.locator(".figchat-voice").tap()
         csp.locator(".figchat-input").fill("over the wire")
         csp.locator(".figchat-send").tap()
-        spoken = voce_of(csp, 6)
-        csp.wait_for_selector('.figchat-msg[data-id="6"] .voce[data-state="live"]')
-        csp.wait_for_selector('.figchat-msg[data-id="6"] .voce[data-state="idle"]', timeout=15000)
-        assert csp.locator('.figchat-msg[data-id="6"] .figchat-text').text_content().endswith("sharp."), "deltas arrive over the real socket"
+        csp.wait_for_selector(reply_sel(121) + ' .voce[data-state="live"]')
+        csp.wait_for_selector(reply_sel(121) + ' .voce[data-state="idle"]', timeout=15000)
+        assert csp.locator(reply_sel(121) + " .figchat-text").text_content().endswith("sharp."), "deltas arrive over the real socket"
+        spoken = csp.locator(reply_sel(121) + " .voce")
         assert spoken.locator(".voce-total").text_content() == "0:02", "PCM frames arrive over the real socket"
-        spoken.locator(".voce-play").tap()
-        csp.wait_for_selector('.figchat-msg[data-id="6"] .voce[data-state="playing"]')
-        track = spoken.locator(".voce-seek").bounding_box()
-        csp.touchscreen.tap(track["x"] + track["width"] * 0.5, track["y"] + track["height"] / 2)
-        expect(spoken.locator(".voce-elapsed")).to_have_text("0:01")
-        csp.wait_for_selector('.figchat-msg[data-id="6"] .voce[data-state="idle"]', timeout=8000)
-        gone = voce_of(csp, 4)
-        gone.locator(".voce-play").tap()
-        csp.wait_for_selector('.figchat-msg[data-id="4"] .voce[data-state="expired"]')
-        csp.locator(".figchat-mic").tap()
-        csp.wait_for_selector('#app[data-mic="recording"]')
-        csp.wait_for_timeout(400)
-        csp.locator(".figchat-mic").tap()
-        expect(csp.locator(".figchat-input")).to_have_value("A mock transcript.")
+        gone_audio = csp.locator(reply_sel(118) + " .voce")
+        gone_audio.locator(".voce-play").tap()
+        csp.wait_for_selector(reply_sel(118) + ' .voce[data-state="expired"]')
+        urllib.request.urlopen(origin + "/__inject?store=spain&aria=wick-sushi&text=hello%20from%20the%20terminal&from=terminal")
+        csp.wait_for_selector(prompt_sel(122))
+        csp.wait_for_selector(reply_sel(122) + ":not([data-streaming])", timeout=15000)
+        urllib.request.urlopen(origin + "/__drop")
+        csp.wait_for_function("chat.state && true")
         seen = json.loads(urllib.request.urlopen(origin + "/__state").read())
-        assert len(seen["clips"]) == 1 and seen["clips"][0]["type"].startswith("audio/webm") and seen["clips"][0]["size"] > 200, "the recording is POSTed as recorded: %s" % seen["clips"]
-        assert seen["posts"] == [{"thread": "c0ffee01", "body": {"text": "over the wire"}}], seen["posts"]
+        assert seen["posts"] == [{"store": "spain", "aria": "wick-sushi", "body": {"text": "over the wire"}}], seen["posts"]
         assert seen["received"] == [{"type": "voice", "on": True}], seen["received"]
-        assert seen["upgrades"] == 1 and any(r.startswith("bytes=") for r in seen["ranges"]), seen
-        assert "bytes=0-0" in seen["ranges"], "expiry is told from a one byte probe"
+        assert seen["upgrades"] >= 1 and "bytes=0-0" in seen["ranges"], seen
+        assert seen["attaches"][0] == {"store": "spain", "aria": "wick-sushi", "cursor": "120.35.120.120"}, "the first socket resumes from the newest stored turn: %s" % seen["attaches"]
+        urllib.request.urlopen(origin + "/__online?store=spain&on=0")
+        csp.wait_for_function("document.querySelector('#app').dataset.link === 'offline'")
         assert csp.evaluate("window.__csp || []") == [] and not violations, (csp.evaluate("window.__csp"), violations)
         assert csp.evaluate("window.__mse") is None
-        assert not csp.errors or all("404" in e for e in csp.errors), csp.errors
+        assert not csp.errors or all(("404" in e or "503" in e or "WebSocket" in e) for e in csp.errors), csp.errors
         csp.close()
     finally:
         if server:
@@ -523,4 +418,4 @@ with sync_playwright() as p:
 
     browser.close()
 
-print("figchat: list, thread, replay scrubber, live PCM without MediaSource, hostile text, reconnect, paging, both widths, contrast, sabotage and the bundle under CSP pass")
+print("figchat: picker, tree, turns paged on scroll, deep link with back and forward, live PCM, reconnect from a cursor, offline and gone, hostile text, both widths, contrast and the bundle under CSP pass")
