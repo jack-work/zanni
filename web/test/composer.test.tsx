@@ -142,3 +142,85 @@ describe("drafts", () => {
     expect(store.get(draftAtom("gluck/b"))).toBe("for b");
   });
 });
+
+describe("the message sheet", () => {
+  const stubFetch = (handler: (url: string, init?: RequestInit) => Response | Promise<Response>) => {
+    const calls: string[] = [];
+    vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+      calls.push(url);
+      return handler(url, init);
+    });
+    return calls;
+  };
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  const tapped = async (selector: string) => {
+    attend(1);
+    await live();
+    await waitFor(() => expect(document.querySelector(selector)).toBeTruthy());
+    act(() => (document.querySelector(selector) as HTMLElement).click());
+    await waitFor(() => expect(document.querySelector(".fw-sheet")).toBeTruthy());
+  };
+
+  it("opens on a tapped message of yours with play and re-transcribe", async () => {
+    await tapped('.nodi-turn[data-turn="26"] .nodi-said');
+    expect(document.querySelector(".fw-sheet")!.getAttribute("data-kind")).toBe("input");
+    expect([...document.querySelectorAll(".fw-sheet-act")].map((b) => b.textContent)).toEqual(["Play", "Re-transcribe"]);
+    expect(document.querySelector(".fw-sheet-title")!.textContent).toContain("Turn 26");
+  });
+
+  it("opens on a tapped reply with play only", async () => {
+    await tapped('.nodi-turn[data-turn="26"] .nodi-prose');
+    expect(document.querySelector(".fw-sheet")!.getAttribute("data-kind")).toBe("prose");
+    expect([...document.querySelectorAll(".fw-sheet-act")].map((b) => b.textContent)).toEqual(["Play"]);
+  });
+
+  it("does not open when a link or a tool summary is what was tapped", async () => {
+    attend(1);
+    await live();
+    await waitFor(() => expect(document.querySelector(".nodi-tool summary")).toBeTruthy());
+    act(() => (document.querySelector(".nodi-tool summary") as HTMLElement).click());
+    expect(document.querySelector(".fw-sheet")).toBeNull();
+  });
+
+  it("closes on Escape, the scrim and Close", async () => {
+    await tapped('.nodi-turn[data-turn="26"] .nodi-said');
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(document.querySelector(".fw-sheet")).toBeNull();
+    act(() => (document.querySelector('.nodi-turn[data-turn="26"] .nodi-said') as HTMLElement).click());
+    act(() => (document.querySelector(".fw-scrim") as HTMLElement).click());
+    expect(document.querySelector(".fw-sheet")).toBeNull();
+    act(() => (document.querySelector('.nodi-turn[data-turn="26"] .nodi-said') as HTMLElement).click());
+    act(() => screen.getByText("Close").click());
+    expect(document.querySelector(".fw-sheet")).toBeNull();
+  });
+
+  it("re-transcribes the stored clip by its key and offers the new text for the composer", async () => {
+    const calls = stubFetch(() => new Response(JSON.stringify({ text: "re-heard words", duration_ms: 900, audio_id: "x" }), { status: 200 }));
+    await tapped('.nodi-turn[data-turn="26"] .nodi-said');
+    fireEvent.change(input(), { target: { value: "typed" } });
+    act(() => screen.getByText("Re-transcribe").click());
+    await waitFor(() => expect(document.querySelector(".fw-sheet-text")!.textContent).toBe("re-heard words"));
+    expect(calls[0]).toBe("stt/key/gluck/" + MAIN + "%3A26/in");
+    act(() => screen.getByText("Use text").click());
+    expect(document.querySelector(".fw-sheet")).toBeNull();
+    expect(input().value).toBe("typed re-heard words");
+  });
+
+  it("says so when no recording is held under the key", async () => {
+    stubFetch(() => new Response(JSON.stringify({ error: "no clip" }), { status: 404 }));
+    await tapped('.nodi-turn[data-turn="26"] .nodi-said');
+    act(() => screen.getByText("Re-transcribe").click());
+    await waitFor(() => expect(document.querySelector(".fw-sheet-note")!.textContent).toBe("No recording for this message."));
+    expect(document.querySelector(".fw-sheet-text")).toBeNull();
+  });
+
+  it("plays the stored reply into the sheet", async () => {
+    const calls = stubFetch(() => new Response("", { status: 206 }));
+    await tapped('.nodi-turn[data-turn="26"] .nodi-prose');
+    act(() => screen.getByText("Play").click());
+    expect(document.querySelector(".fw-sheet-player .voce")).toBeTruthy();
+    void calls;
+  });
+});

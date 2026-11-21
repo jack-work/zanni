@@ -5,6 +5,7 @@ import { audioSessionAtom } from "./state/audio";
 import { micAtom } from "./state/mic";
 import { AriaView } from "./components/aria-view";
 import { Roster } from "./components/roster";
+import { Sheet } from "./components/sheet";
 import { TopBar } from "./components/topbar";
 import { attendedAtom, routeAtom, routeKindAtom } from "./state/route";
 
@@ -50,6 +51,7 @@ export function App() {
           {attended ? <AriaView key={attended.store + "/" + attended.aria} attended={attended} /> : route?.aria ? <NoStore store={route.store} /> : <ListHint />}
         </div>
       </div>
+      <Sheet />
     </div>
   );
 }

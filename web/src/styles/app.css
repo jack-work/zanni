@@ -230,3 +230,32 @@ html { scroll-padding-bottom: var(--fw-composer-h, 0px); }
 .fw-mic::before { content: ""; flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--z-fail); }
 .fw-mic[aria-pressed="true"] { background: var(--z-fail); border-color: var(--z-fail); color: var(--z-ground); }
 .fw-mic[aria-pressed="true"]::before { border-radius: 0; background: currentColor; }
+
+.fw-tap { cursor: pointer; }
+.fw-tap:focus-visible { outline-offset: 2px; }
+.fw-scrim { position: fixed; inset: 0; z-index: 4; background: color-mix(in srgb, var(--z-ink) 35%, transparent); }
+.fw-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  width: 100%;
+  max-width: var(--fw-width);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--z-space-3, 8px);
+  padding: var(--z-space-4, 12px) var(--fw-edge-r) calc(var(--z-space-4, 12px) + env(safe-area-inset-bottom)) var(--fw-edge-l);
+  background: var(--z-ground);
+  border-top: 2px solid var(--z-accent);
+  color: var(--z-ink);
+}
+.fw-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: var(--z-space-3, 8px); font: 400 1.25rem / 1 var(--fw-mono); letter-spacing: 0.04em; color: var(--z-muted); }
+.fw-sheet-close { display: inline-flex; align-items: center; min-height: var(--fw-hit); padding: 0 var(--z-space-4, 12px); border: 1px solid var(--z-line); border-radius: var(--z-radius-1, 2px); background: transparent; color: var(--z-ink); font: 400 1.125rem / 1 var(--fw-mono); letter-spacing: 0.04em; cursor: pointer; }
+.fw-sheet-actions { display: flex; flex-wrap: wrap; gap: var(--z-space-3, 8px); }
+.fw-sheet-act { display: inline-flex; align-items: center; justify-content: center; min-height: var(--fw-hit); padding: 0 var(--z-space-5, 16px); border: 2px solid var(--z-accent); border-radius: var(--z-radius-1, 2px); background: transparent; color: var(--accent-ink); font: 400 1.25rem / 1 var(--fw-mono); letter-spacing: 0.04em; cursor: pointer; }
+.fw-sheet-player:empty { display: none; }
+.fw-sheet-note { font: 400 1.0625rem / 1.2 var(--fw-mono); color: var(--z-warn); }
+.fw-sheet-result { display: flex; flex-direction: column; align-items: flex-start; gap: var(--z-space-3, 8px); }
+.fw-sheet-text { font-size: 1.1875rem; overflow-wrap: anywhere; }

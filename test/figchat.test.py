@@ -434,6 +434,47 @@ try:
         assert not pg.errors, pg.errors
         ctx.close()
 
+        for width, height in ((390, 844), (1280, 800)):
+            sheet_door = door(12)
+            phone = width < 600
+            ctx = browser.new_context(viewport={"width": width, "height": height}, is_mobile=phone, has_touch=phone)
+            pg = ctx.new_page()
+            pg.errors = []
+            pg.on("pageerror", lambda e: pg.errors.append(str(e)))
+            pg.on("console", lambda m: pg.errors.append(m.text) if m.type == "error" else None)
+            attend(pg, sheet_door, MAIN)
+            pg.locator(".fw-input").fill("typed")
+            said = pg.locator(".nodi-turn[data-turn='26'] .nodi-said").first
+            said.scroll_into_view_if_needed()
+            said.tap() if phone else said.click()
+            pg.wait_for_selector(".fw-sheet")
+            box = pg.locator(".fw-sheet").bounding_box()
+            assert abs(box["y"] + box["height"] - height) <= 1, "the sheet sits on the bottom edge: %s" % box
+            assert box["x"] >= 0 and box["x"] + box["width"] <= width, box
+            assert pg.locator(".fw-sheet-act").all_inner_texts() == ["Play", "Re-transcribe"]
+            for b in pg.locator(".fw-sheet-act").all():
+                assert b.bounding_box()["height"] >= 44, "sheet actions are 44px targets"
+            snap(pg, "sheet-%d" % width)
+            sans_free(pg, "the sheet at %d" % width)
+            pg.locator(".fw-sheet-act[data-action='play']").click()
+            pg.wait_for_selector(".fw-sheet .voce", timeout=5000)
+            until(pg, "['loading','playing','idle','expired','error'].includes(document.querySelector('.fw-sheet .voce').dataset.state)", 10000)
+            pg.locator(".fw-sheet-act[data-action='retranscribe']").click()
+            pg.wait_for_selector(".fw-sheet-text", timeout=5000)
+            assert pg.locator(".fw-sheet-text").inner_text() == "re-heard words"
+            assert sheet_door.state()["retranscribed"] == ["gluck/" + MAIN + ":26/in"], sheet_door.state()["retranscribed"]
+            pg.locator(".fw-sheet-act[data-action='use']").click()
+            assert pg.locator(".fw-sheet").count() == 0
+            assert pg.locator(".fw-input").input_value() == "typed re-heard words"
+            prose = pg.locator(".nodi-turn[data-turn='26'] .nodi-prose").first
+            prose.tap() if phone else prose.click()
+            pg.wait_for_selector(".fw-sheet[data-kind='prose']")
+            assert pg.locator(".fw-sheet-act").all_inner_texts() == ["Play"]
+            pg.keyboard.press("Escape")
+            assert pg.locator(".fw-sheet").count() == 0
+            assert not pg.errors, pg.errors
+            ctx.close()
+
         refused = fresh()
         refused.goto(fast.url + "#/gluck/" + "f" * 32)
         until(refused, "document.querySelector('.fw').dataset.link === 'gone'", timeout=10000)
