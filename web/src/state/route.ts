@@ -1,12 +1,21 @@
 import { atom } from "jotai";
+import { flushSync } from "react-dom";
 import type { AriaClient } from "figaro-forms/aria";
+import { transition } from "../lib/motion";
 import { parseRoute, routeFor, type Route } from "../lib/route";
 import { bootAtom } from "./boot";
 
 const hashAtom = atom(typeof window === "undefined" ? "" : window.location.hash);
 hashAtom.onMount = (set) => {
-  const read = () => set(window.location.hash);
-  read();
+  let last = window.location.hash;
+  set(last);
+  const read = () => {
+    const next = window.location.hash;
+    const crossing = !!parseRoute(last)?.aria !== !!parseRoute(next)?.aria;
+    last = next;
+    if (crossing) transition(() => flushSync(() => set(next)));
+    else set(next);
+  };
   window.addEventListener("hashchange", read);
   return () => window.removeEventListener("hashchange", read);
 };

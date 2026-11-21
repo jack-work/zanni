@@ -45,6 +45,7 @@ export function AriaView({ attended }: { attended: Attended }) {
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [pageError, setPageError] = useState("");
   const [followed, setFollowed] = useState(false);
+  const [baseline, setBaseline] = useState<number | null>(null);
   const live = snap.phase === "live";
   const olderAvailable = snap.olderAvailable === true;
   const follow = useFollow(paneRef, followed);
@@ -127,9 +128,10 @@ export function AriaView({ attended }: { attended: Attended }) {
   useEffect(() => {
     if (!live || followed) return;
     setFollowed(true);
+    setBaseline(Math.max(-1, ...turns.map((t) => t.turn)));
     if (want) void seek(want);
     else toBottom();
-  }, [live, followed, want, seek, toBottom]);
+  }, [live, followed, want, seek, toBottom, turns]);
 
   const wanted = useRef(want);
   useEffect(() => {
@@ -180,7 +182,7 @@ export function AriaView({ attended }: { attended: Attended }) {
         )}
         <ol className="nodi-turns" aria-label="Transcript">
           {turns.map((t) => (
-            <TurnView key={t.key} turn={t} speaking={speakingHere} />
+            <TurnView key={t.key} turn={t} speaking={speakingHere} fresh={baseline !== null && t.turn > baseline} />
           ))}
         </ol>
         {status && <p className="fw-note">{status}</p>}

@@ -1,4 +1,5 @@
 import { useSetAtom } from "jotai";
+import { formatWorkedTime, groupWork, stepsTitle, type Work } from "../lib/work";
 import { memo, useMemo, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import type { SheetKind } from "../lib/sheet";
 import { openSheetAtom } from "../state/sheet";
@@ -185,6 +186,22 @@ export function UnknownView({ item }: { item: UnknownItem }) {
   );
 }
 
+export function WorkGroup({ items }: { items: Work[] }) {
+  const live = items.some((i) => (i.kind === "tool" ? i.status === "running" : !i.settled));
+  const ms = items.reduce((n, i) => n + (i.kind === "tool" ? i.ms : 0), 0);
+  return (
+    <details className="fw-work" {...(live ? { "data-live": "" } : {})}>
+      <Caret>
+        <span className="nodi-sum-label">{stepsTitle(items, live)}</span>
+        {ms >= 1000 && <span className="fw-work-time">{formatWorkedTime(ms)}</span>}
+      </Caret>
+      <div className="fw-work-body">
+        {items.map((it) => (it.kind === "thinking" ? <ThinkingView key={it.key} item={it} /> : <ToolView key={it.key} item={it} />))}
+      </div>
+    </details>
+  );
+}
+
 export interface Speaking {
   readonly turn: number;
   readonly node: number;
@@ -211,16 +228,18 @@ function ItemView({ item, turn, speaking }: { item: Item; turn: number; speaking
 export interface TurnViewProps {
   turn: TurnModel;
   speaking: Speaking | null;
+  fresh: boolean;
 }
 
 const spokenIn = (s: Speaking | null, turn: number): string => (s && s.turn === turn ? s.node + ":" + s.chars : "");
 
 export const TurnView = memo(
-  function TurnView({ turn: m, speaking }: TurnViewProps) {
+  function TurnView({ turn: m, speaking, fresh }: TurnViewProps) {
   const state = m.end ? (m.end.kind === "error" ? "failed" : "ended") : m.open ? "open" : "done";
   const mine = speaking && speaking.turn === m.turn ? speaking : null;
+  const rows = useMemo(() => groupWork(m.items), [m.items]);
   return (
-    <li className="nodi-turn" data-turn={m.turn} data-state={state}>
+    <li className="nodi-turn" data-turn={m.turn} data-state={state} {...(fresh ? { "data-fresh": "" } : {})}>
       <div className="nodi-turn-head">
         <span className="nodi-turn-no">Turn {m.turn}</span>
         <span className="nodi-turn-tools">
@@ -229,9 +248,7 @@ export const TurnView = memo(
       </div>
       <div className="nodi-turn-body">
         {m.input && m.input.parts.length > 0 && <InputView input={m.input} turn={m.turn} />}
-        {m.items.map((it) => (
-          <ItemView key={it.key + it.kind} item={it} turn={m.turn} speaking={mine} />
-        ))}
+        {rows.map((row) => (row.kind === "group" ? <WorkGroup key={row.key} items={row.items} /> : <ItemView key={row.key + row.kind} item={row} turn={m.turn} speaking={mine} />))}
         {m.end &&
           (m.end.kind === "error" ? (
             <p className="nodi-error" role="alert">
@@ -246,5 +263,5 @@ export const TurnView = memo(
     </li>
   );
   },
-  (a, b) => a.turn === b.turn && spokenIn(a.speaking, a.turn.turn) === spokenIn(b.speaking, b.turn.turn),
+  (a, b) => a.turn === b.turn && a.fresh === b.fresh && spokenIn(a.speaking, a.turn.turn) === spokenIn(b.speaking, b.turn.turn),
 );

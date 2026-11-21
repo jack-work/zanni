@@ -1,6 +1,7 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { joinDictation } from "../lib/mic";
+import { useLinger } from "../lib/motion";
 import { clipKey, sheetActions, type SheetContext, type SheetTarget } from "../lib/sheet";
 import { retranscribe } from "../lib/stt";
 import { voce, type VocePlayer } from "../lib/zanni";
@@ -13,10 +14,14 @@ const SPOKEN = { input: "Your message", prose: "Reply" } as const;
 
 export function Sheet() {
   const target = useAtomValue(sheetAtom);
-  return target ? <SheetBody key={target.kind + target.turn} target={target} /> : null;
+  const last = useRef<SheetTarget | null>(null);
+  if (target) last.current = target;
+  const { mounted, leaving } = useLinger(!!target);
+  const shown = target ?? last.current;
+  return mounted && shown ? <SheetBody key={shown.kind + shown.turn} target={shown} leaving={leaving} /> : null;
 }
 
-function SheetBody({ target }: { target: SheetTarget }) {
+function SheetBody({ target, leaving }: { target: SheetTarget; leaving: boolean }) {
   const close = useSetAtom(closeSheetAtom);
   const setDraft = useSetAtom(draftAtom(keyOf(target.store, target.aria)));
   const { audioUrl, sttUrl } = useAtomValue(bootAtom);
@@ -72,8 +77,8 @@ function SheetBody({ target }: { target: SheetTarget }) {
 
   return (
     <>
-      <div className="fw-scrim" onClick={() => close()} />
-      <div className="fw-sheet" role="dialog" aria-modal="true" aria-label="Message actions" data-kind={target.kind}>
+      <div className="fw-scrim" onClick={() => close()} {...(leaving ? { "data-leaving": "" } : {})} />
+      <div className="fw-sheet" role="dialog" aria-modal="true" aria-label="Message actions" data-kind={target.kind} {...(leaving ? { "data-leaving": "" } : {})}>
         <div className="fw-sheet-head">
           <span className="fw-sheet-title">
             {SPOKEN[target.kind]} · Turn {target.turn}

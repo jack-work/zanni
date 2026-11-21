@@ -1,5 +1,6 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
+import { useLinger } from "../lib/motion";
 import { clock } from "../lib/work";
 import { micAtom, micToggleAtom, dictationFocusAtom } from "../state/mic";
 import { linkAtom, runningAtom, workAtom } from "../state/aria";
@@ -36,7 +37,7 @@ function useComposerHeight(form: RefObject<HTMLFormElement | null>): void {
   }, [form]);
 }
 
-function Strip({ attended, note, running }: { attended: Attended; note: string; running: boolean }) {
+function Strip({ attended, note, running, leaving }: { attended: Attended; note: string; running: boolean; leaving: boolean }) {
   const { client, aria } = attended;
   const work = useAtomValue(workAtom(client, aria));
   const interrupt = useSetAtom(interruptAtom);
@@ -49,7 +50,7 @@ function Strip({ attended, note, running }: { attended: Attended; note: string; 
   const live = link === "live";
   const text = note || work.verb;
   return (
-    <div className="fw-strip" data-kind={running ? "running" : "note"}>
+    <div className="fw-strip" data-kind={running ? "running" : "note"} {...(leaving ? { "data-leaving": "" } : {})}>
       {running && (
         <span className="fw-glyph" aria-hidden="true">
           <i />
@@ -123,6 +124,12 @@ export function Composer({ attended, toBottom }: { attended: Attended; toBottom:
   const micLabel = mic.state === "recording" ? "Stop " + clock(micNow - mic.began) : mic.state === "transcribing" ? "Wait" : "Record";
   const note = comp.note || mic.note;
   const showStrip = running || !!note;
+  const strip = useLinger(showStrip);
+  const frozen = useRef({ note, running });
+  if (showStrip) frozen.current = { note, running };
+  const label = running ? "Steer" : "Send";
+  const labelled = useRef({ label, swapped: false });
+  if (labelled.current.label !== label) labelled.current = { label, swapped: true };
   return (
     <form
       className="fw-composer"
@@ -134,7 +141,7 @@ export function Composer({ attended, toBottom }: { attended: Attended; toBottom:
         void submit();
       }}
     >
-      {showStrip && <Strip attended={attended} note={note} running={running} />}
+      {strip.mounted && <Strip attended={attended} note={frozen.current.note} running={frozen.current.running} leaving={strip.leaving} />}
       <div className="fw-compose-row">
         <textarea
           ref={input}
@@ -157,7 +164,9 @@ export function Composer({ attended, toBottom }: { attended: Attended; toBottom:
           {micLabel}
         </button>
         <button type="submit" className="fw-send" disabled={comp.sending || !live}>
-          {running ? "Steer" : "Send"}
+          <span className={labelled.current.swapped ? "fw-swap" : undefined} key={label}>
+            {label}
+          </span>
         </button>
       </div>
     </form>

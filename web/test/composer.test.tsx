@@ -38,7 +38,7 @@ describe("the composer", () => {
     attend(1);
     await live();
     fireEvent.change(input(), { target: { value: "please run the tests" } });
-    expect((screen.getByText("Send") as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByRole("button", { name: "Send" }) as HTMLButtonElement).disabled).toBe(false);
     act(() => screen.getByText("Send").click());
     await waitFor(() => expect(core.sent?.[0]?.text).toBe("please run the tests"));
     await waitFor(() => expect(input().value).toBe(""));

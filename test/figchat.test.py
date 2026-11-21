@@ -27,6 +27,14 @@ def hostile_findings(page):
     }""")
 
 
+def press_ms(pg):
+    return pg.evaluate("(() => { const v = getComputedStyle(document.querySelector('.fw-send')).transitionDuration.split(',')[0].trim(); return v.endsWith('ms') ? parseFloat(v) : parseFloat(v) * 1000; })()")
+
+
+def settle_motion(pg):
+    pg.evaluate("Promise.all(document.getAnimations().map(a => a.finished.catch(() => null)))")
+
+
 def until(pg, js, timeout=10000):
     end = time.time() + timeout / 1000.0
     last = None
@@ -175,8 +183,8 @@ try:
             assert tool.evaluate("n => n.open") is False, "tool blocks are collapsed"
             tool.locator("summary").click()
             assert tool.evaluate("n => n.open") is True
-            assert "go test" in tool.locator(".nodi-tool-args").inner_text(), tool.evaluate("n => n.outerHTML")
-            assert tool.locator(".nodi-tool-out").is_visible()
+            until(pg, "document.querySelector(\".nodi-turn[data-turn='7'] .nodi-tool-args\").innerText.includes('go test')", 5000)
+            tool.locator(".nodi-tool-out").wait_for(state="visible", timeout=5000)
             assert "clipped" in tool.locator(".nodi-clipped").inner_text(), "a clipped result says so"
             sans_free(pg, "history at %d" % width)
             no_sideways(pg, width, "history")
@@ -260,7 +268,7 @@ try:
             until(pg, "!document.querySelector('.fw-strip')", timeout=5000)
             thinking.locator("summary").click()
             assert thinking.evaluate("n => n.open") is True
-            assert "answer plainly" in thinking.locator(".nodi-thought").inner_text()
+            until(pg, "document.querySelector(\".nodi-turn[data-turn='27'] .nodi-thought\").innerText.includes('answer plainly')", 5000)
             kinds = pg.evaluate("[...document.querySelectorAll('.nodi-turn[data-turn=\"27\"] .nodi-turn-body > *')].map(n => n.className.split(' ')[0])")
             assert kinds == ["nodi-input", "nodi-thinking", "nodi-prose", "nodi-tool", "nodi-prose"], kinds
             assert "please run the tests" in pg.locator(".nodi-turn[data-turn='27'] .nodi-input").inner_text()
@@ -448,6 +456,7 @@ try:
             said.scroll_into_view_if_needed()
             said.tap() if phone else said.click()
             pg.wait_for_selector(".fw-sheet")
+            settle_motion(pg)
             box = pg.locator(".fw-sheet").bounding_box()
             assert abs(box["y"] + box["height"] - height) <= 1, "the sheet sits on the bottom edge: %s" % box
             assert box["x"] >= 0 and box["x"] + box["width"] <= width, box
@@ -464,16 +473,57 @@ try:
             assert pg.locator(".fw-sheet-text").inner_text() == "re-heard words"
             assert sheet_door.state()["retranscribed"] == ["gluck/" + MAIN + ":26/in"], sheet_door.state()["retranscribed"]
             pg.locator(".fw-sheet-act[data-action='use']").click()
-            assert pg.locator(".fw-sheet").count() == 0
+            pg.wait_for_selector(".fw-sheet", state="detached", timeout=3000)
             assert pg.locator(".fw-input").input_value() == "typed re-heard words"
             prose = pg.locator(".nodi-turn[data-turn='26'] .nodi-prose").first
             prose.tap() if phone else prose.click()
             pg.wait_for_selector(".fw-sheet[data-kind='prose']")
             assert pg.locator(".fw-sheet-act").all_inner_texts() == ["Play"]
             pg.keyboard.press("Escape")
-            assert pg.locator(".fw-sheet").count() == 0
+            pg.wait_for_selector(".fw-sheet", state="detached", timeout=3000)
             assert not pg.errors, pg.errors
             ctx.close()
+
+        MOTION = """() => {
+          const over = [];
+          for (const n of document.querySelectorAll('.fw-composer, .fw-composer *, .fw-top *, .fw-main button')) {
+            const cs = getComputedStyle(n);
+            const ms = (v) => v.split(',').map(x => x.trim()).map(x => x.endsWith('ms') ? parseFloat(x) : parseFloat(x) * 1000);
+            if (cs.animationName !== 'none' && Math.max(...ms(cs.animationDuration)) > 1) over.push(n.className + ' animation ' + cs.animationName + ' ' + cs.animationDuration);
+            if (Math.max(...ms(cs.transitionDuration)) > 1) over.push(n.className + ' transition ' + cs.transitionDuration);
+            if (cs.animationName !== 'none' && cs.animationIterationCount === 'infinite') over.push(n.className + ' loops');
+          }
+          const running = document.getAnimations().filter(a => a.playState === 'running' && a.effect && a.effect.getTiming().duration > 1);
+          return over.concat(running.map(a => 'running ' + (a.animationName || a.transitionProperty)));
+        }"""
+
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True, reduced_motion="reduce")
+        pg = ctx.new_page()
+        pg.errors = []
+        pg.on("pageerror", lambda e: pg.errors.append(str(e)))
+        attend(pg, door(150), MAIN)
+        assert press_ms(pg) <= 1, "reduced motion sets the press release to 1ms: %s" % press_ms(pg)
+        send(pg, "please run the build")
+        pg.wait_for_selector(".fw-strip[data-kind='running']", timeout=15000)
+        pg.wait_for_timeout(300)
+        assert pg.locator(".fw-glyph i").first.evaluate("n => getComputedStyle(n).animationName") == "none", "the glyph is still under reduced motion"
+        assert pg.evaluate(MOTION) == [], pg.evaluate(MOTION)
+        pg.locator(".fw-stop-clear").click()
+        pg.wait_for_selector(".fw-strip", state="detached", timeout=5000)
+        ctx.close()
+
+        pg = fresh()
+        attend(pg, door(150), MAIN)
+        assert press_ms(pg) == 320, "the press releases on the pop token: %s" % press_ms(pg)
+        assert pg.locator(".nodi-turn[data-fresh]").count() == 0, "history does not animate in"
+        send(pg, "please run the build")
+        pg.wait_for_selector(".fw-strip[data-kind='running']", timeout=15000)
+        assert pg.locator(".nodi-turn[data-turn='27'][data-fresh]").count() == 1, "the new turn is the one that arrives with motion"
+        assert pg.locator(".fw-glyph i").first.evaluate("n => getComputedStyle(n).animationName") == "fw-glyph"
+        assert pg.evaluate("[...document.querySelectorAll('.fw-glyph i')].every(n => getComputedStyle(n).animationTimingFunction.startsWith('steps'))"), "the glyph steps, it does not glide"
+        pg.locator(".fw-stop-clear").click()
+        pg.wait_for_selector(".fw-strip", state="detached", timeout=5000)
+        pg.close()
 
         refused = fresh()
         refused.goto(fast.url + "#/gluck/" + "f" * 32)
