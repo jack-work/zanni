@@ -1,4 +1,4 @@
-import { ActionBar, Button } from "../../index";
+import { ActionBar, Button, Glyph, glyphs } from "../../index";
 import { useAtomValue, useSetAtom } from "jotai";
 import { handsFreeAtom, replayAtom } from "../state/audio";
 import { composerAtom, forkAtom, keyOf } from "../state/composer";
@@ -14,9 +14,13 @@ export function TurnActions({ turn }: { turn: number }) {
   const forking = useAtomValue(composerAtom(at ? keyOf(at.store, at.aria) : "")).forking;
   return (
     <ActionBar>
-      {handsFree && (
+      {handsFree ? (
         <Button variant="ghost" size="compact" className="fw-play fw-play-big" onClick={() => replay(turn)}>
           Play
+        </Button>
+      ) : (
+        <Button variant="ghost" size="compact" className="fw-play fw-play-icon" aria-label="Play" title="Play" data-action="play" onClick={() => replay(turn)}>
+          <Glyph glyph={glyphs["state.running"]} />
         </Button>
       )}
       <Button variant="ghost" size="compact" className="fw-fork-here" disabled={link !== "live" || forking} onClick={() => void fork(turn)}>

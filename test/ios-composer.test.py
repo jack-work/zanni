@@ -435,6 +435,14 @@ with sync_playwright() as p:
     attend(pg, pills_door)
     pills = pg.evaluate("[...document.querySelectorAll('.zr-pill')].map(n => [n.getAttribute('aria-label'), n.disabled])")
     assert pills == [["Attach", False], ["Command", False], ["Send", False]], "every pill is drawn enabled: %s" % pills
+    got = pg.evaluate("""() => {
+      const hit = (sel, dy) => { const b = document.querySelector(sel).getBoundingClientRect(); const t = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2 + dy); return !!t && !!t.closest(sel); };
+      const f = document.querySelector('.zr-input').getBoundingClientRect();
+      const top = document.elementFromPoint(f.x + f.width / 2, f.y + 1);
+      return { sendUp: hit('.zr-send', -21), sendDown: hit('.zr-send', 21), fieldTop: !!top && top.classList.contains('zr-input') };
+    }""")
+    assert got["sendUp"] and got["sendDown"], "Send keeps a 44px hit area: %s" % got
+    assert got["fieldTop"], "the grip does not cover the top of the field: %s" % got
     assert_centred(pg.locator(".zr-send"), "the send pill's glyph on an iPhone")
     assert_centred(pg.locator(".fw-mic"), "the record button's glyph on an iPhone", tol=2.0, blank_ok=True)
     pg.locator(".zr-input").tap()

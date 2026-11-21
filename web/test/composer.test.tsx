@@ -188,15 +188,17 @@ describe("the buttons under a message", () => {
   };
   const press = (selector: string) => act(() => (document.querySelector(selector) as HTMLElement).click());
 
-  it("sit under a message of yours with play and re-transcribe, and under a reply with play only, no sheet or scrim", async () => {
+  it("sit under a message of yours with play and re-transcribe; a reply has its play in the turn head, not a row of its own", async () => {
     await ready();
     const mine = [...document.querySelectorAll(under + '.fw-inline[data-kind="input"] .fw-inline-btn')].map((b) => b.getAttribute("data-action"));
     expect(mine).toEqual(["play", "retranscribe"]);
-    await waitFor(() => expect(document.querySelector(under + '.fw-inline[data-kind="prose"]')).toBeTruthy());
-    expect([...document.querySelectorAll(under + '.fw-inline[data-kind="prose"] .fw-inline-btn')].map((b) => b.getAttribute("data-action"))).toEqual(["play"]);
+    expect(document.querySelector('.fw-inline[data-kind="prose"]')).toBeNull();
+    expect(document.querySelector(under + ".nodi-turn-head .fw-play-icon")!.getAttribute("aria-label")).toBe("Play");
     expect(document.querySelector(".zr-scrim")).toBeNull();
     expect(document.querySelector(".fw-sheet")).toBeNull();
     expect(document.querySelector(under + '.fw-inline [data-action="play"]')!.textContent).toBe("▸");
+    expect(document.querySelector(under + '.fw-inline [data-action="retranscribe"]')!.textContent).toBe("↩");
+    expect(document.querySelector(".zr-send")!.textContent).toBe("✎");
   });
 
   it("do not open anything when a message is tapped", async () => {
@@ -228,8 +230,7 @@ describe("the buttons under a message", () => {
   it("play a reply where it is drawn", async () => {
     stubFetch(() => new Response("", { status: 206 }));
     await ready();
-    await waitFor(() => expect(document.querySelector(under + '.fw-inline[data-kind="prose"]')).toBeTruthy());
-    press(under + '.fw-inline[data-kind="prose"] [data-action="play"]');
+    press(under + ".nodi-turn-head .fw-play-icon");
     expect(document.querySelector('.nodi-turn[data-turn="26"] .voce[data-for="26"]')).toBeTruthy();
   });
 
@@ -267,5 +268,23 @@ describe("the composer's pills", () => {
     expect(g.hasAttribute("style")).toBe(false);
     expect(g.hasAttribute("data-ink")).toBe(false);
     expect(document.querySelector(".fw-mic .zr-ink")!.textContent).toBe("🎙︎");
+  });
+});
+
+describe("a missing aria", () => {
+  it("offers neither the composer nor Hands-free, only the way back", async () => {
+    ({ core, client } = mockDoor(1));
+    window.location.hash = "#/gluck/" + "f".repeat(32);
+    const store = createStore();
+    store.set(bootAtom, { stores: { gluck: client }, store: "gluck", audioUrl: "audio", sttUrl: "stt", mark: "" });
+    render(
+      <Provider store={store}>
+        <App />
+      </Provider>,
+    );
+    await waitFor(() => expect(["gone", "refused"]).toContain(document.querySelector(".fw")!.getAttribute("data-link")));
+    expect(document.querySelector(".zr-composer")).toBeNull();
+    expect(document.querySelector(".fw-hands")).toBeNull();
+    expect(document.querySelector(".fw-back")).toBeTruthy();
   });
 });

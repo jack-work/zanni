@@ -27,8 +27,8 @@ function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomVa
   const end = turns[turns.length - 1]?.end;
   const failed = end?.kind === "error";
   const interrupted = end?.kind === "end" && /interrupt/i.test(end.text);
-  const handle = node?.handle ?? aria.slice(0, 8);
   const mantra = facts.mantra ?? valueAt(bound?.root, "mantra") ?? node?.mantra ?? "";
+  const handle = node?.handle && node.handle !== mantra ? node.handle : aria.slice(0, 8);
   const used = node?.ctx ?? snap.metrics?.context_tokens;
   const ctx = ctxLine(used, node?.ctxLimit);
   const glyph = stateGlyph({ link, running, failed, interrupted, frame });

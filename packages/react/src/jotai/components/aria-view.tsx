@@ -161,6 +161,7 @@ export function AriaView({ attended }: { attended: Attended }) {
     }),
     [tree],
   );
+  const gone = link === "gone" || link === "refused";
   const status = note || pageError;
   const metrics = snap.metrics ? nodi.metricsLine(snap.metrics) : "";
 
@@ -172,6 +173,7 @@ export function AriaView({ attended }: { attended: Attended }) {
             <a className="fw-back" href="#/">
               Arias
             </a>
+            {!gone && (
             <div className="fw-subtools">
               <Button variant="quiet" size="compact" className="fw-hands" aria-pressed={handsFree} onClick={() => toggleHandsFree()}>
                 Hands-free
@@ -180,6 +182,7 @@ export function AriaView({ attended }: { attended: Attended }) {
                 Fork
               </Button>
             </div>
+            )}
           </div>
           <h1 className="fw-h1" tabIndex={-1} ref={headRef}>
             <Plain text={heading} />
@@ -200,7 +203,7 @@ export function AriaView({ attended }: { attended: Attended }) {
           {status && <p className="fw-note">{status}</p>}
         </main>
       </div>
-      <Composer attended={attended} toBottom={toBottom} />
+      {!gone && <Composer attended={attended} toBottom={toBottom} />}
       {follow.unseen && <LatestPill onClick={toBottom} />}
     </section>
   );

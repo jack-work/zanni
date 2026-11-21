@@ -18,7 +18,7 @@ export function InlineActions({ kind, turn }: { kind: "input" | "prose"; turn: n
   const [request, setRequest] = useState<PlayRequest | null>(null);
   const [note, setNote] = useState("");
   const [heard, setHeard] = useState("");
-  if (!at || handsFree) return null;
+  if (!at || handsFree || kind === "prose") return null;
   const key = clipKey(at.store, at.aria, turn, "in");
   const play = () => (kind === "input" ? setRequest({ key }) : replay(turn));
   const transcribe = async () => {
@@ -34,11 +34,9 @@ export function InlineActions({ kind, turn }: { kind: "input" | "prose"; turn: n
         <Button variant="ghost" size="compact" className="fw-inline-btn fw-play" data-action="play" aria-label="Play" title="Play" onClick={play}>
           <Glyph glyph={glyphs["state.running"]} />
         </Button>
-        {kind === "input" && (
-          <Button variant="ghost" size="compact" className="fw-inline-btn" data-action="retranscribe" aria-label="Re-transcribe" title="Re-transcribe" onClick={() => void transcribe()}>
-            <Glyph glyph={glyphs.composer} />
-          </Button>
-        )}
+        <Button variant="ghost" size="compact" className="fw-inline-btn" data-action="retranscribe" aria-label="Re-transcribe" title="Re-transcribe" onClick={() => void transcribe()}>
+          <Glyph glyph={glyphs["transcript.result"]} />
+        </Button>
       </div>
       {kind === "input" && <PlayerIsland className="fw-inline-player" request={request} src={(k) => withSession(audioKeyUrl(audioUrl, k))} />}
       {note && (
@@ -47,23 +45,23 @@ export function InlineActions({ kind, turn }: { kind: "input" | "prose"; turn: n
         </p>
       )}
       {heard && (
-        <p className="fw-inline-heard">
-          <Plain text={heard} />
+        <div className="fw-inline-heard">
+          <span className="fw-inline-heard-label">Heard</span>
+          <p className="fw-inline-heard-text">
+            <Plain text={heard} />
+          </p>
           <Button
-            variant="ghost"
-            size="compact"
-            className="fw-inline-btn"
+            variant="outline"
+            className="fw-use"
             data-action="use"
-            aria-label="Use text"
-            title="Use text"
             onClick={() => {
               setDraft((prev) => joinDictation(prev, heard));
               setHeard("");
             }}
           >
-            <Glyph glyph={glyphs.send} />
+            Use
           </Button>
-        </p>
+        </div>
       )}
     </div>
   );
