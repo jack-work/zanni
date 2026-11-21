@@ -25,6 +25,8 @@ for kind, names in (("before", before), ("after", sorted(after))):
         shutil.copy2(os.path.join(base, kind, f), os.path.join(sheet, kind, f))
 
 esc = html.escape
+title_file = os.path.join(base, "title.txt")
+title = open(title_file).read().strip() if os.path.exists(title_file) else "figaro web UI audit"
 by_shot = {}
 for f in findings:
     for s in f.get("shots", []):
@@ -72,11 +74,11 @@ img{max-height:640px;max-width:100%%;border:1px solid #ddd}
 .st.fixed{color:#070;font-weight:700}.st.open{color:#b00}.st.partial{color:#a60}
 .quiet{color:#999}pre{font-size:11px;background:#eee;padding:8px;overflow:auto}
 </style>
-<h1>figaro web (zanni v0.32.9) UI audit</h1>
+<h1>%s</h1>
 <p>390x844 is a phone context (touch, coarse pointer, DPR 3); 1280x800 is a desktop context. Mock door with deterministic data; reduced motion for stable frames. %d findings. %s</p>
 <table><tr><th>id</th><th>pri</th><th>what / where</th><th>measured</th><th>fix</th><th>status</th></tr>%s</table>
 %s
 <h2>pager reference (tmux capture-pane)</h2>%s
-""" % (len(findings), "Before and after side by side." if after else "Before set only.", "".join(rows), "".join(cards), pager)
+""" % (esc(title), len(findings), "Before and after side by side." if after else "Before set only.", "".join(rows), "".join(cards), pager)
 open(os.path.join(sheet, "index.html"), "w").write(page)
 print(os.path.join(sheet, "index.html"))
