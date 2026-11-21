@@ -179,7 +179,7 @@ body.fw-page {
   transition: opacity var(--fw-d-exit) var(--fw-out);
   @starting-style { opacity: 0; }
 }
-.nodi-turn[data-flash] .nodi-turn-head { animation: fw-flash 1800ms var(--fw-out) both; }
+.nodi-turn[data-flash] .zr-sticky-bar { animation: fw-flash 1800ms var(--fw-out) both; }
 @keyframes fw-flash { from { background: color-mix(in srgb, var(--z-accent) 25%, transparent); } to { background: transparent; } }
 
 
