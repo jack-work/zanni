@@ -82,7 +82,7 @@ class Scale(Campaign):
                 if run.aria() == MAIN:
                     page.evaluate("() => { location.hash = '#/' }")
                     page.wait_for_selector("[data-testid=topology-row]", timeout=20000)
-                ms = page.evaluate(WAIT_ATTACH % 3, MAIN)
+                ms = page.evaluate(WAIT_ATTACH % 1, MAIN)
                 if ms < 0:
                     seen = page.evaluate("({ link: document.querySelector('.fw') && document.querySelector('.fw').dataset.link, turns: document.querySelectorAll('.nodi-turn').length, input: !!document.querySelector('.zr-input'), hash: location.hash.slice(0, 20), running: document.querySelector('.fw') && document.querySelector('.fw').hasAttribute('data-running') })")
                     raise Failure("attach-stuck", "the 10000 turn figaro painted no turns in 20 s (%s)" % json.dumps(seen))
