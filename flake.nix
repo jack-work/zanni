@@ -424,12 +424,6 @@
           mkdir -p $out
           env LD_LIBRARY_PATH=${pkgs.mesa}/lib:${pkgs.libglvnd}/lib __EGL_VENDOR_LIBRARY_FILENAMES=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless python3 bench/figchat_bench.py ${self.packages.${system}.figchat-shell} --sha ${self.shortRev or self.dirtyShortRev or "dirty"} --out $out/result.json
           python3 bench/check.py $out/result.json bench/budgets.json 2>&1 | tee $out/check.txt
-        } ''
-          set -o pipefail
-          export HOME=$TMPDIR
-          cp -r ${./assets} assets
-          cp -r ${./examples} examples
-          cp -r ${./test} test
         '';
 
         checks.rotolo = pkgs.runCommand "zanni-rotolo-test" {
