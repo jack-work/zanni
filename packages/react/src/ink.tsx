@@ -90,6 +90,10 @@ export function Glyph({ glyph, className, tone }: { glyph: string; className?: s
       held.current = el.animate({ translate: -x + "px " + -y + "px" }, { duration: 0, fill: "forwards" });
     };
     place();
+    const frame = requestAnimationFrame(place);
+    const watch = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(place);
+    watch?.observe(el);
+    if (el.parentElement) watch?.observe(el.parentElement);
     let live = true;
     void document.fonts?.ready.then(() => {
       if (!live) return;
@@ -98,6 +102,8 @@ export function Glyph({ glyph, className, tone }: { glyph: string; className?: s
     });
     return () => {
       live = false;
+      cancelAnimationFrame(frame);
+      watch?.disconnect();
       held.current?.cancel();
     };
   }, [glyph]);
