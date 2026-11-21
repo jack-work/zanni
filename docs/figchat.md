@@ -175,6 +175,36 @@ control and bidi characters. No `dangerouslySetInnerHTML` and friends:
 the CSSOM. The views never touch `fetch` or `WebSocket`; `lib/dictation.ts`, `lib/stt.ts`
 (re-transcribe), the speech transport and the figaro-forms client do.
 
+## Benchmarks
+
+Three pieces let a harness measure figaro web offline.
+
+Build stats. Every asset name Vite emits already carries a content hash, so
+the files are immutable by name; `bin/figchat-bundle` now refuses an asset
+whose name has none. It writes `STATS.json` beside `index.html` (served at
+`/chat/assets/STATS.json`): `{version, total: {raw, gzip}, files: {name: {raw,
+gzip, hashed}}}`, gzip at level 9, `hashed` false only for `index.html` and
+`THIRD-PARTY.txt`.
+
+Stable hooks. `data-testid` on `composer-input` (the textarea), `send`,
+`transcript-scroller` (the `[data-zr-scroll]` element), `pit-grip`, and on
+tree rows: `topology-row` and `form-row` (the trees carry `topology` and
+`form`). Opening an aria runs `performance.mark("figchat:attach")` when the
+view mounts and clears `window.__figchat`; the first painted frame after the
+aria is live and scrolled to its place (two animation frames later) runs
+`performance.mark("figchat:first-frame")` and sets
+`window.__figchat.firstFrame = performance.now()`. No other globals.
+
+Bench mode. `examples/aria-mock.js` `create` takes `history: N` (N turns on
+the main aria, default 26, the old fixture) and `stream: {fps, bytes, chunk}`
+(every prompt then gets one prose reply of `bytes` bytes, `chunk` bytes per
+frame, one frame every `1000/fps` ms against a fixed deadline, defaults 30,
+8000, 64; `[error]` still fails). `node test/figchat-server.js <bundle> [step]
+[--history N] [--page BYTES] [--fps F] [--bytes B] [--chunk C]` passes them
+through; `--page` is the server's page cap (default 3000), raise it so a
+10000-turn history pages in a few reads. `figchat_kit.Door(bundle, step,
+**flags)` forwards the same flags. Without them nothing changes.
+
 ## Checks
 
 `checks.figchat`: Vitest (routes, the Tree, work groups, mic machine, audio

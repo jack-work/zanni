@@ -6,10 +6,20 @@ const crypto = require('crypto');
 const mock = require('../examples/aria-mock.js');
 const speech = require('../assets/figchat/speech.js');
 
-const dir = process.argv[2];
-const step = process.argv[3] ? Number(process.argv[3]) : 15;
+const flags = {};
+const positional = [];
+for (let i = 2; i < process.argv.length; i++) {
+  const a = process.argv[i];
+  if (a.startsWith('--')) flags[a.slice(2)] = Number(process.argv[++i]);
+  else positional.push(a);
+}
+const dir = positional[0];
+const step = positional[1] ? Number(positional[1]) : 15;
 const fixture = process.env.FIGCHAT_FIXTURE ? JSON.parse(fs.readFileSync(process.env.FIGCHAT_FIXTURE, 'utf8')) : undefined;
-const core = mock.create({ step, pageBytes: 3000, fixture });
+const bench = { pageBytes: flags.page || 3000 };
+if (flags.history !== undefined) bench.history = flags.history;
+if (['fps', 'bytes', 'chunk'].some((k) => flags[k] !== undefined)) bench.stream = Object.fromEntries(['fps', 'bytes', 'chunk'].filter((k) => flags[k] !== undefined).map((k) => [k, flags[k]]));
+const core = mock.create(Object.assign({ step, fixture }, bench));
 const seen = { attach: [], upgrades: 0, refused: 0, audio: 0, stt: [], retranscribed: [], says: [], stream: [] };
 const expired = new Set([5, 6]);
 const sessions = [];

@@ -106,13 +106,14 @@ export interface TreeProps {
   onRows?: (ids: readonly string[]) => void;
   keys?: Readonly<Record<string, (id: string) => void>>;
   label?: string;
+  testid?: string;
   className?: string;
   empty?: ReactNode;
 }
 
 const never = () => false;
 
-export function Tree({ roots, mark, current, defaultOpen = never, onActivate, autoFocus, onRows, keys, label, className, empty }: TreeProps) {
+export function Tree({ roots, mark, current, defaultOpen = never, onActivate, autoFocus, onRows, keys, label, testid, className, empty }: TreeProps) {
   const [chosen, setChosen] = useState<ReadonlyMap<string, boolean>>(new Map());
   const [cursorId, setCursorId] = useState<string | undefined>(undefined);
   const lastKey = useRef("");
@@ -202,7 +203,7 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, au
   };
 
   return (
-    <div ref={box} className={["zr-tree", className].filter(Boolean).join(" ")} role="tree" aria-label={label} tabIndex={0} aria-activedescendant={cursor ? "zr-tree-" + cursor.id : undefined} onKeyDown={onKeyDown}>
+    <div ref={box} className={["zr-tree", className].filter(Boolean).join(" ")} role="tree" aria-label={label} data-testid={testid} tabIndex={0} aria-activedescendant={cursor ? "zr-tree-" + cursor.id : undefined} onKeyDown={onKeyDown}>
       {rows.map((r, i) => {
         const selected = i === at;
         return (
@@ -215,6 +216,7 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, au
             aria-expanded={r.expandable ? r.open : undefined}
             aria-selected={selected}
             data-id={r.id}
+            data-testid={testid && testid + "-row"}
             data-depth={r.depth}
             data-leaf={r.expandable ? undefined : ""}
             data-here={r.here ? "" : undefined}
