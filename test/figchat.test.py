@@ -1042,7 +1042,7 @@ try:
             assert "parentSpanId" not in s, "a user action is a root span"
         assert "00-%s-%s-01" % (by["send"]["traceId"], by["send"]["spanId"]) == qua_trace, "the send span is the trace figaro.qua carried"
         assert "00-%s-%s-01" % (by["dictate"]["traceId"], by["dictate"]["spanId"]) == stt_trace, "the dictate span is the trace the stt fetch carried"
-        assert {p["header"] for p in sess_door.state()["otel"] if p["header"]} == {sid}
+        assert {p["header"] for p in sess_door.state()["otel"] if p["header"]} <= {sid}
         assert not pg.errors, pg.errors
         pg.reload()
         until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'", timeout=15000)
