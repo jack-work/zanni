@@ -174,7 +174,10 @@ try:
             until(pg, "document.fonts.check('26px \"Jacquard 24\"')")
             assert pg.evaluate("document.querySelectorAll('script:not([src]), style, [style]').length") == 0, "no inline script or style under the CSP"
             assert pg.locator(".zr-tree-row").count() >= 5, "the topology is one tree"
-            assert pg.locator(".zr-tree thead th").all_inner_texts() == ["ARIA", "ID", "DETAIL"], "the tree wears figaro list -g's columns"
+            assert pg.locator(".zr-tree th, .zr-tree-toggle").count() == 0, "the pager's tree has no header and no arrow"
+            texts = pg.locator(".zr-tree-row").all_text_contents()
+            assert re.search(r"\(\d+\)", texts[0]) and "arias (" in texts[1], "root then arias, each with its count: %s" % texts[:2]
+            assert any(re.search(r"\(\d+\)  \".*\"", x) for x in texts), "aria rows read handle (turns)  mantra: %s" % texts
             assert "1" in pg.evaluate("[...document.querySelectorAll('.zr-tree-row')].map(a => a.dataset.depth)"), "children nest under their parent"
             sans_free(pg, "the list at %d" % width)
             no_sideways(pg, width, "the list")
@@ -397,7 +400,7 @@ try:
         pg.wait_for_timeout(600)
         pg.locator(".fw-back").click()
         pg.wait_for_selector(".zr-tree-row")
-        pg.locator(".zr-tree-row[data-id='%s'] .zr-tree-hit" % LANE).click()
+        pg.locator(".zr-tree-row[data-id='%s']" % LANE).click()
         until(pg, "document.querySelector('.fw').dataset.link === 'live'", timeout=10000)
         assert pg.locator(".zr-input").input_value() == "", "another aria has its own draft"
         pg.goto("about:blank")
@@ -813,9 +816,9 @@ try:
             depths = pg.evaluate("[...document.querySelectorAll('.zr-pit .zr-tree-row')].map(r => r.dataset.depth)")
             assert "0" in depths and "1" in depths, "the tree nests: %s" % depths
             assert pg.locator(".zr-pit .zr-tree-row[data-id='%s']" % MAIN).get_attribute("aria-selected") == "true", "the attended aria is marked"
-            assert pg.locator(".zr-pit .zr-tree-row[data-id='%s'] .zr-tree-branch" % LANE).inner_text() in ("├─", "└─"), "branch glyphs are the pager's"
-            assert pg.locator(".zr-pit .zr-tree-row[data-id='%s'] .zr-tree-marker" % MAIN).inner_text() == "●", "the attended row wears the pager's here mark"
-            pg.locator(".zr-pit .zr-tree-row[data-id='%s'] .zr-tree-hit" % LANE).click()
+            assert pg.locator(".zr-pit .zr-tree-row[data-id='%s'] .zr-tree-lead" % LANE).text_content().strip() in ("├─", "└─"), "branch glyphs are the pager's"
+            assert pg.locator(".zr-pit .zr-tree-row[data-id='%s'] .zr-tree-badge" % MAIN).text_content().strip() == "●", "the attended row wears the pager's here mark"
+            pg.locator(".zr-pit .zr-tree-row[data-id='%s']" % LANE).click()
             pg.wait_for_selector(".zr-pit", state="detached")
             until(pg, "location.hash.includes('%s')" % LANE, 5000)
             until(pg, "document.querySelector('.fw').dataset.link === 'live'", 8000)

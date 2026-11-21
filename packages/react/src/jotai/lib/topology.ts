@@ -1,74 +1,50 @@
-import { glyphs, truncRunes, type TreeColumn, type TreeFieldColor, type TreeNodeData } from "../../index";
+import { clipEllipsis, glyphs, VALUE_COLUMNS, type TreeNodeData } from "../../index";
 import type { TreeNode, TreeState } from "figaro-forms/aria";
 
-export const ROLE_BADGE_MAX = 14;
+const EPOCH_MS_LOW = 1_000_000_000_000;
+const EPOCH_MS_HIGH = 100_000_000_000_000;
 
-export const TOPOLOGY_COLUMNS: readonly TreeColumn[] = [{ header: "ARIA" }, { header: "ID", field: "id" }, { header: "DETAIL", field: "detail" }];
+const pad2 = (n: number): string => String(n).padStart(2, "0");
 
-export const TOPOLOGY_COLORS: readonly TreeFieldColor[] = [
-  {
-    field: "state",
-    rules: [
-      { value: "active", color: "accent" },
-      { value: "dormant", color: "dim" },
-      { value: "retired", color: "red" },
-      { value: "reaped", color: "dim" },
-    ],
-  },
-];
-
-const quoteRole = (a: string): string => (/[\s"]/.test(a) ? JSON.stringify(a) : a);
-
-export function roleBadge(roles: readonly string[]): string {
-  let out = "";
-  for (let i = 0; i < roles.length; i++) {
-    const a = roles[i]!;
-    if (i === 0) {
-      out += quoteRole(truncRunes(a, ROLE_BADGE_MAX - 2));
-      continue;
-    }
-    const q = quoteRole(a);
-    if ([...out].length + 1 + [...q].length > ROLE_BADGE_MAX) {
-      out += " +" + (roles.length - i);
-      break;
-    }
-    out += " " + q;
-  }
-  return out;
+function epochText(label: string, raw: unknown): string | undefined {
+  if (label !== "at" && !label.endsWith("_at")) return undefined;
+  if (typeof raw !== "number" || !Number.isInteger(raw) || raw < EPOCH_MS_LOW || raw >= EPOCH_MS_HIGH) return undefined;
+  const d = new Date(raw);
+  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds());
 }
 
-export function markerOf(n: Pick<TreeNode, "status" | "state">, here: boolean): string {
-  if (n.status === "retired") return glyphs.dead;
-  if (n.status === "reaped") return glyphs.absent;
-  if (n.state === "active") return glyphs.select;
-  return here ? glyphs["state.here"] : glyphs["state.idle"];
+export function leafPreview(label: string, v: unknown): string {
+  const at = epochText(label, v);
+  if (at) return at;
+  const raw = JSON.stringify(v) ?? "null";
+  return clipEllipsis(raw.replace(/\s+/g, " ").trim(), VALUE_COLUMNS);
 }
 
-export function topologyNodes(tree: TreeState, here: string | undefined, counts: Readonly<Record<string, number>> = {}): TreeNodeData[] {
+export function topologyNodes(tree: TreeState, here: string | undefined, storeId: string, counts: Readonly<Record<string, number>> = {}): TreeNodeData[] {
   const make = (n: TreeNode): TreeNodeData => {
     const msgs = counts[n.id];
+    const kids = n.children.flatMap((c) => {
+      const k = tree.nodes.get(c);
+      return k ? [make(k)] : [];
+    });
     return {
       id: n.id,
-      label: n.mantra || n.label,
-      marker: markerOf(n, n.id === here),
-      badge: roleBadge(n.roles),
-      fields: {
-        id: n.id.slice(0, 8),
-        detail: msgs !== undefined ? msgs + " msgs" : n.state,
-        state: n.status === "live" ? n.state : n.status,
-      },
-      children: n.children.flatMap((c) => {
-        const k = tree.nodes.get(c);
-        return k ? [make(k)] : [];
-      }),
+      label: n.handle ?? n.label,
+      count: msgs ?? kids.length,
+      peek: n.mantra ? JSON.stringify(n.mantra) : "",
+      badge: n.id === here ? glyphs["state.here"] : "",
+      hint: "Enter attend",
+      children: kids,
     };
   };
-  const roots = tree.roots.flatMap((id) => {
+  const arias = tree.roots.flatMap((id) => {
     const n = tree.nodes.get(id);
     return n ? [make(n)] : [];
   });
-  const reaped = [...tree.reaped.values()].map((n) => ({ ...make(n), children: [] }));
-  return [...roots, ...reaped];
+  if (arias.length === 0) return [];
+  const node = tree.daemons.find((d) => d.self)?.id ?? tree.daemons[0]?.id ?? storeId;
+  const group: TreeNodeData = { id: "@arias", label: "arias", count: arias.length, children: arias };
+  return [{ id: "@node:" + node, label: node, count: 1, badge: here ? glyphs["state.here"] : "", children: [group] }];
 }
 
 export function ancestorsOf(tree: TreeState, id: string | undefined): Set<string> {
@@ -91,15 +67,8 @@ export function formNodes(root: unknown, prefix = ""): TreeNodeData[] {
       const v = (root as Record<string, unknown>)[k];
       const path = prefix ? prefix + "." + k : k;
       const branch = v !== null && typeof v === "object" && !Array.isArray(v);
-      return {
-        id: path,
-        label: k,
-        fields: { path, value: branch ? "" : typeof v === "string" ? v : JSON.stringify(v) },
-        children: branch ? formNodes(v, path) : [],
-      };
+      if (!branch) return { id: path, label: k, value: leafPreview(k, v) };
+      const children = formNodes(v, path);
+      return { id: path, label: k, count: children.length, children };
     });
 }
-
-export const FORM_COLUMNS: readonly TreeColumn[] = [{ header: "KEY" }, { header: "VALUE", field: "value", max: 44 }];
-
-export const FORM_COLORS: readonly TreeFieldColor[] = [{ field: "path", rules: [{ value: "system.thinking_effort", color: "accent" }] }];

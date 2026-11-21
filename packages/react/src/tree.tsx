@@ -1,182 +1,230 @@
-import { useMemo, useState, type ReactNode } from "react";
-import { glyphs } from "./glyphs";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 export interface TreeNodeData {
   id: string;
   label: string;
-  marker?: string;
+  value?: string;
+  count?: number;
+  peek?: string;
   badge?: string;
-  fields?: Record<string, string>;
+  hint?: string;
   children?: readonly TreeNodeData[];
-}
-
-export interface TreeColumn {
-  header: string;
-  field?: string;
-  max?: number;
-}
-
-export interface TreeColorRule {
-  value: string;
-  color: string;
-}
-
-export interface TreeFieldColor {
-  field: string;
-  rules: readonly TreeColorRule[];
-}
-
-export interface TreeWash {
-  field: string;
-  value: string;
-  wash: string;
 }
 
 export interface TreeRowData {
   id: string;
-  branch: string;
-  marker: string;
-  label: string;
-  badge: string;
-  fields: Record<string, string>;
-  color: string;
-  wash: string;
+  parent: string | undefined;
   depth: number;
+  lead: string;
+  label: string;
+  leaf: boolean;
+  gap: string;
+  value: string;
+  inline: string;
+  count: number;
+  peek: string;
+  badge: string;
+  hint: string;
   expandable: boolean;
   open: boolean;
 }
 
-export function truncRunes(s: string, max: number): string {
-  if (max <= 0) return s;
+export const LABEL_PAD_MAX = 24;
+export const INLINE_MAX = 3;
+export const INLINE_COLUMNS = 60;
+export const PEEK_KEYS = 4;
+export const VALUE_COLUMNS = 120;
+
+const width = (s: string): number => [...s].length;
+
+export function clipEllipsis(s: string, max: number): string {
   const r = [...s];
   if (r.length <= max) return s;
-  if (max < 2) return r.slice(0, max).join("");
-  return r.slice(0, max - 2).join("") + "..";
+  return r.slice(0, Math.max(max - 1, 0)).join("") + "…";
 }
 
-function colorOf(n: TreeNodeData, colors: readonly TreeFieldColor[]): string {
-  for (const fc of colors) {
-    const fields = n.fields ?? {};
-    if (!(fc.field in fields)) continue;
-    const hit = fc.rules.find((r) => r.value === fields[fc.field]);
-    if (hit) return hit.color;
-  }
-  return "";
+export function branchPeek(kids: readonly TreeNodeData[]): string {
+  if (kids.length === 0) return "";
+  const names = kids.slice(0, PEEK_KEYS).map((k) => k.label).join(" · ");
+  return kids.length > PEEK_KEYS ? names + " …" : names;
 }
 
-function washOf(n: TreeNodeData, washes: readonly TreeWash[]): string {
-  return washes.find((w) => (n.fields ?? {})[w.field] === w.value)?.wash ?? "";
+export function inlineBranch(kids: readonly TreeNodeData[]): string {
+  if (kids.length === 0 || kids.length > INLINE_MAX) return "";
+  if (kids.some((k) => k.value === undefined || /^\s*[{[]/.test(k.value))) return "";
+  const text = "{" + kids.map((k) => k.label + ": " + k.value).join(", ") + "}";
+  return width(text) > INLINE_COLUMNS ? "" : text;
 }
 
-export function treeRows(roots: readonly TreeNodeData[], colors: readonly TreeFieldColor[] = [], washes: readonly TreeWash[] = [], isOpen: (id: string, depth: number) => boolean = () => true): TreeRowData[] {
+export function treeRows(roots: readonly TreeNodeData[], isOpen: (id: string, depth: number) => boolean = () => false): TreeRowData[] {
   const rows: TreeRowData[] = [];
-  const walk = (n: TreeNodeData, prefix: string, isLast: boolean, isRoot: boolean, depth: number) => {
-    const branch = isRoot ? "" : prefix + (isLast ? "└─" : "├─");
-    const kids = n.children ?? [];
-    const open = kids.length > 0 && isOpen(n.id, depth);
-    rows.push({
-      id: n.id,
-      branch,
-      marker: n.marker ?? "",
-      label: n.label,
-      badge: n.badge ?? "",
-      fields: n.fields ?? {},
-      color: colorOf(n, colors),
-      wash: washOf(n, washes),
-      depth,
-      expandable: kids.length > 0,
-      open,
+  const walk = (kids: readonly TreeNodeData[], depth: number, cont: string, parent: string | undefined) => {
+    let pad = 0;
+    for (const k of kids) if (k.value !== undefined) pad = Math.max(pad, Math.min(width(k.label), LABEL_PAD_MAX));
+    kids.forEach((n, i) => {
+      const sub = n.children ?? [];
+      const leaf = n.value !== undefined && sub.length === 0;
+      const open = !leaf && sub.length > 0 && isOpen(n.id, depth);
+      const last = i === kids.length - 1;
+      const lead = depth === 0 ? "" : cont + (last ? "└─ " : "├─ ");
+      const own = leaf && width(n.label) > LABEL_PAD_MAX ? 0 : pad;
+      rows.push({
+        id: n.id,
+        parent,
+        depth,
+        lead,
+        label: n.label,
+        leaf,
+        gap: leaf ? " ".repeat(Math.max(own - width(n.label), 0)) : "",
+        value: n.value ?? "",
+        inline: !leaf && !open && n.peek === undefined ? inlineBranch(sub) : "",
+        count: n.count ?? sub.length,
+        peek: n.peek ?? (open ? "" : branchPeek(sub)),
+        badge: n.badge ?? "",
+        hint: n.hint ?? "",
+        expandable: sub.length > 0,
+        open,
+      });
+      if (open) walk(sub, depth + 1, depth === 0 ? "" : cont + (last ? "   " : "│  "), n.id);
     });
-    if (!open) return;
-    const childPrefix = isRoot ? prefix : prefix + (isLast ? "  " : "│ ");
-    kids.forEach((c, i) => walk(c, childPrefix, i === kids.length - 1, false, depth + 1));
   };
-  for (const r of roots) walk(r, "", true, true, 0);
+  walk(roots, 0, "", undefined);
   return rows;
 }
 
 export interface TreeProps {
   roots: readonly TreeNodeData[];
-  columns?: readonly TreeColumn[];
-  colors?: readonly TreeFieldColor[];
-  washes?: readonly TreeWash[];
+  mark: string;
   current?: string;
   defaultOpen?: (id: string, depth: number) => boolean;
-  collapsible?: boolean;
-  onSelect?: (id: string) => void;
+  onActivate?: (id: string) => void;
   label?: string;
   className?: string;
   empty?: ReactNode;
 }
 
-export function Tree({ roots, columns, colors, washes, current, defaultOpen = () => true, collapsible = true, onSelect, label, className, empty }: TreeProps) {
-  const [flipped, setFlipped] = useState<ReadonlySet<string>>(new Set());
-  const isOpen = (id: string, depth: number) => (flipped.has(id) ? !defaultOpen(id, depth) : defaultOpen(id, depth));
-  const rows = useMemo(() => treeRows(roots, colors, washes, isOpen), [roots, colors, washes, flipped, defaultOpen]);
-  const flip = (id: string) =>
-    setFlipped((prev) => {
-      const next = new Set(prev);
-      if (!next.delete(id)) next.add(id);
-      return next;
-    });
-  const cols = columns ?? [];
+const never = () => false;
+
+export function Tree({ roots, mark, current, defaultOpen = never, onActivate, label, className, empty }: TreeProps) {
+  const [chosen, setChosen] = useState<ReadonlyMap<string, boolean>>(new Map());
+  const [cursorId, setCursorId] = useState<string | undefined>(undefined);
+  const lastKey = useRef("");
+  const box = useRef<HTMLDivElement>(null);
+  const isOpen = (id: string, depth: number) => chosen.get(id) ?? defaultOpen(id, depth);
+  const rows = useMemo(() => treeRows(roots, isOpen), [roots, chosen, defaultOpen]);
+  const at = Math.max(
+    rows.findIndex((r) => r.id === (cursorId ?? current)),
+    0,
+  );
+  const cursor = rows[at];
+
+  useEffect(() => {
+    if (!cursor) return;
+    const el = [...(box.current?.querySelectorAll<HTMLElement>("[data-id]") ?? [])].find((e) => e.dataset.id === cursor.id);
+    el?.scrollIntoView?.({ block: "nearest" });
+  }, [cursor?.id]);
+
   if (rows.length === 0) return <>{empty ?? null}</>;
+
+  const set = (id: string, open: boolean) => setChosen((prev) => new Map(prev).set(id, open));
+  const toggle = (r: TreeRowData) => r.expandable && set(r.id, !r.open);
+  const activate = (r: TreeRowData) => (onActivate ? onActivate(r.id) : toggle(r));
+  const moveTo = (i: number) => setCursorId(rows[Math.min(Math.max(i, 0), rows.length - 1)]?.id);
+
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.ctrlKey || e.metaKey || e.altKey || !cursor) return;
+    const prev = lastKey.current;
+    lastKey.current = e.key;
+    const page = Math.max(Math.floor((box.current?.clientHeight ?? 0) / 28 / 2), 1);
+    switch (e.key) {
+      case "j":
+      case "ArrowDown":
+        moveTo(at + 1);
+        break;
+      case "k":
+      case "ArrowUp":
+        moveTo(at - 1);
+        break;
+      case "d":
+        moveTo(at + page);
+        break;
+      case "u":
+        moveTo(at - page);
+        break;
+      case "G":
+      case "End":
+        moveTo(rows.length - 1);
+        break;
+      case "Home":
+        moveTo(0);
+        break;
+      case "g":
+        if (prev === "g") {
+          moveTo(0);
+          lastKey.current = "";
+        }
+        break;
+      case "l":
+      case "ArrowRight":
+        if (cursor.expandable && !cursor.open) set(cursor.id, true);
+        break;
+      case "h":
+      case "ArrowLeft":
+        if (cursor.open) set(cursor.id, false);
+        else if (cursor.parent) setCursorId(cursor.parent);
+        break;
+      case "Enter":
+        activate(cursor);
+        break;
+      default:
+        return;
+    }
+    e.preventDefault();
+  };
+
   return (
-    <table className={["zr-tree", className].filter(Boolean).join(" ")} role="treegrid" aria-label={label}>
-      {cols.length > 0 && (
-        <thead>
-          <tr>
-            {cols.map((c, i) => (
-              <th key={i} scope="col">
-                {c.header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-      )}
-      <tbody>
-        {rows.map((r) => (
-          <tr
+    <div ref={box} className={["zr-tree", className].filter(Boolean).join(" ")} role="tree" aria-label={label} tabIndex={0} aria-activedescendant={cursor ? "zr-tree-" + cursor.id : undefined} onKeyDown={onKeyDown}>
+      {rows.map((r, i) => {
+        const selected = i === at;
+        return (
+          <div
             key={r.id}
+            id={"zr-tree-" + r.id}
             className="zr-tree-row"
-            role="row"
+            role="treeitem"
             aria-level={r.depth + 1}
             aria-expanded={r.expandable ? r.open : undefined}
-            aria-selected={current === r.id ? true : undefined}
+            aria-selected={selected}
             data-id={r.id}
             data-depth={r.depth}
-            data-wash={r.wash || (current === r.id ? "current" : undefined)}
+            data-cursor={selected ? "true" : undefined}
+            onClick={() => {
+              setCursorId(r.id);
+              activate(r);
+            }}
           >
-            {(cols.length > 0 ? cols : [{ header: "" }]).map((c, i) =>
-              !("field" in c) || !c.field ? (
-                <td key={i} className="zr-tree-cell" role="gridcell">
-                  <div className="zr-tree-line">
-                    <span className="zr-tree-branch">{r.branch}</span>
-                    {collapsible &&
-                      (r.expandable ? (
-                        <button type="button" className="zr-tree-toggle" aria-label={r.open ? "Collapse" : "Expand"} onClick={() => flip(r.id)}>
-                          {r.open ? glyphs["comment.open"] : glyphs["comment.closed"]}
-                        </button>
-                      ) : (
-                        <span className="zr-tree-toggle-gap" />
-                      ))}
-                    <button type="button" className="zr-tree-hit" data-color={r.color || undefined} onClick={() => (onSelect ? onSelect(r.id) : r.expandable && collapsible && flip(r.id))} aria-current={current === r.id ? "true" : undefined}>
-                      {r.marker && <span className="zr-tree-marker">{r.marker}</span>}
-                      {r.badge && <span className="zr-tree-badge">{r.badge}</span>}
-                      <span className="zr-tree-label">{r.label}</span>
-                    </button>
-                  </div>
-                </td>
-              ) : (
-                <td key={i} className="zr-tree-field" role="gridcell" data-field={c.field}>
-                  {truncRunes(r.fields[c.field] ?? "", "max" in c ? (c.max ?? 0) : 0)}
-                </td>
-              ),
+            <span className="zr-tree-mark">{selected ? mark : " "} </span>
+            <span className="zr-tree-lead">{r.lead}</span>
+            <span className="zr-tree-label">{r.label}</span>
+            {r.leaf ? (
+              <>
+                <span className="zr-tree-colon">: </span>
+                {r.gap}
+                <span className="zr-tree-value">{r.value}</span>
+              </>
+            ) : r.inline ? (
+              <span className="zr-tree-peek">{": " + r.inline}</span>
+            ) : (
+              <>
+                <span className="zr-tree-count">{" (" + r.count + ")"}</span>
+                {r.peek && <span className="zr-tree-peek">{"  " + r.peek}</span>}
+              </>
             )}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+            {r.badge && <span className="zr-tree-badge">{"  " + r.badge}</span>}
+            {selected && r.hint && <span className="zr-tree-hint">{"  " + r.hint}</span>}
+          </div>
+        );
+      })}
+    </div>
   );
 }
-

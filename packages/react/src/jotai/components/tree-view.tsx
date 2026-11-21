@@ -1,7 +1,7 @@
-import { Tree, type TreeNodeData } from "../../index";
+import { Tree, glyphs, type TreeNodeData } from "../../index";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useMemo } from "react";
-import { FORM_COLORS, FORM_COLUMNS, TOPOLOGY_COLORS, TOPOLOGY_COLUMNS, ancestorsOf, formNodes, topologyNodes } from "../lib/topology";
+import { ancestorsOf, formNodes, topologyNodes } from "../lib/topology";
 import { treeStateAtom } from "../state/pit";
 import { rosterAtom } from "../state/roster";
 import { attendedAtom, goAtom, storeNameAtom } from "../state/route";
@@ -17,10 +17,10 @@ export function TopologyTree({ onVisit, className }: { onVisit?: () => void; cla
     if (!tree) return [];
     const counts: Record<string, number> = {};
     for (const r of rows) if (r.message_count != null) counts[r.id] = r.message_count;
-    return topologyNodes(tree, here, counts);
-  }, [tree, rows, here]);
+    return topologyNodes(tree, here, store, counts);
+  }, [tree, rows, here, store]);
   const open = useMemo(() => (tree ? ancestorsOf(tree, here) : new Set<string>()), [tree, here]);
-  const defaultOpen = useMemo(() => (id: string, depth: number) => depth === 0 || open.has(id), [open]);
+  const defaultOpen = useMemo(() => (id: string, depth: number) => depth <= 2 || open.has(id), [open]);
   if (!tree) return <p className="fw-note">No such store.</p>;
   const status = tree.error ? "No topology: " + tree.error : !tree.ready && roots.length === 0 ? "Loading the topology." : roots.length === 0 ? "No arias." : "";
   return (
@@ -29,11 +29,11 @@ export function TopologyTree({ onVisit, className }: { onVisit?: () => void; cla
         className={["fw-topology", className].filter(Boolean).join(" ")}
         label="Topology"
         roots={roots}
-        columns={TOPOLOGY_COLUMNS}
-        colors={TOPOLOGY_COLORS}
+        mark={glyphs.select}
         current={here}
         defaultOpen={defaultOpen}
-        onSelect={(id) => {
+        onActivate={(id) => {
+          if (id.startsWith("@")) return;
           onVisit?.();
           go({ store, aria: id });
         }}
@@ -45,5 +45,5 @@ export function TopologyTree({ onVisit, className }: { onVisit?: () => void; cla
 
 export function FormTree({ root, className }: { root: unknown; className?: string }) {
   const nodes: TreeNodeData[] = useMemo(() => formNodes(root), [root]);
-  return <Tree className={["fw-formtree", className].filter(Boolean).join(" ")} label="Bound form" roots={nodes} columns={FORM_COLUMNS} colors={FORM_COLORS} />;
+  return <Tree className={["fw-formtree", className].filter(Boolean).join(" ")} label="Bound form" roots={nodes} mark={glyphs["pit.form.mark"]} />;
 }
