@@ -98,6 +98,7 @@ export interface TreeProps {
   current?: string;
   defaultOpen?: (id: string, depth: number) => boolean;
   onActivate?: (id: string) => void;
+  onEdit?: (id: string) => void;
   autoFocus?: boolean;
   onRows?: (ids: readonly string[]) => void;
   label?: string;
@@ -107,7 +108,7 @@ export interface TreeProps {
 
 const never = () => false;
 
-export function Tree({ roots, mark, current, defaultOpen = never, onActivate, autoFocus, onRows, label, className, empty }: TreeProps) {
+export function Tree({ roots, mark, current, defaultOpen = never, onActivate, onEdit, autoFocus, onRows, label, className, empty }: TreeProps) {
   const [chosen, setChosen] = useState<ReadonlyMap<string, boolean>>(new Map());
   const [cursorId, setCursorId] = useState<string | undefined>(undefined);
   const lastKey = useRef("");
@@ -187,6 +188,10 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, au
       case "Enter":
         activate(cursor);
         break;
+      case "c":
+        if (!onEdit || !cursor.leaf) return;
+        onEdit(cursor.id);
+        break;
       default:
         return;
     }
@@ -211,7 +216,8 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, au
             data-cursor={selected ? "true" : undefined}
             onClick={() => {
               setCursorId(r.id);
-              activate(r);
+              if (onEdit && r.leaf) onEdit(r.id);
+              else activate(r);
             }}
           >
             <span className="zr-tree-mark">{selected ? mark : " "} </span>

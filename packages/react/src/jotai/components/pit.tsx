@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { PIT_ROWS, EFFORT_KEY, FORKED_FROM_KEY, byLastUsed, valueAt, type PitRowId, type PitView } from "../lib/pit-rows";
 import { PHASE_WORDS, labelOf } from "../lib/roster";
 import { TopologyTree, FormTree } from "./tree-view";
+import { FormEdit, type FormEditTarget } from "./form-edit";
 import { turnsAtom, linkAtom } from "../state/aria";
 import { toggleVoiceAtom, voiceAtom } from "../state/audio";
 import { bootAtom } from "../state/boot";
@@ -125,6 +126,7 @@ function ControlList() {
 }
 
 function StateView() {
+  const [editing, setEditing] = useState<FormEditTarget | undefined>(undefined);
   const link = useAtomValue(linkAtom);
   const store = useAtomValue(storeNameAtom);
   const attended = useAtomValue(attendedAtom);
@@ -149,8 +151,21 @@ function StateView() {
           </div>
         ))}
       </dl>
-      {attended && <FormTree root={bound?.root} autoFocus />}
-      <p className="fw-note">{bound?.error ? "State is not available: " + bound.error : "Read-only for now."}</p>
+      {attended && !editing && <FormTree root={bound?.root} autoFocus onEdit={(path) => setEditing({ path })} />}
+      {attended && editing && <FormEdit attended={attended} root={bound?.root} target={editing} onDone={() => setEditing(undefined)} />}
+      {bound?.error ? (
+        <p className="fw-note">{"State is not available: " + bound.error}</p>
+      ) : (
+        attended &&
+        !editing && (
+          <div className="fw-new-actions">
+            <p className="fw-note">Tap a value, or c on it, to change it.</p>
+            <Button variant="quiet" onClick={() => setEditing({ path: "", fresh: true })}>
+              Set a key
+            </Button>
+          </div>
+        )
+      )}
     </>
   );
 }
