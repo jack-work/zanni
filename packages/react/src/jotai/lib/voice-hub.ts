@@ -1,3 +1,4 @@
+import { settleSpeakFor } from "../../trace";
 import type { AudioSession } from "./audio-session";
 import type { SpeechChunk, SpeechFault, SpeechSession, SpeechStart, SpeechTransport, VocePlayer, VoceApi } from "../../index";
 
@@ -171,6 +172,7 @@ export class VoiceHub {
       status: this.deps.audioStatus,
       label: "Spoken reply",
       change: (state) => {
+        settleSpeakFor(state);
         this.deps.session.clip(this.active(feed.turn), ACTIVE.has(state));
         if (state === "expired") this.expired(feed);
       },

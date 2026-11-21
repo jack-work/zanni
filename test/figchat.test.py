@@ -1017,6 +1017,33 @@ try:
             if g["kind"] in ("door-ws", "audio-ws", "audio-key"):
                 assert g["query"], "upgrades and the audio element carry the query: %s" % g
         sid = next(iter(ids))
+        stt_trace = next(g["traceparent"] for g in got if g["kind"] == "stt-key")
+        assert re.fullmatch(r"00-[0-9a-f]{32}-[0-9a-f]{16}-01", stt_trace), "the stt fetch carries traceparent: %s" % got
+        pg.locator(".zr-send").click()
+        for _ in range(100):
+            if sess_door.state()["quas"]:
+                break
+            pg.wait_for_timeout(50)
+        qua_trace = sess_door.state()["quas"][0]
+        assert re.fullmatch(r"00-[0-9a-f]{32}-[0-9a-f]{16}-01", qua_trace), "figaro.qua carries traceparent: %s" % sess_door.state()["quas"]
+        spans = []
+        for _ in range(100):
+            pg.evaluate("window.dispatchEvent(new Event('pagehide'))")
+            pg.wait_for_timeout(50)
+            posted = [p for p in sess_door.state()["otel"] if p["path"] == "/otel/v1/traces" and p["body"]]
+            spans = [s for p in posted for r in p["body"]["resourceSpans"] for sc in r["scopeSpans"] for s in sc["spans"]]
+            if {"send", "dictate"} <= {s["name"] for s in spans}:
+                break
+        by = {s["name"]: s for s in spans}
+        assert {"send", "dictate"} <= set(by), "pagehide flushes one root span per user action: %s" % sorted(by)
+        for s in spans:
+            attrs = {a["key"]: a["value"].get("stringValue") for a in s["attributes"]}
+            assert attrs["figchat.session"] == sid, "every span carries the page session: %s" % s
+            assert "parentSpanId" not in s, "a user action is a root span"
+        assert "00-%s-%s-01" % (by["send"]["traceId"], by["send"]["spanId"]) == qua_trace, "the send span is the trace figaro.qua carried"
+        assert "00-%s-%s-01" % (by["dictate"]["traceId"], by["dictate"]["spanId"]) == stt_trace, "the dictate span is the trace the stt fetch carried"
+        assert {p["header"] for p in sess_door.state()["otel"] if p["header"]} == {sid}
+        assert not pg.errors, pg.errors
         pg.reload()
         until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'", timeout=15000)
         later = {g["header"] or g["query"] for g in sess_door.state()["sessions"]}

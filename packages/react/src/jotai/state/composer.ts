@@ -4,6 +4,7 @@ import { goAtom, attendedAtom } from "./route";
 import { rosterActionAtom } from "./roster";
 import { linkAtom } from "./aria";
 import { ForkedButUnsent } from "figaro-forms/aria";
+import { beginAction, traced } from "../../trace";
 import { attachmentsAtom, clearAttachmentsAtom, quaWithAttachments, readyIdsAtom, spentAtom } from "./attach";
 
 export const SAVE_DELAY_MS = 400;
@@ -20,6 +21,10 @@ const drafts = new Map<string, PrimitiveAtom<string>>();
 
 export function keyOf(store: string, aria: string): string {
   return store + "/" + aria;
+}
+
+export function ariaOf(key: string): string {
+  return key.slice(key.indexOf("/") + 1);
 }
 
 export function composerAtom(key: string): PrimitiveAtom<ComposerState> {
@@ -100,23 +105,25 @@ export const sendAtom = atom(null, async (get, set): Promise<boolean> => {
   const give = () => get(draft) === "" && set(draft, text);
   set(draft, "");
   try {
-    if (held.length) {
-      const got = await set(readyIdsAtom, key);
-      if ("why" in got) {
-        give();
-        set(comp, (s) => ({ ...s, sending: false, note: got.why }));
-        return false;
-      }
-      try {
-        await quaWithAttachments(at.client, at.aria, text, got.ids);
-      } catch (err) {
-        set(spentAtom, key);
-        throw err;
-      }
-      set(clearAttachmentsAtom, key);
-    } else await at.client.peek(at.aria).qua(text);
-    set(comp, (s) => ({ ...s, sending: false }));
-    return true;
+    return await traced("send", { "figaro.aria": at.aria }, async () => {
+      if (held.length) {
+        const got = await set(readyIdsAtom, key);
+        if ("why" in got) {
+          give();
+          set(comp, (s) => ({ ...s, sending: false, note: got.why }));
+          return false;
+        }
+        try {
+          await quaWithAttachments(at.client, at.aria, text, got.ids);
+        } catch (err) {
+          set(spentAtom, key);
+          throw err;
+        }
+        set(clearAttachmentsAtom, key);
+      } else await at.client.peek(at.aria).qua(text);
+      set(comp, (s) => ({ ...s, sending: false }));
+      return true;
+    });
   } catch (err) {
     give();
     set(comp, (s) => ({ ...s, sending: false, note: "Not sent: " + reason(err) }));
@@ -152,6 +159,7 @@ export const forkAtom = atom(null, async (get, set, req: number | ForkRequest): 
   const comp = composerAtom(keyOf(at.store, at.aria));
   if (get(comp).forking) return { ok: false, why: "Fork: one is already running." };
   set(comp, (s) => ({ ...s, forking: true, note: "" }));
+  const span = beginAction("fork", { "figaro.aria": aria });
   let alternative = "";
   let note = "";
   try {
@@ -160,6 +168,7 @@ export const forkAtom = atom(null, async (get, set, req: number | ForkRequest): 
       alternative = (await at.client.tailFork(aria)).alternative;
       if (text) {
         await at.client.peek(alternative).qua(text).catch((err: unknown) => {
+          span.end(err);
           note = "Forked, but the first message was not sent: " + reason(err);
         });
       }
@@ -168,12 +177,15 @@ export const forkAtom = atom(null, async (get, set, req: number | ForkRequest): 
     if (err instanceof ForkedButUnsent) {
       alternative = err.fork.alternative;
       note = "Forked, but the first message was not sent: " + reason(err.cause);
+      span.end(err.cause);
     } else {
+      span.end(err);
       const why = "Not forked: " + reason(err);
       set(comp, (s) => ({ ...s, forking: false, note: why }));
       return { ok: false, why };
     }
   }
+  span.end();
   set(comp, (s) => ({ ...s, forking: false }));
   void set(rosterActionAtom, "refresh");
   if (!stay) {
