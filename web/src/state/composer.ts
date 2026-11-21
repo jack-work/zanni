@@ -1,5 +1,5 @@
 import { atom, type PrimitiveAtom } from "jotai";
-import { voce } from "../lib/zanni";
+import { audioSessionAtom, cancelSpeechAtom, unlockAudio } from "./audio";
 import { goAtom, attendedAtom } from "./route";
 import { rosterActionAtom } from "./roster";
 import { linkAtom } from "./aria";
@@ -88,7 +88,7 @@ export const sendAtom = atom(null, async (get, set): Promise<boolean> => {
     set(comp, (s) => ({ ...s, note: "Not connected. Reconnecting." }));
     return false;
   }
-  voce.unlock(window);
+  unlockAudio(get(audioSessionAtom));
   set(comp, (s) => ({ ...s, sending: true, note: "" }));
   try {
     await at.client.peek(at.aria).qua(text);
@@ -105,6 +105,7 @@ export const interruptAtom = atom(null, async (get, set, queue: "keep" | "clear"
   const at = get(attendedAtom);
   if (!at) return;
   const comp = composerAtom(keyOf(at.store, at.aria));
+  set(cancelSpeechAtom, (n) => n + 1);
   try {
     await at.client.peek(at.aria).interrupt({ queue });
   } catch (err) {

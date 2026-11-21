@@ -188,7 +188,10 @@ export interface TurnViewProps {
   speaking: Speaking | null;
 }
 
-export const TurnView = memo(function TurnView({ turn: m, speaking }: TurnViewProps) {
+const spokenIn = (s: Speaking | null, turn: number): string => (s && s.turn === turn ? s.node + ":" + s.chars : "");
+
+export const TurnView = memo(
+  function TurnView({ turn: m, speaking }: TurnViewProps) {
   const state = m.end ? (m.end.kind === "error" ? "failed" : "ended") : m.open ? "open" : "done";
   const mine = speaking && speaking.turn === m.turn ? speaking : null;
   return (
@@ -196,7 +199,7 @@ export const TurnView = memo(function TurnView({ turn: m, speaking }: TurnViewPr
       <div className="nodi-turn-head">
         <span className="nodi-turn-no">Turn {m.turn}</span>
         <span className="nodi-turn-tools">
-          <TurnActions turn={m.turn} />
+          <TurnActions turn={m.turn} speakable={m.items.some((i) => i.kind === "prose")} />
         </span>
       </div>
       <div className="nodi-turn-body">
@@ -217,4 +220,6 @@ export const TurnView = memo(function TurnView({ turn: m, speaking }: TurnViewPr
       </div>
     </li>
   );
-});
+  },
+  (a, b) => a.turn === b.turn && spokenIn(a.speaking, a.turn.turn) === spokenIn(b.speaking, b.turn.turn),
+);

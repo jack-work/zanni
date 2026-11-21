@@ -1,0 +1,66 @@
+import { useAtomValue, useSetAtom } from "jotai";
+import { useEffect, useRef } from "react";
+import { VoiceHub } from "../lib/voice-hub";
+import { voce } from "../lib/zanni";
+import { audioSessionAtom, cancelSpeechAtom, speakingAtom, speechTransportAtom, voiceAtom, voiceControlAtom } from "../state/audio";
+import { bootAtom } from "../state/boot";
+import type { Attended } from "../state/route";
+
+const slotQuery = (turn: number, node: number) => document.querySelector<HTMLElement>('[data-voice-slot="' + turn + ":" + node + '"]');
+const firstSlot = (turn: number) => document.querySelector<HTMLElement>('.nodi-turn[data-turn="' + turn + '"] [data-voice-slot]');
+const pause = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+export function useVoice({ aria, store }: Attended): void {
+  const transport = useAtomValue(speechTransportAtom);
+  const session = useAtomValue(audioSessionAtom);
+  const voiceOn = useAtomValue(voiceAtom);
+  const cancelTick = useAtomValue(cancelSpeechAtom);
+  const audioUrl = useAtomValue(bootAtom).audioUrl;
+  const setSpeaking = useSetAtom(speakingAtom);
+  const setControl = useSetAtom(voiceControlAtom);
+  const hub = useRef<VoiceHub | null>(null);
+  const voice = useRef(voiceOn);
+  voice.current = voiceOn;
+
+  useEffect(() => {
+    const src = (key: string) => audioUrl.replace(/\/$/, "") + "/key/" + key.split("/").map(encodeURIComponent).join("/");
+    const made = new VoiceHub(
+      {
+        doc: document,
+        voce,
+        session,
+        audioSrc: src,
+        audioStatus: (key) => window.fetch(src(key), { method: "GET", credentials: "same-origin", cache: "no-store", headers: { Range: "bytes=0-0" } }).then((r) => r.status),
+        speaking: (s) => setSpeaking(s ? { aria, ...s } : null),
+        slot: slotQuery,
+        firstSlot,
+        wait: pause,
+      },
+      aria,
+      store,
+      transport,
+    );
+    hub.current = made;
+    made.voice(voice.current);
+    setControl({ replay: (turn) => made.replay(turn) });
+    return () => {
+      made.close();
+      hub.current = null;
+      setControl(null);
+      setSpeaking(null);
+    };
+  }, [aria, store, transport, session, audioUrl, setSpeaking, setControl]);
+
+  useEffect(() => {
+    hub.current?.voice(voiceOn);
+  }, [voiceOn]);
+
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    hub.current?.cancel();
+  }, [cancelTick]);
+}

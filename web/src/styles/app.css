@@ -59,7 +59,7 @@ body.fw-page {
 .fw[data-link="offline"] .fw-link { color: var(--z-warn); }
 .fw[data-link="offline"] .fw-link::before { background: var(--z-warn); }
 
-.fw-voice, .fw-mic, .fw-new, .fw-send, .fw-older, .fw-stop, .fw-latest, .fw-fork, .fw-fork-here {
+.fw-voice, .fw-hands, .fw-mic, .fw-new, .fw-send, .fw-older, .fw-stop, .fw-latest, .fw-fork, .fw-fork-here, .fw-replay {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -167,12 +167,16 @@ body.fw-page {
 }
 html { scroll-padding-bottom: var(--fw-composer-h, 0px); }
 
-.fw-head-row { display: flex; align-items: center; justify-content: space-between; gap: var(--z-space-4, 12px); }
-.fw-head-row .fw-h1 { flex: 1; min-width: 0; }
-.fw-fork, .fw-fork-here { border-width: 1px; border-color: var(--z-line); color: var(--z-ink); font-size: 1.125rem; padding: 0 var(--z-space-4, 12px); flex: none; }
-.fw-fork-here { min-height: 28px; padding: 0 var(--z-space-3, 8px); border-color: transparent; color: var(--z-muted); font-size: 1.0625rem; }
-.fw-fork-here:hover { border-color: var(--z-line); color: var(--z-ink); }
-.fw-actions { display: inline-flex; }
+.fw-subbar { display: flex; align-items: center; justify-content: space-between; gap: var(--z-space-3, 8px); }
+.fw-subtools { display: inline-flex; gap: var(--z-space-3, 8px); margin-left: auto; }
+.fw-voice { min-width: 6.4rem; padding: 0 var(--z-space-4, 12px); }
+.fw-voice[aria-pressed="true"], .fw-hands[aria-pressed="true"] { background: var(--z-accent); color: var(--z-on-accent); }
+.fw-hands { border-width: 1px; border-color: var(--z-line); color: var(--z-ink); font-size: 1.125rem; padding: 0 var(--z-space-4, 12px); }
+.fw-hands[aria-pressed="true"] { border-color: var(--z-accent); }
+.fw-fork, .fw-fork-here, .fw-replay { border-width: 1px; border-color: var(--z-line); color: var(--z-ink); font-size: 1.125rem; padding: 0 var(--z-space-4, 12px); flex: none; }
+.fw-fork-here, .fw-replay { min-height: 28px; padding: 0 var(--z-space-3, 8px); border-color: transparent; color: var(--z-muted); font-size: 1.0625rem; }
+.fw-fork-here:hover, .fw-replay:hover { border-color: var(--z-line); color: var(--z-ink); }
+.fw-actions { display: inline-flex; gap: var(--z-space-2, 4px); }
 @media (hover: hover) and (pointer: fine) {
   .fw-actions { opacity: 0; }
   .nodi-turn:hover .fw-actions, .nodi-turn:focus-within .fw-actions, .nodi-turn:last-child .fw-actions { opacity: 1; }
@@ -191,7 +195,7 @@ html { scroll-padding-bottom: var(--fw-composer-h, 0px); }
   border-top: 1px solid var(--z-line);
 }
 .fw-composer > * { width: 100%; max-width: calc(var(--fw-width) - var(--fw-edge-l) - var(--fw-edge-r)); margin-inline: auto; }
-.fw-compose-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--z-space-3, 8px); }
+.fw-compose-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: end; gap: var(--z-space-3, 8px); }
 .fw-input {
   display: block;
   width: 100%;
@@ -221,3 +225,8 @@ html { scroll-padding-bottom: var(--fw-composer-h, 0px); }
 .fw-glyph i:nth-child(2) { animation-delay: -600ms; }
 .fw-glyph i:nth-child(3) { animation-delay: -300ms; }
 @keyframes fw-glyph { 0% { opacity: 1; } 33.3% { opacity: 0.25; } 100% { opacity: 0.25; } }
+
+.fw-mic { gap: 6px; min-width: 6.5rem; font-size: 1.25rem; }
+.fw-mic::before { content: ""; flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--z-fail); }
+.fw-mic[aria-pressed="true"] { background: var(--z-fail); border-color: var(--z-fail); color: var(--z-ground); }
+.fw-mic[aria-pressed="true"]::before { border-radius: 0; background: currentColor; }

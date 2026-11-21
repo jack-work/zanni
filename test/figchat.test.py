@@ -360,6 +360,80 @@ try:
         assert pg.locator(".fw-input").input_value() == "half a thought", "the draft survives a reload"
         pg.close()
 
+        pg = fresh()
+        door_v = door(12)
+        attend(pg, door_v, MAIN)
+        assert pg.locator(".fw-voice").get_attribute("aria-pressed") == "false", "voice starts off"
+        pg.locator(".fw-voice").click()
+        assert pg.locator(".fw-voice").get_attribute("aria-pressed") == "true"
+        send(pg, "just a [plain] hello")
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .voce[data-for='27']", timeout=15000)
+        assert pg.locator(".nodi-turn[data-turn='27'] .nodi-prose .voce").count() == 1, "one player per turn, inside a prose node"
+        assert pg.locator(".nodi-turn[data-turn='27'] .voce").count() == 1
+        until(pg, "document.querySelector('.voce').dataset.state !== 'none'", 10000)
+        until(pg, "['idle','loading','playing','paused'].includes(document.querySelector('.voce').dataset.state)", 15000)
+        sans_free(pg, "voice player")
+        assert door_v.state()["audio"] >= 1, "the gateway audio socket was opened by the voice toggle"
+        pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])", timeout=10000)
+        pg.locator(".nodi-turn[data-turn='26'] .fw-replay").click()
+        pg.wait_for_selector(".nodi-turn[data-turn='26'] .voce[data-for='26']", timeout=5000)
+        until(pg, "['loading','playing','idle'].includes(document.querySelector(\".nodi-turn[data-turn='26'] .voce\").dataset.state)", 10000)
+        assert pg.evaluate("window.localStorage.length + window.sessionStorage.length") == 0 or not pg.evaluate("Object.keys(window.localStorage).concat(Object.keys(window.sessionStorage)).some(k => /voice|hands/i.test(k))"), "voice and hands-free are never stored"
+        pg.close()
+
+        pg = fresh()
+        pg.goto("about:blank")
+        door_h = door(12)
+        attend(pg, door_h, MAIN)
+        pg.locator(".fw-hands").click()
+        assert pg.locator(".fw-hands").get_attribute("aria-pressed") == "true"
+        assert pg.locator(".fw-voice").get_attribute("aria-pressed") == "true", "hands-free turns the voice on"
+        pg.locator(".fw-mic").click()
+        until(pg, "document.querySelector('.fw').dataset.mic === 'recording'", 10000)
+        send(pg, "just a [plain] hello")
+        until(pg, "document.querySelector('.fw').dataset.audio === 'recording-with-pending'", 15000)
+        pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])", timeout=10000)
+        assert pg.locator(".nodi-turn[data-turn='27'] .voce").count() == 0, "a reply arriving while Gluck records makes no sound and shows no player yet"
+        pg.locator(".fw-mic").click()
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .voce[data-for='27']", timeout=15000)
+        until(pg, "document.querySelector('.fw').dataset.audio !== 'recording-with-pending' && document.querySelector('.fw').dataset.audio !== 'recording'", 10000)
+        until(pg, "['live','draining','idle','playing'].includes(document.querySelector('.voce').dataset.state)", 15000)
+        pg.locator(".fw-hands").click()
+        assert pg.locator(".fw-hands").get_attribute("aria-pressed") == "false"
+        pg.goto("about:blank")
+        attend(pg, door_h, MAIN)
+        assert pg.locator(".fw-hands").get_attribute("aria-pressed") == "false" and pg.locator(".fw-voice").get_attribute("aria-pressed") == "false", "a reload starts with hands-free and voice off"
+        pg.close()
+
+        mic_door = door(12)
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
+        pg = ctx.new_page()
+        pg.errors = []
+        pg.on("pageerror", lambda e: pg.errors.append(str(e)))
+        attend(pg, mic_door, MAIN)
+        assert pg.locator(".fw-mic").is_enabled()
+        pg.locator(".fw-input").fill("typed first")
+        pg.locator(".fw-mic").tap()
+        until(pg, "document.querySelector('.fw').dataset.mic === 'recording'", 10000)
+        pg.wait_for_timeout(600)
+        pg.locator(".fw-mic").tap()
+        until(pg, "document.querySelector('.fw-input').value.includes('crossing count')", 10000)
+        assert pg.locator(".fw-input").input_value() == "typed first what is the crossing count", pg.locator(".fw-input").input_value()
+        posts = mic_door.state()["stt"]
+        assert len(posts) == 1 and posts[0]["type"].startswith("audio/") and posts[0]["size"] > 0, posts
+        assert posts[0]["aria"] == "gluck/" + MAIN, posts
+        assert mic_door.state()["sent"] == [], "the transcript is not sent until Gluck sends it"
+        assert pg.evaluate("document.activeElement.className") == "fw-input", "the transcript lands with the cursor in the composer"
+        pg.locator(".fw-input").fill("edited words")
+        pg.locator(".fw-send").tap()
+        until(pg, "document.querySelector(\"[data-turn='27']\")", 10000)
+        assert mic_door.state()["sent"][0]["text"] == "edited words"
+        sans_free(pg, "composer after the mic")
+        pg.evaluate("document.querySelector('.fw-send').style.fontFamily = 'Arial'")
+        assert pg.evaluate(SANS), "negative control: a button set to Arial must be caught"
+        assert not pg.errors, pg.errors
+        ctx.close()
+
         refused = fresh()
         refused.goto(fast.url + "#/gluck/" + "f" * 32)
         until(refused, "document.querySelector('.fw').dataset.link === 'gone'", timeout=10000)

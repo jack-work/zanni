@@ -1,5 +1,8 @@
 import { useAtomValue } from "jotai";
+import { useSyncExternalStore } from "react";
 import { attendedRunningAtom, linkAtom } from "./state/aria";
+import { audioSessionAtom } from "./state/audio";
+import { micAtom } from "./state/mic";
 import { AriaView } from "./components/aria-view";
 import { Roster } from "./components/roster";
 import { TopBar } from "./components/topbar";
@@ -32,8 +35,14 @@ export function App() {
   const attended = useAtomValue(attendedAtom);
   const route = useAtomValue(routeAtom);
   const running = useAtomValue(attendedRunningAtom);
+  const mic = useAtomValue(micAtom);
+  const session = useAtomValue(audioSessionAtom);
+  const phase = useSyncExternalStore(
+    (fn) => session.subscribe(fn),
+    () => session.phase(),
+  );
   return (
-    <div className="fw" data-link={link} data-route={kind} data-running={running ? "" : undefined}>
+    <div className="fw" data-link={link} data-route={kind} data-running={running ? "" : undefined} data-mic={mic.state} data-audio={phase}>
       <TopBar />
       <div className="fw-body">
         <Roster />

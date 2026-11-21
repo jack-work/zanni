@@ -111,6 +111,7 @@ export interface VocePlayer {
   pause(): void;
   destroy(): void;
   speaking(): boolean;
+  state(): string;
 }
 
 export interface VoceOptions {
@@ -118,6 +119,7 @@ export interface VoceOptions {
   src(key: string): string;
   status(key: string): Promise<number>;
   label?: string;
+  change?(state: string, event: string): void;
 }
 
 export interface VoceApi {

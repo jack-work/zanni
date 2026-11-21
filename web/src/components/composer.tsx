@@ -1,6 +1,7 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import { clock } from "../lib/work";
+import { micAtom, micToggleAtom, dictationFocusAtom } from "../state/mic";
 import { linkAtom, runningAtom, workAtom } from "../state/aria";
 import { composerAtom, composerNoteAtom, draftAtom, interruptAtom, keyOf, sendAtom } from "../state/composer";
 import type { Attended } from "../state/route";
@@ -85,6 +86,9 @@ export function Composer({ attended, toBottom }: { attended: Attended; toBottom:
   const link = useAtomValue(linkAtom);
   const send = useSetAtom(sendAtom);
   const clearNote = useSetAtom(composerNoteAtom);
+  const mic = useAtomValue(micAtom);
+  const toggleMic = useSetAtom(micToggleAtom);
+  const focusTick = useAtomValue(dictationFocusAtom);
   const form = useRef<HTMLFormElement | null>(null);
   const input = useRef<HTMLTextAreaElement | null>(null);
   const coarse = useMemo(() => typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches, []);
@@ -111,7 +115,14 @@ export function Composer({ attended, toBottom }: { attended: Attended; toBottom:
     void submit();
   };
 
-  const showStrip = running || !!comp.note;
+  useEffect(() => {
+    if (focusTick) input.current?.focus({ preventScroll: true });
+  }, [focusTick]);
+
+  const micNow = useNow(mic.state === "recording" ? 250 : null);
+  const micLabel = mic.state === "recording" ? "Stop " + clock(micNow - mic.began) : mic.state === "transcribing" ? "Wait" : "Record";
+  const note = comp.note || mic.note;
+  const showStrip = running || !!note;
   return (
     <form
       className="fw-composer"
@@ -123,7 +134,7 @@ export function Composer({ attended, toBottom }: { attended: Attended; toBottom:
         void submit();
       }}
     >
-      {showStrip && <Strip attended={attended} note={comp.note} running={running} />}
+      {showStrip && <Strip attended={attended} note={note} running={running} />}
       <div className="fw-compose-row">
         <textarea
           ref={input}
@@ -135,6 +146,16 @@ export function Composer({ attended, toBottom }: { attended: Attended; toBottom:
           onChange={(ev) => setDraft(ev.target.value)}
           onKeyDown={onKey}
         />
+        <button
+          type="button"
+          className="fw-mic"
+          aria-pressed={mic.state === "recording"}
+          disabled={mic.state === "unsupported" || mic.state === "asking" || mic.state === "transcribing"}
+          title={mic.state === "unsupported" ? "This browser cannot record audio." : undefined}
+          onClick={() => toggleMic()}
+        >
+          {micLabel}
+        </button>
         <button type="submit" className="fw-send" disabled={comp.sending || !live}>
           {running ? "Steer" : "Send"}
         </button>

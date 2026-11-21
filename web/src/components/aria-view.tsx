@@ -7,6 +7,9 @@ import { nodi } from "../lib/zanni";
 import { noteAtom, turnsAtom } from "../state/aria";
 import { rosterAtom } from "../state/roster";
 import { composerAtom, forkAtom, keyOf } from "../state/composer";
+import { handsFreeAtom, speakingAtom, toggleHandsFreeAtom } from "../state/audio";
+import { micCancelAtom } from "../state/mic";
+import { useVoice } from "./use-voice";
 import { linkAtom } from "../state/aria";
 import type { Attended } from "../state/route";
 import { Composer } from "./composer";
@@ -50,6 +53,13 @@ export function AriaView({ attended }: { attended: Attended }) {
 
   const link = useAtomValue(linkAtom);
   const fork = useSetAtom(forkAtom);
+  const handsFree = useAtomValue(handsFreeAtom);
+  const toggleHandsFree = useSetAtom(toggleHandsFreeAtom);
+  const speaking = useAtomValue(speakingAtom);
+  const cancelMic = useSetAtom(micCancelAtom);
+  useVoice(attended);
+  useEffect(() => () => cancelMic(), [cancelMic]);
+  const speakingHere = speaking && speaking.aria === aria ? speaking : null;
   const forking = useAtomValue(composerAtom(keyOf(attended.store, aria))).forking;
   const row = roster.rows.find((r) => r.id === aria);
   const heading = row ? labelOf(row) : aria.slice(0, 8);
@@ -146,17 +156,22 @@ export function AriaView({ attended }: { attended: Attended }) {
   return (
     <section className="fw-pane-inner" ref={paneRef}>
       <main className="fw-main" tabIndex={-1}>
-        <a className="fw-back" href="#/">
-          Arias
-        </a>
-        <div className="fw-head-row">
-          <h1 className="fw-h1" tabIndex={-1} ref={headRef}>
-            <Plain text={heading} />
-          </h1>
-          <button type="button" className="fw-fork" disabled={link !== "live" || forking} onClick={() => void fork(0)}>
-            Fork
-          </button>
+        <div className="fw-subbar">
+          <a className="fw-back" href="#/">
+            Arias
+          </a>
+          <div className="fw-subtools">
+            <button type="button" className="fw-hands" aria-pressed={handsFree} onClick={() => toggleHandsFree()}>
+              Hands-free
+            </button>
+            <button type="button" className="fw-fork" disabled={link !== "live" || forking} onClick={() => void fork(0)}>
+              Fork
+            </button>
+          </div>
         </div>
+        <h1 className="fw-h1" tabIndex={-1} ref={headRef}>
+          <Plain text={heading} />
+        </h1>
         <div className="fw-metrics">{metrics && <p className="nodi-metrics">{metrics}</p>}</div>
         {olderAvailable && (
           <button type="button" className="fw-older" ref={olderRef} disabled={loadingOlder} onClick={() => loadOlder().catch(() => {})}>
@@ -165,7 +180,7 @@ export function AriaView({ attended }: { attended: Attended }) {
         )}
         <ol className="nodi-turns" aria-label="Transcript">
           {turns.map((t) => (
-            <TurnView key={t.key} turn={t} speaking={null} />
+            <TurnView key={t.key} turn={t} speaking={speakingHere} />
           ))}
         </ol>
         {status && <p className="fw-note">{status}</p>}
