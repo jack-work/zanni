@@ -193,7 +193,7 @@ describe("the buttons under a message", () => {
     const mine = [...document.querySelectorAll(under + '.fw-inline[data-kind="input"] .fw-inline-btn')].map((b) => b.getAttribute("data-action"));
     expect(mine).toEqual(["play", "retranscribe"]);
     expect(document.querySelector('.fw-inline[data-kind="prose"]')).toBeNull();
-    expect(document.querySelector(under + ".nodi-turn-head .fw-play-icon")!.getAttribute("aria-label")).toBe("Play");
+    expect(document.querySelector(under + ".zr-sticky-bar .fw-play-icon")!.getAttribute("aria-label")).toBe("Play");
     expect(document.querySelector(".zr-scrim")).toBeNull();
     expect(document.querySelector(".fw-sheet")).toBeNull();
     expect(document.querySelector(under + '.fw-inline [data-action="play"]')!.textContent).toBe("▸");
@@ -230,7 +230,7 @@ describe("the buttons under a message", () => {
   it("play a reply where it is drawn", async () => {
     stubFetch(() => new Response("", { status: 206 }));
     await ready();
-    press(under + ".nodi-turn-head .fw-play-icon");
+    press(under + ".zr-sticky-bar .fw-play-icon");
     expect(document.querySelector('.nodi-turn[data-turn="26"] .voce[data-for="26"]')).toBeTruthy();
   });
 
