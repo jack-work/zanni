@@ -1,6 +1,8 @@
 import { formatWorkedTime, groupWork, stepsTitle, type Work } from "./work";
-import { createContext, memo, useContext, useMemo, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import { createContext, memo, useContext, useEffect, useMemo, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { Fold } from "./fold";
+import { reducedMotion } from "./motion";
+import { nodeMarks } from "./node-marks";
 import { nodi, type InputModel, type Item, type ProseItem, type SteeringItem, type ThinkingItem, type ToolItem, type TurnModel, type UnknownItem } from "./zanni";
 import { BlockView, Plain } from "./text";
 
@@ -14,6 +16,8 @@ export interface TranscriptHooks {
 export const TranscriptContext = createContext<TranscriptHooks>({});
 
 const CLIP = 4000;
+const OUTPUT_LINES = 10;
+const SPIN_MS = 80;
 
 function settled(item: { settled: boolean }): { "data-settled"?: "" } {
   return item.settled ? { "data-settled": "" } : {};
@@ -97,7 +101,7 @@ export const ProseView = memo(
 
 export function ThinkingView({ item }: { item: ThinkingItem }) {
   return (
-    <Fold className="nodi-thinking" summary={<span className="nodi-sum-label">Thinking</span>} {...settled(item)}>
+    <Fold open className="nodi-thinking" summary={<span className="nodi-sum-label">Thinking</span>} {...settled(item)}>
       <div className="nodi-thought">
         <Plain text={item.text} />
       </div>
@@ -127,25 +131,55 @@ export function toolStatusWord(item: ToolItem): string {
   return label;
 }
 
+function Spinner() {
+  const [frame, setFrame] = useState(0);
+  useEffect(() => {
+    if (reducedMotion()) return;
+    const id = setInterval(() => setFrame((f) => (f + 1) % nodeMarks.spinner.length), SPIN_MS);
+    return () => clearInterval(id);
+  }, []);
+  return <>{nodeMarks.spinner[frame]}</>;
+}
+
+function ToolMark({ item }: { item: ToolItem }) {
+  return (
+    <span className="nodi-tool-mark" role="img" aria-label={item.status === "running" ? "running" : item.status === "error" ? "failed" : "done"}>
+      {item.status === "running" ? <Spinner /> : item.status === "error" ? nodeMarks.fail : nodeMarks.ok}
+    </span>
+  );
+}
+
+export function tailLines(text: string, limit: number): { shown: string; total: number } {
+  const rows = text.replace(/\n+$/, "").split("\n");
+  return rows.length <= limit ? { shown: text, total: rows.length } : { shown: rows.slice(rows.length - limit).join("\n"), total: rows.length };
+}
+
 export function ToolView({ item }: { item: ToolItem }) {
+  const [all, setAll] = useState(false);
   const shownArgs = item.args || item.input;
   const out = item.output.length > CLIP ? item.output.slice(item.output.length - CLIP) : item.output;
   const showOut = !!out || item.status !== "running";
   const cut = item.outputBase > 0 || item.output.length > CLIP;
+  const tail = tailLines(out, OUTPUT_LINES);
+  const trimmed = !all && tail.shown !== out;
+  const body = trimmed ? tail.shown : out;
+  const duration = item.ms >= 1000 ? (item.ms / 1000).toFixed(1) + "s" : "";
   return (
     <Fold
+      open
       className="nodi-tool"
       data-status={item.status}
       {...settled(item)}
       summary={
         <>
+          <ToolMark item={item} />
           <span className="nodi-tool-name">
             <Plain text={item.name || "tool"} />
           </span>
           <span className="nodi-tool-summary">
             <Plain text={item.summary} />
           </span>
-          <span className="nodi-tool-status">{toolStatusWord(item)}</span>
+          <span className="nodi-tool-status">{duration && "[" + duration + "]"}</span>
         </>
       }
     >
@@ -162,8 +196,13 @@ export function ToolView({ item }: { item: ToolItem }) {
           <>
             <div className="nodi-label">Result</div>
             {cut && <div className="nodi-clipped">Earlier output was clipped.</div>}
+            {trimmed && (
+              <button type="button" className="nodi-more" onClick={() => setAll(true)}>
+                {"… last " + OUTPUT_LINES + " of " + tail.total + " lines, show all"}
+              </button>
+            )}
             <pre className="nodi-pre nodi-tool-out">
-              <Plain text={out || "(no output)"} />
+              <Plain text={body || "(no output)"} />
             </pre>
           </>
         )}
@@ -192,6 +231,7 @@ export function WorkGroup({ items }: { items: Work[] }) {
   const ms = items.reduce((n, i) => n + (i.kind === "tool" ? i.ms : 0), 0);
   return (
     <Fold
+      open
       className="zr-work"
       {...(live ? { "data-live": "" } : {})}
       summary={

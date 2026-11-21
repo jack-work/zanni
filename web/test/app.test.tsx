@@ -63,12 +63,12 @@ describe("attending an aria", () => {
     await waitFor(() => expect(document.querySelector(".zr-thread[aria-current='page']")).toBeTruthy());
   });
 
-  it("draws unknown nodes by name, who said what, and tool blocks closed", async () => {
+  it("draws unknown nodes by name, who said what, and tool blocks open", async () => {
     open("#/gluck/" + "c0ffee01".repeat(4) + ":7");
     await waitFor(() => expect(document.querySelector('.nodi-turn[data-turn="7"]')).toBeTruthy(), { timeout: 5000 });
     const turn = document.querySelector<HTMLElement>('.nodi-turn[data-turn="7"]')!;
     const tool = turn.querySelector<HTMLDetailsElement>(".nodi-tool")!;
-    expect(tool.open).toBe(false);
+    expect(tool.open).toBe(true);
     expect(within(turn).getByText("Arguments")).toBeTruthy();
     expect(tool.querySelector(".nodi-tool-args")!.textContent).toContain("go test");
     expect(tool.querySelector(".nodi-clipped")!.textContent).toContain("clipped");

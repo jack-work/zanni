@@ -63,7 +63,11 @@ details[open] > .nodi-sum > .nodi-caret { rotate: 90deg; }
 .nodi-thought { padding: var(--z-space-2, 4px) 0 var(--z-space-3, 8px); font-style: italic; color: var(--z-muted); white-space: pre-wrap; overflow-wrap: anywhere; }
 .nodi-tool-name { color: var(--z-ink); flex: none; }
 .nodi-tool-summary { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nodi-tool-mark { flex: none; width: 1ch; color: var(--z-ok, var(--z-muted)); }
+.nodi-tool[data-status="running"] .nodi-tool-mark { color: var(--z-warn); }
+.nodi-tool[data-status="error"] .nodi-tool-mark { color: var(--z-fail); }
 .nodi-tool-status { flex: none; }
+.nodi-more { justify-self: start; min-height: 36px; padding: 0; border: 0; background: none; color: var(--z-muted); font: 400 1.0625rem / 1.1 var(--nodi-mono); letter-spacing: 0.04em; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .nodi-tool[data-status="running"] { border-left-color: var(--z-warn); }
 .nodi-tool[data-status="running"] .nodi-tool-status { color: var(--z-warn); }
 .nodi-tool[data-status="error"] { border-left-color: var(--z-fail); }

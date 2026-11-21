@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { TurnView } from "zanni-react";
 import type { Item, ToolItem, TurnModel } from "zanni-react";
@@ -16,7 +16,7 @@ describe("a turn", () => {
     const { container } = render(<ol><TurnView turn={turn([prose(0), think(1), tool(2, "read"), tool(3, "read"), tool(4, "bash", { ms: 63_000 }), prose(5)])} speaking={null} fresh={false} /></ol>);
     expect(kinds(container)).toEqual(["nodi-prose", "zr-work", "nodi-prose"]);
     const group = container.querySelector<HTMLDetailsElement>(".zr-work")!;
-    expect(group.open).toBe(false);
+    expect(group.open).toBe(true);
     expect(group.querySelector(".nodi-sum-label")!.textContent).toBe("Explored 2 files, ran 1 command");
     expect(group.querySelector(".zr-work-time")!.textContent).toBe("1m 3s");
     expect(group.querySelectorAll(".nodi-thinking, .nodi-tool")).toHaveLength(4);
@@ -47,5 +47,51 @@ describe("a turn", () => {
     expect(nodes[1]!.getAttribute("data-speaking")).toBe("");
     expect(nodes[1]!.getAttribute("data-spoken-chars")).toBe("4");
     expect(nodes[1]!.textContent).toContain("U+202E");
+  });
+
+  it("opens every fold of work by default, in the order the model made it", () => {
+    const { container } = render(<ol><TurnView turn={turn([think(0), tool(1, "bash", { args: '{"command":"ls"}' }), think(2), tool(3, "read"), prose(4)])} speaking={null} fresh={false} /></ol>);
+    const folds = [...container.querySelectorAll<HTMLDetailsElement>("details")];
+    expect(folds.map((d) => d.className.split(" ")[0])).toEqual(["zr-work", "nodi-thinking", "nodi-tool", "nodi-thinking", "nodi-tool"]);
+    expect(folds.every((d) => d.open)).toBe(true);
+  });
+
+  it("lets a fold be collapsed and keeps it collapsed while the turn streams on", () => {
+    const first = turn([prose(0), tool(1, "bash", { status: "running", output: "a" })], { open: true, sealed: false });
+    const { container, rerender } = render(<ol><TurnView turn={first} speaking={null} fresh={false} /></ol>);
+    const fold = container.querySelector<HTMLDetailsElement>(".nodi-tool")!;
+    fireEvent.click(fold.querySelector("summary")!);
+    fold.open = false;
+    rerender(<ol><TurnView turn={turn([prose(0), tool(1, "bash", { status: "running", output: "a\nb" })], { open: true, sealed: false })} speaking={null} fresh={false} /></ol>);
+    expect(container.querySelector<HTMLDetailsElement>(".nodi-tool")!.open).toBe(false);
+  });
+
+  it("marks a tool by the pager's glyphs and shows the duration in brackets", () => {
+    const { container } = render(
+      <ol>
+        <TurnView turn={turn([tool(0, "bash", { ms: 1500 }), prose(1), tool(2, "bash", { status: "error" }), prose(3), tool(4, "bash", { status: "running" })])} speaking={null} fresh={false} />
+      </ol>,
+    );
+    const marks = [...container.querySelectorAll(".nodi-tool-mark")].map((n) => n.textContent);
+    expect(marks.slice(0, 2)).toEqual(["✓", "✗"]);
+    expect("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏").toContain(marks[2]);
+    expect(container.querySelector(".nodi-tool-status")!.textContent).toBe("[1.5s]");
+  });
+
+  it("shows the last ten lines of a long result and all of it on request", () => {
+    const lines = Array.from({ length: 25 }, (_, i) => "line " + (i + 1)).join("\n");
+    const { container, getByText } = render(<ol><TurnView turn={turn([tool(0, "bash", { output: lines })])} speaking={null} fresh={false} /></ol>);
+    const out = () => container.querySelector(".nodi-tool-out")!.textContent!.split("\n");
+    expect(out()).toHaveLength(10);
+    expect(out()[0]).toBe("line 16");
+    fireEvent.click(getByText("… last 10 of 25 lines, show all"));
+    expect(out()).toHaveLength(25);
+    expect(container.querySelector(".nodi-more")).toBeNull();
+  });
+
+  it("leaves a short result whole", () => {
+    const { container } = render(<ol><TurnView turn={turn([tool(0, "bash", { output: "a\nb\n" })])} speaking={null} fresh={false} /></ol>);
+    expect(container.querySelector(".nodi-more")).toBeNull();
+    expect(container.querySelector(".nodi-tool-out")!.textContent).toBe("a\nb\n");
   });
 });
