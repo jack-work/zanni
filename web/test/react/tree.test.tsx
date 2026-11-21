@@ -1,4 +1,4 @@
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { Tree, branchPeek, clipEllipsis, inlineBranch, treeRows, type TreeNodeData } from "zanni-react";
 
@@ -154,5 +154,17 @@ describe("Tree", () => {
     render(<Tree roots={roots} mark="▸" current="x" defaultOpen={() => true} />);
     expect([...document.querySelectorAll(".zr-tree-row")].map((r) => r.textContent)).toEqual(["  node (1)  ●", '▸ └─ x-handle (8)  "q"  ●  Enter attend']);
     expect(document.querySelector("[data-id='x']")!.getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("takes focus when asked, so the pager's keys work at once", () => {
+    render(<Tree roots={form} mark="▸" autoFocus />);
+    expect(document.activeElement).toBe(screen.getByRole("tree"));
+    fireEvent.keyDown(screen.getByRole("tree"), { key: "j" });
+    expect(document.querySelector("[data-cursor='true']")).toBeTruthy();
+  });
+
+  it("does not take focus unless asked", () => {
+    render(<Tree roots={form} mark="▸" />);
+    expect(document.activeElement).not.toBe(screen.getByRole("tree"));
   });
 });

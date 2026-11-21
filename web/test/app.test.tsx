@@ -41,9 +41,31 @@ describe("the list", () => {
     expect(rows[1]).toMatch(/^ {2}└─ arias \(\d+\)/);
     expect(rows.some((r) => /\(\d+\)  ".+"/.test(r))).toBe(true);
     expect(document.querySelectorAll(".zr-tree th, .zr-tree button").length).toBe(0);
-    const lane = document.querySelector<HTMLElement>(".zr-tree-row[data-id='" + "c0ffee02".repeat(4) + "']")!;
-    act(() => lane.click());
-    await waitFor(() => expect(window.location.hash).toBe("#/gluck/" + "c0ffee02".repeat(4)));
+    const main = document.querySelector<HTMLElement>(".zr-tree-row[data-id='" + "c0ffee01".repeat(4) + "']")!;
+    act(() => main.click());
+    await waitFor(() => expect(window.location.hash).toBe("#/gluck/" + "c0ffee01".repeat(4)));
+  });
+
+  it("opens only the chain to the attended aria and the attended row itself, as the pager's revealOpen does", async () => {
+    open("#/gluck/" + "c0ffee02".repeat(4));
+    await waitFor(() => expect(document.querySelectorAll(".zr-tree-row").length).toBeGreaterThan(5));
+    const ids = () => [...document.querySelectorAll<HTMLElement>(".zr-tree-row")].map((r) => r.dataset.id);
+    const main = "c0ffee01".repeat(4);
+    const lane = "c0ffee02".repeat(4);
+    const review = "c0ffee06".repeat(4);
+    const engineer = "c0ffee04".repeat(4);
+    const forms = "c0ffee05".repeat(4);
+    expect(ids()).toContain(main);
+    expect(ids()).toContain(lane);
+    expect(ids()).toContain(review);
+    expect(ids()).toContain(engineer);
+    expect(ids()).not.toContain(forms);
+  });
+
+  it("counts the node's own children, not a fixed one", async () => {
+    open("#/");
+    await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id^='@node:']")).toBeTruthy());
+    await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id^='@node:']")!.textContent).toContain("(2)"));
   });
 
   it("says what it is waiting on", async () => {

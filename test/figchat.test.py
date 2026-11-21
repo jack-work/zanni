@@ -400,7 +400,7 @@ try:
         pg.wait_for_timeout(600)
         pg.locator(".fw-back").click()
         pg.wait_for_selector(".zr-tree-row")
-        pg.locator(".zr-tree-row[data-id='%s']" % LANE).click()
+        pg.locator(".zr-tree-row[data-id='%s']" % ("c0ffee04" * 4)).click()
         until(pg, "document.querySelector('.fw').dataset.link === 'live'", timeout=10000)
         assert pg.locator(".zr-input").input_value() == "", "another aria has its own draft"
         pg.goto("about:blank")
@@ -773,6 +773,8 @@ try:
             assert pg.locator("[data-action='new']").is_visible() and pg.locator(".fw-voice").is_visible(), "every removed control is one tap from the pit"
             pg.locator("[data-action='state']").click()
             until(pg, "document.querySelector('.fw-pit-fact[data-key=\"system.thinking_effort\"] dd') && document.querySelector('.fw-pit-fact[data-key=\"system.thinking_effort\"] dd').textContent === 'high'", 8000)
+            until(pg, "document.querySelector('.zr-pit .zr-tree-row')", 8000)
+            assert pg.evaluate("document.activeElement && document.activeElement.classList.contains('zr-tree')"), "opening the State pit focuses its tree"
             facts = pg.locator(".fw-pit-fact").all_inner_texts()
             joined = " ".join(facts)
             assert "Live" in joined and MAIN in joined and "Zanni" in joined, facts
@@ -812,7 +814,15 @@ try:
                 box, side = pg.locator(".zr-pit").bounding_box(), pg.locator(".fw-side").bounding_box()
                 assert abs(box["x"] - (side["x"] + side["width"])) <= 1 or box["x"] >= side["x"] + side["width"] - 1, "the drawer starts at the transcript pane: %s %s" % (box, side)
             pg.locator("[data-action='tree']").click()
-            until(pg, "document.querySelectorAll('.zr-pit .zr-tree-row').length >= 8", 8000)
+            until(pg, "document.querySelectorAll('.zr-pit .zr-tree-row').length >= 5", 8000)
+            assert pg.evaluate("document.activeElement && document.activeElement.classList.contains('zr-tree')"), "opening the Tree pit focuses the tree"
+            before = pg.evaluate("document.querySelector('.zr-pit [data-cursor=\"true\"]').dataset.id")
+            pg.keyboard.press("k")
+            assert pg.evaluate("document.querySelector('.zr-pit [data-cursor=\"true\"]').dataset.id") != before, "j and k work with no click first"
+            pg.keyboard.press("j")
+            assert pg.evaluate("document.querySelector('.zr-pit [data-cursor=\"true\"]').dataset.id") == before
+            assert pg.locator(".zr-pit .zr-tree-row[data-id='%s']" % LANE).count() == 1, "the attended row is open"
+            assert pg.locator(".zr-pit .zr-tree-row[data-id='%s']" % ("c0ffee05" * 4)).count() == 0, "a branch off the chain stays closed"
             depths = pg.evaluate("[...document.querySelectorAll('.zr-pit .zr-tree-row')].map(r => r.dataset.depth)")
             assert "0" in depths and "1" in depths, "the tree nests: %s" % depths
             assert pg.locator(".zr-pit .zr-tree-row[data-id='%s']" % MAIN).get_attribute("aria-selected") == "true", "the attended aria is marked"

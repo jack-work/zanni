@@ -149,7 +149,7 @@ function StateView() {
           </div>
         ))}
       </dl>
-      {attended && <FormTree root={bound?.root} />}
+      {attended && <FormTree root={bound?.root} autoFocus />}
       <p className="fw-note">{bound?.error ? "State is not available: " + bound.error : "Read-only for now."}</p>
     </>
   );
@@ -196,7 +196,7 @@ function ForkAtView() {
 
 function TreeView() {
   const pit = usePit();
-  return <TopologyTree onVisit={() => pit?.setSnap("closed")} />;
+  return <TopologyTree autoFocus onVisit={() => pit?.setSnap("closed")} />;
 }
 
 function RecentView() {

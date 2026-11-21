@@ -20,7 +20,7 @@ export function leafPreview(label: string, v: unknown): string {
   return clipEllipsis(raw.replace(/\s+/g, " ").trim(), VALUE_COLUMNS);
 }
 
-export function topologyNodes(tree: TreeState, here: string | undefined, storeId: string, counts: Readonly<Record<string, number>> = {}): TreeNodeData[] {
+export function topologyNodes(tree: TreeState, here: string | undefined, storeId: string, counts: Readonly<Record<string, number>> = {}, nodeChildren?: number): TreeNodeData[] {
   const make = (n: TreeNode): TreeNodeData => {
     const msgs = counts[n.id];
     const kids = n.children.flatMap((c) => {
@@ -44,7 +44,7 @@ export function topologyNodes(tree: TreeState, here: string | undefined, storeId
   if (arias.length === 0) return [];
   const node = tree.daemons.find((d) => d.self)?.id ?? tree.daemons[0]?.id ?? storeId;
   const group: TreeNodeData = { id: "@arias", label: "arias", count: arias.length, children: arias };
-  return [{ id: "@node:" + node, label: node, count: 1, badge: here ? glyphs["state.here"] : "", children: [group] }];
+  return [{ id: "@node:" + node, label: node, count: nodeChildren ?? 1, badge: here ? glyphs["state.here"] : "", children: [group] }];
 }
 
 export function ancestorsOf(tree: TreeState, id: string | undefined): Set<string> {

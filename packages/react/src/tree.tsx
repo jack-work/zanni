@@ -98,6 +98,7 @@ export interface TreeProps {
   current?: string;
   defaultOpen?: (id: string, depth: number) => boolean;
   onActivate?: (id: string) => void;
+  autoFocus?: boolean;
   label?: string;
   className?: string;
   empty?: ReactNode;
@@ -105,7 +106,7 @@ export interface TreeProps {
 
 const never = () => false;
 
-export function Tree({ roots, mark, current, defaultOpen = never, onActivate, label, className, empty }: TreeProps) {
+export function Tree({ roots, mark, current, defaultOpen = never, onActivate, autoFocus, label, className, empty }: TreeProps) {
   const [chosen, setChosen] = useState<ReadonlyMap<string, boolean>>(new Map());
   const [cursorId, setCursorId] = useState<string | undefined>(undefined);
   const lastKey = useRef("");
@@ -117,6 +118,10 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, la
     0,
   );
   const cursor = rows[at];
+
+  useEffect(() => {
+    if (autoFocus) box.current?.focus({ preventScroll: true });
+  }, [autoFocus, rows.length > 0]);
 
   useEffect(() => {
     if (!cursor) return;

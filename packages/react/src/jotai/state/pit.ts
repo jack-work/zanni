@@ -47,3 +47,10 @@ export const recentStateAtom = atom((get) => {
   const client = get(clientAtom);
   return client ? get(recentAtom(client)) : undefined;
 });
+
+export const nodeFormAtom = atom((get) => {
+  const client = get(clientAtom);
+  const tree = get(treeStateAtom);
+  const daemon = tree?.daemons.find((d) => d.self) ?? tree?.daemons[0];
+  return client && daemon ? get(boundFormAtom(client, daemon.form)) : undefined;
+});

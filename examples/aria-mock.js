@@ -435,7 +435,7 @@
     }
     function formRoot(id) {
       if (id === '@troupe') return { 'mock-node': { self: true, form: '@arias' } };
-      if (id === '@arias') return ariasRoot();
+      if (id === '@arias') { var root = ariasRoot(); root.roles = {}; return root; }
       if (id === '@recent') return recentRoot();
       var a = core.arias[id];
       if (!a) return null;
