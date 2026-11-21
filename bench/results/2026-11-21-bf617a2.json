@@ -1,0 +1,1199 @@
+{
+ "attach": [
+  {
+   "app_mark": null,
+   "first_frame": {
+    "max": 66.1,
+    "n": 5,
+    "p50": 53.4,
+    "p95": 66.1
+   },
+   "turns": 0
+  },
+  {
+   "app_mark": null,
+   "first_frame": {
+    "max": 66.2,
+    "n": 5,
+    "p50": 49.5,
+    "p95": 66.2
+   },
+   "turns": 10000
+  }
+ ],
+ "browser": "chromium",
+ "bundle": {
+  "all_raw": 561103,
+  "chunks": [
+   {
+    "brotli": 44340,
+    "gzip": 44369,
+    "hashed": true,
+    "name": "eb-garamond-CRpggXlh.woff2",
+    "raw": 44336
+   },
+   {
+    "brotli": 25389,
+    "gzip": 25416,
+    "hashed": true,
+    "name": "eb-garamond-italic-DSEbMgZu.woff2",
+    "raw": 25388
+   },
+   {
+    "brotli": 308,
+    "gzip": 326,
+    "hashed": true,
+    "name": "figaro-head-DZ2d1pJn.png",
+    "raw": 1038
+   },
+   {
+    "brotli": 107115,
+    "gzip": 123080,
+    "hashed": true,
+    "name": "index-Di7NjrKO.js",
+    "raw": 390801
+   },
+   {
+    "brotli": 331,
+    "gzip": 479,
+    "hashed": false,
+    "name": "index.html",
+    "raw": 818
+   },
+   {
+    "brotli": 35380,
+    "gzip": 35409,
+    "hashed": true,
+    "name": "jacquard-24-C1P8W-p0.woff2",
+    "raw": 35376
+   },
+   {
+    "brotli": 770,
+    "gzip": 895,
+    "hashed": true,
+    "name": "pcm-worklet-d4_r23FR.js",
+    "raw": 2214
+   },
+   {
+    "brotli": 7932,
+    "gzip": 8863,
+    "hashed": true,
+    "name": "style-B6gOHi89.css",
+    "raw": 43196
+   },
+   {
+    "brotli": 17940,
+    "gzip": 17964,
+    "hashed": true,
+    "name": "vt323-wDgJuOC9.woff2",
+    "raw": 17936
+   }
+  ],
+  "code_brotli": 115817,
+  "code_gzip": 132838,
+  "code_raw": 436211,
+  "unhashed": [
+   "index.html"
+  ]
+ },
+ "date": "2026-11-21T09:22:05Z",
+ "errors": [],
+ "history": {
+  "cpu_throttle": 4,
+  "frame_ms": 40,
+  "rows": [
+   {
+    "dom_nodes": 1513,
+    "keydown_to_paint": {
+     "max": 35.5,
+     "n": 40,
+     "p50": 8.55,
+     "p95": 22.4
+    },
+    "layout_ms_per_frame": 0.6,
+    "script_ms_per_frame": 2.39,
+    "style_ms_per_frame": 0.13,
+    "task_ms_per_frame": 7.57,
+    "turns_held": 36
+   },
+   {
+    "dom_nodes": 10329,
+    "keydown_to_paint": {
+     "max": 149.4,
+     "n": 40,
+     "p50": 21.15,
+     "p95": 145.1
+    },
+    "layout_ms_per_frame": 1.49,
+    "script_ms_per_frame": 4.93,
+    "style_ms_per_frame": 0.15,
+    "task_ms_per_frame": 23.48,
+    "turns_held": 269
+   },
+   {
+    "dom_nodes": 38012,
+    "keydown_to_paint": {
+     "max": 492.2,
+     "n": 40,
+     "p50": 56.45,
+     "p95": 213.9
+    },
+    "layout_ms_per_frame": 2.22,
+    "script_ms_per_frame": 8.85,
+    "style_ms_per_frame": 0.23,
+    "task_ms_per_frame": 39.75,
+    "turns_held": 1006
+   },
+   {
+    "dom_nodes": 75703,
+    "keydown_to_paint": {
+     "max": 1193.8,
+     "n": 40,
+     "p50": 114.85,
+     "p95": 1017.1
+    },
+    "layout_ms_per_frame": 1.32,
+    "script_ms_per_frame": 15.92,
+    "style_ms_per_frame": 0.23,
+    "task_ms_per_frame": 39.8,
+    "turns_held": 2009
+   }
+  ]
+ },
+ "input": [
+  {
+   "cpu_throttle": 1,
+   "idle": {
+    "keydown_to_paint": {
+     "max": 11.4,
+     "n": 200,
+     "p50": 5.6,
+     "p95": 6.7
+    },
+    "keys_over_16ms": 0,
+    "roundtrip": {
+     "max": 37.66,
+     "n": 200,
+     "p50": 22.56,
+     "p95": 23.56
+    }
+   },
+   "stream_frame": {
+    "components_rendered_max_commit": {
+     "live": 25,
+     "mounted": 8,
+     "other": 37,
+     "settled": 0,
+     "total": 62
+    },
+    "components_rendered_per_frame": {
+     "live": 5.6,
+     "mounted": 0.5,
+     "other": 6.3,
+     "settled": 0.0,
+     "total": 11.9
+    },
+    "dom_turns": 11,
+    "layouts_per_frame": 0.47,
+    "outside_turns_per_frame": {
+     "button.z2-control": 1.4,
+     "button.zr-grip": 0.1,
+     "button.zr-pill": 0.4,
+     "div.zr-pill-pair": 0.1,
+     "form.zr-composer": 0.3,
+     "header.fw-status": 0.5,
+     "none": 2.9,
+     "section.fw-pane-inner": 0.3
+    },
+    "react_commits_per_frame": 0.74,
+    "script_ms_per_frame": 0.26,
+    "style_recalcs_per_frame": 0.98,
+    "task_ms_per_frame": 1.02
+   },
+   "streaming": {
+    "frame_ms": 40,
+    "keydown_to_paint": {
+     "max": 19.7,
+     "n": 204,
+     "p50": 5.7,
+     "p95": 7.9
+    },
+    "keys_over_16ms": 3,
+    "roundtrip": {
+     "max": 39.22,
+     "n": 200,
+     "p50": 22.48,
+     "p95": 23.48
+    }
+   },
+   "streaming_long": {
+    "chunk": 40,
+    "frame_ms": 40,
+    "keydown_to_paint_p95_last": 9.5,
+    "reply_bytes": 24000,
+    "series": [
+     {
+      "keydown_to_paint": {
+       "max": 8,
+       "n": 27,
+       "p50": 5.6,
+       "p95": 6.9
+      },
+      "layout_ms_per_frame": 0.3,
+      "reply_chars": 814,
+      "script_ms_per_frame": 0.94,
+      "style_ms_per_frame": 0.28,
+      "task_ms_per_frame": 4.13
+     },
+     {
+      "keydown_to_paint": {
+       "max": 11.1,
+       "n": 25,
+       "p50": 5.7,
+       "p95": 7.8
+      },
+      "layout_ms_per_frame": 0.33,
+      "reply_chars": 1628,
+      "script_ms_per_frame": 0.97,
+      "style_ms_per_frame": 0.34,
+      "task_ms_per_frame": 4.19
+     },
+     {
+      "keydown_to_paint": {
+       "max": 11.5,
+       "n": 27,
+       "p50": 5.6,
+       "p95": 7.7
+      },
+      "layout_ms_per_frame": 0.32,
+      "reply_chars": 2432,
+      "script_ms_per_frame": 0.99,
+      "style_ms_per_frame": 0.33,
+      "task_ms_per_frame": 4.27
+     },
+     {
+      "keydown_to_paint": {
+       "max": 11.9,
+       "n": 26,
+       "p50": 5.7,
+       "p95": 8.4
+      },
+      "layout_ms_per_frame": 0.33,
+      "reply_chars": 3234,
+      "script_ms_per_frame": 0.99,
+      "style_ms_per_frame": 0.43,
+      "task_ms_per_frame": 4.14
+     },
+     {
+      "keydown_to_paint": {
+       "max": 9.3,
+       "n": 26,
+       "p50": 5.6,
+       "p95": 8.4
+      },
+      "layout_ms_per_frame": 0.34,
+      "reply_chars": 4042,
+      "script_ms_per_frame": 0.98,
+      "style_ms_per_frame": 0.23,
+      "task_ms_per_frame": 3.77
+     },
+     {
+      "keydown_to_paint": {
+       "max": 13,
+       "n": 26,
+       "p50": 5.6,
+       "p95": 8.6
+      },
+      "layout_ms_per_frame": 0.31,
+      "reply_chars": 4846,
+      "script_ms_per_frame": 0.94,
+      "style_ms_per_frame": 0.32,
+      "task_ms_per_frame": 3.57
+     },
+     {
+      "keydown_to_paint": {
+       "max": 12.2,
+       "n": 26,
+       "p50": 5.6,
+       "p95": 7.5
+      },
+      "layout_ms_per_frame": 0.34,
+      "reply_chars": 5660,
+      "script_ms_per_frame": 0.99,
+      "style_ms_per_frame": 0.35,
+      "task_ms_per_frame": 3.98
+     },
+     {
+      "keydown_to_paint": {
+       "max": 11.6,
+       "n": 25,
+       "p50": 5.5,
+       "p95": 7.6
+      },
+      "layout_ms_per_frame": 0.35,
+      "reply_chars": 6464,
+      "script_ms_per_frame": 0.97,
+      "style_ms_per_frame": 0.34,
+      "task_ms_per_frame": 3.88
+     },
+     {
+      "keydown_to_paint": {
+       "max": 21.2,
+       "n": 27,
+       "p50": 5.6,
+       "p95": 16.5
+      },
+      "layout_ms_per_frame": 0.35,
+      "reply_chars": 7266,
+      "script_ms_per_frame": 0.95,
+      "style_ms_per_frame": 0.36,
+      "task_ms_per_frame": 3.85
+     },
+     {
+      "keydown_to_paint": {
+       "max": 11.9,
+       "n": 26,
+       "p50": 5.6,
+       "p95": 8.1
+      },
+      "layout_ms_per_frame": 0.35,
+      "reply_chars": 8080,
+      "script_ms_per_frame": 0.96,
+      "style_ms_per_frame": 0.34,
+      "task_ms_per_frame": 4.01
+     },
+     {
+      "keydown_to_paint": {
+       "max": 12.5,
+       "n": 26,
+       "p50": 5.5,
+       "p95": 8
+      },
+      "layout_ms_per_frame": 0.34,
+      "reply_chars": 8894,
+      "script_ms_per_frame": 0.92,
+      "style_ms_per_frame": 0.34,
+      "task_ms_per_frame": 3.66
+     },
+     {
+      "keydown_to_paint": {
+       "max": 12.3,
+       "n": 26,
+       "p50": 5.45,
+       "p95": 8
+      },
+      "layout_ms_per_frame": 0.35,
+      "reply_chars": 9732,
+      "script_ms_per_frame": 0.96,
+      "style_ms_per_frame": 0.34,
+      "task_ms_per_frame": 3.77
+     },
+     {
+      "keydown_to_paint": {
+       "max": 11.3,
+       "n": 26,
+       "p50": 5.5,
+       "p95": 8.3
+      },
+      "layout_ms_per_frame": 0.36,
+      "reply_chars": 10536,
+      "script_ms_per_frame": 0.98,
+      "style_ms_per_frame": 0.35,
+      "task_ms_per_frame": 4.09
+     },
+     {
+      "keydown_to_paint": {
+       "max": 11.5,
+       "n": 25,
+       "p50": 5.6,
+       "p95": 8
+      },
+      "layout_ms_per_frame": 0.34,
+      "reply_chars": 11339,
+      "script_ms_per_frame": 0.88,
+      "style_ms_per_frame": 0.33,
+      "task_ms_per_frame": 3.54
+     },
+     {
+      "keydown_to_paint": {
+       "max": 17.3,
+       "n": 27,
+       "p50": 5.5,
+       "p95": 12.7
+      },
+      "layout_ms_per_frame": 0.39,
+      "reply_chars": 12152,
+      "script_ms_per_frame": 0.98,
+      "style_ms_per_frame": 0.35,
+      "task_ms_per_frame": 4.09
+     },
+     {
+      "keydown_to_paint": {
+       "max": 12.6,
+       "n": 26,
+       "p50": 5.65,
+       "p95": 7.9
+      },
+      "layout_ms_per_frame": 0.37,
+      "reply_chars": 12966,
+      "script_ms_per_frame": 0.96,
+      "style_ms_per_frame": 0.36,
+      "task_ms_per_frame": 4.07
+     },
+     {
+      "keydown_to_paint": {
+       "max": 13,
+       "n": 26,
+       "p50": 5.6,
+       "p95": 8.1
+      },
+      "layout_ms_per_frame": 0.37,
+      "reply_chars": 13770,
+      "script_ms_per_frame": 0.95,
+      "style_ms_per_frame": 0.34,
+      "task_ms_per_frame": 3.77
+     },
+     {
+      "keydown_to_paint": {
+       "max": 12.4,
+       "n": 26,
+       "p50": 5.6,
+       "p95": 8.1
+      },
+      "layout_ms_per_frame": 0.37,
+      "reply_chars": 14572,
+      "script_ms_per_frame": 1.01,
+      "style_ms_per_frame": 0.37,
+      "task_ms_per_frame": 3.95
+     },
+     {
+      "keydown_to_paint": {
+       "max": 10.4,
+       "n": 26,
+       "p50": 5.5,
+       "p95": 8.4
+      },
+      "layout_ms_per_frame": 0.42,
+      "reply_chars": 15420,
+      "script_ms_per_frame": 1.04,
+      "style_ms_per_frame": 0.38,
+      "task_ms_per_frame": 4.16
+     },
+     {
+      "keydown_to_paint": {
+       "max": 11.2,
+       "n": 26,
+       "p50": 5.45,
+       "p95": 8.2
+      },
+      "layout_ms_per_frame": 0.48,
+      "reply_chars": 16224,
+      "script_ms_per_frame": 1.2,
+      "style_ms_per_frame": 0.41,
+      "task_ms_per_frame": 4.99
+     },
+     {
+      "keydown_to_paint": {
+       "max": 11,
+       "n": 26,
+       "p50": 5.55,
+       "p95": 8.4
+      },
+      "layout_ms_per_frame": 0.51,
+      "reply_chars": 17038,
+      "script_ms_per_frame": 1.21,
+      "style_ms_per_frame": 0.43,
+      "task_ms_per_frame": 5.14
+     },
+     {
+      "keydown_to_paint": {
+       "max": 14.1,
+       "n": 26,
+       "p50": 5.6,
+       "p95": 10.6
+      },
+      "layout_ms_per_frame": 0.4,
+      "reply_chars": 17842,
+      "script_ms_per_frame": 0.96,
+      "style_ms_per_frame": 0.38,
+      "task_ms_per_frame": 4.02
+     },
+     {
+      "keydown_to_paint": {
+       "max": 11.2,
+       "n": 26,
+       "p50": 5.5,
+       "p95": 8.8
+      },
+      "layout_ms_per_frame": 0.39,
+      "reply_chars": 18644,
+      "script_ms_per_frame": 0.98,
+      "style_ms_per_frame": 0.37,
+      "task_ms_per_frame": 4.22
+     },
+     {
+      "keydown_to_paint": {
+       "max": 12.7,
+       "n": 26,
+       "p50": 5.75,
+       "p95": 8.2
+      },
+      "layout_ms_per_frame": 0.36,
+      "reply_chars": 19458,
+      "script_ms_per_frame": 0.88,
+      "style_ms_per_frame": 0.35,
+      "task_ms_per_frame": 3.6
+     },
+     {
+      "keydown_to_paint": {
+       "max": 12.1,
+       "n": 26,
+       "p50": 5.55,
+       "p95": 8.8
+      },
+      "layout_ms_per_frame": 0.44,
+      "reply_chars": 20262,
+      "script_ms_per_frame": 1.06,
+      "style_ms_per_frame": 0.4,
+      "task_ms_per_frame": 4.31
+     },
+     {
+      "keydown_to_paint": {
+       "max": 9.8,
+       "n": 26,
+       "p50": 5.7,
+       "p95": 8.4
+      },
+      "layout_ms_per_frame": 0.42,
+      "reply_chars": 21110,
+      "script_ms_per_frame": 1.08,
+      "style_ms_per_frame": 0.4,
+      "task_ms_per_frame": 4.5
+     },
+     {
+      "keydown_to_paint": {
+       "max": 11.6,
+       "n": 26,
+       "p50": 5.5,
+       "p95": 8.4
+      },
+      "layout_ms_per_frame": 0.43,
+      "reply_chars": 21914,
+      "script_ms_per_frame": 1.05,
+      "style_ms_per_frame": 0.38,
+      "task_ms_per_frame": 4.3
+     },
+     {
+      "keydown_to_paint": {
+       "max": 10.3,
+       "n": 26,
+       "p50": 5.4,
+       "p95": 8.9
+      },
+      "layout_ms_per_frame": 0.51,
+      "reply_chars": 22716,
+      "script_ms_per_frame": 1.35,
+      "style_ms_per_frame": 0.43,
+      "task_ms_per_frame": 5.22
+     },
+     {
+      "keydown_to_paint": {
+       "max": 12.2,
+       "n": 26,
+       "p50": 5.7,
+       "p95": 9.5
+      },
+      "layout_ms_per_frame": 0.29,
+      "reply_chars": 23072,
+      "script_ms_per_frame": 0.7,
+      "style_ms_per_frame": 0.57,
+      "task_ms_per_frame": 3.92
+     }
+    ],
+    "task_ms_per_frame_last": 3.92
+   }
+  },
+  {
+   "cpu_throttle": 4,
+   "idle": {
+    "keydown_to_paint": {
+     "max": 15.5,
+     "n": 200,
+     "p50": 6.9,
+     "p95": 8.1
+    },
+    "keys_over_16ms": 4,
+    "roundtrip": {
+     "max": 39.62,
+     "n": 200,
+     "p50": 22.67,
+     "p95": 38.79
+    }
+   },
+   "stream_frame": {
+    "components_rendered_max_commit": {
+     "live": 25,
+     "mounted": 8,
+     "other": 37,
+     "settled": 0,
+     "total": 62
+    },
+    "components_rendered_per_frame": {
+     "live": 6.0,
+     "mounted": 0.4,
+     "other": 6.4,
+     "settled": 0.0,
+     "total": 12.4
+    },
+    "dom_turns": 12,
+    "layouts_per_frame": 0.43,
+    "outside_turns_per_frame": {
+     "button.z2-control": 1.4,
+     "button.zr-grip": 0.1,
+     "button.zr-pill": 0.3,
+     "div.zr-pill-pair": 0.1,
+     "form.zr-composer": 0.2,
+     "header.fw-status": 0.5,
+     "none": 3.1,
+     "section.fw-pane-inner": 0.4
+    },
+    "react_commits_per_frame": 0.76,
+    "script_ms_per_frame": 0.94,
+    "style_recalcs_per_frame": 0.94,
+    "task_ms_per_frame": 3.77
+   },
+   "streaming": {
+    "frame_ms": 40,
+    "keydown_to_paint": {
+     "max": 37.3,
+     "n": 204,
+     "p50": 7.9,
+     "p95": 20
+    },
+    "keys_over_16ms": 20,
+    "roundtrip": {
+     "max": 57.16,
+     "n": 200,
+     "p50": 22.97,
+     "p95": 39.8
+    }
+   },
+   "streaming_long": {
+    "chunk": 40,
+    "frame_ms": 40,
+    "keydown_to_paint_p95_last": 23.4,
+    "reply_bytes": 24000,
+    "series": [
+     {
+      "keydown_to_paint": {
+       "max": 21.7,
+       "n": 26,
+       "p50": 9.1,
+       "p95": 20.2
+      },
+      "layout_ms_per_frame": 0.98,
+      "reply_chars": 1078,
+      "script_ms_per_frame": 3.49,
+      "style_ms_per_frame": 0.68,
+      "task_ms_per_frame": 13.5
+     },
+     {
+      "keydown_to_paint": {
+       "max": 30.3,
+       "n": 26,
+       "p50": 14.4,
+       "p95": 23.1
+      },
+      "layout_ms_per_frame": 1.28,
+      "reply_chars": 2276,
+      "script_ms_per_frame": 3.97,
+      "style_ms_per_frame": 1.3,
+      "task_ms_per_frame": 16.69
+     },
+     {
+      "keydown_to_paint": {
+       "max": 27.1,
+       "n": 27,
+       "p50": 8.8,
+       "p95": 25.7
+      },
+      "layout_ms_per_frame": 1.42,
+      "reply_chars": 3510,
+      "script_ms_per_frame": 4.19,
+      "style_ms_per_frame": 0.93,
+      "task_ms_per_frame": 16.45
+     },
+     {
+      "keydown_to_paint": {
+       "max": 29.1,
+       "n": 26,
+       "p50": 10.6,
+       "p95": 25.6
+      },
+      "layout_ms_per_frame": 1.76,
+      "reply_chars": 4742,
+      "script_ms_per_frame": 5.09,
+      "style_ms_per_frame": 1.63,
+      "task_ms_per_frame": 20.08
+     },
+     {
+      "keydown_to_paint": {
+       "max": 19.9,
+       "n": 25,
+       "p50": 7.4,
+       "p95": 18.9
+      },
+      "layout_ms_per_frame": 1.06,
+      "reply_chars": 5740,
+      "script_ms_per_frame": 3.27,
+      "style_ms_per_frame": 0.88,
+      "task_ms_per_frame": 12.86
+     },
+     {
+      "keydown_to_paint": {
+       "max": 24.7,
+       "n": 26,
+       "p50": 7.8,
+       "p95": 18.2
+      },
+      "layout_ms_per_frame": 1.0,
+      "reply_chars": 6658,
+      "script_ms_per_frame": 3.01,
+      "style_ms_per_frame": 1.18,
+      "task_ms_per_frame": 11.62
+     },
+     {
+      "keydown_to_paint": {
+       "max": 32.6,
+       "n": 26,
+       "p50": 9.05,
+       "p95": 24.6
+      },
+      "layout_ms_per_frame": 1.27,
+      "reply_chars": 7736,
+      "script_ms_per_frame": 3.65,
+      "style_ms_per_frame": 1.01,
+      "task_ms_per_frame": 13.53
+     },
+     {
+      "keydown_to_paint": {
+       "max": 27.8,
+       "n": 27,
+       "p50": 8.2,
+       "p95": 21.1
+      },
+      "layout_ms_per_frame": 0.95,
+      "reply_chars": 8694,
+      "script_ms_per_frame": 3.16,
+      "style_ms_per_frame": 1.35,
+      "task_ms_per_frame": 13.02
+     },
+     {
+      "keydown_to_paint": {
+       "max": 21.8,
+       "n": 25,
+       "p50": 8,
+       "p95": 18.3
+      },
+      "layout_ms_per_frame": 1.08,
+      "reply_chars": 9658,
+      "script_ms_per_frame": 2.95,
+      "style_ms_per_frame": 0.67,
+      "task_ms_per_frame": 11.66
+     },
+     {
+      "keydown_to_paint": {
+       "max": 31.1,
+       "n": 27,
+       "p50": 7.5,
+       "p95": 21.3
+      },
+      "layout_ms_per_frame": 0.89,
+      "reply_chars": 10576,
+      "script_ms_per_frame": 3.08,
+      "style_ms_per_frame": 1.15,
+      "task_ms_per_frame": 11.54
+     },
+     {
+      "keydown_to_paint": {
+       "max": 19.7,
+       "n": 26,
+       "p50": 7.65,
+       "p95": 19.1
+      },
+      "layout_ms_per_frame": 0.98,
+      "reply_chars": 11458,
+      "script_ms_per_frame": 2.92,
+      "style_ms_per_frame": 1.38,
+      "task_ms_per_frame": 12.03
+     },
+     {
+      "keydown_to_paint": {
+       "max": 19.7,
+       "n": 26,
+       "p50": 7.25,
+       "p95": 17.6
+      },
+      "layout_ms_per_frame": 1.03,
+      "reply_chars": 12343,
+      "script_ms_per_frame": 2.95,
+      "style_ms_per_frame": 1.28,
+      "task_ms_per_frame": 12.1
+     },
+     {
+      "keydown_to_paint": {
+       "max": 19.1,
+       "n": 26,
+       "p50": 7.6,
+       "p95": 16.5
+      },
+      "layout_ms_per_frame": 1.11,
+      "reply_chars": 13190,
+      "script_ms_per_frame": 2.78,
+      "style_ms_per_frame": 1.07,
+      "task_ms_per_frame": 11.77
+     },
+     {
+      "keydown_to_paint": {
+       "max": 19,
+       "n": 26,
+       "p50": 7.75,
+       "p95": 18
+      },
+      "layout_ms_per_frame": 1.27,
+      "reply_chars": 14114,
+      "script_ms_per_frame": 3.23,
+      "style_ms_per_frame": 1.05,
+      "task_ms_per_frame": 12.61
+     },
+     {
+      "keydown_to_paint": {
+       "max": 18.6,
+       "n": 26,
+       "p50": 7.65,
+       "p95": 17
+      },
+      "layout_ms_per_frame": 1.0,
+      "reply_chars": 14962,
+      "script_ms_per_frame": 2.89,
+      "style_ms_per_frame": 0.63,
+      "task_ms_per_frame": 11.17
+     },
+     {
+      "keydown_to_paint": {
+       "max": 22.7,
+       "n": 25,
+       "p50": 8,
+       "p95": 17.4
+      },
+      "layout_ms_per_frame": 0.88,
+      "reply_chars": 15806,
+      "script_ms_per_frame": 2.93,
+      "style_ms_per_frame": 1.14,
+      "task_ms_per_frame": 11.71
+     },
+     {
+      "keydown_to_paint": {
+       "max": 32.3,
+       "n": 26,
+       "p50": 7.45,
+       "p95": 23.4
+      },
+      "layout_ms_per_frame": 0.93,
+      "reply_chars": 16648,
+      "script_ms_per_frame": 3.32,
+      "style_ms_per_frame": 1.06,
+      "task_ms_per_frame": 11.74
+     },
+     {
+      "keydown_to_paint": {
+       "max": 31.2,
+       "n": 26,
+       "p50": 7.45,
+       "p95": 21.5
+      },
+      "layout_ms_per_frame": 1.22,
+      "reply_chars": 17566,
+      "script_ms_per_frame": 3.15,
+      "style_ms_per_frame": 1.14,
+      "task_ms_per_frame": 12.88
+     },
+     {
+      "keydown_to_paint": {
+       "max": 31,
+       "n": 26,
+       "p50": 8.0,
+       "p95": 22.5
+      },
+      "layout_ms_per_frame": 1.13,
+      "reply_chars": 18531,
+      "script_ms_per_frame": 3.19,
+      "style_ms_per_frame": 1.09,
+      "task_ms_per_frame": 13.6
+     },
+     {
+      "keydown_to_paint": {
+       "max": 33.1,
+       "n": 26,
+       "p50": 7.45,
+       "p95": 23.4
+      },
+      "layout_ms_per_frame": 1.39,
+      "reply_chars": 19569,
+      "script_ms_per_frame": 3.48,
+      "style_ms_per_frame": 1.06,
+      "task_ms_per_frame": 13.61
+     },
+     {
+      "keydown_to_paint": {
+       "max": 27,
+       "n": 26,
+       "p50": 7.55,
+       "p95": 21.4
+      },
+      "layout_ms_per_frame": 1.33,
+      "reply_chars": 20536,
+      "script_ms_per_frame": 3.13,
+      "style_ms_per_frame": 1.17,
+      "task_ms_per_frame": 14.21
+     },
+     {
+      "keydown_to_paint": {
+       "max": 28.5,
+       "n": 26,
+       "p50": 8.4,
+       "p95": 21.1
+      },
+      "layout_ms_per_frame": 1.12,
+      "reply_chars": 21534,
+      "script_ms_per_frame": 3.52,
+      "style_ms_per_frame": 1.1,
+      "task_ms_per_frame": 13.75
+     },
+     {
+      "keydown_to_paint": {
+       "max": 33.4,
+       "n": 26,
+       "p50": 7.55,
+       "p95": 22
+      },
+      "layout_ms_per_frame": 1.29,
+      "reply_chars": 22452,
+      "script_ms_per_frame": 2.83,
+      "style_ms_per_frame": 1.13,
+      "task_ms_per_frame": 11.71
+     },
+     {
+      "keydown_to_paint": {
+       "max": 31.9,
+       "n": 26,
+       "p50": 7.95,
+       "p95": 23.4
+      },
+      "layout_ms_per_frame": 1.01,
+      "reply_chars": 23072,
+      "script_ms_per_frame": 2.37,
+      "style_ms_per_frame": 1.77,
+      "task_ms_per_frame": 11.72
+     }
+    ],
+    "task_ms_per_frame_last": 11.72
+   }
+  }
+ ],
+ "input_webkit": {
+  "browser": "webkit",
+  "composer_autosize_js": false,
+  "idle": {
+   "keydown_to_paint": {
+    "max": 11,
+    "n": 200,
+    "p50": 4.0,
+    "p95": 5
+   }
+  },
+  "streaming_long": {
+   "keydown_to_paint": {
+    "max": 19,
+    "n": 208,
+    "p50": 4.0,
+    "p95": 13
+   },
+   "reply_bytes": 24000
+  }
+ },
+ "load": {
+  "asset_cache_control": "private, max-age=3600",
+  "cold": {
+   "blocking": 0,
+   "dcl": 34.2,
+   "fcp": 56,
+   "fp": 36,
+   "from_cache": 0,
+   "requests": 6,
+   "tti": 114.7,
+   "wire": 515232
+  },
+  "headers": {
+   "assets/eb-garamond-italic-HASH.woff2": "private, max-age=3600",
+   "assets/index-HASH.js": "private, max-age=3600",
+   "assets/jacquard-24-HASH.woff2": "private, max-age=3600",
+   "assets/style-HASH.css": "private, max-age=3600",
+   "assets/vt323-HASH.woff2": "private, max-age=3600",
+   "index": "private, no-cache"
+  },
+  "warm": {
+   "blocking": 0,
+   "dcl": 32.7,
+   "fcp": 60,
+   "fp": 36,
+   "from_cache": 5,
+   "requests": 6,
+   "tti": 110.1,
+   "wire": 1297
+  },
+  "warm_refetched": [
+   ""
+  ]
+ },
+ "memory": {
+  "after_detach": {
+   "heap": 5595316,
+   "listeners": 196,
+   "nodes": 127,
+   "retained_per_turn": 13722.4
+  },
+  "dom_per_turn": 45.0,
+  "heap_end": 14332564,
+  "heap_per_turn": 51769.9,
+  "heap_start": 2850832,
+  "listeners_per_turn": 6.0,
+  "nodes_per_turn": 82.0,
+  "samples": [
+   {
+    "dom": 250,
+    "heap": 2850832,
+    "listeners": 197,
+    "nodes": 451,
+    "turns": 26
+   },
+   {
+    "dom": 1384,
+    "heap": 5272824,
+    "listeners": 349,
+    "nodes": 2516,
+    "turns": 51
+   },
+   {
+    "dom": 2509,
+    "heap": 6582328,
+    "listeners": 499,
+    "nodes": 4570,
+    "turns": 76
+   },
+   {
+    "dom": 3634,
+    "heap": 7957312,
+    "listeners": 649,
+    "nodes": 6620,
+    "turns": 101
+   },
+   {
+    "dom": 4759,
+    "heap": 9203052,
+    "listeners": 799,
+    "nodes": 8670,
+    "turns": 126
+   },
+   {
+    "dom": 5884,
+    "heap": 10498484,
+    "listeners": 949,
+    "nodes": 10719,
+    "turns": 151
+   },
+   {
+    "dom": 7009,
+    "heap": 11713272,
+    "listeners": 1099,
+    "nodes": 12771,
+    "turns": 176
+   },
+   {
+    "dom": 8134,
+    "heap": 13028000,
+    "listeners": 1249,
+    "nodes": 14821,
+    "turns": 201
+   },
+   {
+    "dom": 9259,
+    "heap": 14332564,
+    "listeners": 1399,
+    "nodes": 16870,
+    "turns": 226
+   }
+  ],
+  "turns_streamed": 200
+ },
+ "quick": false,
+ "scroll": {
+  "dom_nodes": 2596,
+  "fps": 60.0,
+  "frame_ms": {
+   "max": 16.8,
+   "n": 724,
+   "p50": 16.7,
+   "p95": 16.8
+  },
+  "frames_over_33ms": 0,
+  "history_turns": 10000,
+  "longtask_ms": 0,
+  "longtasks": 0,
+  "scroll_top": 0,
+  "turns_loaded": 66
+ },
+ "scroll_dom": {
+  "dom_nodes": 9572,
+  "fps": 60.2,
+  "frame_ms": {
+   "max": 16.8,
+   "n": 484,
+   "p50": 16.7,
+   "p95": 16.7
+  },
+  "frames_over_33ms": 0,
+  "longtask_ms": 0,
+  "longtasks": 0,
+  "turns_in_dom": 213
+ },
+ "sha": "bf617a2",
+ "viewport": "390x844",
+ "wire": {
+  "by_kind_per_turn": {
+   "in:figaro.aria:live": [
+    48.7,
+    19856
+   ],
+   "in:figaro.aria:part": [
+    6.0,
+    3791
+   ],
+   "in:metrics": [
+    54.7,
+    7219
+   ],
+   "in:turn.done": [
+    2.0,
+    248
+   ]
+  },
+  "door_in_bytes_per_turn": 23895,
+  "door_in_frames_per_turn": 56.7,
+  "door_out_bytes_per_turn": 0,
+  "door_out_frames_per_turn": 0.0,
+  "reply": "stream the run build please (thinking, prose, bash tool, prose)",
+  "reply_bytes": 829,
+  "turns": 200
+ }
+}
