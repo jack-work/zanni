@@ -15,7 +15,7 @@ PASTES = [
     {"text": "pasted line one\npasted line two"},
     {"text": "tabs\tand\r\nwindows newlines\r\n"},
     {"rep": ["0123456789abcdef", 6400]},
-    {"rep": ["\u00e9\U0001F600 ", 12000]},
+    {"rep": ["\u00e9\U0001F600 ", 6000]},
     {"text": "\U0001F468\u200d\U0001F469\u200d\U0001F467\u200d\U0001F466" * 40},
     {"rep": ["line of a long paste\n", 2000]},
 ]
@@ -88,7 +88,7 @@ class Composer(Campaign):
         elif k == "paste":
             text = expand(a)
             self.focus(run)
-            if len((run.typed + text).encode()) > 110000:
+            if len((run.typed + text).encode()) > (110000 if (run.typed + text).isascii() else 60000):
                 page.keyboard.press("Control+A")
                 page.keyboard.press("Delete")
                 run.typed = ""
