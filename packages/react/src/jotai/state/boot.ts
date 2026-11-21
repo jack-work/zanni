@@ -6,6 +6,7 @@ export interface Boot {
   readonly store: string;
   readonly audioUrl: string;
   readonly sttUrl: string;
+  readonly attachUrl?: string;
   readonly mark: string;
   readonly templates?: readonly { readonly id: string; readonly label: string }[];
 }

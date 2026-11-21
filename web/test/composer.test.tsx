@@ -255,7 +255,7 @@ describe("the composer's pills", () => {
     await live();
     const pills = [...document.querySelectorAll<HTMLButtonElement>(".zr-pill")];
     expect(pills.map((p) => p.getAttribute("aria-label"))).toEqual(["Attach", "Command", "Send"]);
-    expect(pills.filter((p) => p.disabled).map((p) => p.getAttribute("aria-label"))).toEqual(["Attach"]);
+    expect(pills.some((p) => p.disabled)).toBe(false);
   });
 
   it("gives every pill glyph, pit row glyph and message button glyph the ink-centring box", async () => {

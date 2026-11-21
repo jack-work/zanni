@@ -4,6 +4,7 @@ import { goAtom, attendedAtom } from "./route";
 import { rosterActionAtom } from "./roster";
 import { linkAtom } from "./aria";
 import { ForkedButUnsent } from "figaro-forms/aria";
+import { attachmentsAtom, clearAttachmentsAtom, quaWithAttachments, readyIdsAtom, spentAtom } from "./attach";
 
 export const SAVE_DELAY_MS = 400;
 
@@ -84,19 +85,40 @@ export const sendAtom = atom(null, async (get, set): Promise<boolean> => {
   const comp = composerAtom(key);
   const draft = draftAtom(key);
   const text = get(draft).trim();
-  if (get(comp).sending || !text) return false;
+  const held = get(attachmentsAtom(key));
+  if (get(comp).sending) return false;
+  if (!text) {
+    if (held.length) set(comp, (s) => ({ ...s, note: "Add a message to send the attachments with." }));
+    return false;
+  }
   if (get(linkAtom) !== "live") {
     set(comp, (s) => ({ ...s, note: "Not connected. Reconnecting." }));
     return false;
   }
   unlockAudio(get(audioSessionAtom));
   set(comp, (s) => ({ ...s, sending: true, note: "" }));
+  const give = () => get(draft) === "" && set(draft, text);
+  set(draft, "");
   try {
-    await at.client.peek(at.aria).qua(text);
+    if (held.length) {
+      const got = await set(readyIdsAtom, key);
+      if ("why" in got) {
+        give();
+        set(comp, (s) => ({ ...s, sending: false, note: got.why }));
+        return false;
+      }
+      try {
+        await quaWithAttachments(at.client, at.aria, text, got.ids);
+      } catch (err) {
+        set(spentAtom, key);
+        throw err;
+      }
+      set(clearAttachmentsAtom, key);
+    } else await at.client.peek(at.aria).qua(text);
     set(comp, (s) => ({ ...s, sending: false }));
-    if (get(draft).trim() === text) set(draft, "");
     return true;
   } catch (err) {
+    give();
     set(comp, (s) => ({ ...s, sending: false, note: "Not sent: " + reason(err) }));
     return false;
   }

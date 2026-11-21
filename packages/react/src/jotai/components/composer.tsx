@@ -1,7 +1,9 @@
-import { Button, Composer as ZComposer, Glyph, Hints, PitGrip, attachGlyph, glyphs, usePit, voiceGlyph } from "../../index";
+import { Button, Composer as ZComposer, Glyph, Hints, PitGrip, Tray, attachGlyph, glyphs, usePit, voiceGlyph } from "../../index";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { clock } from "../../index";
+import { ACCEPT, MAX_FILES, kindWord, sizeLabel } from "../lib/attach";
+import { addFilesAtom, attachingAtom, removeAttachmentAtom } from "../state/attach";
 import { micAtom, micToggleAtom, dictationFocusAtom } from "../state/mic";
 import { linkAtom, runningAtom, workAtom } from "../state/aria";
 import { composerAtom, composerNoteAtom, draftAtom, interruptAtom, keyOf, sendAtom } from "../state/composer";
@@ -55,6 +57,10 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
   const setView = useSetAtom(pitViewAtom);
   const setHelp = useSetAtom(helpOpenAtom);
   const pit = usePit();
+  const picker = useRef<HTMLInputElement | null>(null);
+  const attached = useAtomValue(attachingAtom);
+  const addFiles = useSetAtom(addFilesAtom);
+  const removeFile = useSetAtom(removeAttachmentAtom);
   const suggestions = useMemo(() => (cmd.on ? suggest(cmd.line, sources) : null), [cmd.on, cmd.line, sources]);
 
   const firstOpen = suggestions?.items.find((c) => !c.off);
@@ -111,6 +117,7 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
       placeholder={cmd.on ? "fork 12, new, set mantra x, ls, help" : running ? "Steer figaro" : "Message"}
       sendLabel={cmd.on ? "Run" : running ? "Steer" : "Send"}
       sendGlyph={cmd.on || !running ? glyphs.send : glyphs.steering}
+      mode={cmd.on ? "command" : undefined}
       {...(cmd.on ? { prompt: ":", enterRuns: true, onEscape: leave, onTab: () => firstOpen && pick(firstOpen.text) } : {})}
       hints={
         cmd.on && suggestions ? (
@@ -121,9 +128,21 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
           />
         ) : undefined
       }
-      attach={cmd.on ? undefined : { glyph: attachGlyph, label: "Attach", title: "Attachments are not available yet.", disabled: true }}
-      command={{ glyph: glyphs["pit.command"], label: "Command", title: "Command mode", pressed: cmd.on, onClick: () => (cmd.on ? leave() : setCmd({ on: true, line: "", why: "" })) }}
-      sendDisabled={cmd.on ? !cmd.line.trim() : comp.sending || !live}
+      attach={cmd.on ? undefined : { glyph: attachGlyph, label: "Attach", title: attached.items.length >= MAX_FILES ? "At most " + MAX_FILES + " attachments." : "Attach photos or a PDF", disabled: !live || attached.items.length >= MAX_FILES, onClick: () => picker.current?.click() }}
+      tray={
+        cmd.on ? undefined : (
+          <Tray
+            items={attached.items.map((a) => ({ key: a.key, name: a.name, kind: kindWord(a.kind), size: a.bytes ? sizeLabel(a.bytes) : "", status: a.status, error: a.error }))}
+            onRemove={(item) => removeFile({ key, item })}
+          />
+        )
+      }
+      command={{ glyph: glyphs["pit.command"], label: "Command", title: "Command mode", pressed: cmd.on, onClick: () => {
+          if (cmd.on) leave();
+          else setCmd({ on: true, line: "", why: "" });
+          input.current?.focus({ preventScroll: true });
+        } }}
+      sendDisabled={cmd.on ? !cmd.line.trim() : comp.sending || !live || attached.uploading}
       running={running}
       focusTick={focusTick}
       inputRef={input}
@@ -159,6 +178,21 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
         </Button>
         )
       }
+    />
+    <input
+      ref={picker}
+      type="file"
+      className="fw-picker"
+      accept={ACCEPT}
+      multiple
+      hidden
+      tabIndex={-1}
+      aria-label="Attachment files"
+      onChange={(ev) => {
+        addFiles(Array.from(ev.target.files ?? []));
+        ev.target.value = "";
+        input.current?.focus({ preventScroll: true });
+      }}
     />
     <CommandHelp />
     </>

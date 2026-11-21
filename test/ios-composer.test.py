@@ -434,7 +434,7 @@ with sync_playwright() as p:
     pills_door = door(40)
     attend(pg, pills_door)
     pills = pg.evaluate("[...document.querySelectorAll('.zr-pill')].map(n => [n.getAttribute('aria-label'), n.disabled])")
-    assert pills == [["Send", False]], "no pill is drawn that does nothing: %s" % pills
+    assert pills == [["Attach", False], ["Command", False], ["Send", False]], "every pill is drawn enabled: %s" % pills
     assert_centred(pg.locator(".zr-send"), "the send pill's glyph on an iPhone")
     assert_centred(pg.locator(".fw-mic"), "the record button's glyph on an iPhone", tol=2.0, blank_ok=True)
     pg.locator(".zr-input").tap()
@@ -454,6 +454,43 @@ with sync_playwright() as p:
         assert_centred(b, "a message button's glyph on an iPhone")
     shot_sheet = "Refused to apply a stylesheet"
     pg.errors = [e for e in pg.errors if shot_sheet not in e]
+    assert not pg.errors, pg.errors
+    pg.context.close()
+
+    PNG = bytes([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) + bytes(range(40))
+    PDF = b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\n"
+    attach_door = door(12)
+    pg = fresh()
+    attend(pg, attach_door)
+    assert pg.locator(".zr-attach").is_enabled(), "attach is the file picker now"
+    accept = pg.evaluate("document.querySelector('.fw-picker').accept")
+    assert "image/*" in accept and "application/pdf" in accept, accept
+    pg.locator(".fw-picker").set_input_files([
+        {"name": "IMG_0042.png", "mimeType": "image/png", "buffer": PNG},
+        {"name": "plan.pdf", "mimeType": "application/pdf", "buffer": PDF},
+    ])
+    until(pg, "document.querySelectorAll('.zr-tray-item[data-status=ready]').length === 2", 10000)
+    chips = pg.evaluate("[...document.querySelectorAll('.zr-tray-item')].map(n => n.innerText)")
+    assert "IMG_0042.png" in chips[0] and "Photo" in chips[0] and "plan.pdf" in chips[1] and "PDF" in chips[1], chips
+    g = geometry(pg)
+    assert g["composer"]["height"] <= 220, "two chips keep the composer short: %s" % g["composer"]
+    assert g["docFits"], "the page does not grow sideways or down for the chips: %s" % g
+    over = pg.evaluate("[...document.querySelectorAll('.zr-tray-item')].map(n => n.scrollWidth - n.clientWidth)")
+    assert max(over) <= 1, "chips do not overflow: %s" % over
+    pg.locator(".zr-input").tap()
+    pg.keyboard.type("what do these say")
+    pg.locator(".zr-send").tap()
+    pg.wait_for_selector(".nodi-turn[data-turn='27']", timeout=10000)
+    until(pg, "document.querySelector(\".nodi-turn[data-turn='27']\").innerText.includes('I read IMG_0042.png (image) and plan.pdf (pdf, 2 pages).')", 10000)
+    state = attach_door.state()
+    assert [(a["name"], a["status"]) for a in state["attach"]] == [("IMG_0042.png", 200), ("plan.pdf", 200)], state["attach"]
+    assert state["attach"][0]["type"] == "image/png", state["attach"]
+    assert pg.locator(".zr-tray-item").count() == 0, "the chips leave with the message"
+    pg.locator(".fw-picker").set_input_files([{"name": "notes.txt", "mimeType": "text/plain", "buffer": b"hello"}])
+    until(pg, "document.querySelector('.zr-tray-item[data-status=failed]')", 10000)
+    assert "attach a png, jpeg, gif, webp or heic image, or a pdf" in pg.locator(".zr-tray-item").inner_text(), "the gateway's words are shown as they came"
+    pg.locator(".zr-tray-x").tap()
+    assert pg.locator(".zr-tray-item").count() == 0
     assert not pg.errors, pg.errors
     pg.context.close()
 

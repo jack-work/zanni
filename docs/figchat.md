@@ -39,9 +39,10 @@ proxy to `FIGCHAT_DOOR` (default `http://127.0.0.1:8099`, run
 ## Deploy contract
 
 A flat directory: `index.html` served at `/chat/`, every other file under
-`/chat/assets/`. The page dials `door`, `audio` and `stt` relative to itself,
-so behind the edge they reach `/chat/door`, `/chat/audio` and `/chat/stt`
-(`lib/figchat-routes.nix` strips `/chat`). Same origin only, no inline script or
+`/chat/assets/`. The page dials `door`, `audio`, `stt` and `attach` relative to itself,
+so behind the edge they reach `/chat/door`, `/chat/audio`, `/chat/stt` and
+`/chat/attach` (`lib/figchat-routes.nix` strips `/chat`; `attach` needs the edge
+route for the gateway's `POST /attach`, figaro-forms 0.11.1 and later). Same origin only, no inline script or
 style: `bin/figchat-bundle` refuses an `index.html` that has one, and the edge
 CSP would block it. `THIRD-PARTY.txt` carries the notices and the upstream map.
 
@@ -184,6 +185,7 @@ runs Chromium at 390 and 1280 (light and dark) against `test/figchat-server.js`:
 the built bundle under the edge CSP and the mock over a real WebSocket. It
 measures the composer (idle at most 76px, running at most 120px, the strip one
 line, the last node above the composer), covers history, paging, deep links,
+attach (photo and PDF in WebKit at iPhone size reach a turn and the reply names them, a refused file shows the gateway's words),
 command mode (the colon, the verbs, a refused verb's reason, `:fork 12`, `:ls`, Esc),
 hostile text, send, steer, stop, fork, drafts, voice, hands-free hold, the mic,
 the pits, and runs once with reduced motion to assert nothing computes a

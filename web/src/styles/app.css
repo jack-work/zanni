@@ -221,3 +221,4 @@ body.fw-page {
 .fw-help-row dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 .fw-help-row[data-off] dt, .fw-help-row[data-off] dd { color: var(--z-muted); }
 .fw-help-why { font-style: italic; }
+.fw-picker { font-size: 1rem; }

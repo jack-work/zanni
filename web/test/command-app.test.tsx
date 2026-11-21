@@ -48,6 +48,7 @@ describe("command mode in the composer", () => {
     expect(pill().getAttribute("aria-pressed")).toBe("false");
     typed(":");
     expect(pill().getAttribute("aria-pressed")).toBe("true");
+    expect(document.querySelector("form.fw-composer")!.getAttribute("data-mode")).toBe("command");
     expect(document.querySelector(".zr-prompt")!.textContent).toBe(":");
     expect(box().value).toBe("");
     expect(screen.getByRole("button", { name: "Run" }).hasAttribute("disabled")).toBe(true);
@@ -62,6 +63,7 @@ describe("command mode in the composer", () => {
     typed("half a thought");
     fireEvent.click(pill());
     expect(pill().getAttribute("aria-pressed")).toBe("true");
+    expect(document.activeElement).toBe(box());
     expect(box().value).toBe("");
     fireEvent.click(pill());
     expect(box().value).toBe("half a thought");

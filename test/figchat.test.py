@@ -326,6 +326,7 @@ try:
             for b in (attach, command, sendp):
                 assert 30 <= b["height"] <= 40 and b["width"] <= 64, "a small pill: %s" % b
             assert [pg.locator(s).inner_text() for s in (".zr-command", ".zr-send")] == ["∴", "✎"], "pager glyphs on the right pills"
+            assert pg.locator(".zr-attach").is_enabled() and pg.locator(".zr-command").is_enabled(), "attach is the file picker and command the toggle"
             assert pg.locator(".zr-command").get_attribute("aria-pressed") == "false"
             for sel, what in ((".zr-send", "send"), (".zr-attach", "attach"), (".zr-command", "command")):
                 assert_centred(pg.locator(sel), "the %s pill's glyph at %d %s" % (what, width, scheme))

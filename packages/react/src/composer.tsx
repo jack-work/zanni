@@ -17,7 +17,9 @@ export interface ComposerProps {
   attach?: PillSpec;
   command?: PillSpec;
   prompt?: string;
+  mode?: string;
   hints?: ReactNode;
+  tray?: ReactNode;
   onEscape?: () => void;
   onTab?: () => void;
   enterRuns?: boolean;
@@ -57,7 +59,7 @@ export function useSizeVar(ref: { current: HTMLElement | null }, name: string): 
 }
 
 export function Composer(props: ComposerProps) {
-  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendGlyph, attach, command, prompt, hints, onEscape, onTab, enterRuns, sendDisabled, running, strip, stripActions, accessory, grip, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
+  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendGlyph, attach, command, prompt, mode, hints, tray, onEscape, onTab, enterRuns, sendDisabled, running, strip, stripActions, accessory, grip, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
   const form = useRef<HTMLFormElement | null>(null);
   const input = useRef<HTMLTextAreaElement | null>(null);
   const typing = useRef(false);
@@ -133,6 +135,7 @@ export function Composer(props: ComposerProps) {
       className={["zr-composer", className].filter(Boolean).join(" ")}
       aria-label={label}
       data-running={running ? "" : undefined}
+      data-mode={mode}
       onPointerDown={() => {
         typing.current = document.activeElement === input.current;
       }}
@@ -147,6 +150,7 @@ export function Composer(props: ComposerProps) {
           {frozen.current.kind === "running" ? stripActions : null}
         </Strip>
       )}
+      {tray}
       {hints}
       <div className="zr-compose-row" data-attach={attach ? "" : undefined} data-prompt={prompt ? "" : undefined}>
         {attach && <Pill {...attach} className="zr-attach" />}

@@ -22,6 +22,7 @@ dependency react only. `zanni-react/jotai` binds them to figaro-forms and Jotai:
 | `Glyph` | a glyph centred by its ink box rather than its advance box, so VT323 and fallback faces centre alike in a pill, a pit row or a button: drawn once per font and glyph on a canvas, its ink read back, the offset held as a zero-length `translate` animation, which the edge CSP lets through where a style attribute or an inserted rule is refused |
 | `Pill`, `PillPair` | a small round glyph button named by `aria-label` (optional `pressed`, `disabled`, `title`), and a joined pair of them; `Composer` takes `attach`, `command` and `sendGlyph` and lays them out |
 | `Composer`, `Strip` | the message box and the one-line running strip; slots for the mic and the stop buttons; writes its height to a CSS variable. For a line that is not a message it takes `prompt` (a glyph left of the input), `hints` (drawn above the row), `onEscape`, `onTab` (a Tab with no Shift) and `enterRuns` (Enter submits on a coarse pointer too) |
+| `Tray` | the composer's attachment chips: name, kind and size, uploading, ready or failed (the failure text replaces the size), a remove button that does not take focus; the `Composer`'s `tray` slot draws it above the row |
 | `Hints` | completion chips (a chip that cannot run is dashed and carries its reason as its title; picking one does not take focus from the input) over a usage line, or a refusal in its place |
 | `useLinger`, `transition`, `reducedMotion` | motion helpers that honour prefers-reduced-motion |
 
@@ -45,3 +46,7 @@ Command mode is the pager's `:` line. `lib/command.ts` is pure: `tokenize` (quot
 `applyCandidate`. `state/command.ts` holds `commandAtom(key)` (on, line, why) per aria and `runCommandAtom`, which runs a plan
 through the existing atoms: `forkAtom`, `mintFigaroAtom`, `interruptAtom`, `boundFormWriterOf` for set, unset and toggle,
 `goAtom`. It returns the outcome the composer shows: a note, a pit view to open, or the help sheet.
+
+Attachments: `lib/attach.ts` (limits, `uploadFile`, the size and kind words) is pure; `state/attach.ts` keeps a list per aria
+(`attachmentsAtom`), uploads one file at a time (`addFilesAtom`), and gives `sendAtom` the ids (`readyIdsAtom`, which uploads
+again what the gateway is about to forget). `bootAtom` carries `attachUrl` (`data-attach`, default `attach`).

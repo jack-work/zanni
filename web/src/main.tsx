@@ -23,6 +23,7 @@ jotai.set(bootAtom, {
   store,
   audioUrl: host.getAttribute("data-audio") || "audio",
   sttUrl: host.getAttribute("data-stt") || "stt",
+  attachUrl: host.getAttribute("data-attach") || "attach",
   mark: host.getAttribute("data-mark") || head,
   templates: parseTemplates(host.getAttribute("data-templates")),
 });

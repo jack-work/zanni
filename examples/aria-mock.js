@@ -151,6 +151,46 @@
     core.arias[aid(13)].row.mantra = EVIL;
     }
 
+    var held = {}, heldSeq = 0, ATTACH_TTL = 15 * 60 * 1000;
+    core.attachments = held;
+    function sniff(b) {
+      var hex = function (i, n) { var o = ''; for (var k = i; k < i + n && k < b.length; k++) o += (b[k] < 16 ? '0' : '') + b[k].toString(16); return o; };
+      var ascii = function (i, n) { var o = ''; for (var k = i; k < i + n && k < b.length; k++) o += String.fromCharCode(b[k]); return o; };
+      if (hex(0, 8) === '89504e470d0a1a0a' || hex(0, 3) === 'ffd8ff' || ascii(0, 3) === 'GIF' || (ascii(0, 4) === 'RIFF' && ascii(8, 4) === 'WEBP') || (ascii(4, 4) === 'ftyp' && /^(heic|heix|mif1|heif)/.test(ascii(8, 4)))) return 'image';
+      if (ascii(0, 5) === '%PDF-') return 'pdf';
+      return '';
+    }
+    core.upload = function (bytes, name) {
+      if (!name) return { status: 400, body: { error: 'attach: name the file in X-Attach-Name' } };
+      if (!bytes.length) return { status: 400, body: { error: 'attach: the file is empty' } };
+      if (bytes.length > 10 * 1024 * 1024) return { status: 413, body: { error: 'attach: over 10 MiB' } };
+      var kind = sniff(bytes);
+      if (!kind) return { status: 415, body: { error: 'attach a png, jpeg, gif, webp or heic image, or a pdf' } };
+      if (Object.keys(held).length >= 16) return { status: 429, body: { error: 'too many attachments waiting to be sent' } };
+      var id = 'att' + (++heldSeq).toString(16).padStart(29, '0');
+      var text = kind === 'pdf' ? 'Chapter one. ' + name : '';
+      var pages = kind === 'pdf' ? 2 : undefined;
+      held[id] = { kind: kind, name: name, bytes: bytes.length, images: kind === 'image' ? 1 : 0, pages: pages, text: text, at: clock() };
+      var body = { id: id, kind: kind, name: name, bytes: bytes.length, images: held[id].images };
+      if (kind === 'pdf') { body.pages = pages; body.text = text.length; }
+      return { status: 200, body: body };
+    };
+    core.ageAttachments = function (ms) { Object.keys(held).forEach(function (k) { held[k].at -= ms; }); };
+    function takeAttachments(ids, text) {
+      if (!Array.isArray(ids) || ids.length < 1 || ids.length > 8) return { error: 'gateway: attachments is a list of 1 to 8 ids from POST /attach' };
+      if (typeof text !== 'string' || !text.trim()) return { error: 'gateway: an attachment is sent with a prompt: give text too' };
+      if (new Set(ids).size !== ids.length) return { error: 'gateway: an attachment is named twice' };
+      var got = [];
+      for (var i = 0; i < ids.length; i++) {
+        var h = held[ids[i]];
+        if (!h || clock() - h.at > ATTACH_TTL) return { error: 'gateway: an attachment is unknown, already sent or expired' };
+        got.push(h);
+      }
+      var pictures = got.reduce(function (n, h) { return n + h.images; }, 0);
+      if (pictures > 4) return { error: 'gateway: the attachments hold ' + pictures + ' images; a message carries at most 4' };
+      ids.forEach(function (id) { delete held[id]; });
+      return { held: got };
+    }
     function reply(conn, id, result) { conn.sink.text(JSON.stringify({ jsonrpc: '2.0', id: id, result: result })); }
     function fail(conn, id, code, message) { conn.sink.text(JSON.stringify({ jsonrpc: '2.0', id: id, error: { code: code, message: message } })); }
 
@@ -262,7 +302,7 @@
       return script;
     }
 
-    function plan(a, t, text) {
+    function plan(a, t, text, attached) {
       var s = [], tool = /\[tool\]|run|test|check|build/i.test(text) && !/\[plain\]/.test(text);
       var think = !/\[plain\]/.test(text), n = 0, idx, md = /\[md\]/.test(text);
       if (md) tool = false;
@@ -272,7 +312,8 @@
       if (/\[error\]/.test(text)) { gap(function () { a.run.failure = 'error: gateway: HTTP 400: the fake model refused on purpose'; }); return s; }
       if (think) { idx = n++; seq(streamText(a, t, idx, 'thinking', THOUGHTS[t.id % THOUGHTS.length] + ' Then I will answer plainly and name the file.')); }
       idx = n++;
-      seq(streamText(a, t, idx, 'prose', md ? MD_REPLY : tool ? 'Let me look.' : OPENERS[t.id % OPENERS.length] + BODIES[t.id % BODIES.length], 2));
+      var said = attached.length ? 'I read ' + attached.map(function (h) { return h.name + (h.kind === 'pdf' ? ' (pdf, ' + h.pages + ' pages)' : ' (image)'); }).join(' and ') + '.' : '';
+      seq(streamText(a, t, idx, 'prose', said || (md ? MD_REPLY : tool ? 'Let me look.' : OPENERS[t.id % OPENERS.length] + BODIES[t.id % BODIES.length]), 2));
       if (tool) {
         idx = n++;
         var args = { command: 'go test ./api/livedoc/... -run Settle' };
@@ -316,7 +357,7 @@
       if (q && reason !== 'interrupted') begin(a, a.queue.shift());
     }
 
-    function begin(a, text) {
+    function begin(a, text, attached) {
       var t = { id: a.turns.length + 1, inquiry: text, nodes: [], sealed: false, at: clock(), lastV: 0, open: null };
       if (a.forkFresh) {
         t.formDeltas = {};
@@ -330,7 +371,7 @@
       if (t.formDeltas) opened.formDeltas = clone(t.formDeltas);
       pushPage(a.row.id, opened);
       tell({ type: 'begin', aria: a.row.id, turn: t.id });
-      run.script = plan(a, t, text);
+      run.script = plan(a, t, text, attached || []);
       var next = function () {
         if (a.run !== run) return;
         var item = run.script.shift();
@@ -412,11 +453,18 @@
         var a = core.arias[p.figaro_id];
         if (!a) { fail(c, id, -32000, 'figaro: aria ' + p.figaro_id + ' not found'); return; }
         if (a.dormant) { fail(c, id, -32042, 'figaro: aria is dormant'); return; }
+        var inquiry = p.text, attached = [];
+        if (p.attachments !== undefined) {
+          var took = takeAttachments(p.attachments, p.text);
+          if (took.error) { fail(c, id, -32602, took.error); return; }
+          attached = took.held;
+          attached.forEach(function (h) { if (h.kind === 'pdf') inquiry += '\n\n```pdf ' + h.name + ' (' + h.pages + ' pages)\n' + h.text + '\n```'; });
+        }
         c.follows[p.figaro_id] = true;
         var active = !!a.run;
-        core.sent = (core.sent || []).concat([{ id: p.figaro_id, text: p.text, images: (p.images || []).length }]);
-        if (active) a.queue.push(p.text);
-        else begin(a, p.text);
+        core.sent = (core.sent || []).concat([{ id: p.figaro_id, text: p.text, images: (p.images || []).length + attached.reduce(function (n, h) { return n + h.images; }, 0), attachments: attached.map(function (h) { return h.name; }) }]);
+        if (active) a.queue.push(inquiry);
+        else begin(a, inquiry, attached);
         reply(c, id, active ? { ok: true, cursor: a.turns.length, active: true } : { ok: true, cursor: a.turns.length });
       },
       'figaro.interrupt': function (c, id, p) {

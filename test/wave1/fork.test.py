@@ -137,9 +137,6 @@ def main():
 
                 def other():
                     attend(pg, door, MAIN)
-                    if not pg.locator(".zr-command").count():
-                        rep.note("PENDING %dpx: fork of another aria (:fork <id>) needs the command pill, which returns with lane command-mode" % width)
-                        return
                     pg.locator(".zr-command").click(timeout=3000)
                     pg.locator(".zr-input").fill("fork " + LANE)
                     pg.keyboard.press("Enter")
