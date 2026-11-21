@@ -300,7 +300,7 @@ try:
             place = "(y) => { const s = document.querySelector('[data-zr-scroll]'); const t = document.querySelector(\".nodi-turn[data-turn='12']\"); s.scrollTop += t.getBoundingClientRect().top - s.getBoundingClientRect().top + y; }"
             head = ".nodi-turn[data-turn='12'] .zr-sticky"
             spread = "() => getComputedStyle(document.querySelector(\"%s .zr-rule\")).getPropertyValue('--zr-spread').trim()" % head
-            pg.evaluate(place, 0)
+            pg.evaluate(place, -4)
             pg.wait_for_timeout(300)
             assert pg.locator(head + "[data-pinned]").count() == 0, "a turn at rest is not pinned"
             assert pg.locator(head + " .zr-sticky-line").count() == 0, "a turn at rest shows no second bar"
@@ -355,7 +355,7 @@ try:
             pg.keyboard.press("Escape")
             until(pg, "document.querySelector(\"%s\").dataset.head === 'shut'" % head, 3000)
 
-            pg.evaluate(place, 0)
+            pg.evaluate(place, -4)
             until(pg, "!document.querySelector(\"%s[data-pinned]\")" % head)
             until(pg, "(" + spread + ")() === '0%'", 3000)
             sans_free(pg, "the sticky bar at %d" % width)
