@@ -62,6 +62,16 @@ describe("the list", () => {
     expect(ids()).not.toContain(forms);
   });
 
+  it("shows a fork in the tree live: the @arias delta is applied, the form is re-read, and nothing reloads the page", async () => {
+    open("#/gluck/" + "c0ffee02".repeat(4));
+    await waitFor(() => expect(document.querySelectorAll(".zr-tree-row").length).toBeGreaterThan(5));
+    const reads = core.calls.filter((c) => c.method === "figaro.form" && c.params.figaro_id === "@arias").length;
+    const forked = await client.peek("c0ffee02".repeat(4)).fork({ atTurn: 1 });
+    await waitFor(() => expect(core.calls.filter((c) => c.method === "figaro.form" && c.params.figaro_id === "@arias").length).toBeGreaterThan(reads));
+    await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id='" + forked.alternative + "']")).toBeTruthy());
+    expect(core.calls.some((c) => c.method === "figaro.read" && c.params.figaro_id === forked.alternative)).toBe(false);
+  });
+
   it("counts the node's own children, not a fixed one", async () => {
     open("#/");
     await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id^='@node:']")).toBeTruthy());

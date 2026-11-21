@@ -445,7 +445,7 @@
     }
     function pushForm(id) {
       formInc[id] = (formInc[id] || 1) + 1;
-      var text = JSON.stringify({ jsonrpc: '2.0', method: 'form.delta', params: { schema: 1, figaro_id: id, version: 1, incarnation: formInc[id], patch: {} } });
+      var text = JSON.stringify({ jsonrpc: '2.0', method: 'form.delta', params: { schema: 2, figaro_id: id, version: 1, incarnation: formInc[id], patch: {} } });
       core.conns.slice().forEach(function (c) { if (c.open && c.follows[id]) c.sink.text(text); });
     }
     core.pushForm = pushForm;
