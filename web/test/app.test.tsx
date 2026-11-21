@@ -37,7 +37,11 @@ describe("the list", () => {
     const depths = [...document.querySelectorAll<HTMLElement>(".zr-tree-row")].map((r) => r.dataset.depth);
     expect(depths).toContain("0");
     expect(depths).toContain("1");
-    const lane = document.querySelector<HTMLElement>(".zr-tree-row[data-id='" + "c0ffee02".repeat(4) + "'] .zr-tree-hit")!;
+    const rows = [...document.querySelectorAll(".zr-tree-row")].map((r) => r.textContent ?? "");
+    expect(rows[1]).toMatch(/^ {2}└─ arias \(\d+\)/);
+    expect(rows.some((r) => /\(\d+\)  ".+"/.test(r))).toBe(true);
+    expect(document.querySelectorAll(".zr-tree th, .zr-tree button").length).toBe(0);
+    const lane = document.querySelector<HTMLElement>(".zr-tree-row[data-id='" + "c0ffee02".repeat(4) + "']")!;
     act(() => lane.click());
     await waitFor(() => expect(window.location.hash).toBe("#/gluck/" + "c0ffee02".repeat(4)));
   });

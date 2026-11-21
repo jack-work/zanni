@@ -13,7 +13,7 @@ dependency react only. `zanni-react/jotai` binds them to figaro-forms and Jotai:
 | `Button`, `ButtonGroup` | the z2 control scale (`size` compact or default, `variant` outline, quiet, ghost, accent); `aria-pressed` makes a toggle |
 | `Sheet` | scrim and bottom sheet: Escape, focus in and back, Tab trap, keeps its content through the exit animation |
 | `ActionBar`, `Fold` | hover-reveal per-row actions (always on the last row and on touch); a details with a spring-height body |
-| `Tree` | figaro's figtree in a browser: branch, marker, badge and label kept apart, optional field columns with a header, colour rules by field value, row washes, collapsible rows, a current mark; `treeRows` is the pure walk |
+| `Tree` | the pager's formView in a browser: one row per `formNode` (`key: value` leaves aligned per parent, `name (N)  child · labels` closed, `name (N)` open, guides, no header, no arrow), a cursor row with j/k/u/d/gg/G, `l` open, `h` close or climb, Enter toggles or calls `onActivate`; `treeRows` is the pure walk |
 | `PitProvider`, `PitGrip`, `Pit`, `PitList`, `PitRow` | the drawer dragged from the composer edge (closed, half, full), its rows |
 | `TurnView`, `ProseView`, `ToolView`, `ThinkingView`, `WorkGroup`, `TranscriptContext` | the nodi transcript as React; the context carries two app hooks: open the message sheet, per-turn actions |
 | `useFollow`, `LatestPill`, `PlayerIsland` | follow the bottom with a Latest pill and prepend anchor; a voce player the component owns |
@@ -29,7 +29,7 @@ figaro web resolves the package by alias to `packages/react/src` (vite.config.ts
 nix build cover both.
 
 ## zanni-react/jotai
-`AriaView`, `Roster`, `TopBar`, `BoundSheet`, `BoundComposer`, `TurnActions` and the atoms behind them (`bootAtom`,
+`AriaView`, `Roster`, `StatusBar`, `BoundPit`, `BoundComposer`, `TurnActions` and the atoms behind them (`bootAtom`,
 `routeAtom`, `rosterAtom`, `composerAtom`, `draftAtom`, `audioSessionAtom`, `micAtom`, `sheetAtom` and the rest). Needs jotai
 and figaro-forms 0.6 (both peer dependencies of this entry only). figaro web is `app.tsx`, `main.tsx` and `styles/`: it mounts
 these under `.fw` and styles the `fw-*` hooks. `web/test/react/boundary.test.ts` fails if the root entry imports jotai or

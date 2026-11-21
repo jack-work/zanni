@@ -61,7 +61,7 @@ figaro-forms (`figaro-forms/aria/jotai`): `ariaAtom`, `ariaPhaseAtom`,
 refetched when the connection reopens).
 
 `packages/react/src/jotai/state`: `bootAtom` (stores, door paths), `routeAtom`/`goAtom`,
-`clientAtom`, `attendedAtom`; `rosterAtom`, `depthsAtom`; per aria and
+`clientAtom`, `attendedAtom`; `rosterAtom`; per aria and
 memoised by client: `turnsAtom` (nodi's model, turns reused while unchanged),
 `runningAtom`, `workAtom` (verb and start of the open turn), `noteAtom`;
 `linkAtom` (the attended aria's phase, else the connection); `composerAtom`
