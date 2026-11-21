@@ -22,7 +22,8 @@ dependency react only. `zanni-react/jotai` binds them to figaro-forms and Jotai:
 | `useFollow`, `LatestPill`, `PlayerIsland` | follow the bottom with a Latest pill and prepend anchor; a voce player the component owns |
 | `nodi`, `speech`, `voce`, work helpers | the framework-free zanni modules and the pure grouping and timing functions |
 | `Pill`, `PillPair` | a small round glyph button named by `aria-label` (optional `pressed`, `disabled`, `title`), and a joined pair of them; `Composer` takes `attach`, `command` and `sendGlyph` and lays them out |
-| `Composer`, `Strip` | the message box and the one-line running strip; slots for the mic and the stop buttons; writes its height to a CSS variable |
+| `Composer`, `Strip` | the message box and the one-line running strip; slots for the mic and the stop buttons; writes its height to a CSS variable. For a line that is not a message it takes `prompt` (a glyph left of the input), `hints` (drawn above the row), `onEscape`, `onTab` (a Tab with no Shift) and `enterRuns` (Enter submits on a coarse pointer too) |
+| `Hints` | completion chips (a chip that cannot run is dashed and carries its reason as its title; picking one does not take focus from the input) over a usage line, or a refusal in its place |
 | `useLinger`, `transition`, `reducedMotion` | motion helpers that honour prefers-reduced-motion |
 
 Rules: no atoms, no fetches, no figaro names in this entry; class names are `zr-*`; motion and size come from the `--zr-*`

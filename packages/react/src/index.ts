@@ -19,6 +19,8 @@ export type { StripProps } from "./strip";
 export { KEYBOARD_CLOSE_SETTLE_MS, Composer, useCoarsePointer, useSizeVar } from "./composer";
 export type { ComposerProps } from "./composer";
 export { ActionBar } from "./actions";
+export { Hints } from "./hints";
+export type { Chip, HintsProps } from "./hints";
 export { Fold } from "./fold";
 export type { FoldProps } from "./fold";
 export { FIT_ELLIPSIS, Fit, firstLine, fitText } from "./fit";

@@ -16,6 +16,11 @@ export interface ComposerProps {
   sendGlyph: string;
   attach?: PillSpec;
   command?: PillSpec;
+  prompt?: string;
+  hints?: ReactNode;
+  onEscape?: () => void;
+  onTab?: () => void;
+  enterRuns?: boolean;
   sendDisabled?: boolean;
   running?: boolean;
   strip?: Omit<StripProps, "leaving"> | null;
@@ -52,7 +57,7 @@ export function useSizeVar(ref: { current: HTMLElement | null }, name: string): 
 }
 
 export function Composer(props: ComposerProps) {
-  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendGlyph, attach, command, sendDisabled, running, strip, stripActions, accessory, grip, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
+  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendGlyph, attach, command, prompt, hints, onEscape, onTab, enterRuns, sendDisabled, running, strip, stripActions, accessory, grip, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
   const form = useRef<HTMLFormElement | null>(null);
   const input = useRef<HTMLTextAreaElement | null>(null);
   const typing = useRef(false);
@@ -93,7 +98,18 @@ export function Composer(props: ComposerProps) {
   }, [focusTick]);
 
   const onKey = (ev: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (ev.key !== "Enter" || ev.shiftKey || ev.nativeEvent.isComposing || ev.keyCode === 229 || coarse) return;
+    if (ev.nativeEvent.isComposing || ev.keyCode === 229) return;
+    if (ev.key === "Escape" && onEscape) {
+      ev.preventDefault();
+      onEscape();
+      return;
+    }
+    if (ev.key === "Tab" && onTab && !ev.shiftKey) {
+      ev.preventDefault();
+      onTab();
+      return;
+    }
+    if (ev.key !== "Enter" || ev.shiftKey || (coarse && !enterRuns)) return;
     ev.preventDefault();
     submit();
   };
@@ -131,8 +147,14 @@ export function Composer(props: ComposerProps) {
           {frozen.current.kind === "running" ? stripActions : null}
         </Strip>
       )}
-      <div className="zr-compose-row" data-attach={attach ? "" : undefined}>
+      {hints}
+      <div className="zr-compose-row" data-attach={attach ? "" : undefined} data-prompt={prompt ? "" : undefined}>
         {attach && <Pill {...attach} className="zr-attach" />}
+        {prompt && (
+          <span className="zr-prompt" aria-hidden="true">
+            {prompt}
+          </span>
+        )}
         <textarea
           ref={setInput}
           className={["zr-input", inputClassName].filter(Boolean).join(" ")}
@@ -145,7 +167,7 @@ export function Composer(props: ComposerProps) {
           autoCapitalize="sentences"
           autoCorrect="off"
           spellCheck={false}
-          enterKeyHint={coarse ? "enter" : "send"}
+          enterKeyHint={coarse && !enterRuns ? "enter" : "send"}
         />
         {accessory}
         <PillPair label="Send">
