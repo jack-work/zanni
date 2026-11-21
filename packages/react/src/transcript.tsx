@@ -284,10 +284,22 @@ const spokenIn = (s: Speaking | null, turn: number): string => (s && s.turn === 
 
 const HEX_NAME = /^@?[0-9a-f]{8,}$/;
 
-function Named({ cell, nameOf }: { cell: DeltaCell; nameOf: TranscriptHooks["nameOf"] }) {
-  const text = cell.present && nameOf && HEX_NAME.test(cell.text) ? nameOf(cell.text) : cell.text;
-  return <Plain text={cellLine({ present: cell.present, text })} />;
+const WIDE = /[\u1100-\u115F\u2E80-\u303E\u3041-\u33FF\u3400-\u4DBF\u4E00-\u9FFF\uA000-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFF60\uFFE0-\uFFE6\u{1F300}-\u{1F64F}\u{1F900}-\u{1F9FF}\u{20000}-\u{3FFFD}]/u;
+
+function cellsOf(text: string): number {
+  let n = 0;
+  for (const ch of text) n += WIDE.test(ch) ? 2 : 1;
+  return n;
 }
+
+const shown = (cell: DeltaCell, nameOf: TranscriptHooks["nameOf"]): string =>
+  cellLine({ present: cell.present, text: cell.present && nameOf && HEX_NAME.test(cell.text) ? nameOf(cell.text) : cell.text });
+
+function Named({ cell, nameOf }: { cell: DeltaCell; nameOf: TranscriptHooks["nameOf"] }) {
+  return <Plain text={shown(cell, nameOf)} />;
+}
+
+const floorOf = (cell: DeltaCell, nameOf: TranscriptHooks["nameOf"]): CSSProperties => ({ minWidth: Math.min(cellsOf(shown(cell, nameOf)), 6) + "ch" });
 
 function DeltaEntry({ row, nameOf }: { row: DeltaRow; nameOf: TranscriptHooks["nameOf"] }) {
   const [open, setOpen] = useState(false);
@@ -309,11 +321,11 @@ function DeltaEntry({ row, nameOf }: { row: DeltaRow; nameOf: TranscriptHooks["n
           <Plain text={row.key} />
         </span>
         <span className="nodi-delta-change">
-          <span className="nodi-delta-from">
+          <span className="nodi-delta-from" style={floorOf(row.from, nameOf)}>
             <Named cell={row.from} nameOf={nameOf} />
           </span>
           <span className="nodi-delta-arrow"> {"->"} </span>
-          <span className="nodi-delta-to">
+          <span className="nodi-delta-to" style={floorOf(row.to, nameOf)}>
             <Named cell={row.to} nameOf={nameOf} />
           </span>
         </span>

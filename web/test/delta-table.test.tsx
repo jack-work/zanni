@@ -62,6 +62,13 @@ describe("a turn's form deltas", () => {
     expect(row.querySelector(".nodi-delta-to")!.textContent).toBe("n".repeat(40));
   });
 
+  it("floors each value cell at 6 columns, or its own width when shorter, counting a wide glyph as two", () => {
+    view(turn({ "a1.phase": d("a1", "bound", "set", "seed", "an-extremely-long-value"), "a1.zh": d("a1", "bound", "set", "中文", "x") }));
+    fireEvent.click(mark()!);
+    const cells = [...document.querySelectorAll<HTMLElement>(".nodi-delta-from, .nodi-delta-to")].map((c) => c.style.minWidth);
+    expect(cells).toEqual(["4ch", "6ch", "4ch", "1ch"]);
+  });
+
   it("a row opens to its old and new value whole, an object as indented JSON", () => {
     view(turn({ "a1.cfg": d("a1", "bound", "set", { a: 1 }, "line one\nline two") }));
     fireEvent.click(mark()!);
