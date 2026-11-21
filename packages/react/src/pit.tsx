@@ -200,6 +200,7 @@ export function PitGrip({ label = "Open controls", className }: PitGripProps) {
     <button
       type="button"
       data-grab=""
+      data-testid="pit-grip"
       className={["zr-grip", className].filter(Boolean).join(" ")}
       aria-label={label}
       aria-haspopup="dialog"

@@ -82,9 +82,10 @@
     return t;
   }
 
-  function seedMain(base) {
+  function seedMain(base, count) {
     var turns = [];
-    for (var i = 0; i < 26; i++) turns.push(seedTurn(i, base));
+    for (var i = 0; i < count; i++) turns.push(seedTurn(i, base));
+    if (count < 12) return turns;
     turns[2].inquiry = EVIL;
     turns[2].nodes.push({ type: 'prose', role: 'output', at: turns[2].at + 9000, markdown: EVIL + ' and ' + BIDI + ' and [x](javascript:alert(1))' });
     turns[2].nodes.push({ type: 'tool', role: 'output', at: turns[2].at + 9500, name: EVIL, tool_call_id: 'call_evil', status: 'ok', args: { command: EVIL }, summary: 'command=' + EVIL, output: EVIL, output_base: 0 });
@@ -113,6 +114,9 @@
     var core = { conns: [], calls: [], arias: {}, order: [], pageBytes: o.pageBytes || 6000, dropped: 0, taps: [], ids: { main: aid(1), lane: aid(2), spain: aid(3), engineer: aid(4), forms: aid(5) } };
     var metricsOf = {};
     var base = clock() - 4 * 86400000;
+    var history = o.history == null ? 26 : o.history;
+    var stream = o.stream ? Object.assign({ fps: 30, bytes: 8000, chunk: 64 }, o.stream) : null;
+    if (!(history >= 0) || stream && !(stream.fps > 0 && stream.bytes > 0 && stream.chunk > 0)) throw new Error('aria-mock: history, stream.fps, stream.bytes and stream.chunk must be positive numbers');
 
     function add(id, row, turns) {
       row.id = id;
@@ -141,7 +145,7 @@
       core.ids = ids = Object.assign({ main: o.fixture.attend }, o.fixture.ids || {});
       core.fixture = o.fixture;
     } else {
-    add(ids.main, { state: 'idle', mantra: 'Zanni: ship ordine & Sugiyama layered layout', roles: ['@zanni'], handle: 'zanni' }, seedMain(base));
+    add(ids.main, { state: 'idle', mantra: 'Zanni: ship ordine & Sugiyama layered layout', roles: ['@zanni'], handle: 'zanni' }, seedMain(base - Math.max(0, history - 26) * 61000, history));
     add(ids.lane, { state: 'idle', mantra: 'Frontend Engineer / figchat web', parent: ids.main, roles: ['@lane'] }, seedSmall(4, base, 1));
     add(ids.spain, { state: 'dormant', mantra: 'Backend: spain edge for fig.kelliher.info', parent: ids.main }, seedSmall(2, base, 2));
     add(aid(6), { state: 'idle', mantra: 'Review: livedoc settle', parent: ids.lane }, seedSmall(2, base, 3));
@@ -308,7 +312,31 @@
       return script;
     }
 
+    function benchText(bytes) {
+      var out = '', i = 0;
+      while (out.length < bytes) { out += OPENERS[i % OPENERS.length] + BODIES[i % BODIES.length] + '\n\n'; i++; }
+      return out.slice(0, bytes);
+    }
+
+    function benchPlan(a, t) {
+      var body = benchText(stream.bytes), interval = 1000 / stream.fps, frames = Math.ceil(body.length / stream.chunk), t0 = 0, s = [];
+      for (var k = 0; k < frames; k++) {
+        (function (k) {
+          var piece = body.slice(k * stream.chunk, (k + 1) * stream.chunk);
+          s.push({
+            fn: function () {
+              if (k === 0) { t0 = clock(); emit(a, t, [{ id: 0, set: { type: 'prose', role: 'output', markdown: piece } }]); return; }
+              emit(a, t, [{ id: 0, patch: { markdown: { at: k * stream.chunk, del: 0, ins: piece } } }]);
+            },
+            wait: function () { return Math.max(0, t0 + (k + 1) * interval - clock()); }
+          });
+        }(k));
+      }
+      return s;
+    }
+
     function plan(a, t, text, attached) {
+      if (stream && !/\[error\]/.test(text)) return benchPlan(a, t);
       var s = [], tool = /\[tool\]|run|test|check|build/i.test(text) && !/\[plain\]/.test(text);
       var think = !/\[plain\]/.test(text), n = 0, idx, md = /\[md\]/.test(text), long = /\[long\]/.test(text);
       if (md || long) tool = false;
@@ -385,7 +413,7 @@
         if (run.failure) { seal(a, t, run.failure); return; }
         if (!item) { seal(a, t, 'stop'); return; }
         item.fn();
-        run.timer = timers.set(next, item.wait);
+        run.timer = timers.set(next, typeof item.wait === 'function' ? item.wait() : item.wait);
       };
       run.timer = timers.set(next, step);
     }

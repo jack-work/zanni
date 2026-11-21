@@ -2,6 +2,7 @@ import { Button, LatestPill, nodi, scrollRoot, scrollToBottom, useFollow, Plain,
 import { useAtomValue, useSetAtom } from "jotai";
 import { ariaAtom } from "figaro-forms/aria/jotai";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useFirstFrame } from "../lib/first-frame";
 import { labelOf } from "../lib/roster";
 import { noteAtom, turnsAtom } from "../state/aria";
 import { treeStateAtom } from "../state/pit";
@@ -49,6 +50,7 @@ export function AriaView({ attended }: { attended: Attended }) {
   const live = snap.phase === "live";
   const olderAvailable = snap.olderAvailable === true;
   const follow = useFollow(paneRef, followed);
+  useFirstFrame(followed);
   const paging = follow.paging;
   const toBottom = follow.toBottom;
 
@@ -167,7 +169,7 @@ export function AriaView({ attended }: { attended: Attended }) {
 
   return (
     <section className="fw-pane-inner">
-      <div className="fw-scroll zr-scroll" data-zr-scroll="">
+      <div className="fw-scroll zr-scroll" data-zr-scroll="" data-testid="transcript-scroller">
         <main className="fw-main" tabIndex={-1} ref={paneRef}>
           <div className="fw-subbar">
             <a className="fw-back" href="#/">
