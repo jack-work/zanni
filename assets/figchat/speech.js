@@ -157,13 +157,16 @@
     }
     return {
       open: function (ctx, h) {
-        var sock = null, on = false, closed = false, attempts = 0, timer = 0, pending = null;
+        var sock = null, on = false, closed = false, attempts = 0, timer = 0, pending = null, asks = [];
         function dial() {
           if (closed || !on || sock) return;
           var s = new Socket(urlFor(ctx.aria));
           s.binaryType = 'arraybuffer';
           sock = s;
-          s.addEventListener('open', function () { attempts = 0; });
+          s.addEventListener('open', function () {
+            attempts = 0;
+            asks.splice(0).forEach(function (a) { try { s.send(a); } catch (e) { return; } });
+          });
           s.addEventListener('message', function (ev) {
             if (typeof ev.data === 'string') {
               var f = parseFrame(ev.data);
@@ -173,6 +176,7 @@
               else if (f.type === 'audio.chunk') pending = f;
               else if (f.type === 'audio.end' && h.end) h.end(Object.assign({ aria: ctx.aria }, f));
               else if (f.type === 'audio.cancel' && h.cancel) h.cancel(Object.assign({ aria: ctx.aria }, f));
+              else if (f.type === 'audio.stored' && h.stored) h.stored(Object.assign({ aria: ctx.aria }, f));
               else if (f.type === 'error' && h.error) h.error(Object.assign({ aria: ctx.aria }, f));
             } else if (pending && ev.data instanceof ArrayBuffer && h.chunk) {
               var c = pending;
@@ -194,6 +198,13 @@
             else if (sock) { try { sock.send(JSON.stringify({ type: 'cancel' })); } catch (e) {} sock.close(); sock = null; }
           },
           cancel: function () { if (sock) try { sock.send(JSON.stringify({ type: 'cancel' })); } catch (e) {} },
+          say: function (turn) {
+            var ask = JSON.stringify({ type: 'say', turn: turn });
+            on = true;
+            if (sock && sock.readyState === 1) { try { sock.send(ask); return; } catch (e) { return; } }
+            asks.push(ask);
+            dial();
+          },
           close: function () {
             closed = true;
             timers.clear(timer);

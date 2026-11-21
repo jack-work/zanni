@@ -489,6 +489,26 @@
       }
       function quiet(turn) { speaking(turn, null); }
       v.players = players;
+      v.replay = function (turn, slot) {
+        if (V.unlock) V.unlock(win);
+        var p = players[turn];
+        if (p && (p.state() === 'live' || p.state() === 'draining' || p.state() === 'playing' || p.state() === 'loading')) return;
+        if (!p) {
+          var key = v.store + '/' + v.id + ':' + turn + '/out';
+          p = V.create(doc, { audioId: key, src: audio, label: 'Spoken reply', status: opts.audioStatus || function (k) {
+            return win.fetch(audio(k), { method: 'GET', credentials: 'same-origin', cache: 'no-store', headers: { Range: 'bytes=0-0' } }).then(function (r) { return r.status; });
+          }, change: function (st) {
+            if (st !== 'expired' || players[turn] !== p) return;
+            p.destroy();
+            delete players[turn];
+            if (v.voiceConn && v.voiceConn.say) v.voiceConn.say(turn);
+          } });
+          p.el.setAttribute('data-for', String(turn));
+          slot.appendChild(p.el);
+          players[turn] = p;
+        }
+        p.play();
+      };
       v.voiceConn = speech.open(ctx, {
         ready: function () {},
         start: function (e) {
@@ -507,6 +527,11 @@
           var p = players[e.turn];
           quiet(e.turn);
           if (p) p.end(e.key || '');
+        },
+        stored: function (e) {
+          if (view !== v || players[e.turn]) return;
+          var slot = v.log.slot(e.turn, 0);
+          if (slot) v.replay(e.turn, slot);
         },
         cancel: function (e) {
           var p = players[e.turn];
@@ -560,6 +585,11 @@
           var fork = button('figchat-fork-here', 'Fork here');
           fork.addEventListener('click', function () { doFork(v, n); });
           slot.appendChild(fork);
+          if (V) {
+            var play = button('figchat-play-here', 'Play');
+            play.addEventListener('click', function () { if (v.replay) v.replay(n, slot); });
+            slot.appendChild(play);
+          }
         }
       });
       v.status = el('p', 'figchat-note');

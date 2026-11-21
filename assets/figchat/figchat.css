@@ -207,13 +207,13 @@ body.figchat-page {
 .figchat-more { margin-top: var(--z-space-3, 8px); }
 .figchat-metrics { min-height: 1rem; }
 .figchat-stops { display: inline-flex; gap: var(--z-space-3, 8px); flex-wrap: wrap; justify-content: flex-end; }
-.figchat-fork, .figchat-fork-here {
+.figchat-fork, .figchat-fork-here, .figchat-play-here {
   display: inline-flex; align-items: center; justify-content: center; min-height: var(--figchat-hit); padding: 0 var(--z-space-4, 12px);
   border: 1px solid var(--z-line); border-radius: var(--z-radius-1, 2px); background: transparent; color: var(--z-ink);
   font: 400 1.125rem / 1 var(--figchat-mono); letter-spacing: 0.04em; cursor: pointer;
 }
-.figchat-fork-here { min-height: 28px; padding: 0 var(--z-space-3, 8px); border-color: transparent; color: var(--z-muted); font-size: 1.0625rem; }
-.figchat-fork-here:hover { border-color: var(--z-line); color: var(--z-ink); }
+.figchat-fork-here, .figchat-play-here { min-height: 28px; padding: 0 var(--z-space-3, 8px); border-color: transparent; color: var(--z-muted); font-size: 1.0625rem; }
+.figchat-fork-here:hover, .figchat-play-here:hover { border-color: var(--z-line); color: var(--z-ink); }
 .figchat-composer { grid-template-columns: auto minmax(0, 1fr) auto; }
 .figchat-composer .figchat-fork { grid-column: 1; grid-row: 3; }
 .figchat-composer .figchat-input { grid-column: 2; grid-row: 3; }
