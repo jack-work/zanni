@@ -122,9 +122,7 @@ export const runCommandAtom = atom(null, async (get, set, line: string): Promise
         const r = await writer.set(key, next as never);
         return r.ok ? ok(key + " is " + next + ".") : fail(refusalLine(key, r.refusal));
       }
-      const parsed = parseDraft(keyArgs.slice(1).join(" "), was.found ? was.value : undefined);
-      if (!parsed.ok) return fail("set: " + parsed.why);
-      const r = await writer.set(key, parsed.value as never);
+      const r = await writer.set(key, parseDraft(keyArgs.slice(1).join(" ")) as never);
       return r.ok ? ok("Set " + key + ".") : fail(refusalLine(key, r.refusal));
     } catch (err) {
       return fail(kind + ": " + (err instanceof Error ? err.message : String(err)));

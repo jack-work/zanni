@@ -29,15 +29,14 @@ export function FormEdit({ attended, root, target, onDone }: { attended: Attende
       setNote(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
+      field.current?.focus({ preventScroll: true });
     }
   };
   const save = () => {
     const key = path.trim();
     const bad = pathProblem(key);
     if (bad) return setNote(bad);
-    const parsed = parseDraft(draft, was);
-    if (!parsed.ok) return setNote(parsed.why);
-    void finish(() => writer().set(key, parsed.value as never), key);
+    void finish(() => writer().set(key, parseDraft(draft) as never), key);
   };
   return (
     <form
@@ -63,7 +62,7 @@ export function FormEdit({ attended, root, target, onDone }: { attended: Attende
       )}
       <label className="fw-field">
         <span className="fw-field-label">Value</span>
-        <textarea ref={target.fresh ? undefined : (field as never)} value={draft} onChange={(e) => setDraft(e.target.value)} rows={typeof was === "string" || was === undefined ? 2 : 4} spellCheck={false} />
+        <textarea ref={target.fresh ? undefined : (field as never)} value={draft} onChange={(e) => setDraft(e.target.value)} rows={was !== null && typeof was === "object" ? 4 : 2} spellCheck={false} />
       </label>
       {note && (
         <p className="fw-note fw-form-edit-note" role="alert">
