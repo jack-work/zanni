@@ -86,6 +86,8 @@
 .zr-grip-bar { display: block; width: 40px; height: 4px; background: var(--z-line); }
 .zr-pit-handle:hover .zr-grip-bar, .zr-grip:hover .zr-grip-bar, .zr-grip[aria-expanded="true"] .zr-grip-bar { background: var(--z-accent); }
 .zr-pit-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--z-space-3, 8px); padding: 0 var(--zr-edge-r, 16px) var(--z-space-3, 8px) var(--zr-edge-l, 16px); font: 400 1.25rem / 1 var(--zr-mono, "VT323", ui-monospace, monospace); letter-spacing: 0.04em; color: var(--z-muted); }
+.zr-pit[data-snap="full"] .zr-pit-bar .zr-btn { display: none; }
+.zr-pit-icon { display: inline-flex; vertical-align: middle; margin-right: 0.5em; }
 .zr-pit-glyph { margin-right: 0.5em; color: var(--z-accent); }
 .zr-pit-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: var(--z-space-3, 8px); padding: var(--z-space-3, 8px) var(--zr-edge-r, 16px) calc(var(--z-space-4, 12px) + env(safe-area-inset-bottom)) var(--zr-edge-l, 16px); }
 .zr-composer > .zr-grip { position: absolute; top: -10px; left: 50%; translate: -50% 0; width: 96px; max-width: none; height: 20px; margin: 0; z-index: 1; }

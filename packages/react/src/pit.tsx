@@ -225,6 +225,7 @@ export interface PitProps {
   title: ReactNode;
   label: string;
   glyph?: string;
+  icon?: ReactNode;
   closeLabel?: string;
   resizeLabel?: string;
   docked?: boolean;
@@ -233,7 +234,7 @@ export interface PitProps {
   children: ReactNode;
 }
 
-export function Pit({ title, label, glyph, closeLabel = "Close", resizeLabel = "Resize", docked, className, data, children }: PitProps) {
+export function Pit({ title, label, glyph, icon, closeLabel = "Close", resizeLabel = "Resize", docked, className, data, children }: PitProps) {
   const pit = usePit();
   const wide = useWide();
   const side = docked ?? wide;
@@ -243,13 +244,13 @@ export function Pit({ title, label, glyph, closeLabel = "Close", resizeLabel = "
   if (open) last.current = children;
   if (!pit || !mounted) return null;
   return (
-    <PitPanel pit={pit} title={title} label={label} glyph={glyph} closeLabel={closeLabel} resizeLabel={resizeLabel} docked={side} className={className} data={data} leaving={leaving && !reducedMotion()}>
+    <PitPanel pit={pit} title={title} label={label} glyph={glyph} icon={icon} closeLabel={closeLabel} resizeLabel={resizeLabel} docked={side} className={className} data={data} leaving={leaving && !reducedMotion()}>
       {open ? children : last.current}
     </PitPanel>
   );
 }
 
-function PitPanel({ pit, title, label, glyph, closeLabel, resizeLabel, docked, className, data, leaving, children }: Omit<PitProps, "docked" | "closeLabel" | "resizeLabel"> & { pit: PitState; closeLabel: string; resizeLabel: string; docked: boolean; leaving: boolean }) {
+function PitPanel({ pit, title, label, glyph, icon, closeLabel, resizeLabel, docked, className, data, leaving, children }: Omit<PitProps, "docked" | "closeLabel" | "resizeLabel"> & { pit: PitState; closeLabel: string; resizeLabel: string; docked: boolean; leaving: boolean }) {
   const close = () => pit.setSnap("closed");
   useDialog(pit.panel, close, { active: pit.snap !== "closed", trap: !docked, bodySelector: ".zr-pit-body" });
   const leave = leaving ? { "data-leaving": "" } : {};
@@ -274,10 +275,16 @@ function PitPanel({ pit, title, label, glyph, closeLabel, resizeLabel, docked, c
           </button>
           <div className="zr-pit-bar">
             <span className="zr-pit-title">
-              {glyph && (
-                <span className="zr-pit-glyph" aria-hidden="true">
-                  {glyph}
+              {pit.snap === "full" && icon ? (
+                <span className="zr-pit-icon" aria-hidden="true">
+                  {icon}
                 </span>
+              ) : (
+                glyph && (
+                  <span className="zr-pit-glyph" aria-hidden="true">
+                    {glyph}
+                  </span>
+                )
               )}
               {title}
             </span>

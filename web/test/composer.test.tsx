@@ -112,10 +112,13 @@ describe("the composer", () => {
     expect(core.calls.find((c) => c.method === "figaro.fork")!.params.at_turn).toBe(26);
   });
 
-  it("creates a new figaro from the top bar: forks the chosen root at turn 1 with outfits, sends the first message, attends it", async () => {
+  it("creates a new figaro from the state pit: forks the chosen root at turn 1 with outfits, sends the first message, attends it", async () => {
     attend(1);
     await live();
-    act(() => (document.querySelector(".fw-top-new") as HTMLElement).click());
+    act(() => (document.querySelector(".zr-grip") as HTMLElement).click());
+    await waitFor(() => expect(document.querySelector(".fw-pit-new")).toBeTruthy());
+    act(() => (document.querySelector(".fw-pit-new") as HTMLElement).click());
+    expect(document.querySelector(".zr-pit")).toBeNull();
     await waitFor(() => expect(document.querySelector(".fw-new-form")).toBeTruthy());
     const form = document.querySelector<HTMLFormElement>(".fw-new-form")!;
     const outfits = form.querySelector<HTMLInputElement>("input")!;

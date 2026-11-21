@@ -36,6 +36,31 @@ def settle_motion(pg):
     pg.evaluate("Promise.all(document.getAnimations().map(a => a.finished.catch(() => null)))")
 
 
+def open_pit(pg):
+    if not pg.locator(".zr-pit").count():
+        pg.locator(".zr-composer .zr-grip").focus()
+        pg.keyboard.press("Enter")
+    pg.wait_for_selector(".zr-pit[data-snap='half']")
+
+
+def close_pit(pg):
+    pg.keyboard.press("Escape")
+    pg.wait_for_selector(".zr-pit", state="detached")
+
+
+def voice_pressed(pg):
+    open_pit(pg)
+    got = pg.locator(".fw-voice").get_attribute("aria-pressed")
+    close_pit(pg)
+    return got
+
+
+def toggle_voice(pg):
+    open_pit(pg)
+    pg.locator(".fw-voice").click()
+    close_pit(pg)
+
+
 def until(pg, js, timeout=10000):
     end = time.time() + timeout / 1000.0
     last = None
@@ -383,9 +408,9 @@ try:
         pg = fresh()
         door_v = door(12)
         attend(pg, door_v, MAIN)
-        assert pg.locator(".fw-voice").get_attribute("aria-pressed") == "false", "voice starts off"
-        pg.locator(".fw-voice").click()
-        assert pg.locator(".fw-voice").get_attribute("aria-pressed") == "true"
+        assert voice_pressed(pg) == "false", "voice starts off"
+        toggle_voice(pg)
+        assert voice_pressed(pg) == "true"
         send(pg, "just a [plain] hello")
         pg.wait_for_selector(".nodi-turn[data-turn='27'] .voce[data-for='27']", timeout=15000)
         assert pg.locator(".nodi-turn[data-turn='27'] .nodi-prose .voce").count() == 1, "one player per turn, inside a prose node"
@@ -407,7 +432,7 @@ try:
         attend(pg, door_h, MAIN)
         pg.locator(".fw-hands").click()
         assert pg.locator(".fw-hands").get_attribute("aria-pressed") == "true"
-        assert pg.locator(".fw-voice").get_attribute("aria-pressed") == "true", "hands-free turns the voice on"
+        assert voice_pressed(pg) == "true", "hands-free turns the voice on"
         pg.locator(".fw-mic").click()
         until(pg, "document.querySelector('.fw').dataset.mic === 'recording'", 10000)
         send(pg, "just a [plain] hello")
@@ -422,7 +447,7 @@ try:
         assert pg.locator(".fw-hands").get_attribute("aria-pressed") == "false"
         pg.goto("about:blank")
         attend(pg, door_h, MAIN)
-        assert pg.locator(".fw-hands").get_attribute("aria-pressed") == "false" and pg.locator(".fw-voice").get_attribute("aria-pressed") == "false", "a reload starts with hands-free and voice off"
+        assert pg.locator(".fw-hands").get_attribute("aria-pressed") == "false" and voice_pressed(pg) == "false", "a reload starts with hands-free and voice off"
         pg.close()
 
         mic_door = door(12)
@@ -458,7 +483,7 @@ try:
         say_door = door(12)
         attend(pg, say_door, MAIN, 5)
         pg.wait_for_selector(".nodi-turn[data-turn='5']")
-        assert pg.locator(".fw-voice").get_attribute("aria-pressed") == "false", "voice is off while Play asks the gateway to speak"
+        assert voice_pressed(pg) == "false", "voice is off while Play asks the gateway to speak"
         pg.locator(".nodi-turn[data-turn='5'] .fw-play").click()
         for _ in range(100):
             if say_door.state()["says"] == [5]:
@@ -683,6 +708,54 @@ try:
             assert not pg.errors, pg.errors
             ctx.close()
 
+        for width, height in ((390, 844), (1280, 800)):
+            phone = width < 600
+            ctx = browser.new_context(viewport={"width": width, "height": height}, is_mobile=phone, has_touch=phone)
+            pg = ctx.new_page()
+            pg.errors = []
+            pg.on("pageerror", lambda e: pg.errors.append(str(e)))
+            pg.goto(fast.url)
+            pg.wait_for_selector(".zr-thread")
+            assert pg.locator(".fw-top, .fw-mark, .fw-title").count() == 0, "the header is gone"
+            assert pg.locator(".fw-head").count() == 0, "no logo on the list"
+            assert pg.locator(".fw-status").is_visible() == phone, "the slim status bar is a phone thing"
+            attend(pg, fast, MAIN)
+            assert pg.locator(".fw-head").count() == 0, "no logo while attending"
+            assert pg.locator(".fw-top-new, .fw-bar").count() == 0
+            if phone:
+                bar = pg.locator(".fw-status")
+                until(pg, "document.querySelector('.fw-status-mantra') && document.querySelector('.fw-status-mantra').textContent.length > 0", 8000)
+                box = bar.bounding_box()
+                assert box["y"] == 0 and box["height"] <= 32, "slim bar at the top: %s" % box
+                assert pg.locator(".fw-status-link").inner_text() == "Live"
+                assert len(pg.locator(".fw-status-id").inner_text()) == 8
+                pg.evaluate("window.scrollTo(0, 400)")
+                pg.wait_for_timeout(100)
+                assert abs(bar.bounding_box()["y"]) <= 1, "the status bar stays while the transcript scrolls"
+                top = pg.locator(".fw-status").evaluate("n => getComputedStyle(n).position")
+                assert top == "sticky"
+            open_pit(pg)
+            facts = pg.locator(".fw-pit-fact").all_inner_texts()
+            joined = " ".join(facts)
+            assert "Live" in joined and MAIN in joined and "Zanni" in joined, facts
+            assert pg.locator(".fw-pit-new").is_visible() and pg.locator(".fw-voice").is_visible(), "every removed control is one tap from the pit"
+            assert pg.locator(".fw-head").count() == 0, "no logo below full screen"
+            pg.locator(".zr-pit-handle").focus()
+            pg.keyboard.press("ArrowUp")
+            pit_at(pg, "full", height, "full screen pit")
+            assert pg.locator(".zr-pit .fw-head").count() == 1, "the logo appears only in the full-screen pit"
+            assert pg.locator(".zr-pit-bar .zr-btn").evaluate("n => getComputedStyle(n).display") == "none", "the full pit's head is the icon and the title"
+            assert pg.locator(".zr-pit-title").inner_text().strip() != ""
+            snap(pg, "header-drop-full-%d" % width)
+            pg.keyboard.press("ArrowDown")
+            pit_at(pg, "half", round(height / 2), "back to half")
+            pg.locator(".fw-pit-new").click()
+            pg.wait_for_selector(".zr-pit", state="detached")
+            pg.wait_for_selector(".fw-new-form")
+            snap(pg, "header-drop-new-%d" % width)
+            assert not pg.errors, pg.errors
+            ctx.close()
+
         ctx = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True, reduced_motion="reduce")
         pg = ctx.new_page()
         pg.errors = []
@@ -716,7 +789,7 @@ try:
         pg.locator(".fw-sheet-act[data-action='retranscribe']").click()
         pg.wait_for_selector(".fw-sheet-text", timeout=5000)
         pg.keyboard.press("Escape")
-        pg.locator(".fw-voice").click()
+        toggle_voice(pg)
         for _ in range(100):
             if any(g["kind"] == "audio-ws" for g in sess_door.state()["sessions"]):
                 break
@@ -741,7 +814,7 @@ try:
 
         MOTION = """() => {
           const over = [];
-          for (const n of document.querySelectorAll('.zr-composer, .zr-composer *, .fw-top *, .fw-main button')) {
+          for (const n of document.querySelectorAll('.zr-composer, .zr-composer *, .fw-status *, .fw-main button')) {
             const cs = getComputedStyle(n);
             const ms = (v) => v.split(',').map(x => x.trim()).map(x => x.endsWith('ms') ? parseFloat(x) : parseFloat(x) * 1000);
             if (cs.animationName !== 'none' && Math.max(...ms(cs.animationDuration)) > 1) over.push(n.className + ' animation ' + cs.animationName + ' ' + cs.animationDuration);
