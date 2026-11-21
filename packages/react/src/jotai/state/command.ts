@@ -16,9 +16,10 @@ export interface CommandState {
   readonly on: boolean;
   readonly line: string;
   readonly why: string;
+  readonly shut: boolean;
 }
 
-export const COMMAND_OFF: CommandState = { on: false, line: "", why: "" };
+export const COMMAND_OFF: CommandState = { on: false, line: "", why: "", shut: false };
 const off = COMMAND_OFF;
 const modes = new Map<string, PrimitiveAtom<CommandState>>();
 

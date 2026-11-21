@@ -43,9 +43,11 @@ figaro-forms values, or if shipped code carries a comment.
 Command mode is the pager's `:` line. `lib/command.ts` is pure: `tokenize` (quotes, backslash, `--`), `planOf` (the catalog's
 `pagerCommand`, `webCommands` and `commandBounds` turn a line into a run, a refusal with its reason, or nothing), `suggest`
 (verbs, arias from the tree, keys of the bound form, outfits from `angelus.outfits`, `state` subcommands, usage for the rest) and
-`applyCandidate`. `state/command.ts` holds `commandAtom(key)` (on, line, why) per aria and `runCommandAtom`, which runs a plan
+`applyCandidate`. `state/command.ts` holds `commandAtom(key)` (on, line, why, shut) per aria and `runCommandAtom`, which runs a plan
 through the existing atoms: `forkAtom`, `mintFigaroAtom`, `interruptAtom`, `boundFormWriterOf` for set, unset and toggle,
 `goAtom`. It returns the outcome the composer shows: a note, a pit view to open, or the help sheet.
+The grammar is the pager's: `:fork 12` reads 12 as an aria id prefix and `:fork :12` is turn 12. Enter on an empty line leaves command mode.
+Escape closes the completion chips first when a line is typed and chips show (`shut`, cleared by typing or Tab), and leaves on the next.
 
 Attachments: `lib/attach.ts` (limits, `uploadFile`, the size and kind words) is pure; `state/attach.ts` keeps a list per aria
 (`attachmentsAtom`), uploads one file at a time (`addFilesAtom`), and gives `sendAtom` the ids (`readyIdsAtom`, which uploads

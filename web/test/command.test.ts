@@ -21,8 +21,8 @@ describe("tokenize", () => {
 
 describe("planOf", () => {
   it("runs the pager's verbs with what the web honours", () => {
-    const p = planOf("fork 12 --stay -- try again");
-    expect(p).toMatchObject({ kind: "run", args: ["12"], flags: { stay: true }, prompt: "try again" });
+    const p = planOf("fork :12 --stay -- try again");
+    expect(p).toMatchObject({ kind: "run", args: [":12"], flags: { stay: true }, prompt: "try again" });
     expect(planOf("new -O sonn5-kic")).toMatchObject({ kind: "run", flags: { outfit: "sonn5-kic" }, prompt: undefined });
     expect(planOf("ls")).toMatchObject({ kind: "run", doc: { name: "list" } });
     expect(planOf("set mantra x")).toMatchObject({ kind: "run", args: ["mantra", "x"] });
@@ -56,7 +56,8 @@ describe("planOf", () => {
 describe("forkSpecOf", () => {
   it("reads a bare number as a turn of the open aria, and id:turn", () => {
     expect(forkSpecOf("")).toEqual({ aria: undefined, turn: undefined });
-    expect(forkSpecOf("12")).toEqual({ aria: undefined, turn: 12 });
+    expect(forkSpecOf("12")).toEqual({ aria: "12", turn: undefined });
+    expect(forkSpecOf(":12")).toEqual({ aria: undefined, turn: 12 });
     expect(forkSpecOf("c0ffee01:7")).toEqual({ aria: "c0ffee01", turn: 7 });
     expect(forkSpecOf("c0ffee01")).toEqual({ aria: "c0ffee01", turn: undefined });
     expect(forkSpecOf(":7")).toEqual({ aria: undefined, turn: 7 });
