@@ -283,6 +283,12 @@
 
     var MD_REPLY = '# Findings\n\nThe cause is a stale cursor.\n\n- read backward\n- follow live\n\n```go\nfmt.Println(cursor)\n```\n\n| file | lines | note |\n|------|------:|:----:|\n| a.go | 12 | ok |\n| b.go | 7 | slow |\n| c.go | 3 | new |\n\nThat is all.\n';
 
+    var LONG_REPLY = (function () {
+      var out = [];
+      for (var i = 1; i <= 24; i++) out.push('## Part ' + i + '\n\nThe reader keeps the *settled* nodes and replaces the live one on every delta, so a late frame is dropped by version and nothing else moves. ' + OPENERS[i % OPENERS.length] + BODIES[i % BODIES.length]);
+      return out.join('\n\n') + '\n';
+    }());
+
     function pieces(text) { return text.match(/\S+\s*|\s+/g) || []; }
 
     function streamText(a, t, idx, type, text, chunks) {
@@ -304,8 +310,9 @@
 
     function plan(a, t, text, attached) {
       var s = [], tool = /\[tool\]|run|test|check|build/i.test(text) && !/\[plain\]/.test(text);
-      var think = !/\[plain\]/.test(text), n = 0, idx, md = /\[md\]/.test(text);
-      if (md) tool = false;
+      var think = !/\[plain\]/.test(text), n = 0, idx, md = /\[md\]/.test(text), long = /\[long\]/.test(text);
+      if (md || long) tool = false;
+      if (long) think = false;
       var call = 'call_live' + t.id;
       var gap = function (fn, ms) { s.push({ fn: fn, wait: ms == null ? step : ms }); };
       var seq = function (list) { list.forEach(function (f) { gap(f); }); };
@@ -313,7 +320,7 @@
       if (think) { idx = n++; seq(streamText(a, t, idx, 'thinking', THOUGHTS[t.id % THOUGHTS.length] + ' Then I will answer plainly and name the file.')); }
       idx = n++;
       var said = attached.length ? 'I read ' + attached.map(function (h) { return h.name + (h.kind === 'pdf' ? ' (pdf, ' + h.pages + ' pages)' : ' (image)'); }).join(' and ') + '.' : '';
-      seq(streamText(a, t, idx, 'prose', said || (md ? MD_REPLY : tool ? 'Let me look.' : OPENERS[t.id % OPENERS.length] + BODIES[t.id % BODIES.length]), 2));
+      seq(streamText(a, t, idx, 'prose', said || (long ? LONG_REPLY : md ? MD_REPLY : tool ? 'Let me look.' : OPENERS[t.id % OPENERS.length] + BODIES[t.id % BODIES.length]), 2));
       if (tool) {
         idx = n++;
         var args = { command: 'go test ./api/livedoc/... -run Settle' };
