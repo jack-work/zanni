@@ -1,87 +1,158 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { Tree, treeRows, truncRunes, type TreeNodeData } from "zanni-react";
+import { Tree, branchPeek, clipEllipsis, inlineBranch, treeRows, type TreeNodeData } from "zanni-react";
 
-const sample: TreeNodeData[] = [
+const form: TreeNodeData[] = [
+  { id: "aria_id", label: "aria_id", value: '"0da9f5cd"' },
+  { id: "datetime", label: "datetime", value: '"Saturday"' },
+  { id: "deep", label: "deep", children: [{ id: "deep.inner", label: "inner", children: [{ id: "deep.inner.a", label: "a", value: "1" }] }, { id: "deep.side", label: "side", value: "2" }] },
+  { id: "mood", label: "mood", value: '"calm"' },
   {
-    id: "root",
-    label: "root",
-    children: [
-      { id: "first", label: "first", children: [{ id: "first-kid", label: "first-kid" }, { id: "first-last", label: "first-last" }] },
-      { id: "last", label: "last", children: [{ id: "last-kid", label: "last-kid" }] },
-    ],
+    id: "system",
+    label: "system",
+    children: ["credo", "cwd", "model", "outfit_name", "provider"].map((k) => ({ id: "system." + k, label: k, value: '"x"' })),
   },
 ];
 
-describe("treeRows (figtree.Rows)", () => {
-  it("draws the pager's branch glyphs and keeps branch, marker and label apart", () => {
-    const rows = treeRows(sample);
-    expect(rows.map((r) => r.branch + r.label)).toEqual(["root", "├─first", "│ ├─first-kid", "│ └─first-last", "└─last", "  └─last-kid"]);
-    const marked = treeRows([{ id: "a", label: "a", marker: "●", badge: "@lane" }]);
-    expect([marked[0]!.branch, marked[0]!.marker, marked[0]!.label, marked[0]!.badge]).toEqual(["", "●", "a", "@lane"]);
+const text = (el: Element) => (el.textContent ?? "").replace(/^. /, "");
+const lines = () => [...document.querySelectorAll(".zr-tree-row")].map(text);
+
+describe("treeRows (formNode rows)", () => {
+  it("closed branches carry their count and a peek of the child labels, leaves align per parent", () => {
+    const rows = treeRows(form);
+    expect(rows.map((r) => [r.label, r.count, r.peek, r.gap.length])).toEqual([
+      ["aria_id", 0, "", 1],
+      ["datetime", 0, "", 0],
+      ["deep", 2, "inner · side", 0],
+      ["mood", 0, "", 4],
+      ["system", 5, "credo · cwd · model · outfit_name …", 0],
+    ]);
   });
 
-  it("paints the label by the first matching rule of a watched field and leaves the rest alone", () => {
+  it("an open branch shows its count only and its children wear the pager's guides", () => {
+    const rows = treeRows(form, (id) => id === "system" || id === "deep");
+    const open = rows.filter((r) => r.parent === "system");
+    expect(open.map((r) => r.lead)).toEqual(["├─ ", "├─ ", "├─ ", "├─ ", "└─ "]);
+    expect(rows.find((r) => r.id === "system")!.peek).toBe("");
+    const deep = rows.filter((r) => r.parent === "deep");
+    expect(deep.map((r) => r.lead)).toEqual(["├─ ", "└─ "]);
+  });
+
+  it("nested guides continue with a bar under a middle sibling and blanks under the last", () => {
     const roots: TreeNodeData[] = [
       {
-        id: "r",
+        id: "root",
         label: "root",
-        fields: { exists: "yes" },
-        children: [{ id: "g", label: "gone", fields: { exists: "no" } }, { id: "u", label: "unknown", fields: { exists: "maybe" } }, { id: "w", label: "unwatched" }],
+        children: [
+          { id: "a", label: "a", children: [{ id: "a1", label: "a1", children: [] }, { id: "a2", label: "a2", children: [] }] },
+          { id: "b", label: "b", children: [{ id: "b1", label: "b1", children: [] }] },
+        ],
       },
     ];
-    const colors = [{ field: "exists", rules: [{ value: "yes", color: "present" }, { value: "no", color: "absent" }] }];
-    expect(treeRows(roots, colors).map((r) => r.color)).toEqual(["present", "absent", "", ""]);
+    const rows = treeRows(roots, () => true);
+    expect(rows.map((r) => r.lead + r.label)).toEqual(["root", "├─ a", "│  ├─ a1", "│  └─ a2", "└─ b", "   └─ b1"]);
   });
 
-  it("washes the whole row when a field holds the value", () => {
-    const roots: TreeNodeData[] = [{ id: "f", label: "form", fields: { kind: "form" } }, { id: "a", label: "aria", fields: { kind: "aria" } }];
-    expect(treeRows(roots, [], [{ field: "kind", value: "form", wash: "form" }]).map((r) => r.wash)).toEqual(["form", ""]);
+  it("a closed branch of up to three short leaves shows inline", () => {
+    const kids: TreeNodeData[] = [{ id: "a", label: "a", value: "1" }, { id: "b", label: "b", value: "2" }];
+    expect(inlineBranch(kids)).toBe("{a: 1, b: 2}");
+    expect(inlineBranch([...kids, { id: "c", label: "c", value: "3" }, { id: "d", label: "d", value: "4" }])).toBe("");
+    expect(inlineBranch([{ id: "n", label: "n", value: '{"x":1}' }])).toBe("");
+    expect(inlineBranch([{ id: "n", label: "n", children: [] }])).toBe("");
   });
 
-  it("skips the rows under a collapsed node but keeps the glyphs of the rest", () => {
-    const rows = treeRows(sample, [], [], (id) => id !== "first");
-    expect(rows.map((r) => r.branch + r.label)).toEqual(["root", "├─first", "└─last", "  └─last-kid"]);
-    expect(rows[1]!.expandable).toBe(true);
-    expect(rows[1]!.open).toBe(false);
+  it("peeks four labels then an ellipsis, and clips with one", () => {
+    expect(branchPeek(form[4]!.children!)).toBe("credo · cwd · model · outfit_name …");
+    expect(clipEllipsis("abcdef", 4)).toBe("abc…");
+    expect(clipEllipsis("abc", 4)).toBe("abc");
   });
 
-  it("cuts a field to its column width with two dots", () => {
-    expect(truncRunes("abcdef", 4)).toBe("ab..");
-    expect(truncRunes("abc", 4)).toBe("abc");
-    expect(truncRunes("abcdef", 0)).toBe("abcdef");
-    expect(truncRunes("abcdef", 1)).toBe("a");
+  it("a leaf label past the pad cap takes no padding", () => {
+    const long = "x".repeat(30);
+    const rows = treeRows([{ id: "l", label: long, value: "1" }, { id: "s", label: "s", value: "2" }]);
+    expect(rows[0]!.gap).toBe("");
+    expect(rows[1]!.gap.length).toBe(23);
   });
 });
 
 describe("Tree", () => {
-  it("renders a header and field columns, marks the current row, and tells a tap from a toggle", () => {
-    const pick = vi.fn();
-    render(
-      <Tree
-        label="Arias"
-        roots={sample.map((n) => ({ ...n, fields: { id: "c0ffee01" } }))}
-        columns={[{ header: "ARIA" }, { header: "ID", field: "id" }]}
-        current="first"
-        onSelect={pick}
-      />,
-    );
-    expect(screen.getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["ARIA", "ID"]);
-    const row = document.querySelector("[data-id='first']")!;
-    expect(row.getAttribute("aria-selected")).toBe("true");
-    expect(row.getAttribute("aria-level")).toBe("2");
-    fireEvent.click(row.querySelector(".zr-tree-hit")!);
-    expect(pick).toHaveBeenCalledWith("first");
-    fireEvent.click(row.querySelector(".zr-tree-toggle")!);
-    expect(document.querySelector("[data-id='first-kid']")).toBeNull();
-    expect(row.getAttribute("aria-expanded")).toBe("false");
-    fireEvent.click(row.querySelector(".zr-tree-toggle")!);
-    expect(document.querySelector("[data-id='first-kid']")).toBeTruthy();
+  it("has no header and no arrow, and the collapsed state tree tells what is inside", () => {
+    render(<Tree roots={form} mark="⌖" label="Bound form" />);
+    expect(document.querySelector("th, button")).toBeNull();
+    expect(lines()).toEqual(['aria_id:  "0da9f5cd"', 'datetime: "Saturday"', "deep (2)  inner · side", 'mood:     "calm"', "system (5)  credo · cwd · model · outfit_name …"]);
+    expect(document.querySelector("[data-cursor] .zr-tree-mark")!.textContent).toBe("⌖ ");
   });
 
-  it("without onSelect a tap on a branch folds it", () => {
-    render(<Tree roots={sample} />);
-    fireEvent.click(document.querySelector("[data-id='last'] .zr-tree-hit")!);
-    expect(document.querySelector("[data-id='last-kid']")).toBeNull();
+  it("j and k move the cursor, l opens, h closes, and h on a closed row climbs to the parent", () => {
+    render(<Tree roots={form} mark="⌖" />);
+    const tree = document.querySelector<HTMLElement>("[role='tree']")!;
+    const key = (k: string) => fireEvent.keyDown(tree, { key: k });
+    const at = () => document.querySelector("[data-cursor]")!.getAttribute("data-id");
+    key("j");
+    key("j");
+    expect(at()).toBe("deep");
+    key("l");
+    expect(lines().slice(2, 5)).toEqual(["deep (2)", "├─ inner: {a: 1}", "└─ side: 2"]);
+    key("j");
+    key("h");
+    expect(at()).toBe("deep");
+    key("h");
+    expect(lines()).toHaveLength(5);
+    key("G");
+    expect(at()).toBe("system");
+    key("g");
+    key("g");
+    expect(at()).toBe("aria_id");
+    key("k");
+    expect(at()).toBe("aria_id");
+  });
+
+  it("Enter toggles a branch when nothing handles activation, and a leaf does nothing", () => {
+    render(<Tree roots={form} mark="⌖" />);
+    const tree = document.querySelector<HTMLElement>("[role='tree']")!;
+    fireEvent.keyDown(tree, { key: "Enter" });
+    expect(lines()).toHaveLength(5);
+    fireEvent.keyDown(tree, { key: "G" });
+    fireEvent.keyDown(tree, { key: "Enter" });
+    expect(lines()).toHaveLength(10);
+    fireEvent.keyDown(tree, { key: "Enter" });
+    expect(lines()).toHaveLength(5);
+  });
+
+  it("with onActivate, Enter and a tap activate and never toggle; l and h still do", () => {
+    const go = vi.fn();
+    render(<Tree roots={form} mark="▸" onActivate={go} />);
+    const tree = document.querySelector<HTMLElement>("[role='tree']")!;
+    fireEvent.keyDown(tree, { key: "G" });
+    fireEvent.keyDown(tree, { key: "Enter" });
+    expect(go).toHaveBeenCalledWith("system");
+    expect(lines()).toHaveLength(5);
+    fireEvent.click(document.querySelector("[data-id='deep']")!);
+    expect(go).toHaveBeenLastCalledWith("deep");
+    expect(lines()).toHaveLength(5);
+    fireEvent.keyDown(tree, { key: "l" });
+    expect(lines()).toHaveLength(7);
+  });
+
+  it("a tap toggles in a tree without onActivate", () => {
+    render(<Tree roots={form} mark="⌖" />);
+    fireEvent.click(document.querySelector("[data-id='system']")!);
+    expect(document.querySelector("[data-id='system.cwd']")).toBeTruthy();
+  });
+
+  it("keeps expansion and cursor by id across a live update", () => {
+    const { rerender } = render(<Tree roots={form} mark="⌖" />);
+    fireEvent.click(document.querySelector("[data-id='system']")!);
+    const next = [{ id: "a0", label: "a0", value: "1" }, ...form];
+    rerender(<Tree roots={next} mark="⌖" />);
+    expect(document.querySelector("[data-cursor]")!.getAttribute("data-id")).toBe("system");
+    expect(document.querySelector("[data-id='system.cwd']")).toBeTruthy();
+  });
+
+  it("starts the cursor on the current row, marks it, and shows its hint only there", () => {
+    const roots: TreeNodeData[] = [{ id: "n", label: "node", count: 1, badge: "●", children: [{ id: "x", label: "x-handle", count: 8, peek: '"q"', badge: "●", hint: "Enter attend" }] }];
+    render(<Tree roots={roots} mark="▸" current="x" defaultOpen={() => true} />);
+    expect([...document.querySelectorAll(".zr-tree-row")].map((r) => r.textContent)).toEqual(["  node (1)  ●", '▸ └─ x-handle (8)  "q"  ●  Enter attend']);
+    expect(document.querySelector("[data-id='x']")!.getAttribute("aria-selected")).toBe("true");
   });
 });
