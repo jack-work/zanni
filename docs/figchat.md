@@ -107,8 +107,19 @@ not in atoms.
   allows where a style attribute or an inserted rule is refused. The buttons under a message are 44px with a 36px glyph. The record button is glyph-only until voice
   is on, then widens. Errors and the mic's notes take that same line. A draft is kept
   per aria in localStorage, saved 400ms after typing, cleared on send.
-- Fork sits in the aria header; Fork here and Play in each turn's action bar
-  (on hover or focus with a fine pointer, always on the last turn and on touch).
+- Each turn opens with one bar (∨, "Turn N", its Fork here and Play) that sticks
+  to the top of the transcript's one scroller while the turn is on screen, and
+  a single rule under it. Once the turn's own question has scrolled under the
+  bar the bar becomes the pager's double bar: the question's first line sits
+  under it, fitted to the width and ended with " .." when more follows, and the
+  rule goes double, spreading from nine seeds in six steps (`--zr-spread`);
+  it goes back the same way. The question floats over the transcript, so
+  nothing below it moves. A tap on the bar or the line opens the whole question
+  (∧), at most a quarter of the pane, scrolled with j and k; a second tap inside
+  300ms makes it full height; a slow tap, Esc, or Enter on the focused bar shuts
+  it, and F toggles full. Fork stays in the aria header; Fork here and Play sit
+  in the bar (on hover or focus with a fine pointer, always on the last turn and
+  on touch).
 - Adjacent thinking and tool nodes fold into one work group titled by what
   happened in it ("Explored 3 files, ran 1 command").
 - Small buttons sit right under a message, no sheet and no scrim: your message
@@ -217,7 +228,8 @@ measures the composer (idle at most 76px, running at most 120px, the strip one
 line, the last node above the composer), covers history, paging, deep links,
 attach (photo and PDF in WebKit at iPhone size reach a turn and the reply names them, a refused file shows the gateway's words),
 command mode (the colon, the verbs, a refused verb's reason, `:fork 12`, `:ls`, Esc),
-hostile text, send, steer, stop, fork, drafts, voice, hands-free hold, the mic,
+the sticky bar (rests single, pins double with the question fitted, tap and
+double tap open it, Esc shuts it), hostile text, send, steer, stop, fork, drafts, voice, hands-free hold, the mic,
 the pits, and runs once with reduced motion to assert nothing computes a
 duration over 1ms.
 

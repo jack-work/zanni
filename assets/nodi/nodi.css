@@ -11,8 +11,6 @@
   color: var(--z-ink);
 }
 .nodi-turn { min-width: 0; scroll-margin-top: calc(var(--figchat-bar, 56px) + 12px); }
-.nodi-turn[data-flash] .nodi-turn-head { background: color-mix(in srgb, var(--z-accent) 25%, transparent); }
-.nodi-turn-head { display: flex; align-items: center; justify-content: space-between; gap: var(--z-space-3, 8px); min-height: 28px; border-bottom: 1px solid var(--z-rule); font: 400 1.0625rem / 1 var(--nodi-mono); letter-spacing: 0.04em; color: var(--z-muted); -webkit-user-select: none; user-select: none; }
 .nodi-turn[data-state="open"] .nodi-turn-no::after { content: " \b7 running"; color: var(--z-warn); }
 .nodi-turn[data-state="failed"] .nodi-turn-no::after { content: " \b7 failed"; color: var(--z-fail); }
 .nodi-turn-body { display: flex; flex-direction: column; gap: var(--z-space-3, 8px); padding-top: var(--z-space-3, 8px); min-width: 0; }

@@ -7,6 +7,7 @@ import { reducedMotion } from "./motion";
 import { glyphs } from "./glyphs";
 import { nodi, type InputModel, type Item, type ProseItem, type SteeringItem, type ThinkingItem, type ToolItem, type TurnModel, type UnknownItem } from "./zanni";
 import { BlockView, Plain } from "./text";
+import { QuestionMark, Sticky } from "./sticky";
 
 export type TapKind = "input" | "prose";
 
@@ -34,8 +35,9 @@ function stamp(ms: unknown): string {
 
 export function InputView({ input, turn }: { input: InputModel; turn: number }) {
   const first = input.parts[0];
+  const mark = useContext(QuestionMark);
   return (
-    <div className="nodi-input" data-from={first ? first.role : "you"}>
+    <div ref={mark} className="nodi-input" data-from={first ? first.role : "you"}>
       {input.parts.map((p, i) => {
         const when = i === 0 ? stamp(input.at) : "";
         return (
@@ -261,6 +263,8 @@ export interface TurnViewProps {
   eager?: boolean;
 }
 
+const questionOf = (input: InputModel | null): string => (input ? input.parts.map((p) => p.text).join("\n\n") : "");
+
 const spokenIn = (s: Speaking | null, turn: number): string => (s && s.turn === turn ? s.node + ":" + s.chars : "");
 
 function TurnContent({ turn: m, speaking }: { turn: TurnModel; speaking: Speaking | null }) {
@@ -268,12 +272,16 @@ function TurnContent({ turn: m, speaking }: { turn: TurnModel; speaking: Speakin
   const rows = useMemo(() => groupWork(m.items), [m.items]);
   const hooks = useContext(TranscriptContext);
   return (
-    <>
-      <div className="nodi-turn-head">
-        <span className="nodi-turn-no">Turn {m.turn}</span>
-        {m.forkedFrom && <span className="nodi-turn-fork">{glyphs.fork + " " + (hooks.nameOf?.(m.forkedFrom) ?? m.forkedFrom.slice(0, 8))}</span>}
-        <span className="nodi-turn-tools">{hooks.actions?.(m.turn)}</span>
-      </div>
+    <Sticky
+      heading={
+        <>
+          <span className="nodi-turn-no">Turn {m.turn}</span>
+          {m.forkedFrom && <span className="nodi-turn-fork">{glyphs.fork + " " + (hooks.nameOf?.(m.forkedFrom) ?? m.forkedFrom.slice(0, 8))}</span>}
+        </>
+      }
+      tools={<span className="nodi-turn-tools">{hooks.actions?.(m.turn)}</span>}
+      text={questionOf(m.input)}
+    >
       <div className="nodi-turn-body">
         {m.input && m.input.parts.length > 0 && <InputView input={m.input} turn={m.turn} />}
         {m.input && m.input.parts.length > 0 && hooks.below?.("input", m.turn)}
@@ -290,7 +298,7 @@ function TurnContent({ turn: m, speaking }: { turn: TurnModel; speaking: Speakin
             </p>
           ))}
       </div>
-    </>
+    </Sticky>
   );
 }
 
