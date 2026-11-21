@@ -1,7 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { Button, Composer, Strip } from "zanni-react";
+import { act } from "@testing-library/react";
+import { Button, Composer, KEYBOARD_CLOSE_SETTLE_MS, Strip, trackViewport } from "zanni-react";
 
 function Harness({ submit = () => {}, running = false, strip = null }: { submit?: () => void; running?: boolean; strip?: { kind: "running" | "note"; text: string; time?: string } | null }) {
   const [v, setV] = useState("");
@@ -21,6 +22,62 @@ describe("Composer", () => {
     expect(submit).not.toHaveBeenCalled();
     fireEvent.keyDown(box(), { key: "Enter" });
     expect(submit).toHaveBeenCalledTimes(1);
+  });
+
+  it("treats the Enter that Safari sends after an IME candidate as part of the composition", () => {
+    const submit = vi.fn();
+    render(<Harness submit={submit} />);
+    fireEvent.keyDown(box(), { key: "Enter", keyCode: 229 });
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it("is a plain textarea with autocapitalize, autocorrect and spellcheck set on purpose", () => {
+    render(<Harness />);
+    expect(box().getAttribute("autocapitalize")).toBe("sentences");
+    expect(box().getAttribute("autocorrect")).toBe("off");
+    expect(box().getAttribute("spellcheck")).toBe("false");
+    expect(document.querySelector("[contenteditable]")).toBeNull();
+  });
+
+  it("keeps focus in the box when a send tap started with the box focused, and does not steal it otherwise", () => {
+    render(<Harness />);
+    const send = screen.getByRole("button", { name: "Send" });
+    box().focus();
+    fireEvent.pointerDown(send);
+    box().blur();
+    fireEvent.click(send);
+    expect(document.activeElement).toBe(box());
+    box().blur();
+    fireEvent.pointerDown(send);
+    fireEvent.click(send);
+    expect(document.activeElement).not.toBe(box());
+  });
+
+  it("refuses the mousedown on the send button, which would take focus from the box", () => {
+    render(<Harness />);
+    expect(fireEvent.mouseDown(screen.getByRole("button", { name: "Send" }))).toBe(false);
+  });
+
+  it("blurs a box the keyboard left behind once the close has settled, and not before", () => {
+    vi.useFakeTimers();
+    const vv = Object.assign(new EventTarget(), { height: 508, offsetTop: 0, scale: 1 });
+    Object.defineProperty(window, "visualViewport", { value: vv, configurable: true });
+    Object.defineProperty(window, "innerHeight", { value: 844, configurable: true });
+    render(<Harness />);
+    const stop = trackViewport();
+    box().focus();
+    vv.height = 844;
+    act(() => {
+      vv.dispatchEvent(new Event("resize"));
+      vi.advanceTimersByTime(KEYBOARD_CLOSE_SETTLE_MS - 10);
+    });
+    expect(document.activeElement).toBe(box());
+    act(() => {
+      vi.advanceTimersByTime(20);
+    });
+    expect(document.activeElement).not.toBe(box());
+    stop();
+    vi.useRealTimers();
   });
 
   it("submits from the send button, which says Steer while running, and shows the accessory", () => {

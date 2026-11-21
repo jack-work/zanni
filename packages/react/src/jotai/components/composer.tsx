@@ -1,6 +1,6 @@
 import { Button, Composer as ZComposer, PitGrip } from "../../index";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { clock } from "../../index";
 import { micAtom, micToggleAtom, dictationFocusAtom } from "../state/mic";
 import { linkAtom, runningAtom, workAtom } from "../state/aria";
@@ -29,7 +29,7 @@ function useWorkLine(attended: Attended, note: string, running: boolean) {
   return { text: note || work.verb, time: running ? clock(now - (work.startedAt ?? seen.current)) : undefined };
 }
 
-export function Composer({ attended, toBottom }: { attended: Attended; toBottom: () => void }) {
+export const Composer = memo(function Composer({ attended, toBottom }: { attended: Attended; toBottom: () => void }) {
   const { client, aria, store } = attended;
   const key = keyOf(store, aria);
   const [draft, setDraft] = useAtom(draftAtom(key));
@@ -43,6 +43,7 @@ export function Composer({ attended, toBottom }: { attended: Attended; toBottom:
   const toggleMic = useSetAtom(micToggleAtom);
   const focusTick = useAtomValue(dictationFocusAtom);
   const live = link === "live";
+  const input = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     clearNote({ key, note: "" });
@@ -67,6 +68,7 @@ export function Composer({ attended, toBottom }: { attended: Attended; toBottom:
       sendDisabled={comp.sending || !live}
       running={running}
       focusTick={focusTick}
+      inputRef={input}
       grip={<PitGrip />}
       strip={showStrip ? { kind: running ? "running" : "note", text: line.text, time: line.time } : null}
       stripActions={
@@ -86,11 +88,14 @@ export function Composer({ attended, toBottom }: { attended: Attended; toBottom:
           aria-pressed={mic.state === "recording"}
           disabled={mic.state === "unsupported" || mic.state === "asking" || mic.state === "transcribing"}
           title={mic.state === "unsupported" ? "This browser cannot record audio." : undefined}
-          onClick={() => toggleMic()}
+          onClick={() => {
+            if (mic.state === "recording") input.current?.focus({ preventScroll: true });
+            toggleMic();
+          }}
         >
           {micLabel}
         </Button>
       }
     />
   );
-}
+});

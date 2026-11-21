@@ -204,7 +204,7 @@ try:
             for _ in range(40):
                 if pg.locator(".nodi-turn[data-turn='4']").count():
                     break
-                pg.evaluate("window.scrollTo(0, 0)")
+                pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop = 0")
                 pg.wait_for_timeout(120)
             assert pg.locator(".nodi-turn[data-turn='4']").count() == 1, "scrolling up pages older turns in: %s" % turns_shown(pg)
             got = turns_shown(pg)
@@ -228,10 +228,10 @@ try:
 
         pg = fresh()
         attend(pg, fast, MAIN)
-        pg.evaluate("window.scrollTo(0, 0)")
+        pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop = 0")
         until(pg, "document.querySelector('.nodi-turn') && Number(document.querySelector('.nodi-turn').dataset.turn) < 20", timeout=10000)
         pg.wait_for_timeout(400)
-        anchor = pg.evaluate("window.scrollY")
+        anchor = pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop")
         assert anchor > 0, "paging in older turns keeps the reader where they were, not at the top: %s" % anchor
         pg.close()
 
@@ -291,7 +291,7 @@ try:
                 hit_area(pg, b, "stop buttons")
             assert pg.locator(".zr-strip-time").inner_text()[0].isdigit()
             for _ in range(60):
-                pg.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
+                pg.evaluate("(() => { const s = document.querySelector('[data-zr-scroll]'); s.scrollTop = s.scrollHeight; })()")
                 pg.wait_for_timeout(50)
                 last = pg.evaluate("(() => { const n = [...document.querySelectorAll('.nodi-turn-body > *')].pop(); return n.getBoundingClientRect().bottom; })()")
                 top = pg.locator(".zr-composer").bounding_box()["y"]
@@ -731,11 +731,11 @@ try:
                 assert box["y"] == 0 and box["height"] <= 32, "slim bar at the top: %s" % box
                 assert pg.locator(".fw-status-link").inner_text() == "Live"
                 assert len(pg.locator(".fw-status-id").inner_text()) == 8
-                pg.evaluate("window.scrollTo(0, 400)")
+                pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop = 400")
                 pg.wait_for_timeout(100)
                 assert abs(bar.bounding_box()["y"]) <= 1, "the status bar stays while the transcript scrolls"
                 top = pg.locator(".fw-status").evaluate("n => getComputedStyle(n).position")
-                assert top == "sticky"
+                assert top == "relative", "the bar is outside the scroller, not stuck to the page"
             open_pit(pg)
             assert pg.locator("[data-action='new']").is_visible() and pg.locator(".fw-voice").is_visible(), "every removed control is one tap from the pit"
             pg.locator("[data-action='state']").click()

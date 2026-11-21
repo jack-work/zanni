@@ -2,12 +2,22 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
 
 export const NEAR_BOTTOM = 160;
 
+export function scrollRoot(): HTMLElement {
+  return document.querySelector<HTMLElement>("[data-zr-scroll]") ?? (document.scrollingElement as HTMLElement | null) ?? document.documentElement;
+}
+
+function scrollSource(root: HTMLElement): HTMLElement | Window {
+  return root === document.documentElement || root === document.scrollingElement ? window : root;
+}
+
 export function distanceFromBottom(): number {
-  return document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
+  const root = scrollRoot();
+  return root.scrollHeight - root.clientHeight - root.scrollTop;
 }
 
 export function scrollToBottom(): void {
-  window.scrollTo(0, document.documentElement.scrollHeight);
+  const root = scrollRoot();
+  root.scrollTop = root.scrollHeight;
 }
 
 export interface Follow {
@@ -31,19 +41,22 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
 
   useEffect(() => {
     if (!active) return;
-    lastY.current = window.scrollY;
+    const root = scrollRoot();
+    lastY.current = root.scrollTop;
     stuck.current = distanceFromBottom() <= NEAR_BOTTOM;
     const onScroll = () => {
-      const y = window.scrollY;
+      const y = root.scrollTop;
       if (distanceFromBottom() <= NEAR_BOTTOM) {
         stuck.current = true;
         setUnseen(false);
       } else if (y < lastY.current) stuck.current = false;
       lastY.current = y;
     };
-    window.addEventListener("scroll", onScroll, { passive: true });
+    const source = scrollSource(root);
+    source.addEventListener("scroll", onScroll, { passive: true });
     const el = pane.current;
     let watch: ResizeObserver | undefined;
+    let frame: ResizeObserver | undefined;
     if (el && typeof ResizeObserver !== "undefined") {
       height.current = el.getBoundingClientRect().height;
       watch = new ResizeObserver(() => {
@@ -55,10 +68,17 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
         else if (grew) setUnseen(true);
       });
       watch.observe(el);
+      if (root !== document.documentElement) {
+        frame = new ResizeObserver(() => {
+          if (stuck.current && !paging.current) scrollToBottom();
+        });
+        frame.observe(root);
+      }
     }
     return () => {
-      window.removeEventListener("scroll", onScroll);
+      source.removeEventListener("scroll", onScroll);
       watch?.disconnect();
+      frame?.disconnect();
     };
   }, [active, pane]);
 

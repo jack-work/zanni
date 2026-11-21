@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useLayoutEffect, use
 import { Button } from "./button";
 import { useDialog } from "./dialog";
 import { reducedMotion, useLinger } from "./motion";
+import { onViewportChange, viewportHeight } from "./viewport";
 
 export type PitSnap = "closed" | "half" | "full";
 
@@ -64,10 +65,6 @@ export function usePit(): PitState | null {
   return useContext(PitContext);
 }
 
-function viewportHeight(): number {
-  return Math.round(window.innerHeight);
-}
-
 function writeHeight(px: number): void {
   document.documentElement.style.setProperty(PIT_HEIGHT_VAR, Math.round(px) + "px");
 }
@@ -103,9 +100,7 @@ export function PitProvider({ snap: controlled, defaultSnap = "closed", onSnapCh
   }, []);
 
   useEffect(() => {
-    const onResize = () => setViewport(viewportHeight());
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    return onViewportChange(() => setViewport(viewportHeight()));
   }, []);
 
   useLayoutEffect(() => {

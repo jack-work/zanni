@@ -14,7 +14,7 @@ export { SESSION_HEADER, SESSION_PARAM, audioKeyUrl, mintSessionId, sessionHeade
 export { EXIT_MS, reducedMotion, transition, useLinger } from "./motion";
 export { Strip } from "./strip";
 export type { StripProps } from "./strip";
-export { COMPOSER_MAX_LINES, Composer, useCoarsePointer, useSizeVar } from "./composer";
+export { KEYBOARD_CLOSE_SETTLE_MS, Composer, useCoarsePointer, useSizeVar } from "./composer";
 export type { ComposerProps } from "./composer";
 export { ActionBar } from "./actions";
 export { Fold } from "./fold";
@@ -26,7 +26,9 @@ export { clock, formatWorkedTime, groupWork, liveVerb, stepsTitle, toolKind, wor
 export type { Row, ToolKind, Work, Work_ } from "./work";
 export { nodi, speech, voce } from "./zanni";
 export type * from "./nodi-types";
-export { NEAR_BOTTOM, distanceFromBottom, scrollToBottom, useFollow } from "./follow";
+export { NEAR_BOTTOM, distanceFromBottom, scrollRoot, scrollToBottom, useFollow } from "./follow";
+export { KEYBOARD_MIN, frameOf, onKeyboard, onViewportChange, trackViewport, useViewport, viewportHeight } from "./viewport";
+export type { ViewportFrame } from "./viewport";
 export type { Follow } from "./follow";
 export { LatestPill } from "./latest";
 export { PlayerIsland } from "./player";

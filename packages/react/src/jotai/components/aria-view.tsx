@@ -1,4 +1,4 @@
-import { Button, LatestPill, nodi, scrollToBottom, useFollow, Plain, TranscriptContext, TurnView } from "../../index";
+import { Button, LatestPill, nodi, scrollRoot, scrollToBottom, useFollow, Plain, TranscriptContext, TurnView } from "../../index";
 import { useAtomValue, useSetAtom } from "jotai";
 import { ariaAtom } from "figaro-forms/aria/jotai";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -99,7 +99,7 @@ export function AriaView({ attended }: { attended: Attended }) {
     const el = turnEl(a.turn);
     if (!el) return;
     const delta = el.getBoundingClientRect().top - a.top;
-    if (delta) window.scrollBy(0, delta);
+    if (delta) scrollRoot().scrollTop += delta;
     anchor.current = null;
   }, [firstKey]);
 
@@ -157,40 +157,42 @@ export function AriaView({ attended }: { attended: Attended }) {
   const metrics = snap.metrics ? nodi.metricsLine(snap.metrics) : "";
 
   return (
-    <section className="fw-pane-inner" ref={paneRef}>
-      <main className="fw-main" tabIndex={-1}>
-        <div className="fw-subbar">
-          <a className="fw-back" href="#/">
-            Arias
-          </a>
-          <div className="fw-subtools">
-            <Button variant="quiet" size="compact" className="fw-hands" aria-pressed={handsFree} onClick={() => toggleHandsFree()}>
-              Hands-free
-            </Button>
-            <Button variant="quiet" size="compact" className="fw-fork" disabled={link !== "live" || forking} onClick={() => void fork(0)}>
-              Fork
-            </Button>
+    <section className="fw-pane-inner">
+      <div className="fw-scroll zr-scroll" data-zr-scroll="">
+        <main className="fw-main" tabIndex={-1} ref={paneRef}>
+          <div className="fw-subbar">
+            <a className="fw-back" href="#/">
+              Arias
+            </a>
+            <div className="fw-subtools">
+              <Button variant="quiet" size="compact" className="fw-hands" aria-pressed={handsFree} onClick={() => toggleHandsFree()}>
+                Hands-free
+              </Button>
+              <Button variant="quiet" size="compact" className="fw-fork" disabled={link !== "live" || forking} onClick={() => void fork(0)}>
+                Fork
+              </Button>
+            </div>
           </div>
-        </div>
-        <h1 className="fw-h1" tabIndex={-1} ref={headRef}>
-          <Plain text={heading} />
-        </h1>
-        <ForkBanner attended={attended} />
-        <div className="fw-metrics">{metrics && <p className="nodi-metrics">{metrics}</p>}</div>
-        {olderAvailable && (
-          <Button variant="quiet" size="compact" className="fw-older" ref={olderRef} disabled={loadingOlder} onClick={() => loadOlder().catch(() => {})}>
-            Earlier turns
-          </Button>
-        )}
-        <TranscriptContext value={transcript}>
-          <ol className="nodi-turns" aria-label="Transcript">
-            {turns.map((t) => (
-              <TurnView key={t.key} turn={t} speaking={speakingHere} fresh={baseline !== null && t.turn > baseline} />
-            ))}
-          </ol>
-        </TranscriptContext>
-        {status && <p className="fw-note">{status}</p>}
-      </main>
+          <h1 className="fw-h1" tabIndex={-1} ref={headRef}>
+            <Plain text={heading} />
+          </h1>
+          <ForkBanner attended={attended} />
+          <div className="fw-metrics">{metrics && <p className="nodi-metrics">{metrics}</p>}</div>
+          {olderAvailable && (
+            <Button variant="quiet" size="compact" className="fw-older" ref={olderRef} disabled={loadingOlder} onClick={() => loadOlder().catch(() => {})}>
+              Earlier turns
+            </Button>
+          )}
+          <TranscriptContext value={transcript}>
+            <ol className="nodi-turns" aria-label="Transcript">
+              {turns.map((t) => (
+                <TurnView key={t.key} turn={t} speaking={speakingHere} fresh={baseline !== null && t.turn > baseline} />
+              ))}
+            </ol>
+          </TranscriptContext>
+          {status && <p className="fw-note">{status}</p>}
+        </main>
+      </div>
       <Composer attended={attended} toBottom={toBottom} />
       {follow.unseen && <LatestPill onClick={toBottom} />}
     </section>
