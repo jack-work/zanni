@@ -412,7 +412,8 @@
           cp -r ${./examples} examples
           cp -r ${./assets} assets
           cp -r ${./test} test
-          chmod -R u+w examples assets test
+          cp -r ${./bench} bench
+          chmod -R u+w examples assets test bench
           bundle=${self.packages.${system}.figchat-shell}
           python3 test/fuzz/regress/run.py $bundle 2>&1 | tee $out
           for c in composer gestures network audio scale; do
