@@ -201,7 +201,7 @@
       if (!state.loaded) {
         out.push(el('p', 'placet-note', state.error ? 'Could not load requests: ' + state.error : 'Loading requests.'));
         if (state.error) {
-          var retry = el('button', 'placet-button', 'Try again');
+          var retry = el('button', 'placet-button z2-control', 'Try again');
           retry.type = 'button';
           on(retry, 'click', function () { poll(true); });
           out.push(retry);
@@ -308,7 +308,7 @@
         var ch = el('div', 'placet-banner placet-changed');
         ch.setAttribute('role', 'alert');
         ch.appendChild(el('p', null, 'This request changed since you opened it. The patch below is the new one. Read it before approving.'));
-        var ack = el('button', 'placet-button', 'I have read the new patch');
+        var ack = el('button', 'placet-button z2-control', 'I have read the new patch');
         ack.type = 'button';
         on(ack, 'click', function () { detail.changed = false; renderDetail(detail.shown); });
         ch.appendChild(ack);
@@ -354,7 +354,7 @@
       row.setAttribute('role', 'group');
       row.setAttribute('aria-label', 'Decision');
       if (!r.refusal) {
-        var yes = el('button', 'placet-approve', 'Approve');
+        var yes = el('button', 'placet-approve z2-control', 'Approve');
         yes.type = 'button';
         yes.setAttribute('data-act', 'approve');
         on(yes, 'click', function () { decide('approve'); });
@@ -362,7 +362,7 @@
       } else {
         put(result, 'Approve is unavailable: ' + r.refusal);
       }
-      var no = el('button', 'placet-deny', 'Deny');
+      var no = el('button', 'placet-deny z2-control', 'Deny');
       no.type = 'button';
       no.setAttribute('data-act', 'deny');
       on(no, 'click', function () { decide('deny'); });
@@ -385,7 +385,7 @@
     }
 
     function finish(message, tone, keepBar) {
-      var back = el('a', 'placet-button placet-linkbutton', 'Back to requests');
+      var back = el('a', 'placet-button placet-linkbutton z2-control', 'Back to requests');
       back.href = '#/';
       detail.result.className = 'placet-result placet-' + tone;
       detail.result.replaceChildren();

@@ -529,7 +529,7 @@
       "example": "examples/placet.html",
       "requires": ["v2"],
       "constructed": true,
-      "knobs": ["--placet-ui", "--placet-display", "--placet-code", "--placet-bar", "--placet-width", "--placet-hit"]
+      "knobs": ["--placet-ui", "--placet-display", "--placet-code", "--placet-bar", "--placet-width", "--z-control-hit"]
     },
     "voce": {
       "summary": "The per-message audio player: live PCM (24 kHz 16-bit mono) scheduled through WebAudio behind a 120 ms jitter buffer, with no MediaSource, and replay of the stored copy on a plain audio element with a scrubber. An odd-length frame stops the live stream; a 404 on the stored copy reads audio expired.",
@@ -563,6 +563,7 @@
       "dir": "v2",
       "files": [
         "z2-tokens.css",
+        "z2-control.css",
         "z2.css",
         "z2-registro.css",
         "z2-scope.js"

@@ -88,8 +88,13 @@ with sync_playwright() as p:
     assert re.fullmatch(r"[0-9a-f]{64}", full) and page.locator(".placet-hash strong").text_content() == full[:12]
     assert page.locator(".placet-quote-label").text_content() == "Filer\u2019s reason, unverified"
     assert page.locator(".placet-rawbox pre").count() == 1 and not page.locator(".placet-rawbox").evaluate("e => e.open")
-    box = page.locator(".placet-actions button").first.bounding_box()
-    assert box["height"] >= 48, "phone hit target"
+    hit = page.locator(".placet-actions button").first.evaluate("""n => {
+      const b = n.getBoundingClientRect();
+      const at = (x, y) => { const t = document.elementFromPoint(x, y); return !!t && (t === n || n.contains(t)); };
+      const cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+      return { height: b.height, top: at(cx, cy - 23), bottom: at(cx, cy + 23) };
+    }""")
+    assert hit["height"] <= 36 and hit["top"] and hit["bottom"], "phone hit target: a compact box with a 48px reach: %s" % hit
     foot = page.locator(".placet-foot").bounding_box()
     assert abs(foot["y"] + foot["height"] - 844) < 2, "the decision bar sits at the bottom edge"
 

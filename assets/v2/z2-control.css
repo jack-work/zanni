@@ -1,24 +1,27 @@
-.z2-control {
+.z2-control, .z2-btn, .z2-live, .z2-seg-b {
   position: relative;
   box-sizing: border-box;
+  min-height: var(--z-control-h-default, 32px);
+  padding-block: 0;
+  padding-inline: var(--z-control-px-default, 12px);
+  touch-action: manipulation;
+}
+.z2-seg-b, [data-size="compact"] {
+  min-height: var(--z-control-h-compact, 26px);
+  padding-inline: var(--z-control-px-compact, 8px);
+}
+.z2-control {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: var(--z-control-h-default, 32px);
-  padding: 0 var(--z-control-px-default, 12px);
   font-size: var(--z-control-fs-default, 18px);
   line-height: 1;
   white-space: nowrap;
-  touch-action: manipulation;
 }
-.z2-control[data-size="compact"] {
-  min-height: var(--z-control-h-compact, 26px);
-  padding: 0 var(--z-control-px-compact, 8px);
-  font-size: var(--z-control-fs-compact, 16px);
-}
+.z2-control[data-size="compact"] { font-size: var(--z-control-fs-compact, 16px); }
 @media (pointer: coarse) {
-  .z2-control::after {
+  .z2-control::after, .z2-btn::after, .z2-live::after, .z2-seg-b::after {
     content: "";
     position: absolute;
     inset-block: min(0px, calc((100% - var(--z-control-hit, 44px)) / 2));

@@ -8,7 +8,7 @@ body.placet-page { margin: 0; background: var(--z-ground); }
   --placet-code: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --placet-bar: 56px;
   --placet-width: 44rem;
-  --placet-hit: 48px;
+  --z-control-hit: 48px;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -168,14 +168,14 @@ body.placet-page { margin: 0; background: var(--z-ground); }
 .placet-raw { max-height: 18em; overflow: auto; margin: 0; padding: var(--z-space-3, 8px); background: var(--z-ground-2); font: var(--z-fs-sm, 13px) / 1.45 var(--placet-code); white-space: pre-wrap; overflow-wrap: anywhere; }
 
 .placet-button, .placet-approve, .placet-deny {
-  min-height: var(--placet-hit);
-  padding: 0 var(--z-space-5, 16px);
-  font: 600 var(--z-fs-md, 17px) / 1 var(--placet-ui);
+  font-family: var(--placet-ui);
+  font-weight: 600;
+  font-size: var(--z-fs-md, 17px);
   border-radius: 4px;
   cursor: pointer;
 }
 .placet-button { border: 1px solid var(--z-line); background: var(--z-ground-2); color: var(--z-ink); }
-.placet-linkbutton { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.placet-linkbutton { text-decoration: none; }
 .placet-foot {
   position: sticky;
   bottom: 0;
@@ -189,7 +189,7 @@ body.placet-page { margin: 0; background: var(--z-ground); }
 .placet-result { min-height: 1.4em; padding-bottom: var(--z-space-2, 4px); font-size: var(--z-fs-sm, 13px); color: var(--z-muted); overflow-wrap: anywhere; }
 .placet-result.placet-ok { color: var(--z-ok); font-weight: 600; }
 .placet-result.placet-warn { color: var(--z-warn); font-weight: 600; }
-.placet-actions { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: var(--z-space-3, 8px); }
+.placet-actions { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: var(--z-space-4, 12px); }
 .placet-approve { background: var(--z-accent); color: var(--z-on-accent); border: 2px solid var(--z-accent); }
 .placet-deny { background: transparent; color: var(--accent-ink); border: 2px solid var(--z-accent); }
 .placet-approve:disabled, .placet-deny:disabled, .placet-button:disabled { opacity: 0.45; cursor: not-allowed; }

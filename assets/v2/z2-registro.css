@@ -185,12 +185,14 @@
 }
 
 @media (pointer: coarse) {
-  .z2-seg-b,
   .z2-field select,
-  .z2-field input,
+  .z2-field input {
+    min-height: var(--z-control-hit);
+    font-size: 16px;
+  }
+  .z2-seg-b,
   .z2-btn,
   .z2-live {
-    min-height: 44px;
     font-size: 16px;
   }
 }
@@ -206,8 +208,6 @@
   background: var(--z-ground-2);
   border: 1px solid var(--z-line);
   border-radius: var(--z-radius-1);
-  padding: var(--z-space-1) var(--z-space-4);
-  min-height: 2.1rem;
   cursor: pointer;
 }
 

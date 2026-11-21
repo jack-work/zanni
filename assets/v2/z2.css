@@ -73,7 +73,7 @@
 .z2-ctl-l { font-size: var(--z-fs-xs); color: var(--z-muted); text-transform: uppercase; letter-spacing: 0.06em; }
 .z2-seg { display: inline-flex; border: 1px solid var(--z-line); background: var(--z-ground); }
 .z2-seg-b { font: inherit; font-size: var(--z-fs-sm); color: var(--z-ink); background: none; border: 0; border-left: 1px solid var(--z-rule);
-  padding: var(--z-space-1) var(--z-space-4); cursor: pointer; min-height: 1.9rem; }
+  cursor: pointer; }
 .z2-seg-b:first-child { border-left: 0; }
 .z2-seg-b:hover:not(:disabled) { background: var(--z-tint); }
 .z2-seg-b[aria-checked="true"] { background: var(--z-accent); color: var(--z-on-accent); }
