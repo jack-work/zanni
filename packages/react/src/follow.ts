@@ -48,11 +48,7 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
     };
     measure();
     lastY.current = root.scrollTop;
-<<<<<<< HEAD
-=======
-    stuck.current = top - root.scrollTop <= NEAR_BOTTOM;
     const judge = () => setAway(top - root.scrollTop > AWAY_FROM_BOTTOM);
->>>>>>> v0.33.7
     const onScroll = () => {
       const y = root.scrollTop;
       if (top - y <= NEAR_BOTTOM) stuck.current = true;

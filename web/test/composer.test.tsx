@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/app";
 import { bootAtom } from "zanni-react/jotai";
 import { dictatedAtom, draftAtom, SAVE_DELAY_MS } from "zanni-react/jotai";
+import { glyphs } from "zanni-react";
 import { mockDoor, type MockCore } from "./mock";
 import type { AriaClient } from "figaro-forms/aria";
 
@@ -293,7 +294,7 @@ describe("the composer's pills", () => {
     expect(g.getAttribute("aria-hidden")).toBe("true");
     expect(g.hasAttribute("style")).toBe(false);
     expect(g.hasAttribute("data-ink")).toBe(false);
-    expect(document.querySelector(".fw-mic .zr-ink")!.textContent).toBe("♪");
+    expect(document.querySelector(".fw-mic .zr-ink")!.textContent).toBe(glyphs.voice);
   });
 });
 
