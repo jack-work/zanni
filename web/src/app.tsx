@@ -1,6 +1,6 @@
 import { useAtomValue } from "jotai";
 import { useSyncExternalStore } from "react";
-import { AriaView, attendedAtom, attendedRunningAtom, audioSessionAtom, BoundSheet as Sheet, linkAtom, micAtom, Roster, routeAtom, routeKindAtom, TopBar } from "zanni-react/jotai";
+import { AriaView, NewFigaro, attendedAtom, attendedRunningAtom, audioSessionAtom, BoundSheet as Sheet, linkAtom, micAtom, Roster, routeAtom, routeKindAtom, TopBar } from "zanni-react/jotai";
 
 function ListHint() {
   return (
@@ -45,6 +45,7 @@ export function App() {
         </div>
       </div>
       <Sheet />
+      <NewFigaro />
     </div>
   );
 }

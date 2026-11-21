@@ -5,6 +5,7 @@ import { labelOf } from "../lib/roster";
 import { routeFor } from "../lib/route";
 import { attendedAtom, storeNameAtom } from "../state/route";
 import { depthsAtom, rosterActionAtom, rosterAtom, rosterLoadedAtom } from "../state/roster";
+import { openNewFigaroAtom } from "../state/new-figaro";
 
 export function Roster() {
   const roster = useAtomValue(rosterAtom);
@@ -13,6 +14,7 @@ export function Roster() {
   const store = useAtomValue(storeNameAtom);
   const attended = useAtomValue(attendedAtom);
   const act = useSetAtom(rosterActionAtom);
+  const openNew = useSetAtom(openNewFigaroAtom);
 
   useEffect(() => {
     const visible = () => {
@@ -29,9 +31,14 @@ export function Roster() {
     <nav className="fw-side" aria-label="Arias">
       <div className="fw-side-head">
         <h2 className="fw-h2">Arias</h2>
-        <Button variant="outline" className="fw-new" onClick={() => void act("refresh")}>
-          Refresh
-        </Button>
+        <div className="fw-side-tools">
+          <Button variant="accent" className="fw-new-figaro" onClick={() => openNew()}>
+            New
+          </Button>
+          <Button variant="outline" className="fw-new" onClick={() => void act("refresh")}>
+            Refresh
+          </Button>
+        </div>
       </div>
       <List label="Arias">
         {roster.rows.map((r) => (

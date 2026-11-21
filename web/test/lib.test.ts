@@ -38,3 +38,14 @@ describe("roster", () => {
     expect(refusalText(undefined)).toBe("Refused.");
   });
 });
+
+import { parseTemplates } from "zanni-react/jotai";
+describe("templates", () => {
+  it("reads id=Label pairs from data-templates and drops anything that is not an aria id", () => {
+    expect(parseTemplates("c0ffee01c0ffee01c0ffee01c0ffee01=New figaro; deadbeef ; nope=X")).toEqual([
+      { id: "c0ffee01c0ffee01c0ffee01c0ffee01", label: "New figaro" },
+      { id: "deadbeef", label: "New figaro" },
+    ]);
+    expect(parseTemplates(null)).toEqual([]);
+  });
+});

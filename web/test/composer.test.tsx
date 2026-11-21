@@ -112,6 +112,28 @@ describe("the composer", () => {
     expect(core.calls.find((c) => c.method === "figaro.fork")!.params.at_turn).toBe(26);
   });
 
+  it("creates a new figaro from the top bar: forks the chosen root at turn 1 with outfits, sends the first message, attends it", async () => {
+    attend(1);
+    await live();
+    act(() => (document.querySelector(".fw-top-new") as HTMLElement).click());
+    await waitFor(() => expect(document.querySelector(".fw-new-form")).toBeTruthy());
+    const form = document.querySelector<HTMLFormElement>(".fw-new-form")!;
+    const outfits = form.querySelector<HTMLInputElement>("input")!;
+    const first = form.querySelector<HTMLTextAreaElement>("textarea")!;
+    act(() => {
+      fireEvent.change(outfits, { target: { value: "sonn5-kic" } });
+      fireEvent.change(first, { target: { value: "hello there" } });
+    });
+    act(() => form.querySelector<HTMLButtonElement>("button[type=submit]")!.click());
+    await waitFor(() => expect(window.location.hash).not.toContain(MAIN));
+    const fork = core.calls.find((c) => c.method === "figaro.fork")!;
+    expect(fork.params.figaro_id).toBe(MAIN);
+    expect(fork.params.at_turn).toBe(1);
+    expect(fork.params.outfits).toEqual(["sonn5-kic"]);
+    await waitFor(() => expect(core.calls.some((c) => c.method === "figaro.qua" && c.params.text === "hello there")).toBe(true));
+    await waitFor(() => expect(document.querySelector(".fw-new-form")).toBeFalsy());
+  });
+
   it("keeps the composer's height on the root for scroll padding", async () => {
     attend(1);
     await live();
