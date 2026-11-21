@@ -1,7 +1,7 @@
 {
   "repo": "figaro-forms",
-  "ref": "refs/tags/v0.17.1",
-  "rev": "74ac1faa9581949bf967f3d04bc583c4017eeff9",
-  "file": "figaro-forms-0.17.1.tgz",
-  "integrity": "sha512-mguI6oyxNIaIAr1NsMr4KZvv8AgZ3vIyvCih8wnlMmnVzIhrRN39XgncjLNpJW0amI+pTJTocRozkFhQ+cu/zw=="
+  "ref": "refs/tags/v0.18.1",
+  "rev": "cf4eb6d333b82d3a991dff3496d611f9e1c21e58",
+  "file": "figaro-forms-0.18.1.tgz",
+  "integrity": "sha512-U9IuzObzNFsfv8cgcEDiRK26ntoWzuq0FP2AR1fRifqBSnveJ2Hlklj2JCE7UfuJz3qgd2Nc4duhJ0nUq4L3jw=="
 }

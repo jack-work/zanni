@@ -109,8 +109,8 @@ describe("streaming dictation", () => {
 
   it("on stop sends end, waits for done, then hands over the settled text and lets everything go", async () => {
     const r = rig();
-    const got: [string, boolean][] = [];
-    r.mic.toggle("gluck/a", (t, f) => got.push([t, f]));
+    const got: [string, boolean, string | undefined][] = [];
+    r.mic.toggle("gluck/a", (t, f, id) => got.push([t, f, id]));
     await flush();
     r.sockets[0]!.open();
     r.frame();
@@ -120,7 +120,7 @@ describe("streaming dictation", () => {
     expect(r.stopped).toEqual(["capture"]);
     expect(r.tracks).toEqual(["stopped"]);
     r.sockets[0]!.say(frame("done", { audio_id: "x", duration_ms: 1500, text: " what is the crossing count " }));
-    expect(got[got.length - 1]).toEqual(["what is the crossing count", true]);
+    expect(got[got.length - 1]).toEqual(["what is the crossing count", true, "x"]);
     expect(r.seen.map((s) => s.state)).toEqual(["asking", "recording", "transcribing", "idle"]);
     expect(r.mic.snapshot().note).toBe("");
     expect(r.sockets[0]!.closed).toEqual([1000]);

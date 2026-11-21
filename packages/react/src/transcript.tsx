@@ -13,7 +13,7 @@ import type { DeltaCell, DeltaRow } from "./nodi-types";
 export type TapKind = "input" | "prose";
 
 export interface TranscriptHooks {
-  actions?: (turn: number) => ReactNode;
+  actions?: (turn: number, playable: boolean, inquiry: boolean) => ReactNode;
   below?: (kind: TapKind, turn: number) => ReactNode;
   nameOf?: (aria: string) => string;
 }
@@ -376,7 +376,7 @@ function TurnContent({ turn: m, speaking }: { turn: TurnModel; speaking: Speakin
             </button>
           )}
         </span>
-        <span className="nodi-turn-tools">{hooks.actions?.(m.turn)}</span>
+        <span className="nodi-turn-tools">{hooks.actions?.(m.turn, !m.open && m.items.some((i) => i.kind === "prose"), !!m.input && m.input.parts.length > 0)}</span>
       </div>
       {deltasOpen && deltas.length > 0 && <DeltaTable rows={deltas} />}
       <div className="nodi-turn-body">

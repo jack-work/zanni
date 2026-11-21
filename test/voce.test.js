@@ -105,6 +105,65 @@ const chunkSeconds = 2048 / 24000;
   assert.equal(q.push(chunk), null);
 }
 {
+  const ctx = fakeContext();
+  const timers = [];
+  const realSet = global.setTimeout, realClear = global.clearTimeout;
+  global.setTimeout = (fn, ms) => { timers.push({ fn, ms }); return timers.length; };
+  global.clearTimeout = (id) => { if (timers[id - 1]) timers[id - 1].fn = null; };
+  try {
+    const q = voce.queue(ctx, {}, { prebuffer: 0.3, jitter: 0.05 });
+    ctx.currentTime = 5;
+    q.push(chunk);
+    assert.equal(ctx.started.length, 0, 'a prebuffering queue holds the first chunk');
+    q.push(chunk);
+    q.push(chunk);
+    assert.equal(ctx.started.length, 0, 'and keeps holding below the target');
+    q.push(chunk);
+    assert.equal(ctx.started.length, 4, 'then plays everything held at once once the target is met');
+    near(ctx.started[0].at, 5.05, 'the held chunks start one lead out');
+    near(ctx.started[3].at, 5.05 + 3 * chunkSeconds, 'gapless after the release');
+    ctx.currentTime = 9;
+    q.push(chunk);
+    assert.equal(ctx.started.length, 4, 'a starved queue buffers again before playing');
+    q.push(chunk);
+    q.push(chunk);
+    q.push(chunk);
+    q.push(chunk);
+    assert.equal(ctx.started.length, 4, 'a fifth chunk is still under the larger target (0.45 s after one underrun)');
+    q.push(chunk);
+    assert.equal(ctx.started.length, 10, 'and plays again when the larger target is met');
+    assert.equal(q.underruns, 1, 'one starve is one underrun');
+    ctx.currentTime = 20;
+    q.push(chunk);
+    assert.equal(ctx.started.length, 10);
+    const hold = timers.filter((t) => t.fn).pop();
+    assert.ok(hold && hold.ms > 0, 'a held chunk is never stranded: a timer plays it');
+    hold.fn();
+    assert.equal(ctx.started.length, 11, 'the timer releases what is held');
+    q.push(chunk);
+    q.end();
+    assert.equal(ctx.started.length, 12, 'audio.end plays what is held at once');
+    const stopper = voce.queue(ctx, {}, { prebuffer: 0.3 });
+    stopper.push(chunk);
+    stopper.stop();
+    stopper.end();
+    assert.equal(ctx.started.length, 12, 'a stopped queue drops what it held');
+  } finally {
+    global.setTimeout = realSet;
+    global.clearTimeout = realClear;
+  }
+}
+{
+  const eng = voce.engine({});
+  const p = (state) => ({ busy: () => state.v, yield: () => {}, resume: () => {} });
+  const media = { v: true };
+  const a = p(media), b = p({ v: false });
+  eng.claim(a);
+  assert.equal(eng.busy(b), true, 'a stored clip that is playing makes the engine busy: a live reply waits behind it');
+  media.v = false;
+  assert.equal(eng.busy(b), false, 'a paused clip does not hold a live reply back');
+}
+{
   const q = voce.queue(fakeContext(), {}, { drained: () => { q.done = true; } });
   q.end();
   assert.equal(q.done, true, 'an empty stream finishes at once');
@@ -113,7 +172,7 @@ const chunkSeconds = 2048 / 24000;
 {
   const eng = voce.engine({});
   const heard = [];
-  const player = (name) => { const p = { name, live: false, speaking: () => p.live, yield: () => heard.push('yield ' + name), resume: () => { heard.push('resume ' + name); eng.claim(p); p.live = true; } }; return p; };
+  const player = (name) => { const p = { name, live: false, busy: () => p.live, yield: () => heard.push('yield ' + name), resume: () => { heard.push('resume ' + name); eng.claim(p); p.live = true; } }; return p; };
   const a = player('a'), b = player('b'), c = player('c');
   eng.claim(a); a.live = true;
   assert.equal(eng.busy(b), true, 'a speaking reply makes the engine busy for others');

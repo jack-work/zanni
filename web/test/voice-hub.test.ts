@@ -6,7 +6,7 @@ import type { SpeechHandlers, SpeechTransport, VoceApi, VoceOptions, VocePlayer 
 const ARIA = "c0ffee01".repeat(4);
 const FMT = { format: "pcm", rate: 24000, bits: 16, channels: 1 };
 
-function rig(opts: { slots?: boolean } = {}) {
+function rig(opts: { slots?: boolean; locked?: boolean } = {}) {
   const log: string[] = [];
   const doc = document.implementation.createHTMLDocument("t");
   const slots = new Map<string, HTMLElement>();
@@ -35,7 +35,7 @@ function rig(opts: { slots?: boolean } = {}) {
       expire[id] = () => set("expired");
       return {
         el,
-        start: () => (log.push("p" + id + " start"), set("live"), true),
+        start: () => (log.push("p" + id + " start"), opts.locked ? false : (set("live"), true)),
         push: () => (log.push("p" + id + " push"), true),
         end: (key: string) => (log.push("p" + id + " end " + key), set(state === "none" ? "idle" : "draining")),
         fail: () => log.push("p" + id + " fail"),
@@ -229,6 +229,17 @@ describe("the voice hub", () => {
     await settle();
     expect(r.log.filter((l) => l === "ping")).toHaveLength(0);
     expect(r.log.slice(3)).toEqual(["p2 start", "p2 push", "p2 end gluck/" + ARIA + ":28/out"]);
+  });
+
+  it("plays a spoken turn from its stored copy when the audio context would not start the stream", async () => {
+    const r = rig({ locked: true });
+    r.hub.replay(28);
+    r.expire[1]!();
+    r.start(28, 1, true);
+    r.chunk(28);
+    r.end(28);
+    await settle();
+    expect(r.log.slice(3)).toEqual(["p2 start", "p2 push", "p2 end gluck/" + ARIA + ":28/out", "p2 play"]);
   });
 
   it("plays the stored copy when the gateway says it has one, and does not ask twice", async () => {

@@ -106,6 +106,7 @@
 .zr-pit-handle, .zr-grip { font: inherit; display: flex; align-items: center; justify-content: center; border: 0; background: transparent; padding: 0; cursor: grab; touch-action: none; }
 .zr-pit-handle { height: 20px; width: 100%; }
 .zr-pit-handle:focus-visible, .zr-grip:focus-visible { outline: 2px solid var(--z-focus); outline-offset: -2px; }
+.zr-grip[data-held] { visibility: hidden; }
 .zr-grip-bar { display: block; width: 40px; height: 4px; background: var(--z-line); }
 .zr-pit-handle:hover .zr-grip-bar, .zr-grip:hover .zr-grip-bar, .zr-grip[aria-expanded="true"] .zr-grip-bar { background: var(--z-accent); }
 .zr-pit-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--z-space-3, 8px); padding: 0 var(--zr-edge-r, 16px) var(--z-space-3, 8px) var(--zr-edge-l, 16px); font: 400 1.25rem / 1 var(--zr-mono, "VT323", ui-monospace, monospace); letter-spacing: 0.04em; color: var(--z-muted); }
@@ -299,6 +300,9 @@
   z-index: 2;
   animation: zr-swap var(--zr-d-pop) var(--zr-pop) both;
 }
+.zr-btn.zr-latest[data-variant="accent"] { background: color-mix(in srgb, var(--z-accent) 72%, transparent); }
+.fw .zr-btn.zr-latest:active:not(:disabled) { scale: 1; }
+.zr-btn.zr-latest::after { content: ""; position: absolute; inset: auto; left: 50%; top: 50%; width: max(100%, 48px); height: max(100%, 48px); translate: -50% -50%; }
 .zr-player:empty { display: none; }
 .zr-ink-base { display: inline-block; width: 0; height: 0; }
 

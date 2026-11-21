@@ -108,7 +108,15 @@ class Network(Campaign):
             return True
         drawn = {t["no"] for t in run.dom_turns()}
         want = [t["id"] for t in truth if t["id"] > run.base]
-        return all(i in drawn for i in want)
+        if all(i in drawn for i in want):
+            return True
+        older = run.page.locator(".fw-older")
+        if min(drawn, default=0) > min(want) and older.count():
+            try:
+                older.first.click(timeout=1000)
+            except Exception:
+                pass
+        return False
 
     def before_quiescent(self, run):
         run.stack.fault({"op": "clear"})
@@ -136,7 +144,7 @@ class Network(Campaign):
             if n == 0 and text != here and text not in run.state["retained"]:
                 raise Failure("lost-send", "%s was sent from the page and never reached the door, and is not in the composer" % clip(text))
         truth = run.stack.turns()
-        drawn = {t["no"]: t for t in run.dom_turns() if t["no"] is not None}
+        drawn = {t["no"]: t for t in run.dom_turns(full=True) if t["no"] is not None}
         for t in [t for t in truth if t["id"] > run.base]:
             d = drawn.get(t["id"])
             if d is None:

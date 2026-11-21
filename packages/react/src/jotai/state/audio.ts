@@ -74,6 +74,18 @@ export interface VoiceControl {
 
 export const voiceControlAtom = atom<VoiceControl | null>(null);
 
+export interface InquiryPlay {
+  readonly turn: number;
+  readonly seq: number;
+  readonly then: boolean;
+}
+
+export const inquiryPlayAtom = atom<InquiryPlay | null>(null);
+
+export const playInquiryAtom = atom(null, (get, set, req: { turn: number; then: boolean }) => {
+  set(inquiryPlayAtom, { ...req, seq: (get(inquiryPlayAtom)?.seq ?? 0) + 1 });
+});
+
 export const replayAtom = atom(null, (get, _set, turn: number) => {
   const at = get(attendedAtom);
   beginAction("speak", at ? { "figaro.aria": at.aria } : {});

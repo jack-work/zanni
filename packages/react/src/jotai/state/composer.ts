@@ -5,7 +5,7 @@ import { rosterActionAtom } from "./roster";
 import { linkAtom } from "./aria";
 import { ForkedButUnsent } from "figaro-forms/aria";
 import { beginAction, traced } from "../../trace";
-import { attachmentsAtom, clearAttachmentsAtom, quaWithAttachments, readyIdsAtom, spentAtom } from "./attach";
+import { attachmentsAtom, clearAttachmentsAtom, quaDictated, quaWithAttachments, readyIdsAtom, spentAtom } from "./attach";
 
 export const SAVE_DELAY_MS = 400;
 
@@ -77,6 +77,22 @@ export function draftAtom(key: string): PrimitiveAtom<string> {
   return a;
 }
 
+export interface Dictated {
+  readonly id: string;
+  readonly text: string;
+}
+
+const dictations = new Map<string, PrimitiveAtom<Dictated | null>>();
+
+export function dictatedAtom(key: string): PrimitiveAtom<Dictated | null> {
+  let a = dictations.get(key);
+  if (!a) {
+    a = atom<Dictated | null>(null);
+    dictations.set(key, a);
+  }
+  return a;
+}
+
 const reason = (err: unknown): string => (err instanceof Error && err.message ? err.message : "network");
 
 export const composerNoteAtom = atom(null, (_get, set, to: { key: string; note: string }) => {
@@ -91,6 +107,8 @@ export const sendAtom = atom(null, async (get, set): Promise<boolean> => {
   const draft = draftAtom(key);
   const text = get(draft).trim();
   const held = get(attachmentsAtom(key));
+  const dictated = get(dictatedAtom(key));
+  const dictation = dictated && dictated.text.trim() === text ? dictated.id : undefined;
   if (get(comp).sending) return false;
   if (!text) {
     if (held.length) set(comp, (s) => ({ ...s, note: "Add a message to send the attachments with." }));
@@ -114,14 +132,16 @@ export const sendAtom = atom(null, async (get, set): Promise<boolean> => {
           return false;
         }
         try {
-          await quaWithAttachments(at.client, at.aria, text, got.ids);
+          await quaWithAttachments(at.client, at.aria, text, got.ids, dictation);
         } catch (err) {
           set(spentAtom, key);
           throw err;
         }
         set(clearAttachmentsAtom, key);
-      } else await at.client.peek(at.aria).qua(text);
+      } else if (dictation) await quaDictated(at.client, at.aria, text, dictation);
+      else await at.client.peek(at.aria).qua(text);
       set(comp, (s) => ({ ...s, sending: false }));
+      set(dictatedAtom(key), null);
       return true;
     });
   } catch (err) {

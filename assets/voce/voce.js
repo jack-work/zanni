@@ -11,6 +11,10 @@
 
   var RATE = 24000;
   var JITTER = 0.12;
+  var PREBUFFER = 0.35;
+  var PREBUFFER_MAX = 1.2;
+  var LEAD = 0.05;
+  var HOLD_MS = 700;
 
   function decodePCM(data) {
     var view = ArrayBuffer.isView(data)
@@ -61,17 +65,19 @@
     opts = opts || {};
     var rate = opts.rate || RATE;
     var jitter = opts.jitter == null ? JITTER : opts.jitter;
+    var prebuffer = opts.prebuffer || 0;
+    var target = prebuffer;
     var q = { next: 0, origin: -1, chunks: 0, samples: 0, underruns: 0, ended: false, stopped: false };
     var sources = [];
+    var held = [];
+    var heldSeconds = 0;
+    var timer = 0;
 
     function settle() {
       if (q.ended && !q.stopped && !sources.length && opts.drained) opts.drained();
     }
 
-    q.push = function (data) {
-      if (q.stopped || q.ended) return null;
-      var samples = decodePCM(data);
-      if (!samples.length) return null;
+    function schedule(samples) {
       var buffer = ctx.createBuffer(1, samples.length, rate);
       buffer.getChannelData(0).set(samples);
       var src = ctx.createBufferSource();
@@ -91,13 +97,41 @@
       });
       src.start(slot.at);
       return slot;
+    }
+
+    function release() {
+      if (timer) { clearTimeout(timer); timer = 0; }
+      var list = held;
+      held = [];
+      heldSeconds = 0;
+      if (q.stopped) return null;
+      var last = null;
+      list.forEach(function (samples) { last = schedule(samples); });
+      return last;
+    }
+
+    q.push = function (data) {
+      if (q.stopped || q.ended) return null;
+      var samples = decodePCM(data);
+      if (!samples.length) return null;
+      var dry = q.chunks > 0 && !held.length && !(q.next > ctx.currentTime);
+      if (!prebuffer || !(held.length || !q.chunks || dry)) return schedule(samples);
+      if (dry) target = Math.min(PREBUFFER_MAX, target * 1.5);
+      held.push(samples);
+      heldSeconds += samples.length / rate;
+      if (heldSeconds >= target) return release();
+      if (!timer) timer = setTimeout(release, HOLD_MS);
+      return null;
     };
     q.end = function () {
+      if (!q.ended) release();
       q.ended = true;
       settle();
     };
     q.stop = function () {
       q.stopped = true;
+      if (timer) { clearTimeout(timer); timer = 0; }
+      held = [];
       sources.splice(0).forEach(function (src) {
         try { src.stop(); } catch (e) { return; }
       });
@@ -116,7 +150,7 @@
   function engine(win) {
     var e = engines.get(win);
     if (e) return e;
-    e = { ctx: null, out: null, current: null };
+    e = { ctx: null, out: null, current: null, held: false };
     e.unlock = function () {
       var AC = win.AudioContext || win.webkitAudioContext;
       if (!AC) return null;
@@ -140,7 +174,15 @@
       if (old && old !== player) old.yield();
     };
     e.busy = function (player) {
-      return !!e.current && e.current !== player && !!e.current.speaking && e.current.speaking();
+      return e.held || (!!e.current && e.current !== player && e.current.busy());
+    };
+    e.hold = function (on) {
+      e.held = !!on;
+      if (e.held) {
+        if (e.current) e.current.yield();
+        return;
+      }
+      while (!e.current && !e.held && e.waiting.length) e.waiting.shift().resume();
     };
     e.wait = function (player) {
       if (e.waiting.indexOf(player) < 0) e.waiting.push(player);
@@ -152,7 +194,7 @@
     e.release = function (player) {
       if (e.current === player) e.current = null;
       e.drop(player);
-      while (!e.current && e.waiting.length) e.waiting.shift().resume();
+      while (!e.current && !e.held && e.waiting.length) e.waiting.shift().resume();
     };
     engines.set(win, e);
     return e;
@@ -160,6 +202,10 @@
 
   function unlock(win) {
     return engine(win || self).unlock();
+  }
+
+  function record(win, on) {
+    engine(win || self).hold(on);
   }
 
   var NOTES = { live: 'speaking', draining: 'speaking', expired: 'audio expired', error: 'audio unavailable', lost: 'audio unavailable' };
@@ -256,7 +302,7 @@
       var next = transition(state, event);
       if (next === state) return false;
       state = next;
-      if (state === 'idle' || state === 'muted' || state === 'expired' || state === 'error' || state === 'lost') eng.release(api);
+      if (state === 'idle' || state === 'paused' || state === 'muted' || state === 'expired' || state === 'error' || state === 'lost') eng.release(api);
       dress();
       if (opts.change) opts.change(state, event);
       return true;
@@ -379,6 +425,7 @@
         return live ? { chunks: live.chunks, samples: live.samples, underruns: live.underruns, seconds: live.seconds(), pending: live.pending() } : null;
       },
       speaking: function () { return state === 'live' || state === 'draining'; },
+      busy: function () { return state === 'live' || state === 'draining' || state === 'loading' || state === 'playing'; },
       resume: resume,
       start: function (format) {
         if (!pending && eng.busy(api)) {
@@ -391,7 +438,8 @@
         dropMedia();
         live = null;
         if (!supported(format) || !eng.running()) { go('locked'); return false; }
-        live = queue(eng.ctx, eng.out, { rate: format.rate || RATE, jitter: opts.jitter, drained: function () { go('drained'); } });
+        var prebuffer = opts.prebuffer == null ? PREBUFFER : opts.prebuffer;
+        live = queue(eng.ctx, eng.out, { rate: format.rate || RATE, jitter: opts.jitter == null && prebuffer ? LEAD : opts.jitter, prebuffer: prebuffer, drained: function () { go('drained'); } });
         eng.claim(api);
         go('start');
         return state === 'live';
@@ -449,6 +497,7 @@
   return {
     RATE: RATE,
     JITTER: JITTER,
+    PREBUFFER: PREBUFFER,
     decodePCM: decodePCM,
     place: place,
     transition: transition,
@@ -457,6 +506,7 @@
     queue: queue,
     engine: engine,
     unlock: unlock,
+    record: record,
     create: create
   };
 }));

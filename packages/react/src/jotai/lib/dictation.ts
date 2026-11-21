@@ -38,7 +38,7 @@ export function dictationSocketUrl(sttUrl: string, target: string, language: str
   return u;
 }
 
-type ServerFrame = { type?: string; text?: string; code?: string; offset_ms?: number };
+type ServerFrame = { type?: string; text?: string; code?: string; offset_ms?: number; audio_id?: string };
 
 export class Dictation {
   private current: MicSnapshot;
@@ -51,7 +51,7 @@ export class Dictation {
   private partial = "";
   private cap: unknown;
   private finishing: unknown;
-  private onText: (text: string, final: boolean) => void = () => {};
+  private onText: (text: string, final: boolean, audioId?: string) => void = () => {};
   private readonly listeners = new Set<(s: MicSnapshot) => void>();
 
   constructor(private readonly deps: DictationDeps) {
@@ -67,7 +67,7 @@ export class Dictation {
     return () => this.listeners.delete(fn);
   }
 
-  toggle(target: string, onText: (text: string, final: boolean) => void): void {
+  toggle(target: string, onText: (text: string, final: boolean, audioId?: string) => void): void {
     if (this.current.state === "recording") this.stop();
     else if (this.current.state === "idle") this.start(target, onText);
   }
@@ -133,7 +133,7 @@ export class Dictation {
     }
   }
 
-  private start(target: string, onText: (text: string, final: boolean) => void): void {
+  private start(target: string, onText: (text: string, final: boolean, audioId?: string) => void): void {
     const token = ++this.token;
     const devices = this.deps.media.devices;
     if (!devices) return;
@@ -204,14 +204,14 @@ export class Dictation {
     }, FINISH_WAIT_MS);
   }
 
-  private finish(text: string, emptyNote: string): void {
+  private finish(text: string, emptyNote: string, audioId?: string): void {
     this.token++;
     this.teardown();
     if (!text.trim()) {
       this.idle(emptyNote);
       return;
     }
-    this.onText(text.trim(), true);
+    this.onText(text.trim(), true, audioId);
     this.idle("");
   }
 
@@ -234,7 +234,7 @@ export class Dictation {
         this.onText(this.text(), false);
         return;
       case "done":
-        this.finish(((f.text ?? "") || this.finals.join(" ")).trim(), "Heard no words. Try again.");
+        this.finish(((f.text ?? "") || this.finals.join(" ")).trim(), "Heard no words. Try again.", typeof f.audio_id === "string" ? f.audio_id : undefined);
         return;
       case "error": {
         const kept = this.text();
