@@ -122,7 +122,6 @@ export interface ForkSpec {
 
 export function forkSpecOf(spec: string | undefined): ForkSpec | string {
   if (!spec) return { aria: undefined, turn: undefined };
-  if (/^\d{1,6}$/.test(spec)) return { aria: undefined, turn: Number(spec) };
   const at = spec.indexOf(":");
   const aria = at < 0 ? spec : spec.slice(0, at);
   if (at < 0) return { aria, turn: undefined };

@@ -39,23 +39,34 @@ function useWorkLine(attended: Attended, note: string, running: boolean) {
   return { text: note || work.verb, time: running ? <Elapsed since={work.startedAt ?? seen.current} /> : undefined };
 }
 
-function CommandHints({ line, why, onPick, tab }: { line: string; why: string; onPick: (item: Candidate) => void; tab: { current: (() => void) | undefined } }) {
+function CommandHints({ line, why, shut, onPick, onShut, onOpen, tab, esc }: { line: string; why: string; shut: boolean; onPick: (item: Candidate) => void; onShut: () => void; onOpen: () => void; tab: { current: (() => void) | undefined }; esc: { current: (() => boolean) | undefined } }) {
   const sources = useAtomValue(commandSourcesAtom);
   const loadOutfits = useSetAtom(loadOutfitsAtom);
   const suggestions = useMemo(() => suggest(line, sources), [line, sources]);
   const first = suggestions.items.find((c) => !c.off);
+  const closable = line !== "" && !shut && suggestions.items.length > 0;
   useEffect(() => {
     void loadOutfits();
   }, [loadOutfits]);
   useEffect(() => {
-    tab.current = first ? () => onPick(first) : undefined;
+    tab.current = shut ? onOpen : first ? () => onPick(first) : undefined;
     return () => {
       tab.current = undefined;
     };
-  }, [first, onPick, tab]);
+  }, [first, shut, onPick, onOpen, tab]);
+  useEffect(() => {
+    esc.current = () => {
+      if (!closable) return false;
+      onShut();
+      return true;
+    };
+    return () => {
+      esc.current = undefined;
+    };
+  }, [closable, onShut, esc]);
   return (
     <Hints
-      chips={suggestions.items.map((c) => ({ key: c.text, label: c.label, help: c.help, off: c.off }))}
+      chips={(shut ? [] : suggestions.items).map((c) => ({ key: c.text, label: c.label, help: c.help, off: c.off }))}
       onPick={(key) => {
         const item = suggestions.items.find((c) => c.text === key);
         if (item) onPick(item);
@@ -90,17 +101,24 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
   const addFiles = useSetAtom(addFilesAtom);
   const removeFile = useSetAtom(removeAttachmentAtom);
   const tab = useRef<(() => void) | undefined>(undefined);
+  const esc = useRef<(() => boolean) | undefined>(undefined);
 
   const leave = () => setCmd(COMMAND_OFF);
   const typeDraft = (next: string) => {
-    if (draft === "" && next.startsWith(":")) setCmd({ on: true, line: next.slice(1), why: "" });
+    if (draft === "" && next.startsWith(":")) setCmd({ on: true, line: next.slice(1), why: "", shut: false });
     else setDraft(next);
   };
   const pick = (item: Candidate) => {
-    setCmd((c) => ({ ...c, line: applyCandidate(c.line, item), why: "" }));
+    setCmd((c) => ({ ...c, line: applyCandidate(c.line, item), why: "", shut: false }));
     input.current?.focus({ preventScroll: true });
   };
+  const shutChips = () => setCmd((c) => ({ ...c, shut: true }));
+  const openChips = () => setCmd((c) => ({ ...c, shut: false }));
   const run = async () => {
+    if (!cmd.line.trim()) {
+      leave();
+      return;
+    }
     const outcome = await runCommand(cmd.line);
     if (!outcome.ok) {
       setCmd((c) => ({ ...c, why: outcome.why }));
@@ -130,17 +148,19 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
     <ZComposer
       className="fw-composer"
       value={cmd.on ? cmd.line : draft}
-      onChange={cmd.on ? (line) => setCmd((c) => ({ ...c, line, why: "" })) : typeDraft}
+      onChange={cmd.on ? (line) => setCmd((c) => ({ ...c, line, why: "", shut: false })) : typeDraft}
       onSubmit={async () => {
         if (cmd.on) await run();
         else if (await send()) toBottom();
       }}
-      placeholder={cmd.on ? "fork 12, new, set mantra x, ls, help" : running ? "Steer figaro" : "Message"}
+      placeholder={cmd.on ? "fork :12, new, set mantra x, ls, help" : running ? "Steer figaro" : "Message"}
       sendLabel={cmd.on ? "Run" : running ? "Steer" : "Send"}
       sendGlyph={cmd.on || !running ? glyphs.send : glyphs.steering}
       mode={cmd.on ? "command" : undefined}
-      {...(cmd.on ? { prompt: ":", enterRuns: true, onEscape: leave, onTab: () => tab.current?.() } : {})}
-      hints={cmd.on ? <CommandHints line={cmd.line} why={cmd.why} onPick={pick} tab={tab} /> : undefined}
+      {...(cmd.on ? { prompt: ":", enterRuns: true, onEscape: () => {
+            if (!esc.current?.()) leave();
+          }, onTab: () => tab.current?.() } : {})}
+      hints={cmd.on ? <CommandHints line={cmd.line} why={cmd.why} shut={cmd.shut} onPick={pick} onShut={shutChips} onOpen={openChips} tab={tab} esc={esc} /> : undefined}
       attach={cmd.on ? undefined : { glyph: attachGlyph, label: "Attach", title: attached.items.length >= MAX_FILES ? "At most " + MAX_FILES + " attachments." : "Attach photos or a PDF", disabled: !live || attached.items.length >= MAX_FILES, onClick: () => picker.current?.click() }}
       tray={
         cmd.on ? undefined : (
@@ -152,7 +172,7 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
       }
       command={{ glyph: glyphs["pit.command"], label: "Command", title: "Command mode", pressed: cmd.on, onClick: () => {
           if (cmd.on) leave();
-          else setCmd({ on: true, line: "", why: "" });
+          else setCmd({ on: true, line: "", why: "", shut: false });
           input.current?.focus({ preventScroll: true });
         } }}
       sendDisabled={cmd.on ? !cmd.line.trim() : comp.sending || !live || attached.uploading}

@@ -1,0 +1,90 @@
+{
+ "campaign": "composer",
+ "seed": 848419535,
+ "profile": "phone",
+ "invariant": "send-lost",
+ "message": "an 84000 byte prompt of e-acute, emoji and spaces is cleared from the composer and never reaches the door, while 100000 ASCII bytes do; no error is shown",
+ "owner": "Frontend (client send path); Backend if the gateway caps it",
+ "status": "xfail",
+ "strict": [],
+ "actions": [
+  {
+   "k": "paste",
+   "rep": [
+    "é😀 ",
+    12000
+   ]
+  },
+  {
+   "k": "backspace",
+   "n": 1
+  },
+  {
+   "k": "send"
+  },
+  {
+   "k": "ime",
+   "steps": [
+    "に",
+    "にほ",
+    "にほん"
+   ],
+   "commit": "日本"
+  },
+  {
+   "k": "backspace",
+   "n": 1
+  },
+  {
+   "k": "paste",
+   "rep": [
+    "é😀 ",
+    12000
+   ]
+  },
+  {
+   "k": "backspace",
+   "n": 1
+  },
+  {
+   "k": "wait",
+   "ms": 200
+  },
+  {
+   "k": "type",
+   "text": "<b>not markup</b> "
+  },
+  {
+   "k": "wait",
+   "ms": 50
+  },
+  {
+   "k": "type",
+   "text": "a b  c"
+  },
+  {
+   "k": "type",
+   "text": "hello"
+  },
+  {
+   "k": "ime",
+   "steps": [
+    "中",
+    "中文"
+   ],
+   "commit": "中文"
+  },
+  {
+   "k": "ime",
+   "steps": [
+    "に",
+    "にほ",
+    "にほん"
+   ],
+   "commit": "日本"
+  },
+  {
+   "k": "send"
+  }
+ ]
+}

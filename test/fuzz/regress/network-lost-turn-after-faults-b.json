@@ -1,0 +1,228 @@
+{
+ "campaign": "network",
+ "seed": 1532935506,
+ "profile": "phone",
+ "invariant": "lost-turn",
+ "message": "page drops, delays, close storms and offline spells leave a turn the door holds undrawn 30 s after every fault is cleared",
+ "owner": "Frontend (gap recovery) or Backend (gateway handover)",
+ "status": "xfail",
+ "strict": [],
+ "actions": [
+  {
+   "k": "wait",
+   "ms": 800
+  },
+  {
+   "k": "send",
+   "n": 13,
+   "kind": "[md]"
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "door.lapse",
+    "notice": true
+   }
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "page.drop",
+    "method": "figaro.aria",
+    "count": 6
+   }
+  },
+  {
+   "k": "send",
+   "n": 16,
+   "kind": "[long]"
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "door.bearer",
+    "ms": 1500
+   }
+  },
+  {
+   "k": "storm",
+   "n": 7,
+   "gap": 30,
+   "code": 1006
+  },
+  {
+   "k": "storm",
+   "n": 6,
+   "gap": 0,
+   "code": 1001
+  },
+  {
+   "k": "storm",
+   "n": 7,
+   "gap": 400,
+   "code": 1001
+  },
+  {
+   "k": "wait",
+   "ms": 2000
+  },
+  {
+   "k": "send",
+   "n": 22,
+   "kind": "[long]"
+  },
+  {
+   "k": "wait",
+   "ms": 2000
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "page.delay",
+    "method": "figaro.aria",
+    "ms": 500,
+    "count": 1
+   }
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "door.drop",
+    "method": "figaro.aria",
+    "count": 3
+   }
+  },
+  {
+   "k": "send",
+   "n": 26,
+   "kind": "[plain] short"
+  },
+  {
+   "k": "reload"
+  },
+  {
+   "k": "interrupt"
+  },
+  {
+   "k": "wait",
+   "ms": 2000
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "page.delay",
+    "method": "figaro.aria",
+    "ms": 1500,
+    "count": 5
+   }
+  },
+  {
+   "k": "send",
+   "n": 31,
+   "kind": "[long]"
+  },
+  {
+   "k": "wait",
+   "ms": 300
+  },
+  {
+   "k": "offline",
+   "ms": 1500
+  },
+  {
+   "k": "send",
+   "n": 34,
+   "kind": "[long]"
+  },
+  {
+   "k": "offline",
+   "ms": 300
+  },
+  {
+   "k": "interrupt"
+  },
+  {
+   "k": "send",
+   "n": 37,
+   "kind": "[plain] short"
+  },
+  {
+   "k": "wait",
+   "ms": 100
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "page.delay",
+    "method": "figaro.aria",
+    "ms": 1500,
+    "count": 7
+   }
+  },
+  {
+   "k": "send",
+   "n": 40,
+   "kind": "[plain]"
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "door.drop",
+    "method": "figaro.aria",
+    "count": 1
+   }
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "page.delay",
+    "method": "figaro.aria",
+    "ms": 500,
+    "count": 1
+   }
+  },
+  {
+   "k": "send",
+   "n": 43,
+   "kind": "[tool]"
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "door.stall",
+    "ms": 500,
+    "count": 1
+   }
+  },
+  {
+   "k": "wait",
+   "ms": 100
+  },
+  {
+   "k": "storm",
+   "n": 5,
+   "gap": 0,
+   "code": 1011
+  },
+  {
+   "k": "wait",
+   "ms": 100
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "door.lapse",
+    "notice": false
+   }
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "page.delay",
+    "method": "figaro.aria",
+    "ms": 500,
+    "count": 5
+   }
+  }
+ ]
+}

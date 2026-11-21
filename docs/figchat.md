@@ -227,7 +227,7 @@ the built bundle under the edge CSP and the mock over a real WebSocket. It
 measures the composer (idle at most 76px, running at most 120px, the strip one
 line, the last node above the composer), covers history, paging, deep links,
 attach (photo and PDF in WebKit at iPhone size reach a turn and the reply names them, a refused file shows the gateway's words),
-command mode (the colon, the verbs, a refused verb's reason, `:fork 12`, `:ls`, Esc),
+command mode (the colon, the verbs, a refused verb's reason, `:fork :12`, `:ls`, Enter on an empty line, the two-step Esc),
 the sticky bar (rests single, pins double with the question fitted, tap and
 double tap open it, Esc shuts it), hostile text, send, steer, stop, fork, drafts, voice, hands-free hold, the mic,
 the pits, and runs once with reduced motion to assert nothing computes a
