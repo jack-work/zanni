@@ -376,7 +376,7 @@
           nativeBuildInputs = [ pkgs.nodejs (pkgs.python3.withPackages (ps: [ ps.playwright ])) ];
           PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
           PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
-          FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
+          FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts pkgs.noto-fonts-color-emoji pkgs.noto-fonts-cjk-sans pkgs.noto-fonts ]; };
         } ''
           set -o pipefail
           export HOME=$TMPDIR
