@@ -95,7 +95,18 @@ def main():
                     pg.evaluate("(() => { const r = document.querySelector('[data-zr-scroll]') || document.scrollingElement; r.scrollTop = r.scrollHeight - r.clientHeight - 400; })()")
                     pg.wait_for_selector(".zr-latest", timeout=3000)
                     alpha = pg.evaluate("(() => { const c = getComputedStyle(document.querySelector('.zr-latest')).backgroundColor; const m = c.match(/[\\d.]+/g).map(Number); return m.length > 3 ? m[3] : 1; })()")
-                    rep.check(alpha < 0.95, "%s: the pill is semi-transparent (alpha %s)" % (tag, alpha))
+                    rep.check(alpha < 0.7, "%s: the pill is clearly semi-transparent (alpha %s)" % (tag, alpha))
+                    over = pg.evaluate("""(() => {
+                      const b = document.querySelector('.zr-latest').getBoundingClientRect();
+                      const hit = [];
+                      for (const c of document.querySelectorAll('.nodi-turn [data-action], .fw-fork-here, .nodi-turn button, .nodi-turn summary')) {
+                        const r = c.getBoundingClientRect();
+                        if (r.width && r.height && r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top) hit.push(c.className);
+                      }
+                      return { centre: (b.left + b.right) / 2 / innerWidth, hit };
+                    })()""")
+                    rep.check(abs(over["centre"] - 0.5) < 0.05, "%s: the pill sits in the middle, clear of the controls at the edges: %s" % (tag, over))
+                    rep.check(not over["hit"], "%s: the pill covers no turn control: %s" % (tag, over))
                     pg.evaluate("(() => { const r = document.querySelector('[data-zr-scroll]') || document.scrollingElement; r.scrollTop = r.scrollHeight - r.clientHeight - 20; })()")
                     pg.wait_for_timeout(300)
                     rep.check(pg.locator(".zr-latest").count() == 0, "%s: the pill goes when the view is back near the bottom" % tag)
