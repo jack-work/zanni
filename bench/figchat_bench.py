@@ -24,6 +24,13 @@ except ImportError:
 HASHED = re.compile(r"-[A-Za-z0-9_-]{8}\.[a-z0-9]+$")
 GATEWAY_ASSETS = "private, max-age=3600"
 LONG_REPLY = 24000
+FRAME_MS = 40
+CHUNK = 40
+SESSION_TURNS = 500
+SESSION_REPLY = 3000
+SESSION_CHUNK = 150
+SESSION_FPS = 200
+SESSION_STEP = 100
 PHONE = {"viewport": {"width": 390, "height": 844}, "device_scale_factor": 3, "is_mobile": True, "has_touch": True}
 
 PROBE = """
@@ -90,11 +97,10 @@ def med(xs):
 
 
 class Door:
-    def __init__(self, bundle, step, turns=0, asset_cache="", page_bytes=0):
-        env = dict(os.environ, BENCH_TURNS=str(turns), BENCH_ASSET_CACHE=asset_cache)
-        if page_bytes:
-            env["BENCH_PAGE_BYTES"] = str(page_bytes)
-        self.proc = subprocess.Popen(["node", "-r", os.path.join(here, "door.js"), os.path.join(root, "test", "figchat-server.js"), bundle, str(step)], stdout=subprocess.PIPE, text=True, env=env)
+    def __init__(self, bundle, step, asset_cache="", **mock):
+        env = dict(os.environ, BENCH_ASSET_CACHE=asset_cache)
+        flags = [x for k, v in mock.items() for x in ("--" + k, str(v))]
+        self.proc = subprocess.Popen(["node", "-r", os.path.join(here, "door.js"), os.path.join(root, "test", "figchat-server.js"), bundle, str(step)] + flags, stdout=subprocess.PIPE, text=True, env=env)
         self.port = int(self.proc.stdout.readline())
         self.base = "http://127.0.0.1:%d" % self.port
         self.url = self.base + "/chat/"
@@ -104,9 +110,6 @@ class Door:
 
     def send(self, count=1, text="stream the run build please"):
         return self.get("/__bench/send?count=%d&text=%s" % (count, urllib.request.quote(text)))
-
-    def stream(self, size, chunk=40, ms=40):
-        return self.get("/__bench/stream?bytes=%d&chunk=%d&ms=%d" % (size, chunk, ms))
 
     def status(self):
         return self.get("/__bench/status")
@@ -119,7 +122,7 @@ class Door:
 def bundle_sizes(bundle):
     chunks = []
     for name in sorted(os.listdir(bundle)):
-        if name in ("SHA256SUMS", "THIRD-PARTY.txt"):
+        if name in ("SHA256SUMS", "THIRD-PARTY.txt", "STATS.json"):
             continue
         data = open(os.path.join(bundle, name), "rb").read()
         row = {"name": name, "raw": len(data), "gzip": len(gzip.compress(data, 9, mtime=0)), "hashed": bool(HASHED.search(name))}
@@ -183,6 +186,10 @@ class Net:
         return rows
 
 
+def paced(size, chunk=CHUNK, ms=FRAME_MS):
+    return {"fps": 1000 // ms, "bytes": size, "chunk": chunk}
+
+
 def say(what):
     sys.stderr.write("%s %s\n" % (time.strftime("%H:%M:%S"), what))
     sys.stderr.flush()
@@ -219,7 +226,7 @@ def run(bundle, quick=False):
         def load_once(pg, d):
             pg.net.reset()
             pg.goto(d.url + "#/")
-            until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live' && document.querySelector('.zr-tree-row')", 20000)
+            until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live' && document.querySelector('[data-testid=topology-row]')", 20000)
             ready = pg.evaluate("%s.then(() => performance.now())" % FRAME)
             paint = pg.evaluate("Object.fromEntries(performance.getEntriesByType('paint').map(e => [e.name, e.startTime]))")
             nav = pg.evaluate("(() => { const n = performance.getEntriesByType('navigation')[0]; return { dcl: n.domContentLoadedEventEnd, load: n.loadEventEnd }; })()")
@@ -247,12 +254,12 @@ def run(bundle, quick=False):
         d.stop()
 
         def attach_bench(turns):
-            d = Door(bundle, 40, turns=turns)
+            d = Door(bundle, 40, history=turns)
             times, marks = [], []
             for _ in range(reps):
                 pg = page()
                 pg.goto(d.url + "#/")
-                until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live' && document.querySelector('.zr-tree-row')", 20000)
+                until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live' && document.querySelector('[data-testid=topology-row]')", 20000)
                 pg.evaluate(FRAME)
                 t = pg.evaluate("""(aria) => new Promise((done) => {
                   const t0 = performance.now();
@@ -261,36 +268,37 @@ def run(bundle, quick=False):
                   look();
                 })""", MAIN)
                 times.append(t)
+                until(pg, "performance.getEntriesByName('figchat:first-frame').length > 0", 10000)
                 marks.append(pg.evaluate("(() => { const m = performance.getEntriesByName('figchat:first-frame')[0]; const a = performance.getEntriesByName('figchat:attach')[0]; return m && a ? m.startTime - a.startTime : null; })()"))
                 pg.context.close()
             d.stop()
             return {"turns": turns, "first_frame": stats(times), "app_mark": stats(marks)}
 
         say("attach")
-        out["attach"] = [attach_bench(0), attach_bench(10000)]
+        out["attach"] = [attach_bench(26), attach_bench(10000)]
 
         def typing(throttle):
             d = Door(bundle, 40)
             pg = page()
             attend(pg, d)
             pg.cdp.send("Emulation.setCPUThrottlingRate", {"rate": throttle})
-            pg.locator(".zr-input").tap()
+            pg.locator("[data-testid=composer-input]").tap()
             keystrokes(pg, 12, 10)
             pg.evaluate("window.__bench.k2p = []; window.__bench.events = []")
             idle_rt = keystrokes(pg, keys, 10)
             idle = pg.evaluate("window.__bench.k2p.splice(0)")
             idle_slow = pg.evaluate("window.__bench.events.splice(0).length")
-            pg.locator(".zr-input").fill("")
+            pg.locator("[data-testid=composer-input]").fill("")
             d.send()
             until(pg, "document.querySelector('.fw').hasAttribute('data-running')", 10000)
-            pg.locator(".zr-input").focus()
+            pg.locator("[data-testid=composer-input]").focus()
             busy_rt = []
             while len(busy_rt) < keys:
                 if not d.status()["running"]:
                     d.send()
                 busy_rt += keystrokes(pg, 10, 10)
                 if len(busy_rt) % 50 == 0:
-                    pg.locator(".zr-input").fill("")
+                    pg.locator("[data-testid=composer-input]").fill("")
             busy = pg.evaluate("window.__bench.k2p.splice(0)")
             busy_slow = pg.evaluate("window.__bench.events.splice(0).length")
             until(pg, "fetch('/__bench/status').then(r => r.json()).then(s => !s.running && !s.queued)", 60000)
@@ -308,16 +316,22 @@ def run(bundle, quick=False):
             commits = pg.evaluate("window.__bench.commits") - c0
             frames = span * 1000 / 40
             pg.evaluate("window.__bench.k2p = []")
-            pg.locator(".zr-input").fill("")
+            pg.locator("[data-testid=composer-input]").fill("")
             until(pg, "fetch('/__bench/status').then(r => r.json()).then(s => !s.running && !s.queued)", 120000)
             long_series = []
-            d.stream(LONG_REPLY)
+            pg.context.close()
+            d.stop()
+            d = Door(bundle, 40, **paced(LONG_REPLY))
+            pg = page()
+            attend(pg, d)
+            pg.cdp.send("Emulation.setCPUThrottlingRate", {"rate": throttle})
+            d.send()
             until(pg, "document.querySelector('.fw').hasAttribute('data-running')", 10000)
-            pg.locator(".zr-input").focus()
+            pg.locator("[data-testid=composer-input]").focus()
             last = (time.time(), metrics(pg))
             while d.status()["running"]:
                 keystrokes(pg, 25, 10)
-                pg.locator(".zr-input").fill("")
+                pg.locator("[data-testid=composer-input]").fill("")
                 now = (time.time(), metrics(pg))
                 window = (now[0] - last[0]) * 1000 / 40
                 long_series.append({"reply_chars": pg.evaluate("(() => { const p = document.querySelectorAll('.nodi-prose'); return p.length ? p[p.length - 1].textContent.length : 0; })()"),
@@ -329,7 +343,7 @@ def run(bundle, quick=False):
                 last = now
             res = {
                 "cpu_throttle": throttle,
-                "streaming_long": {"reply_bytes": LONG_REPLY, "chunk": 40, "frame_ms": 40, "series": long_series,
+                "streaming_long": {"reply_bytes": LONG_REPLY, "chunk": CHUNK, "frame_ms": FRAME_MS, "series": long_series,
                                    "keydown_to_paint_p95_last": long_series[-1]["keydown_to_paint"]["p95"] if long_series else None,
                                    "task_ms_per_frame_last": long_series[-1]["task_ms_per_frame"] if long_series else None},
                 "idle": {"keydown_to_paint": stats(idle), "roundtrip": stats(idle_rt), "keys_over_16ms": idle_slow},
@@ -354,7 +368,7 @@ def run(bundle, quick=False):
         out["input"] = [typing(1), typing(4)]
 
         def history_curve(targets):
-            d = Door(bundle, 40, turns=max(targets) + 50, page_bytes=24000)
+            d = Door(bundle, 40, history=max(targets) + 50, page=24000, **paced(6000))
             pg = page()
             attend(pg, d)
             held = "document.querySelectorAll('.nodi-turn').length"
@@ -363,15 +377,15 @@ def run(bundle, quick=False):
                 stall = time.time() + 240
                 while pg.evaluate(held) < target and time.time() < stall:
                     n = pg.evaluate(held)
-                    pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop = 0")
+                    pg.evaluate("document.querySelector('[data-testid=transcript-scroller]').scrollTop = 0")
                     try:
                         until(pg, "document.querySelectorAll('.nodi-turn').length > %d" % n, 5000)
                     except AssertionError:
-                        pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop = 200")
+                        pg.evaluate("document.querySelector('[data-testid=transcript-scroller]').scrollTop = 200")
                     pg.wait_for_timeout(450)
-                pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop = 1e9")
+                pg.evaluate("document.querySelector('[data-testid=transcript-scroller]').scrollTop = 1e9")
                 pg.cdp.send("Emulation.setCPUThrottlingRate", {"rate": 4})
-                d.stream(6000)
+                d.send()
                 until(pg, "document.querySelector('.fw').hasAttribute('data-running')", 10000)
                 pg.wait_for_timeout(1000)
                 m0 = metrics(pg)
@@ -379,11 +393,11 @@ def run(bundle, quick=False):
                 pg.wait_for_timeout(3000)
                 m1 = metrics(pg)
                 frames = (time.time() - t0) * 1000 / 40
-                pg.locator(".zr-input").focus()
+                pg.locator("[data-testid=composer-input]").focus()
                 pg.evaluate("window.__bench.k2p = []")
                 keystrokes(pg, 40, 10)
                 k = pg.evaluate("window.__bench.k2p.splice(0)")
-                pg.locator(".zr-input").fill("")
+                pg.locator("[data-testid=composer-input]").fill("")
                 per = lambda key: round((m1[key] - m0[key]) * 1000 / frames, 2)
                 rows.append({"turns_held": pg.evaluate(held), "dom_nodes": pg.evaluate("document.getElementsByTagName('*').length"), "task_ms_per_frame": per("TaskDuration"),
                              "script_ms_per_frame": per("ScriptDuration"), "layout_ms_per_frame": per("LayoutDuration"), "style_ms_per_frame": per("RecalcStyleDuration"),
@@ -402,21 +416,21 @@ def run(bundle, quick=False):
             ctx = wk.new_context(**dict(p.devices["iPhone 15"], viewport={"width": 390, "height": 844}))
             ctx.add_init_script(PROBE)
             pg = ctx.new_page()
-            d = Door(bundle, 40)
+            d = Door(bundle, 40, **paced(LONG_REPLY))
             attend(pg, d)
-            pg.locator(".zr-input").tap()
+            pg.locator("[data-testid=composer-input]").tap()
             keystrokes(pg, 12, 10)
             pg.evaluate("window.__bench.k2p = []")
             keystrokes(pg, keys, 10)
             idle = pg.evaluate("window.__bench.k2p.splice(0)")
-            pg.locator(".zr-input").fill("")
-            d.stream(LONG_REPLY)
+            pg.locator("[data-testid=composer-input]").fill("")
+            d.send()
             until(pg, "document.querySelector('.fw').hasAttribute('data-running')", 10000)
-            pg.locator(".zr-input").focus()
+            pg.locator("[data-testid=composer-input]").focus()
             n = 0
             while d.status()["running"] and n < keys:
                 keystrokes(pg, 25, 10)
-                pg.locator(".zr-input").fill("")
+                pg.locator("[data-testid=composer-input]").fill("")
                 n += 25
             busy = pg.evaluate("window.__bench.k2p.splice(0)")
             grows = pg.evaluate("!(CSS.supports && CSS.supports('field-sizing', 'content'))")
@@ -429,12 +443,12 @@ def run(bundle, quick=False):
         out["input_webkit"] = webkit_typing()
 
         say("scroll")
-        d = Door(bundle, 40, turns=10000)
+        d = Door(bundle, 40, history=10000)
         pg = page()
         attend(pg, d)
-        sc = "document.querySelector('[data-zr-scroll]')"
+        sc = "document.querySelector('[data-testid=transcript-scroller]')"
         pg.evaluate("window.__bench.longtasks = []; window.__bench.rafOn()")
-        box = pg.locator("[data-zr-scroll]").bounding_box()
+        box = pg.locator("[data-testid=transcript-scroller]").bounding_box()
         pg.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
         end = time.time() + (4 if quick else 12)
         while time.time() < end:
@@ -480,17 +494,17 @@ def run(bundle, quick=False):
                        "door_out_bytes_per_turn": round(pg.net.ws["out"][1] / streamed), "door_out_frames_per_turn": round(pg.net.ws["out"][0] / streamed, 1),
                        "reply_bytes": d.status()["last_bytes"], "reply": "stream the run build please (thinking, prose, bash tool, prose)",
                        "by_kind_per_turn": {k: [round(v[0] / streamed, 1), round(v[1] / streamed)] for k, v in sorted(pg.net.kinds.items())}}
-        pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop = 0")
+        pg.evaluate("document.querySelector('[data-testid=transcript-scroller]').scrollTop = 0")
         pg.wait_for_timeout(500)
         pg.evaluate("window.__bench.longtasks = []; window.__bench.rafOn()")
-        box = pg.locator("[data-zr-scroll]").bounding_box()
+        box = pg.locator("[data-testid=transcript-scroller]").bounding_box()
         pg.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
         end = time.time() + (3 if quick else 8)
         down = 1
         while time.time() < end:
             pg.mouse.wheel(0, 1500 * down)
             pg.wait_for_timeout(16)
-            if pg.evaluate("(() => { const s = document.querySelector('[data-zr-scroll]'); return s.scrollTop <= 0 || s.scrollHeight - s.clientHeight - s.scrollTop < 2; })()"):
+            if pg.evaluate("(() => { const s = document.querySelector('[data-testid=transcript-scroller]'); return s.scrollTop <= 0 || s.scrollHeight - s.clientHeight - s.scrollTop < 2; })()"):
                 down = -down
         frames = pg.evaluate("window.__bench.rafOff()")
         long = pg.evaluate("window.__bench.longtasks.splice(0)")
@@ -505,6 +519,38 @@ def run(bundle, quick=False):
         out["memory"]["after_detach"] = {"heap": gone["JSHeapUsedSize"], "nodes": gone["Nodes"], "listeners": gone["JSEventListeners"],
                                          "retained_per_turn": round((gone["JSHeapUsedSize"] - samples[0]["heap"]) / max(1, streamed), 1)}
         errors = pg.errors
+        pg.context.close()
+        d.stop()
+        say("session")
+        turns = 100 if quick else SESSION_TURNS
+        step = 25 if quick else SESSION_STEP
+        d = Door(bundle, 40, fps=SESSION_FPS, bytes=SESSION_REPLY, chunk=SESSION_CHUNK)
+        pg = page()
+        attend(pg, d)
+        points = []
+
+        def take():
+            pg.evaluate(FRAME)
+            pg.cdp.send("HeapProfiler.collectGarbage")
+            m = metrics(pg)
+            points.append({"turns": d.status()["turns"], "heap": m["JSHeapUsedSize"], "nodes": m["Nodes"], "dom": pg.evaluate("document.getElementsByTagName('*').length"), "listeners": m["JSEventListeners"],
+                           "dom_turns": pg.evaluate("document.querySelectorAll('.nodi-turn').length")})
+
+        take()
+        pg.net.reset()
+        began = points[0]["turns"]
+        for _ in range(turns // step):
+            d.send(count=step)
+            until(pg, "fetch('/__bench/status').then(r => r.json()).then(s => !s.running && !s.queued)", 300000)
+            take()
+        done = points[-1]["turns"] - began
+        rate = lambda k: round((points[-1][k] - points[1][k]) / max(1, points[-1]["turns"] - points[1]["turns"]), 1)
+        out["session"] = {"turns": done, "reply_bytes": SESSION_REPLY, "chunk": SESSION_CHUNK, "fps": SESSION_FPS, "step": step,
+                          "heap_start": points[0]["heap"], "heap_end": points[-1]["heap"], "heap_per_turn": rate("heap"), "dom_per_turn": rate("dom"),
+                          "nodes_per_turn": rate("nodes"), "listeners_per_turn": rate("listeners"), "dom_end": points[-1]["dom"], "listeners_end": points[-1]["listeners"],
+                          "door_in_bytes_per_turn": round(pg.net.ws["in"][1] / done), "door_in_frames_per_turn": round(pg.net.ws["in"][0] / done, 1),
+                          "door_out_bytes_per_turn": round(pg.net.ws["out"][1] / done), "samples": points}
+        errors += pg.errors
         pg.context.close()
         d.stop()
         out["errors"] = errors
