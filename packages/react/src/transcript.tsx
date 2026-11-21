@@ -5,6 +5,7 @@ import { reducedMotion } from "./motion";
 import { glyphs } from "./glyphs";
 import { nodi, type InputModel, type Item, type ProseItem, type SteeringItem, type ThinkingItem, type ToolItem, type TurnModel, type UnknownItem } from "./zanni";
 import { BlockView, Plain } from "./text";
+import { Sticky } from "./sticky";
 
 export type TapKind = "input" | "prose";
 
@@ -257,6 +258,8 @@ export interface TurnViewProps {
   fresh: boolean;
 }
 
+const questionOf = (input: InputModel | null): string => (input ? input.parts.map((p) => p.text).join("\n\n") : "");
+
 const spokenIn = (s: Speaking | null, turn: number): string => (s && s.turn === turn ? s.node + ":" + s.chars : "");
 
 export const TurnView = memo(
@@ -267,29 +270,33 @@ export const TurnView = memo(
   const hooks = useContext(TranscriptContext);
   return (
     <li className="nodi-turn zr-host" data-turn={m.turn} data-state={state} {...(fresh ? { "data-fresh": "" } : {})}>
-      <div className="nodi-turn-head">
-        <span className="nodi-turn-no">Turn {m.turn}</span>
-        {m.forkedFrom && <span className="nodi-turn-fork">{glyphs.fork + " " + (hooks.nameOf?.(m.forkedFrom) ?? m.forkedFrom.slice(0, 8))}</span>}
-        <span className="nodi-turn-tools">
-          {hooks.actions?.(m.turn)}
-        </span>
-      </div>
-      <div className="nodi-turn-body">
-        {m.input && m.input.parts.length > 0 && <InputView input={m.input} turn={m.turn} />}
-        {m.input && m.input.parts.length > 0 && hooks.below?.("input", m.turn)}
-        {rows.map((row) => (row.kind === "group" ? <WorkGroup key={row.key} items={row.items} /> : <ItemView key={row.key + row.kind} item={row} turn={m.turn} speaking={mine} />))}
-        {!m.open && m.items.some((i) => i.kind === "prose") && hooks.below?.("prose", m.turn)}
-        {m.end &&
-          (m.end.kind === "error" ? (
-            <p className="nodi-error" role="alert">
-              <Plain text={"Turn failed: " + m.end.text} />
-            </p>
-          ) : (
-            <p className="nodi-end">
-              <Plain text={"Turn ended: " + m.end.text} />
-            </p>
-          ))}
-      </div>
+      <Sticky
+        heading={
+          <>
+            <span className="nodi-turn-no">Turn {m.turn}</span>
+            {m.forkedFrom && <span className="nodi-turn-fork">{glyphs.fork + " " + (hooks.nameOf?.(m.forkedFrom) ?? m.forkedFrom.slice(0, 8))}</span>}
+          </>
+        }
+        tools={<span className="nodi-turn-tools">{hooks.actions?.(m.turn)}</span>}
+        text={questionOf(m.input)}
+      >
+        <div className="nodi-turn-body">
+          {m.input && m.input.parts.length > 0 && <InputView input={m.input} turn={m.turn} />}
+          {m.input && m.input.parts.length > 0 && hooks.below?.("input", m.turn)}
+          {rows.map((row) => (row.kind === "group" ? <WorkGroup key={row.key} items={row.items} /> : <ItemView key={row.key + row.kind} item={row} turn={m.turn} speaking={mine} />))}
+          {!m.open && m.items.some((i) => i.kind === "prose") && hooks.below?.("prose", m.turn)}
+          {m.end &&
+            (m.end.kind === "error" ? (
+              <p className="nodi-error" role="alert">
+                <Plain text={"Turn failed: " + m.end.text} />
+              </p>
+            ) : (
+              <p className="nodi-end">
+                <Plain text={"Turn ended: " + m.end.text} />
+              </p>
+            ))}
+        </div>
+      </Sticky>
     </li>
   );
   },
