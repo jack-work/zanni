@@ -1,0 +1,38 @@
+{
+ "campaign": "gestures",
+ "seed": 318237910,
+ "profile": "desktop",
+ "invariant": "stuck-pit",
+ "message": "after swipes that start on the pit handle and close button, then a drag, the pit panel keeps data-dragging with every pointer up",
+ "owner": "Frontend (packages/react pit.tsx)",
+ "status": "xfail",
+ "strict": [],
+ "actions": [
+  {
+   "k": "pit",
+   "how": "grip-key"
+  },
+  {
+   "k": "swipe",
+   "t": "pit-handle",
+   "dx": -120,
+   "dy": 80,
+   "ms": 30,
+   "steps": 3,
+   "release": "up"
+  },
+  {
+   "k": "swipe",
+   "t": "pit-close",
+   "dx": 120,
+   "dy": 240,
+   "ms": 30,
+   "steps": 20,
+   "release": "up"
+  },
+  {
+   "k": "pit",
+   "how": "drag-up"
+  }
+ ]
+}

@@ -72,9 +72,8 @@ class Network(Campaign):
             page.wait_for_timeout(a["ms"])
         elif k == "fault":
             if a["op"]["op"] == "door.lapse":
-                if "double-lapse" not in STRICT and time.time() - run.state.get("lapsed", 0) < 4:
+                if "lapse-no-notice" not in STRICT and a["op"].get("notice") is False:
                     return
-                run.state["lapsed"] = time.time()
             run.stack.fault(a["op"])
         elif k == "storm":
             for _ in range(a["n"]):
