@@ -81,6 +81,9 @@ async function test(name, fn) {
     conn.voice(true);
     assert.strictEqual(socks.length, 1);
     assert.strictEqual(socks[0].url, 'wss://fig.example/chat/audio/c0ffee01c0ffee01c0ffee01c0ffee01');
+    const tagged = speech.gateway({ WebSocket: FakeSocket, base: 'https://fig.example/chat/', url: 'audio', window: {}, session: 'abcDEF_-12345678' });
+    tagged.open({ aria: 'c0ffee01c0ffee01c0ffee01c0ffee01' }, {}).voice(true);
+    assert.strictEqual(socks.pop().url, 'wss://fig.example/chat/audio/c0ffee01c0ffee01c0ffee01c0ffee01?session=abcDEF_-12345678', 'the session id rides the audio upgrade as a query');
     const t = (o) => socks[0].emit('message', { data: JSON.stringify(o) });
     t({ type: 'ready', aria: 'x', store: 'gluck' });
     t({ type: 'audio.start', turn: 5, key: 'gluck/x:5/out', format: 'pcm', rate: 24000, bits: 16, channels: 1, node: 2, cursor: '5.3' });

@@ -1,4 +1,5 @@
 import json
+import re
 import time
 import os
 import subprocess
@@ -696,6 +697,43 @@ try:
         pg.wait_for_selector(".zr-pit", state="detached", timeout=1000)
         assert not pg.errors, pg.errors
         ctx.close()
+
+        sess_door = door(12)
+        pg = fresh()
+        attend(pg, sess_door, MAIN)
+        pg.locator(".zr-input").fill("typed")
+        said = pg.locator(".nodi-turn[data-turn='26'] .nodi-said").first
+        said.scroll_into_view_if_needed()
+        said.tap()
+        pg.wait_for_selector(".fw-sheet")
+        pg.locator(".fw-sheet-act[data-action='play']").click()
+        pg.wait_for_selector(".fw-sheet .voce", timeout=5000)
+        until(pg, "['playing','idle','expired','error'].includes(document.querySelector('.fw-sheet .voce').dataset.state)", 10000)
+        pg.locator(".fw-sheet-act[data-action='retranscribe']").click()
+        pg.wait_for_selector(".fw-sheet-text", timeout=5000)
+        pg.keyboard.press("Escape")
+        pg.locator(".fw-voice").click()
+        for _ in range(100):
+            if any(g["kind"] == "audio-ws" for g in sess_door.state()["sessions"]):
+                break
+            pg.wait_for_timeout(50)
+        got = sess_door.state()["sessions"]
+        kinds = {g["kind"] for g in got}
+        assert {"door-ws", "audio-ws", "stt-key", "audio-key"} <= kinds, kinds
+        ids = {g["header"] or g["query"] for g in got}
+        assert len(ids) == 1 and len(next(iter(ids))) == 16, "one id for the whole page load: %s" % got
+        assert re.fullmatch(r"[A-Za-z0-9_-]{16}", next(iter(ids))), ids
+        for g in got:
+            if g["kind"] in ("stt", "stt-key", "audio-key-status"):
+                assert g["header"], "fetches carry the header: %s" % g
+            if g["kind"] in ("door-ws", "audio-ws", "audio-key"):
+                assert g["query"], "upgrades and the audio element carry the query: %s" % g
+        sid = next(iter(ids))
+        pg.reload()
+        until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'", timeout=15000)
+        later = {g["header"] or g["query"] for g in sess_door.state()["sessions"]}
+        assert len(later) == 2 and sid in later, "a reload mints a new id: %s" % later
+        pg.close()
 
         MOTION = """() => {
           const over = [];

@@ -6,6 +6,7 @@ export { Pit, PitGrip, PitProvider, PIT_FLICK, PIT_FULL_ZONE, PIT_HEIGHT_VAR, pi
 export type { PitGripProps, PitProps, PitProviderProps, PitSnap } from "./pit";
 export { marks, nodeMarks, pitFaces, selectionGlyph, SELECTION } from "./glyphs";
 export type { PitFace, PitFaceId } from "./glyphs";
+export { SESSION_HEADER, SESSION_PARAM, audioKeyUrl, mintSessionId, sessionHeaders, sessionId, sessionUrl, withSession } from "./session";
 export { EXIT_MS, reducedMotion, transition, useLinger } from "./motion";
 export { Strip } from "./strip";
 export type { StripProps } from "./strip";

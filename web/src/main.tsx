@@ -6,6 +6,7 @@ import { doorUrl, edgeSession } from "figaro-forms/auth";
 import head from "../../assets/parla/figaro-head.png";
 import "./styles/index.css";
 import { App } from "./app";
+import { sessionUrl } from "zanni-react";
 import { bootAtom, parseTemplates } from "zanni-react/jotai";
 
 const host = document.getElementById("app");
@@ -13,7 +14,7 @@ if (!host) throw new Error("figaro web needs #app");
 const store = host.getAttribute("data-store") || "local";
 const door = host.getAttribute("data-door") || "door";
 const client = new AriaClient({
-  dial: webSocketDial({ url: () => doorUrl(door), credential: edgeSession() }),
+  dial: webSocketDial({ url: () => sessionUrl(doorUrl(door)), credential: edgeSession() }),
   pageBytes: 24000,
 });
 const jotai = createStore();
