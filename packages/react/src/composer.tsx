@@ -136,6 +136,7 @@ export function Composer(props: ComposerProps) {
         <textarea
           ref={setInput}
           className={["zr-input", inputClassName].filter(Boolean).join(" ")}
+          data-testid="composer-input"
           rows={1}
           value={value}
           placeholder={placeholder}
@@ -150,7 +151,7 @@ export function Composer(props: ComposerProps) {
         {accessory}
         <PillPair label="Send">
           {command && <Pill {...command} className="zr-command" />}
-          <Pill glyph={sendGlyph} label={sendLabel} type="submit" disabled={sendDisabled} className={["zr-send", sendClassName].filter(Boolean).join(" ")} data-swapped={swap.current.swapped ? "" : undefined} key={sendLabel} />
+          <Pill glyph={sendGlyph} label={sendLabel} type="submit" disabled={sendDisabled} className={["zr-send", sendClassName].filter(Boolean).join(" ")} data-testid="send" data-swapped={swap.current.swapped ? "" : undefined} key={sendLabel} />
         </PillPair>
       </div>
     </form>
