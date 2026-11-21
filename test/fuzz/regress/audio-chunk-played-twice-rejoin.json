@@ -1,0 +1,24 @@
+{
+ "campaign": "audio",
+ "seed": 2015,
+ "profile": "desktop",
+ "invariant": "chunk-played-twice",
+ "message": "send a long prompt, voice on mid-reply, leave the figaro and come back: the in-flight turn is spoken again from offset 0 on the new audio socket (first play from socket 1, second from socket 3, 913 ms later); the opening of the reply plays twice",
+ "owner": "Backend (gateway AudioHub baselines a joining listener at the turn start) or Frontend (voice hub plays an audio.start for a turn it already played); to be decided",
+ "status": "xfail",
+ "strict": [],
+ "actions": [
+  {
+   "k": "send",
+   "n": 11,
+   "kind": "[long] again"
+  },
+  {
+   "k": "voice",
+   "to": "on"
+  },
+  {
+   "k": "navigate"
+  }
+ ]
+}
