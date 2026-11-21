@@ -213,7 +213,26 @@ body.fw-page {
   .fw-field select, .fw-field input, .fw-field textarea { min-height: 44px; }
   .fw-new-actions .zr-btn { min-height: 44px; }
 }
-.nodi-turn-fork { margin-right: auto; color: var(--z-muted); }
+.nodi-turn-marks { margin-right: auto; display: flex; align-items: center; gap: 1ch; min-width: 0; }
+.nodi-turn-fork { color: var(--z-muted); }
+.nodi-turn-delta { min-height: 36px; min-width: 36px; padding: 0 var(--z-space-2, 4px); border: 0; background: none; font: inherit; color: var(--z-muted); cursor: pointer; }
+.nodi-turn-delta[aria-expanded="true"] { color: var(--z-ink); }
+.nodi-deltas { list-style: none; margin: 0; padding: var(--z-space-2, 4px) 0; border-bottom: 1px solid var(--z-rule); font: 400 1.0625rem / 1.35 var(--nodi-mono); color: var(--z-muted); }
+.nodi-delta { min-width: 0; }
+.nodi-delta[data-banner] { display: flex; gap: 1ch; padding: 0 var(--z-space-2, 4px); }
+.nodi-delta-row { display: flex; align-items: baseline; gap: 1ch; width: 100%; min-height: 28px; padding: 0 var(--z-space-2, 4px); border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+@media (pointer: coarse) { .nodi-delta-row { min-height: 44px; } }
+.nodi-delta-glyph { flex: none; }
+.nodi-delta-key { flex: none; min-width: min(var(--nodi-delta-key, 12ch), 28ch); max-width: 28ch; overflow: hidden; white-space: nowrap; text-overflow: clip; color: var(--z-ink); }
+.nodi-delta[data-banner] .nodi-delta-key { flex: 0 1 auto; }
+.nodi-delta-change { display: flex; flex: 1 1 auto; min-width: 0; white-space: nowrap; }
+.nodi-delta-from { flex: 1 1 0; min-width: 6ch; max-width: max-content; overflow: hidden; text-overflow: ellipsis; }
+.nodi-delta-arrow { flex: none; white-space: pre; }
+.nodi-delta-to { flex: 1 1 0; min-width: 6ch; max-width: max-content; overflow: hidden; text-overflow: ellipsis; color: var(--z-ink); }
+.nodi-delta-from[data-short], .nodi-delta-to[data-short] { flex: 0 0 auto; min-width: 0; }
+.nodi-delta-full { padding: 0 var(--z-space-2, 4px) var(--z-space-2, 4px); }
+.nodi-delta-side { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
+.nodi-delta-side[data-side="+"] { color: var(--z-ink); }
 .nodi-turn-head .nodi-turn-no { margin-right: 1ch; }
 
 .fw-help { display: flex; flex-direction: column; gap: var(--z-space-2, 4px); margin: 0; }

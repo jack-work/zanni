@@ -87,8 +87,25 @@ not in atoms.
   transcript is the alternative's own history followed to its end, the status bar
   names it by handle and mantra, and there is no banner and no fork glyph there.
   The fork's first own turn alone wears `⑂ <parent handle>` in its head (the turn
-  whose form delta sets `system.forked_from`); a tail fork has none until its
-  first prompt. A fork at turn N keeps turns 1 to N-1.
+  whose opening message carries `forked_from`, the wire field, not a form key);
+  a tail fork has none until its first prompt. A fork at turn N keeps turns 1 to N-1.
+- Tool rows: the header wears the node's `label` (else the tool's name) and the
+  value of its `head_arg` (else the daemon's summary). A `body_arg` names the
+  argument drawn in place of the output (and is left out of Arguments), and
+  `diff` colours added, removed, hunk and file lines of whatever is drawn. All
+  four are stamped by the daemon (figaro 0.82.0), so the web keeps no table of
+  tools for them. The vendored figaro-forms is 1c7a9a4 (lane/ir-gaps).
+- Form deltas: a turn whose form changed wears `Δ` in its head, after the fork
+  mark, as the pager's gutter does. It opens a table of one row per key, the
+  bound form first and unprefixed, other forms dotted onto their id, keys
+  sorted: `key  old -> new`, `∅` for a side that is absent, `""` for the empty
+  string, `⊘ <form>` for a deleted form. A value is one line (its first, then
+  `…`), control characters stripped; the key column is the widest key up to
+  28 characters, each value keeps at least 6 and ends in `…` when squeezed, and
+  the whole row is its title. A row opens to its old and new value whole (JSON
+  indented). A fork's own first turn does not list `forked_from` or `aria_id`.
+  A node's deltas follow the turn's in the same table. The spec is in the
+  captains-log (figchat-deltas-spec.md).
 - Attend: the stream reads backward from the end in byte-budget pages and
   follows live. Following lets go when the reader scrolls up and a Latest pill
   says new content landed below. Earlier turns page in above without moving
@@ -217,7 +234,7 @@ measures the composer (idle at most 76px, running at most 120px, the strip one
 line, the last node above the composer), covers history, paging, deep links,
 attach (photo and PDF in WebKit at iPhone size reach a turn and the reply names them, a refused file shows the gateway's words),
 command mode (the colon, the verbs, a refused verb's reason, `:fork :12`, `:ls`, Enter on an empty line, the two-step Esc),
-hostile text, send, steer, stop, fork, drafts, voice, hands-free hold, the mic,
+hostile text, send, steer, stop, fork, form deltas (the Δ table at 390 without sideways scroll), drafts, voice, hands-free hold, the mic,
 the pits, and runs once with reduced motion to assert nothing computes a
 duration over 1ms.
 

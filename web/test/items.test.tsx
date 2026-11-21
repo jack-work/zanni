@@ -1,9 +1,9 @@
 import { fireEvent, render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { TurnView } from "zanni-react";
+import { TurnView, ToolView, nodi } from "zanni-react";
 import type { Item, ToolItem, TurnModel } from "zanni-react";
 
-const tool = (node: number, name: string, extra: Partial<ToolItem> = {}): ToolItem => ({ key: "n" + node, kind: "tool", node, settled: true, name, status: "ok", summary: "", args: "", input: "", output: "out", outputBase: 0, ms: 0, ...extra });
+const tool = (node: number, name: string, extra: Partial<ToolItem> = {}): ToolItem => ({ key: "n" + node, kind: "tool", node, settled: true, name, status: "ok", summary: "", label: "", head: "", body: undefined, diff: false, args: "", input: "", output: "out", outputBase: 0, ms: 0, ...extra });
 const think = (node: number): Item => ({ key: "n" + node, kind: "thinking", node, settled: true, text: "hmm" });
 const prose = (node: number, text = "words"): Item => ({ key: "n" + node, kind: "prose", node, settled: true, text });
 
@@ -93,5 +93,51 @@ describe("a turn", () => {
     const { container } = render(<ol><TurnView turn={turn([tool(0, "bash", { output: "a\nb\n" })])} speaking={null} fresh={false} /></ol>);
     expect(container.querySelector(".nodi-more")).toBeNull();
     expect(container.querySelector(".nodi-tool-out")!.textContent).toBe("a\nb\n");
+  });
+});
+
+describe("a tool drawn from the node's own fields", () => {
+  const view = (extra: Partial<ToolItem>) => render(<ToolView item={tool(1, "bash", { summary: "command=ls", ...extra })} />);
+
+  it("the header wears label and the head argument, falling back to name and summary", () => {
+    const { container, unmount } = view({ label: "$", head: "go test ./..." });
+    expect(container.querySelector(".nodi-tool-name")!.textContent).toBe("$");
+    expect(container.querySelector(".nodi-tool-summary")!.textContent).toBe("go test ./...");
+    unmount();
+    const plain = view({});
+    expect(plain.container.querySelector(".nodi-tool-name")!.textContent).toBe("bash");
+    expect(plain.container.querySelector(".nodi-tool-summary")!.textContent).toBe("command=ls");
+  });
+
+  it("a declared body argument is drawn in place of the output", () => {
+    const { container } = view({ body: "file text", output: "wrote 9 bytes" });
+    expect(container.querySelector(".nodi-tool-out")!.textContent).toBe("file text");
+  });
+
+  it("a declared diff colours added, removed, hunk and file lines, and only then", () => {
+    const text = "--- a\n+++ b\n@@ -1 +1 @@\n-old\n+new\n same";
+    const { container, unmount } = view({ diff: true, output: text });
+    const sides = [...container.querySelectorAll(".nodi-diff-line")].map((l) => l.getAttribute("data-side"));
+    expect(sides).toEqual(["file", "file", "hunk", "del", "add", ""]);
+    unmount();
+    expect(view({ output: text }).container.querySelector(".nodi-diff-line")).toBeNull();
+  });
+});
+
+describe("nodi's tool item from the node's drawing fields", () => {
+  const item = (node: object) => (nodi.model({ closed: [{ turn: 1, from: 0, role: "output", nodes: [{ type: "tool", role: "output", name: "write", status: "ok", ...node }] }] } as never, {})[0]!.items[0]) as ToolItem;
+
+  it("carries label, the head argument's value, the body argument's value and diff", () => {
+    const got = item({ label: "✎", head_arg: "path", body_arg: "content", diff: true, args: { path: "a.go", content: "package a", mode: "0644" } });
+    expect(got).toMatchObject({ label: "✎", head: "a.go", body: "package a", diff: true });
+    expect(JSON.parse(got.args)).toEqual({ path: "a.go", mode: "0644" });
+  });
+
+  it("a tool with no special drawing has none of them", () => {
+    expect(item({ args: { command: "ls" } })).toMatchObject({ label: "", head: "", body: undefined, diff: false });
+  });
+
+  it("reads an argument still arriving as partial JSON", () => {
+    expect(item({ status: "running", head_arg: "path", body_arg: "content", input: '{"path":"a.go","content":"line one\\nline' })).toMatchObject({ head: "a.go", body: "line one\nline" });
   });
 });

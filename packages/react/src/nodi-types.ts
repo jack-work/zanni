@@ -65,6 +65,10 @@ export interface ToolItem extends ItemBase {
   name: string;
   status: "running" | "ok" | "error";
   summary: string;
+  label: string;
+  head: string;
+  body: string | undefined;
+  diff: boolean;
   args: string;
   input: string;
   output: string;
@@ -83,6 +87,18 @@ export interface TurnEnd {
   text: string;
 }
 
+export interface DeltaCell {
+  present: boolean;
+  text: string;
+}
+
+export interface DeltaRow {
+  banner: boolean;
+  key: string;
+  from: DeltaCell;
+  to: DeltaCell;
+}
+
 export interface TurnModel {
   key: string;
   turn: number;
@@ -92,6 +108,7 @@ export interface TurnModel {
   open: boolean;
   sealed: boolean;
   forkedFrom?: string;
+  deltas?: DeltaRow[];
 }
 
 export interface NodiApi {
