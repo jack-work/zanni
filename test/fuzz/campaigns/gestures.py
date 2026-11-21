@@ -91,6 +91,8 @@ class Gestures(Campaign):
         elif k == "pit":
             self.pit(run, a["how"])
         elif k == "send":
+            if page.locator(".zr-command[aria-pressed='true']").count():
+                page.locator(".zr-command").click(force=True)
             page.locator(".zr-input").fill(a["text"])
             run.typed = ""
             try:
