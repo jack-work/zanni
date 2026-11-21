@@ -398,7 +398,7 @@
         if (a.dormant) { fail(c, id, -32042, 'figaro: aria is dormant'); return; }
         c.follows[p.figaro_id] = true;
         var active = !!a.run;
-        core.sent = (core.sent || []).concat([{ id: p.figaro_id, text: p.text }]);
+        core.sent = (core.sent || []).concat([{ id: p.figaro_id, text: p.text, images: (p.images || []).length }]);
         if (active) a.queue.push(p.text);
         else begin(a, p.text);
         reply(c, id, active ? { ok: true, cursor: a.turns.length, active: true } : { ok: true, cursor: a.turns.length });
