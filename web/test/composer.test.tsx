@@ -115,7 +115,7 @@ describe("the composer", () => {
   it("keeps the composer's height on the root for scroll padding", async () => {
     attend(1);
     await live();
-    expect(document.documentElement.style.getPropertyValue("--fw-composer-h")).toMatch(/px$/);
+    expect(document.documentElement.style.getPropertyValue("--zr-composer-h")).toMatch(/px$/);
   });
 });
 

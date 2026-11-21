@@ -1,15 +1,13 @@
-import { Button, Sheet as ZSheet } from "zanni-react";
+import { Button, PlayerIsland, Plain, Sheet as ZSheet, type PlayRequest } from "zanni-react";
 import { useAtomValue, useSetAtom } from "jotai";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { joinDictation } from "../lib/mic";
 import { clipKey, sheetActions, type SheetContext, type SheetTarget } from "../lib/sheet";
 import { retranscribe } from "../lib/stt";
-import { voce, type VocePlayer } from "zanni-react";
 import { replayAtom } from "../state/audio";
 import { bootAtom } from "../state/boot";
 import { draftAtom, keyOf } from "../state/composer";
 import { closeSheetAtom, sheetAtom } from "../state/sheet";
-import { Plain } from "zanni-react";
 
 const SPOKEN = { input: "Your message", prose: "Reply" } as const;
 
@@ -40,35 +38,14 @@ function SheetBody({ target }: { target: SheetTarget }) {
   const { audioUrl, sttUrl } = useAtomValue(bootAtom);
   const [note, setNote] = useState("");
   const [result, setResult] = useState("");
-  const slot = useRef<HTMLDivElement | null>(null);
-  const player = useRef<VocePlayer | null>(null);
-  useEffect(
-    () => () => {
-      player.current?.destroy();
-      player.current = null;
-    },
-    [],
-  );
+  const [request, setRequest] = useState<PlayRequest | null>(null);
 
   const src = useCallback((key: string) => audioUrl.replace(/\/$/, "") + "/key/" + key.split("/").map(encodeURIComponent).join("/"), [audioUrl]);
 
   const context: SheetContext = {
     target,
     clipKey: (direction) => clipKey(target, direction),
-    play: (key) => {
-      voce.unlock(window);
-      player.current?.destroy();
-      const made = voce.create(document, {
-        audioId: "",
-        src,
-        status: (k) => window.fetch(src(k), { method: "GET", credentials: "same-origin", cache: "no-store", headers: { Range: "bytes=0-0" } }).then((r) => r.status),
-        label: "Message audio",
-      });
-      slot.current?.replaceChildren(made.el);
-      made.end(key);
-      made.play();
-      player.current = made;
-    },
+    play: (key) => setRequest({ key }),
     playTurn: (turn) => {
       playInPlace(turn);
       close();
@@ -92,7 +69,7 @@ function SheetBody({ target }: { target: SheetTarget }) {
           </Button>
         ))}
       </div>
-      <div className="fw-sheet-player" ref={slot} />
+      <PlayerIsland className="fw-sheet-player" request={request} src={src} />
       {note && (
         <p className="fw-sheet-note" role="status">
           {note}

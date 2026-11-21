@@ -1,8 +1,7 @@
-import { Button, nodi, Plain, TranscriptContext, TurnView } from "zanni-react";
+import { Button, LatestPill, nodi, scrollToBottom, useFollow, Plain, TranscriptContext, TurnView } from "zanni-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { ariaAtom } from "figaro-forms/aria/jotai";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { scrollToBottom, useFollow } from "../lib/follow";
 import { labelOf } from "../lib/roster";
 import { noteAtom, turnsAtom } from "../state/aria";
 import { rosterAtom } from "../state/roster";
@@ -192,11 +191,7 @@ export function AriaView({ attended }: { attended: Attended }) {
         {status && <p className="fw-note">{status}</p>}
       </main>
       <Composer attended={attended} toBottom={toBottom} />
-      {follow.unseen && (
-        <Button variant="accent" className="fw-latest" onClick={toBottom}>
-          Latest
-        </Button>
-      )}
+      {follow.unseen && <LatestPill onClick={toBottom} />}
     </section>
   );
 }

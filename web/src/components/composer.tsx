@@ -67,7 +67,6 @@ export function Composer({ attended, toBottom }: { attended: Attended; toBottom:
       sendDisabled={comp.sending || !live}
       running={running}
       focusTick={focusTick}
-      heightVar="--fw-composer-h"
       strip={showStrip ? { kind: running ? "running" : "note", text: line.text, time: line.time } : null}
       stripActions={
         <>

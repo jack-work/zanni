@@ -109,13 +109,6 @@ body.fw-page {
 .fw .nodi-turns { margin-top: var(--z-space-4, 12px); }
 .nodi-prose[data-speaking] { box-shadow: inset 3px 0 0 var(--z-accent); padding-left: var(--z-space-3, 8px); }
 
-.fw-latest {
-  position: fixed;
-  left: 50%;
-  bottom: calc(var(--fw-composer-h, 0px) + 12px);
-  translate: -50% 0;
-  z-index: 2;
-}
 
 @media (min-width: 900px) {
   .fw-body { display: grid; grid-template-columns: var(--fw-side) minmax(0, 1fr); align-items: start; }
@@ -133,7 +126,7 @@ body.fw-page {
   .fw[data-route] .fw-pane { display: flex; min-height: calc(100dvh - var(--fw-bar) - 2px); }
   .fw-back { display: none; }
 }
-html { scroll-padding-bottom: var(--fw-composer-h, 0px); }
+html { scroll-padding-bottom: var(--zr-composer-h, 0px); }
 
 .fw-subbar { display: flex; align-items: center; justify-content: space-between; gap: var(--z-space-3, 8px); }
 .fw-subtools { display: inline-flex; gap: var(--z-space-3, 8px); margin-left: auto; }
@@ -150,7 +143,6 @@ html { scroll-padding-bottom: var(--fw-composer-h, 0px); }
 .fw-tap { cursor: pointer; }
 .fw-tap:focus-visible { outline-offset: 2px; }
 .fw-sheet-actions { display: flex; flex-wrap: wrap; gap: var(--z-space-3, 8px); }
-.fw-sheet-player:empty { display: none; }
 .fw-sheet-note { font: 400 1.0625rem / 1.2 var(--fw-mono); color: var(--z-warn); }
 .fw-sheet-result { display: flex; flex-direction: column; align-items: flex-start; gap: var(--z-space-3, 8px); }
 .fw-sheet-text { font-size: 1.1875rem; overflow-wrap: anywhere; }
@@ -174,8 +166,6 @@ html { scroll-padding-bottom: var(--fw-composer-h, 0px); }
 @keyframes fw-flash { from { background: color-mix(in srgb, var(--z-accent) 25%, transparent); } to { background: transparent; } }
 
 
-@keyframes fw-swap { from { scale: 0.7; opacity: 0; } }
-.fw-latest { animation: fw-swap var(--fw-d-pop) var(--fw-pop) both; }
 .fw-mic[aria-pressed="true"]::before { animation: fw-blink 1s steps(2, jump-none) infinite; }
 @keyframes fw-blink { 0% { opacity: 1; } 100% { opacity: 0.2; } }
 

@@ -164,3 +164,13 @@
   }
   .zr-fold[open]::details-content { block-size: auto; }
 }
+
+.zr-latest {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--zr-composer-h, 0px) + 12px);
+  translate: -50% 0;
+  z-index: 2;
+  animation: zr-swap var(--zr-d-pop) var(--zr-pop) both;
+}
+.zr-player:empty { display: none; }
