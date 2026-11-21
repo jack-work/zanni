@@ -150,7 +150,7 @@ def main():
             def clipped(pg):
                 wav = clip(6)
                 pg.route("**/audio/key/**", lambda r: r.fulfill(status=200, body=wav, headers={"Content-Type": "audio/wav", "Accept-Ranges": "bytes"}))
-                pg.locator(".nodi-turn[data-turn='26'] .nodi-turn-head .fw-play-icon").click()
+                pg.locator(".nodi-turn[data-turn='26'] .fw-output-play [data-action='play']").click()
                 pg.wait_for_selector(".nodi-turn[data-turn='26'] .voce[data-state='playing']", timeout=5000)
                 pg.wait_for_timeout(300)
                 say(pg, "just a [plain] hello")

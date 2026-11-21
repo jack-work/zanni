@@ -506,7 +506,7 @@ try:
         sans_free(pg, "voice player")
         assert door_v.state()["audio"] >= 1, "the gateway audio socket was opened by the voice toggle"
         pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])", timeout=10000)
-        pg.locator(".nodi-turn[data-turn='26'] .nodi-turn-head .fw-play-icon").click()
+        pg.locator(".nodi-turn[data-turn='26'] .fw-output-play [data-action='play']").click()
         pg.wait_for_selector(".nodi-turn[data-turn='26'] .voce[data-for='26']", timeout=5000)
         until(pg, "['loading','playing','idle'].includes(document.querySelector(\".nodi-turn[data-turn='26'] .voce\").dataset.state)", 10000)
         assert pg.evaluate("window.localStorage.length + window.sessionStorage.length") == 0 or not pg.evaluate("Object.keys(window.localStorage).concat(Object.keys(window.sessionStorage)).some(k => /voice|hands/i.test(k))"), "voice and hands-free are never stored"
@@ -596,7 +596,7 @@ try:
         attend(pg, say_door, MAIN, 5)
         pg.wait_for_selector(".nodi-turn[data-turn='5']")
         assert voice_pressed(pg) == "false", "voice is off while Play asks the gateway to speak"
-        pg.locator(".nodi-turn[data-turn='5'] .nodi-turn-head .fw-play-icon").click()
+        pg.locator(".nodi-turn[data-turn='5'] .fw-output-play [data-action='play']").click()
         for _ in range(100):
             if say_door.state()["says"] == [5]:
                 break
@@ -605,7 +605,7 @@ try:
         until(pg, "(() => { const v = document.querySelector(\".nodi-turn[data-turn='5'] .voce\"); return !!v && ['live','draining','idle','playing'].includes(v.dataset.state); })()", 10000)
         assert pg.locator(".voce[data-state='expired']").count() == 0
         assert say_door.state()["audio"] >= 1, "the gateway socket opened for the ask"
-        pg.locator(".nodi-turn[data-turn='6'] .nodi-turn-head .fw-play-icon").click()
+        pg.locator(".nodi-turn[data-turn='6'] .fw-output-play [data-action='play']").click()
         for _ in range(100):
             if say_door.state()["says"] == [5, 6]:
                 break
@@ -655,7 +655,7 @@ try:
             pg.locator(".fw-inline-heard [data-action='use']").click()
             assert pg.locator(".zr-input").input_value() == "typed re-heard words"
             assert pg.locator(".fw-inline[data-kind='prose']").count() == 0, "a reply has no row of its own for play"
-            pg.locator(".nodi-turn[data-turn='26'] .nodi-turn-head .fw-play-icon").click()
+            pg.locator(".nodi-turn[data-turn='26'] .fw-output-play [data-action='play']").click()
             pg.wait_for_selector(".nodi-turn[data-turn='26'] .voce[data-for='26']", timeout=5000)
             assert pg.locator(".fw-play-big").count() == 0
             assert not pg.errors, pg.errors
