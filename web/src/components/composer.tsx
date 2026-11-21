@@ -1,7 +1,6 @@
-import { Button } from "zanni-react";
+import { Button, useLinger } from "zanni-react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
-import { useLinger } from "../lib/motion";
 import { clock } from "../lib/work";
 import { micAtom, micToggleAtom, dictationFocusAtom } from "../state/mic";
 import { linkAtom, runningAtom, workAtom } from "../state/aria";

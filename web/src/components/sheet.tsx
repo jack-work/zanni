@@ -1,8 +1,7 @@
-import { Button } from "zanni-react";
+import { Button, Sheet as ZSheet } from "zanni-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { joinDictation } from "../lib/mic";
-import { useLinger } from "../lib/motion";
 import { clipKey, sheetActions, type SheetContext, type SheetTarget } from "../lib/sheet";
 import { retranscribe } from "../lib/stt";
 import { voce, type VocePlayer } from "../lib/zanni";
@@ -16,14 +15,25 @@ const SPOKEN = { input: "Your message", prose: "Reply" } as const;
 
 export function Sheet() {
   const target = useAtomValue(sheetAtom);
+  const close = useSetAtom(closeSheetAtom);
   const last = useRef<SheetTarget | null>(null);
   if (target) last.current = target;
-  const { mounted, leaving } = useLinger(!!target);
   const shown = target ?? last.current;
-  return mounted && shown ? <SheetBody key={shown.kind + shown.turn} target={shown} leaving={leaving} /> : null;
+  return (
+    <ZSheet
+      open={!!target}
+      onClose={() => close()}
+      className="fw-sheet"
+      label="Message actions"
+      title={shown ? SPOKEN[shown.kind] + " · Turn " + shown.turn : ""}
+      data={{ "data-kind": shown?.kind }}
+    >
+      {shown ? <SheetBody key={shown.kind + shown.turn} target={shown} /> : null}
+    </ZSheet>
+  );
 }
 
-function SheetBody({ target, leaving }: { target: SheetTarget; leaving: boolean }) {
+function SheetBody({ target }: { target: SheetTarget }) {
   const close = useSetAtom(closeSheetAtom);
   const playInPlace = useSetAtom(replayAtom);
   const setDraft = useSetAtom(draftAtom(keyOf(target.store, target.aria)));
@@ -32,22 +42,13 @@ function SheetBody({ target, leaving }: { target: SheetTarget; leaving: boolean 
   const [result, setResult] = useState("");
   const slot = useRef<HTMLDivElement | null>(null);
   const player = useRef<VocePlayer | null>(null);
-  const first = useRef<HTMLButtonElement | null>(null);
-
-  useEffect(() => {
-    const before = document.activeElement as HTMLElement | null;
-    first.current?.focus();
-    const onKey = (ev: KeyboardEvent) => {
-      if (ev.key === "Escape") close();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("keydown", onKey);
+  useEffect(
+    () => () => {
       player.current?.destroy();
       player.current = null;
-      before?.focus?.({ preventScroll: true });
-    };
-  }, [close]);
+    },
+    [],
+  );
 
   const src = useCallback((key: string) => audioUrl.replace(/\/$/, "") + "/key/" + key.split("/").map(encodeURIComponent).join("/"), [audioUrl]);
 
@@ -84,40 +85,29 @@ function SheetBody({ target, leaving }: { target: SheetTarget; leaving: boolean 
 
   return (
     <>
-      <div className="fw-scrim" onClick={() => close()} {...(leaving ? { "data-leaving": "" } : {})} />
-      <div className="fw-sheet" role="dialog" aria-modal="true" aria-label="Message actions" data-kind={target.kind} {...(leaving ? { "data-leaving": "" } : {})}>
-        <div className="fw-sheet-head">
-          <span className="fw-sheet-title">
-            {SPOKEN[target.kind]} · Turn {target.turn}
-          </span>
-          <Button variant="quiet" size="compact" className="fw-sheet-close" onClick={() => close()}>
-            Close
+      <div className="fw-sheet-actions">
+        {sheetActions[target.kind].map((a, i) => (
+          <Button key={a.id} variant="outline" className="fw-sheet-act" data-action={a.id} data-autofocus={i === 0 ? "" : undefined} onClick={() => void a.run(context)}>
+            {a.label}
+          </Button>
+        ))}
+      </div>
+      <div className="fw-sheet-player" ref={slot} />
+      {note && (
+        <p className="fw-sheet-note" role="status">
+          {note}
+        </p>
+      )}
+      {result && (
+        <div className="fw-sheet-result">
+          <p className="fw-sheet-text">
+            <Plain text={result} />
+          </p>
+          <Button variant="outline" className="fw-sheet-act" data-action="use" onClick={adopt}>
+            Use text
           </Button>
         </div>
-        <div className="fw-sheet-actions">
-          {sheetActions[target.kind].map((a, i) => (
-            <Button key={a.id} variant="outline" className="fw-sheet-act" data-action={a.id} ref={i === 0 ? first : undefined} onClick={() => void a.run(context)}>
-              {a.label}
-            </Button>
-          ))}
-        </div>
-        <div className="fw-sheet-player" ref={slot} />
-        {note && (
-          <p className="fw-sheet-note" role="status">
-            {note}
-          </p>
-        )}
-        {result && (
-          <div className="fw-sheet-result">
-            <p className="fw-sheet-text">
-              <Plain text={result} />
-            </p>
-            <Button variant="outline" className="fw-sheet-act" data-action="use" onClick={adopt}>
-              Use text
-            </Button>
-          </div>
-        )}
-      </div>
+      )}
     </>
   );
 }

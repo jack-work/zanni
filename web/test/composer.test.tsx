@@ -167,7 +167,7 @@ describe("the message sheet", () => {
     await tapped('.nodi-turn[data-turn="26"] .nodi-said');
     expect(document.querySelector(".fw-sheet")!.getAttribute("data-kind")).toBe("input");
     expect([...document.querySelectorAll(".fw-sheet-act")].map((b) => b.textContent)).toEqual(["Play", "Re-transcribe"]);
-    expect(document.querySelector(".fw-sheet-title")!.textContent).toContain("Turn 26");
+    expect(document.querySelector(".zr-sheet-title")!.textContent).toContain("Turn 26");
   });
 
   it("opens on a tapped reply with play only", async () => {
@@ -189,7 +189,7 @@ describe("the message sheet", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     expect(document.querySelector(".fw-sheet")).toBeNull();
     act(() => (document.querySelector('.nodi-turn[data-turn="26"] .nodi-said') as HTMLElement).click());
-    act(() => (document.querySelector(".fw-scrim") as HTMLElement).click());
+    act(() => (document.querySelector(".zr-scrim") as HTMLElement).click());
     expect(document.querySelector(".fw-sheet")).toBeNull();
     act(() => (document.querySelector('.nodi-turn[data-turn="26"] .nodi-said') as HTMLElement).click());
     act(() => screen.getByText("Close").click());
