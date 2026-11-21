@@ -268,6 +268,7 @@ def run(bundle, quick=False):
                   look();
                 })""", MAIN)
                 times.append(t)
+                until(pg, "performance.getEntriesByName('figchat:first-frame').length > 0", 10000)
                 marks.append(pg.evaluate("(() => { const m = performance.getEntriesByName('figchat:first-frame')[0]; const a = performance.getEntriesByName('figchat:attach')[0]; return m && a ? m.startTime - a.startTime : null; })()"))
                 pg.context.close()
             d.stop()
