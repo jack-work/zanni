@@ -11,9 +11,9 @@
 
   var RATE = 24000;
   var JITTER = 0.12;
-  var PREBUFFER = 0.35;
+  var PREBUFFER = 0.15;
   var PREBUFFER_MAX = 1.2;
-  var LEAD = 0.05;
+  var LEAD = 0.01;
   var HOLD_MS = 700;
 
   function decodePCM(data) {
@@ -66,7 +66,6 @@
     var rate = opts.rate || RATE;
     var jitter = opts.jitter == null ? JITTER : opts.jitter;
     var prebuffer = opts.prebuffer || 0;
-    var target = prebuffer;
     var q = { next: 0, origin: -1, chunks: 0, samples: 0, underruns: 0, ended: false, stopped: false };
     var sources = [];
     var held = [];
@@ -84,7 +83,10 @@
       src.buffer = buffer;
       src.connect(out);
       var slot = place(q.next, ctx.currentTime, samples.length / rate, jitter);
-      if (slot.late && q.chunks) q.underruns++;
+      if (slot.late && q.chunks) {
+        q.underruns++;
+        if (opts.starved) opts.starved();
+      }
       if (!q.chunks) q.origin = slot.at;
       q.next = slot.next;
       q.chunks++;
@@ -114,12 +116,10 @@
       if (q.stopped || q.ended) return null;
       var samples = decodePCM(data);
       if (!samples.length) return null;
-      var dry = q.chunks > 0 && !held.length && !(q.next > ctx.currentTime);
-      if (!prebuffer || !(held.length || !q.chunks || dry)) return schedule(samples);
-      if (dry) target = Math.min(PREBUFFER_MAX, target * 1.5);
+      if (!prebuffer || (q.chunks && !held.length)) return schedule(samples);
       held.push(samples);
       heldSeconds += samples.length / rate;
-      if (heldSeconds >= target) return release();
+      if (heldSeconds >= prebuffer) return release();
       if (!timer) timer = setTimeout(release, HOLD_MS);
       return null;
     };
@@ -150,7 +150,7 @@
   function engine(win) {
     var e = engines.get(win);
     if (e) return e;
-    e = { ctx: null, out: null, current: null, held: false };
+    e = { ctx: null, out: null, current: null, held: false, lead: PREBUFFER };
     e.unlock = function () {
       var AC = win.AudioContext || win.webkitAudioContext;
       if (!AC) return null;
@@ -175,6 +175,9 @@
     };
     e.busy = function (player) {
       return e.held || (!!e.current && e.current !== player && e.current.busy());
+    };
+    e.starved = function () {
+      e.lead = Math.min(PREBUFFER_MAX, e.lead * 1.5);
     };
     e.hold = function (on) {
       e.held = !!on;
@@ -438,8 +441,8 @@
         dropMedia();
         live = null;
         if (!supported(format) || !eng.running()) { go('locked'); return false; }
-        var prebuffer = opts.prebuffer == null ? PREBUFFER : opts.prebuffer;
-        live = queue(eng.ctx, eng.out, { rate: format.rate || RATE, jitter: opts.jitter == null && prebuffer ? LEAD : opts.jitter, prebuffer: prebuffer, drained: function () { go('drained'); } });
+        var prebuffer = opts.prebuffer == null ? (eng.lead || PREBUFFER) : opts.prebuffer;
+        live = queue(eng.ctx, eng.out, { rate: format.rate || RATE, jitter: opts.jitter == null && prebuffer ? LEAD : opts.jitter, prebuffer: prebuffer, starved: function () { if (eng.starved) eng.starved(); }, drained: function () { go('drained'); } });
         eng.claim(api);
         go('start');
         return state === 'live';

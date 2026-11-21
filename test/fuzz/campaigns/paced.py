@@ -1,7 +1,7 @@
 from campaigns.audio import Audio, facts, playback_failure
 from engine import Failure
 
-SLACK_MS = 50
+SLACK_MS = 20
 PACE = {"seed": 7, "jitterMs": 40, "stallProbability": 0.002, "stallMs": [300, 1500], "slowStartMs": 500}
 
 
