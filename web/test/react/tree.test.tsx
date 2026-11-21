@@ -29,16 +29,14 @@ describe("treeRows (formNode rows)", () => {
     ]);
   });
 
-  it("an open branch shows its count only and its children wear the pager's guides", () => {
+  it("an open branch shows its count only, and its children sit one level deeper", () => {
     const rows = treeRows(form, (id) => id === "system" || id === "deep");
-    const open = rows.filter((r) => r.parent === "system");
-    expect(open.map((r) => r.lead)).toEqual(["├─ ", "├─ ", "├─ ", "├─ ", "└─ "]);
+    expect(rows.filter((r) => r.parent === "system").map((r) => r.depth)).toEqual([1, 1, 1, 1, 1]);
     expect(rows.find((r) => r.id === "system")!.peek).toBe("");
-    const deep = rows.filter((r) => r.parent === "deep");
-    expect(deep.map((r) => r.lead)).toEqual(["├─ ", "└─ "]);
+    expect(rows.filter((r) => r.parent === "deep").map((r) => r.label)).toEqual(["inner", "side"]);
   });
 
-  it("nested guides continue with a bar under a middle sibling and blanks under the last", () => {
+  it("nests by depth, in order, whatever the siblings are", () => {
     const roots: TreeNodeData[] = [
       {
         id: "root",
@@ -50,7 +48,7 @@ describe("treeRows (formNode rows)", () => {
       },
     ];
     const rows = treeRows(roots, () => true);
-    expect(rows.map((r) => r.lead + r.label)).toEqual(["root", "├─ a", "│  ├─ a1", "│  └─ a2", "└─ b", "   └─ b1"]);
+    expect(rows.map((r) => r.depth + r.label)).toEqual(["0root", "1a", "2a1", "2a2", "1b", "2b1"]);
   });
 
   it("a closed branch of up to three short leaves shows inline", () => {
@@ -92,7 +90,10 @@ describe("Tree", () => {
     key("j");
     expect(at()).toBe("deep");
     key("l");
-    expect(lines().slice(2, 5)).toEqual(["deep (2)", "├─ inner: {a: 1}", "└─ side: 2"]);
+    expect(lines().slice(2, 5)).toEqual(["deep (2)", "inner: {a: 1}", "side: 2"]);
+    expect(document.querySelector("[data-id='deep']")!.getAttribute("aria-expanded")).toBe("true");
+    expect(document.querySelector("[data-id='deep'] .zr-tree-disclosure")).toBeTruthy();
+    expect(document.querySelector("[data-id='side'], [data-id='deep.side']")!.querySelector(".zr-tree-disclosure")).toBeNull();
     key("j");
     key("h");
     expect(at()).toBe("deep");
@@ -150,10 +151,24 @@ describe("Tree", () => {
   });
 
   it("starts the cursor on the current row, marks it, and shows its hint only there", () => {
-    const roots: TreeNodeData[] = [{ id: "n", label: "node", count: 1, badge: "●", children: [{ id: "x", label: "x-handle", count: 8, peek: '"q"', badge: "●", hint: "Enter attend" }] }];
+    const roots: TreeNodeData[] = [{ id: "n", label: "node", count: 1, here: true, children: [{ id: "x", label: "x-handle", count: 8, peek: "", role: "@holder", mantra: "q", here: true, hint: "Enter attend" }] }];
     render(<Tree roots={roots} mark="▸" current="x" defaultOpen={() => true} />);
-    expect([...document.querySelectorAll(".zr-tree-row")].map((r) => r.textContent)).toEqual(["  node (1)  ●", '▸ └─ x-handle (8)  "q"  ●  Enter attend']);
-    expect(document.querySelector("[data-id='x']")!.getAttribute("aria-selected")).toBe("true");
+    expect([...document.querySelectorAll(".zr-tree-row")].map((r) => r.textContent)).toEqual(["  node (1)  ●", '▸ x-handle (8)  @holder  "q"  ●  Enter attend']);
+    const x = document.querySelector("[data-id='x']")!;
+    expect(x.getAttribute("aria-selected")).toBe("true");
+    expect(x.hasAttribute("data-here")).toBe(true);
+    expect([...x.querySelectorAll("[data-tone]")].map((n) => n.className + "=" + n.getAttribute("data-tone"))).toEqual(["zr-tree-label=body", "zr-tree-role=holder", "zr-tree-mantra=quiet", "zr-tree-here=label"]);
+    expect(x.getAttribute("aria-level")).toBe("2");
+    expect(document.querySelector("[data-id='n']")!.getAttribute("aria-level")).toBe("1");
+  });
+
+  it("hands a key it does not own to the caller with the cursor row", () => {
+    const x = vi.fn();
+    render(<Tree roots={form} mark="▸" keys={{ x }} />);
+    fireEvent.keyDown(screen.getByRole("tree"), { key: "j" });
+    fireEvent.keyDown(screen.getByRole("tree"), { key: "x" });
+    expect(x).toHaveBeenCalledWith("datetime");
+    expect(fireEvent.keyDown(screen.getByRole("tree"), { key: "q" })).toBe(true);
   });
 
   it("takes focus when asked, so the pager's keys work at once", () => {

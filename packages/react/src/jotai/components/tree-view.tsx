@@ -1,30 +1,26 @@
 import { Tree, glyphs, type TreeNodeData } from "../../index";
 import { useAtomValue, useSetAtom } from "jotai";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ancestorsOf, formNodes, topologyNodes } from "../lib/topology";
-import { factsOfAtom, nodeFormAtom, treeStateAtom } from "../state/pit";
-import { attendedAtom, goAtom, storeNameAtom } from "../state/route";
+import { topologyFormsAtom, treeStateAtom } from "../state/pit";
+import { attendedAtom, clientAtom, goAtom, storeNameAtom } from "../state/route";
+
+const ARM_MS = 5000;
 
 export function TopologyTree({ onVisit, autoFocus, className }: { onVisit?: () => void; autoFocus?: boolean; className?: string }) {
   const tree = useAtomValue(treeStateAtom);
-  const [shown, setShown] = useState<readonly string[]>([]);
-  const factsAtom = useMemo(() => factsOfAtom(shown), [shown]);
-  const facts = useAtomValue(factsAtom);
+  const forms = useAtomValue(topologyFormsAtom);
   const attended = useAtomValue(attendedAtom);
+  const client = useAtomValue(clientAtom);
   const store = useAtomValue(storeNameAtom);
   const go = useSetAtom(goAtom);
-  const here = attended?.aria;
-  const nodeForm = useAtomValue(nodeFormAtom);
-  const nodeChildren = nodeForm?.ready ? Object.keys(nodeForm.root).length : undefined;
-  const roots = useMemo(() => {
-    if (!tree) return [];
-    const counts: Record<string, number> = {};
-    for (const id of Object.keys(facts)) {
-      const turns = facts[id]?.turns;
-      if (turns !== undefined) counts[id] = turns;
-    }
-    return topologyNodes(tree, here, store, counts, nodeChildren);
-  }, [tree, facts, here, store, nodeChildren]);
+  const last = useRef<string | undefined>(undefined);
+  if (attended) last.current = attended.aria;
+  const here = attended?.aria ?? last.current;
+  const [note, setNote] = useState("");
+  const armed = useRef<{ id: string; timer: ReturnType<typeof setTimeout> } | null>(null);
+  useEffect(() => () => clearTimeout(armed.current?.timer), []);
+  const roots = useMemo(() => (tree ? topologyNodes(tree, here, forms) : []), [tree, here, forms]);
   const open = useMemo(() => {
     const chain = tree ? ancestorsOf(tree, here) : new Set<string>();
     if (here) chain.add(here);
@@ -32,6 +28,26 @@ export function TopologyTree({ onVisit, autoFocus, className }: { onVisit?: () =
   }, [tree, here]);
   const defaultOpen = useMemo(() => (id: string) => id.startsWith("@") || open.has(id), [open]);
   if (!tree) return <p className="fw-note">No such store.</p>;
+
+  const kill = (id: string) => {
+    const node = tree.nodes.get(id);
+    if (!node || !client) return;
+    const name = node.handle ?? node.label;
+    if (armed.current?.id === id) {
+      clearTimeout(armed.current.timer);
+      armed.current = null;
+      setNote("");
+      client.connection.call("figaro.kill", { figaro_id: id }).then(
+        () => setNote("Killed " + name + "."),
+        (err: unknown) => setNote("Not killed: " + (err instanceof Error && err.message ? err.message : "network")),
+      );
+      return;
+    }
+    clearTimeout(armed.current?.timer);
+    armed.current = { id, timer: setTimeout(() => ((armed.current = null), setNote("")), ARM_MS) };
+    setNote("press x again to kill " + name);
+  };
+
   const status = tree.error ? "No topology: " + tree.error : !tree.ready && roots.length === 0 ? "Loading the topology." : roots.length === 0 ? "No arias." : "";
   return (
     <>
@@ -43,14 +59,18 @@ export function TopologyTree({ onVisit, autoFocus, className }: { onVisit?: () =
         current={here}
         defaultOpen={defaultOpen}
         autoFocus={autoFocus}
-        onRows={setShown}
+        keys={{ x: kill }}
         onActivate={(id) => {
           if (id.startsWith("@")) return;
           onVisit?.();
           go({ store, aria: id });
         }}
       />
-      {status && <p className="fw-note">{status}</p>}
+      {(note || status) && (
+        <p className="fw-note" role="status">
+          {note || status}
+        </p>
+      )}
     </>
   );
 }

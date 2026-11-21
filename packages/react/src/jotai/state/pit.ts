@@ -1,6 +1,7 @@
 import { atom } from "jotai";
 import { ariaFactsAtom, boundFormAtom, recentAtom, treeAtom } from "figaro-forms/aria/jotai";
-import type { AriaFacts } from "figaro-forms/aria";
+import { troupeFormID, type AriaFacts } from "figaro-forms/aria";
+import type { TopologyForms } from "../lib/topology";
 import { FORKED_FROM_KEY, valueAt, type PitView } from "../lib/pit-rows";
 import { attendedAtom, clientAtom } from "./route";
 
@@ -49,21 +50,14 @@ export const recentStateAtom = atom((get) => {
   return client ? get(recentAtom(client)) : undefined;
 });
 
-export const nodeFormAtom = atom((get) => {
+export const topologyFormsAtom = atom((get): TopologyForms => {
   const client = get(clientAtom);
   const tree = get(treeStateAtom);
-  const daemon = tree?.daemons.find((d) => d.self) ?? tree?.daemons[0];
-  return client && daemon ? get(boundFormAtom(client, daemon.form)) : undefined;
+  const arias: Record<string, unknown> = {};
+  if (!client || !tree) return { troupe: undefined, arias };
+  for (const d of tree.daemons) arias[d.id] = get(boundFormAtom(client, d.form)).root;
+  return { troupe: get(boundFormAtom(client, troupeFormID)).root, arias };
 });
-
-export function factsOfAtom(ids: readonly string[]) {
-  return atom((get): Readonly<Record<string, AriaFacts>> => {
-    const client = get(clientAtom);
-    const out: Record<string, AriaFacts> = {};
-    if (client) for (const id of ids) if (!id.startsWith("@")) out[id] = get(ariaFactsAtom(client, id));
-    return out;
-  });
-}
 
 export const attendedFactsAtom = atom((get) => {
   const at = get(attendedAtom);

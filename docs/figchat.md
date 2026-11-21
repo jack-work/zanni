@@ -71,9 +71,17 @@ not in atoms.
 
 ## What the app does
 
-- List: the topology Tree (one `Tree` with the pager's formNode semantics),
-  opened to the attended aria's chain; turn counts and mantras come from each
-  aria's own facts (`ariaFactsAtom`), not the roster page.
+- List: the topology Tree, the pager's `:ls` and not `figaro ls`: the node's
+  row (its id, the keys of its @troupe entry, ● when it is this node), `arias`,
+  then one row per aria by `active_at` descending, forks nested under their
+  parent. A row reads handle, `(N)` the number of keys in that aria's form node,
+  the `role` key, the mantra in quotes, and ● on the attended aria; the cursor
+  row adds `Enter attend · x kill`. Indentation and the disclosure caret are DOM
+  and CSS, no guide characters. Open on arrival: the node, `arias`, the attended
+  aria's chain and the aria itself (it is remembered when the list is shown
+  after leaving it, at 390). j k l h gg G Enter as the pager; `x` says "press x
+  again to kill <handle>" and a second `x` asks the door, which the delegated
+  gateway refuses, and the refusal is shown.
 - Attend: the stream reads backward from the end in byte-budget pages and
   follows live. Following lets go when the reader scrolls up and a Latest pill
   says new content landed below. Earlier turns page in above without moving

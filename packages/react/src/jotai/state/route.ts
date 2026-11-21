@@ -22,8 +22,9 @@ hashAtom.onMount = (set) => {
 
 export const routeAtom = atom<Route | null>((get) => parseRoute(get(hashAtom)));
 
-export const goAtom = atom(null, (_get, _set, to: { store: string; aria?: string; turn?: number } | null) => {
+export const goAtom = atom(null, (_get, set, to: { store: string; aria?: string; turn?: number } | null) => {
   window.location.hash = to ? routeFor(to.store, to.aria, to.turn) : "#/";
+  set(hashAtom, window.location.hash);
 });
 
 export const storeNameAtom = atom((get) => get(routeAtom)?.store || get(bootAtom).store);

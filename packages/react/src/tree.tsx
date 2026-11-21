@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { glyphs } from "./glyphs";
 
 export interface TreeNodeData {
   id: string;
@@ -6,7 +7,9 @@ export interface TreeNodeData {
   value?: string;
   count?: number;
   peek?: string;
-  badge?: string;
+  role?: string;
+  mantra?: string;
+  here?: boolean;
   hint?: string;
   children?: readonly TreeNodeData[];
 }
@@ -15,7 +18,6 @@ export interface TreeRowData {
   id: string;
   parent: string | undefined;
   depth: number;
-  lead: string;
   label: string;
   leaf: boolean;
   gap: string;
@@ -23,7 +25,9 @@ export interface TreeRowData {
   inline: string;
   count: number;
   peek: string;
-  badge: string;
+  role: string;
+  mantra: string;
+  here: boolean;
   hint: string;
   expandable: boolean;
   open: boolean;
@@ -58,21 +62,18 @@ export function inlineBranch(kids: readonly TreeNodeData[]): string {
 
 export function treeRows(roots: readonly TreeNodeData[], isOpen: (id: string, depth: number) => boolean = () => false): TreeRowData[] {
   const rows: TreeRowData[] = [];
-  const walk = (kids: readonly TreeNodeData[], depth: number, cont: string, parent: string | undefined) => {
+  const walk = (kids: readonly TreeNodeData[], depth: number, parent: string | undefined) => {
     let pad = 0;
     for (const k of kids) if (k.value !== undefined) pad = Math.max(pad, Math.min(width(k.label), LABEL_PAD_MAX));
-    kids.forEach((n, i) => {
+    for (const n of kids) {
       const sub = n.children ?? [];
       const leaf = n.value !== undefined && sub.length === 0;
       const open = !leaf && sub.length > 0 && isOpen(n.id, depth);
-      const last = i === kids.length - 1;
-      const lead = depth === 0 ? "" : cont + (last ? "└─ " : "├─ ");
       const own = leaf && width(n.label) > LABEL_PAD_MAX ? 0 : pad;
       rows.push({
         id: n.id,
         parent,
         depth,
-        lead,
         label: n.label,
         leaf,
         gap: leaf ? " ".repeat(Math.max(own - width(n.label), 0)) : "",
@@ -80,15 +81,17 @@ export function treeRows(roots: readonly TreeNodeData[], isOpen: (id: string, de
         inline: !leaf && !open && n.peek === undefined ? inlineBranch(sub) : "",
         count: n.count ?? sub.length,
         peek: n.peek ?? (open ? "" : branchPeek(sub)),
-        badge: n.badge ?? "",
+        role: n.role ?? "",
+        mantra: n.mantra ?? "",
+        here: n.here === true,
         hint: n.hint ?? "",
         expandable: sub.length > 0,
         open,
       });
-      if (open) walk(sub, depth + 1, depth === 0 ? "" : cont + (last ? "   " : "│  "), n.id);
-    });
+      if (open) walk(sub, depth + 1, n.id);
+    }
   };
-  walk(roots, 0, "", undefined);
+  walk(roots, 0, undefined);
   return rows;
 }
 
@@ -100,6 +103,7 @@ export interface TreeProps {
   onActivate?: (id: string) => void;
   autoFocus?: boolean;
   onRows?: (ids: readonly string[]) => void;
+  keys?: Readonly<Record<string, (id: string) => void>>;
   label?: string;
   className?: string;
   empty?: ReactNode;
@@ -107,7 +111,7 @@ export interface TreeProps {
 
 const never = () => false;
 
-export function Tree({ roots, mark, current, defaultOpen = never, onActivate, autoFocus, onRows, label, className, empty }: TreeProps) {
+export function Tree({ roots, mark, current, defaultOpen = never, onActivate, autoFocus, onRows, keys, label, className, empty }: TreeProps) {
   const [chosen, setChosen] = useState<ReadonlyMap<string, boolean>>(new Map());
   const [cursorId, setCursorId] = useState<string | undefined>(undefined);
   const lastKey = useRef("");
@@ -187,8 +191,11 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, au
       case "Enter":
         activate(cursor);
         break;
-      default:
-        return;
+      default: {
+        const own = keys?.[e.key];
+        if (!own) return;
+        own(cursor.id);
+      }
     }
     e.preventDefault();
   };
@@ -208,6 +215,8 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, au
             aria-selected={selected}
             data-id={r.id}
             data-depth={r.depth}
+            data-leaf={r.expandable ? undefined : ""}
+            data-here={r.here ? "" : undefined}
             data-cursor={selected ? "true" : undefined}
             onClick={() => {
               setCursorId(r.id);
@@ -215,8 +224,11 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, au
             }}
           >
             <span className="zr-tree-mark">{selected ? mark : " "} </span>
-            <span className="zr-tree-lead">{r.lead}</span>
-            <span className="zr-tree-label">{r.label}</span>
+            <span className="zr-tree-indent" aria-hidden="true" />
+            <span className={r.expandable ? "zr-tree-disclosure" : "zr-tree-pad"} aria-hidden="true" />
+            <span className="zr-tree-label" data-tone="body">
+              {r.label}
+            </span>
             {r.leaf ? (
               <>
                 <span className="zr-tree-colon">: </span>
@@ -231,7 +243,21 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, au
                 {r.peek && <span className="zr-tree-peek">{"  " + r.peek}</span>}
               </>
             )}
-            {r.badge && <span className="zr-tree-badge">{"  " + r.badge}</span>}
+            {r.role && (
+              <span className="zr-tree-role" data-tone="holder">
+                {"  " + r.role}
+              </span>
+            )}
+            {r.mantra && (
+              <span className="zr-tree-mantra" data-tone="quiet">
+                {"  " + JSON.stringify(r.mantra)}
+              </span>
+            )}
+            {r.here && (
+              <span className="zr-tree-here" data-tone="label">
+                {"  " + glyphs["state.here"]}
+              </span>
+            )}
             {selected && r.hint && <span className="zr-tree-hint">{"  " + r.hint}</span>}
           </div>
         );

@@ -1,4 +1,4 @@
-import { clipEllipsis, glyphs, VALUE_COLUMNS, type TreeNodeData } from "../../index";
+import { clipEllipsis, VALUE_COLUMNS, type TreeNodeData } from "../../index";
 import type { TreeNode, TreeState } from "figaro-forms/aria";
 
 const EPOCH_MS_LOW = 1_000_000_000_000;
@@ -20,9 +20,34 @@ export function leafPreview(label: string, v: unknown): string {
   return clipEllipsis(raw.replace(/\s+/g, " ").trim(), VALUE_COLUMNS);
 }
 
-export function topologyNodes(tree: TreeState, here: string | undefined, storeId: string, counts: Readonly<Record<string, number>> = {}, nodeChildren?: number): TreeNodeData[] {
+export interface TopologyForms {
+  readonly troupe: unknown;
+  readonly arias: Readonly<Record<string, unknown>>;
+}
+
+function keyCount(v: unknown): number {
+  return v !== null && typeof v === "object" && !Array.isArray(v) ? Object.keys(v).length : 0;
+}
+
+export function ariaKeyCounts(root: unknown): Map<string, number> {
+  const out = new Map<string, number>();
+  const walk = (level: unknown) => {
+    if (level === null || typeof level !== "object") return;
+    for (const row of Object.values(level as Record<string, unknown>)) {
+      if (row === null || typeof row !== "object") continue;
+      const id = (row as { id?: unknown }).id;
+      if (typeof id === "string") out.set(id, keyCount(row));
+      walk((row as { forks?: unknown }).forks);
+    }
+  };
+  walk((root as { arias?: unknown } | undefined)?.arias);
+  return out;
+}
+
+export function topologyNodes(tree: TreeState, here: string | undefined, forms: TopologyForms): TreeNodeData[] {
+  const counts = new Map<string, number>();
+  for (const root of Object.values(forms.arias)) for (const [id, n] of ariaKeyCounts(root)) counts.set(id, n);
   const make = (n: TreeNode): TreeNodeData => {
-    const msgs = counts[n.id];
     const kids = n.children.flatMap((c) => {
       const k = tree.nodes.get(c);
       return k ? [make(k)] : [];
@@ -30,21 +55,28 @@ export function topologyNodes(tree: TreeState, here: string | undefined, storeId
     return {
       id: n.id,
       label: n.handle ?? n.label,
-      count: msgs ?? kids.length,
-      peek: n.mantra ? JSON.stringify(n.mantra) : "",
-      badge: n.id === here ? glyphs["state.here"] : "",
-      hint: "Enter attend",
+      count: counts.get(n.id) ?? kids.length,
+      peek: "",
+      role: n.roles.join(" "),
+      mantra: n.mantra ?? "",
+      here: n.id === here,
+      hint: "Enter attend · x kill",
       children: kids,
     };
   };
-  const arias = tree.roots.flatMap((id) => {
-    const n = tree.nodes.get(id);
-    return n ? [make(n)] : [];
-  });
-  if (arias.length === 0) return [];
-  const node = tree.daemons.find((d) => d.self)?.id ?? tree.daemons[0]?.id ?? storeId;
-  const group: TreeNodeData = { id: "@arias", label: "arias", count: arias.length, children: arias };
-  return [{ id: "@node:" + node, label: node, count: nodeChildren ?? 1, badge: here ? glyphs["state.here"] : "", children: [group] }];
+  const out: TreeNodeData[] = [];
+  for (const d of tree.daemons) {
+    const arias = tree.roots.flatMap((id) => {
+      const n = tree.nodes.get(id);
+      return n && n.daemon === d.id ? [make(n)] : [];
+    });
+    if (arias.length === 0) continue;
+    const top = (forms.arias[d.id] as { arias?: unknown } | undefined)?.arias;
+    const group: TreeNodeData = { id: "@arias:" + d.id, label: "arias", count: keyCount(top) || arias.length, peek: "", children: arias };
+    const mine = (forms.troupe as Record<string, unknown> | undefined)?.[d.id];
+    out.push({ id: "@node:" + d.id, label: d.id, count: keyCount(mine) || 1, peek: "", here: d.self, children: [group] });
+  }
+  return out;
 }
 
 export function ancestorsOf(tree: TreeState, id: string | undefined): Set<string> {

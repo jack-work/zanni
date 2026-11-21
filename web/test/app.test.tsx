@@ -38,8 +38,9 @@ describe("the list", () => {
     expect(depths).toContain("0");
     expect(depths).toContain("1");
     const rows = [...document.querySelectorAll(".zr-tree-row")].map((r) => r.textContent ?? "");
-    expect(rows[1]).toMatch(/^ {2}└─ arias \(\d+\)/);
+    expect(rows[1]).toMatch(/^ {2}arias \(\d+\)/);
     expect(rows.some((r) => /\(\d+\)  ".+"/.test(r))).toBe(true);
+    expect(rows.join("")).not.toMatch(/[│├└─]/);
     expect(document.querySelectorAll(".zr-tree th, .zr-tree button").length).toBe(0);
     const main = document.querySelector<HTMLElement>(".zr-tree-row[data-id='" + "c0ffee01".repeat(4) + "']")!;
     act(() => main.click());
@@ -71,19 +72,19 @@ describe("the list", () => {
     await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id='" + forked.alternative + "']")).toBeTruthy());
   });
 
-  it("takes each row's turn count and the bar's mantra from the aria's own facts, not the roster's first page", async () => {
+  it("counts each row's keys as the pager's :ls does, and takes the bar's mantra from the aria's own facts", async () => {
     open("#/");
     await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id='" + "c0ffee08".repeat(4) + "']")).toBeTruthy());
-    await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id='" + "c0ffee08".repeat(4) + "']")!.textContent).toMatch(/Scratch 2.*\(3\)|\(3\).*Scratch 2/));
+    await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id='" + "c0ffee08".repeat(4) + "']")!.textContent).toMatch(/Scratch 2.*\(6\)/));
     const mains = document.querySelector(".zr-tree-row[data-id='" + "c0ffee01".repeat(4) + "']")!.textContent ?? "";
-    expect(mains).toContain("(26)");
+    expect(mains).toMatch(/\(8\)/);
     act(() => {
       window.location.hash = "#/gluck/" + "c0ffee08".repeat(4);
     });
     await waitFor(() => expect(document.querySelector(".fw-status-mantra")?.textContent).toBe("Scratch 2"));
   });
 
-  it("counts the node's own children, not a fixed one", async () => {
+  it("counts the troupe row's own keys, not a fixed one", async () => {
     open("#/");
     await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id^='@node:']")).toBeTruthy());
     await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id^='@node:']")!.textContent).toContain("(2)"));

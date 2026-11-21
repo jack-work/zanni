@@ -850,8 +850,9 @@ try:
             depths = pg.evaluate("[...document.querySelectorAll('.zr-pit .zr-tree-row')].map(r => r.dataset.depth)")
             assert "0" in depths and "1" in depths, "the tree nests: %s" % depths
             assert pg.locator(".zr-pit .zr-tree-row[data-id='%s']" % MAIN).get_attribute("aria-selected") == "true", "the attended aria is marked"
-            assert pg.locator(".zr-pit .zr-tree-row[data-id='%s'] .zr-tree-lead" % LANE).text_content().strip() in ("├─", "└─"), "branch glyphs are the pager's"
-            assert pg.locator(".zr-pit .zr-tree-row[data-id='%s'] .zr-tree-badge" % MAIN).text_content().strip() == "●", "the attended row wears the pager's here mark"
+            assert pg.locator(".zr-pit .zr-tree-row[data-id='%s']" % MAIN).get_attribute("aria-expanded") == "true" and pg.locator(".zr-pit .zr-tree-row[data-id='%s'] .zr-tree-disclosure" % MAIN).count() == 1, "an open row has a disclosure caret in the DOM"
+            assert pg.locator(".zr-pit .zr-tree-row[data-id='%s'] .zr-tree-here" % MAIN).text_content().strip() == "●", "the attended row wears the pager's here mark"
+            assert not any(c in pg.locator(".zr-pit .zr-tree").inner_text() for c in "│├└─"), "no guide characters, the tree is rendered"
             pg.locator(".zr-pit .zr-tree-row[data-id='%s']" % LANE).click()
             pg.wait_for_selector(".zr-pit", state="detached")
             until(pg, "location.hash.includes('%s')" % LANE, 5000)
