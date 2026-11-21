@@ -123,6 +123,17 @@ describe("the voice hub", () => {
     expect(r.log.filter((l) => l.startsWith("say"))).toEqual(["say 27"]);
   });
 
+  it("treats a ledger restored after a reload as heard up to and including its chars", async () => {
+    const played = new Map<string, Played>([[ARIA + ":27:1", { chars: 12, next: 8, epoch: 0 }]]);
+    const r = rig({ played });
+    r.start(27);
+    r.chunk(27, 1, 5, 0);
+    r.chunk(27, 1, 12, 4);
+    r.chunk(27, 1, 20, 8);
+    await settle();
+    expect(r.log).toEqual(["p1 start", "p1 push"]);
+  });
+
   it("speaks a reply into the prose slot of its node and marks the node while it is heard", async () => {
     const r = rig();
     r.start(27);

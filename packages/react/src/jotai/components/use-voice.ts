@@ -11,7 +11,46 @@ const slotQuery = (turn: number, node: number) => document.querySelector<HTMLEle
 const firstSlot = (turn: number) => document.querySelector<HTMLElement>('.nodi-turn[data-turn="' + turn + '"] [data-voice-slot]');
 const pause = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const NOTE_MS = 4000;
-const played = new Map<string, Played>();
+const HEARD_KEY = "fw.heard";
+const HEARD_KEEP = 40;
+
+class Heard extends Map<string, Played> {
+  private ready = false;
+
+  constructor() {
+    super();
+    try {
+      const raw = window.sessionStorage.getItem(HEARD_KEY);
+      for (const [k, v] of raw ? (JSON.parse(raw) as [string, Played][]) : []) super.set(k, { ...v, epoch: 0 });
+    } catch {
+      this.clear();
+    }
+    this.ready = true;
+  }
+
+  private save(): void {
+    if (!this.ready) return;
+    try {
+      window.sessionStorage.setItem(HEARD_KEY, JSON.stringify([...this].slice(-HEARD_KEEP)));
+    } catch {
+      return;
+    }
+  }
+
+  override set(key: string, value: Played): this {
+    super.set(key, value);
+    this.save();
+    return this;
+  }
+
+  override delete(key: string): boolean {
+    const had = super.delete(key);
+    this.save();
+    return had;
+  }
+}
+
+const played = new Heard();
 
 export function useVoice({ aria, store }: Attended): void {
   const transport = useAtomValue(speechTransportAtom);

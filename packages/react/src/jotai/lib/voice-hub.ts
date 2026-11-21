@@ -52,6 +52,7 @@ let epochs = 0;
 function heardAlready(c: SpeechChunk, was: Played | undefined, epoch: number): boolean {
   if (!was) return false;
   if (c.chars !== undefined && c.chars < was.chars) return true;
+  if (was.epoch === 0 && c.chars !== undefined && c.chars === was.chars) return true;
   return epoch === was.epoch && (c.chars === undefined || c.chars === was.chars) && c.offset < was.next;
 }
 
