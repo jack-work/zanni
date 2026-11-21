@@ -36,6 +36,7 @@ export function pitStep(snap: PitSnap, direction: 1 | -1): PitSnap {
 
 interface Gesture {
   id: number;
+  target: HTMLElement;
   grip: boolean;
   startY: number;
   startHeight: number;
@@ -55,8 +56,6 @@ interface PitState {
 interface GrabProps {
   onPointerDown: (ev: PointerEvent<HTMLElement>) => void;
   onPointerMove: (ev: PointerEvent<HTMLElement>) => void;
-  onPointerUp: (ev: PointerEvent<HTMLElement>) => void;
-  onPointerCancel: (ev: PointerEvent<HTMLElement>) => void;
 }
 
 const PitContext = createContext<PitState | null>(null);
@@ -95,6 +94,12 @@ export function PitProvider({ snap: controlled, defaultSnap = "closed", onSnapCh
   live.current = { snap, viewport, onSnapChange };
 
   const setSnap = useCallback((next: PitSnap) => {
+    const g = gesture.current;
+    if (g) {
+      gesture.current = null;
+      if (g.target.hasPointerCapture?.(g.id)) g.target.releasePointerCapture(g.id);
+      setDragging(false);
+    }
     setOwn(next);
     live.current.onSnapChange?.(next);
   }, []);
@@ -117,21 +122,32 @@ export function PitProvider({ snap: controlled, defaultSnap = "closed", onSnapCh
   );
 
   const finish = useCallback(
-    (ev: PointerEvent<HTMLElement>, cancelled: boolean) => {
+    (pointerId: number, cancelled: boolean, at: number) => {
       const g = gesture.current;
-      if (!g || g.id !== ev.pointerId) return;
+      if (!g || g.id !== pointerId) return;
       gesture.current = null;
-      if (ev.currentTarget.hasPointerCapture?.(ev.pointerId)) ev.currentTarget.releasePointerCapture(ev.pointerId);
+      if (g.target.hasPointerCapture?.(g.id)) g.target.releasePointerCapture(g.id);
       if (!g.moved) {
         if (g.grip && !cancelled) setSnap(live.current.snap === "closed" ? "half" : "closed");
         return;
       }
-      const speed = cancelled ? 0 : velocityOf(g.samples, ev.timeStamp);
+      const next = pitSettle(g.height, live.current.viewport, cancelled ? 0 : velocityOf(g.samples, at));
       setDragging(false);
-      setSnap(pitSettle(g.height, live.current.viewport, speed));
+      setSnap(next);
+      if (next === "closed") document.documentElement.style.removeProperty(PIT_HEIGHT_VAR);
+      else writeHeight(pitHeight(next, live.current.viewport));
     },
     [setSnap],
   );
+
+  useEffect(() => {
+    const end = (ev: globalThis.PointerEvent) => finish(ev.pointerId, ev.type !== "pointerup", ev.timeStamp);
+    const names = ["pointerup", "pointercancel", "lostpointercapture"] as const;
+    for (const name of names) window.addEventListener(name, end, true);
+    return () => {
+      for (const name of names) window.removeEventListener(name, end, true);
+    };
+  }, [finish]);
 
   const grab = useCallback(
     (grip: boolean): GrabProps => ({
@@ -141,7 +157,7 @@ export function PitProvider({ snap: controlled, defaultSnap = "closed", onSnapCh
         if (target.closest("button:not([data-grab])")) return;
         ev.currentTarget.setPointerCapture?.(ev.pointerId);
         const start = panel.current ? panel.current.getBoundingClientRect().height : Math.max(0, live.current.viewport - ev.clientY);
-        gesture.current = { id: ev.pointerId, grip, startY: ev.clientY, startHeight: start, height: start, moved: false, samples: [{ t: ev.timeStamp, y: ev.clientY }] };
+        gesture.current = { id: ev.pointerId, target: ev.currentTarget, grip, startY: ev.clientY, startHeight: start, height: start, moved: false, samples: [{ t: ev.timeStamp, y: ev.clientY }] };
       },
       onPointerMove: (ev) => {
         const g = gesture.current;
@@ -157,10 +173,8 @@ export function PitProvider({ snap: controlled, defaultSnap = "closed", onSnapCh
         if (g.samples.length > 12) g.samples.shift();
         writeHeight(g.height);
       },
-      onPointerUp: (ev) => finish(ev, false),
-      onPointerCancel: (ev) => finish(ev, true),
     }),
-    [finish],
+    [],
   );
 
   const value = useMemo<PitState>(() => ({ snap, setSnap, dragging, panel, grab }), [snap, setSnap, dragging, grab]);
