@@ -102,6 +102,7 @@ export interface TreeProps {
   current?: string;
   defaultOpen?: (id: string, depth: number) => boolean;
   onActivate?: (id: string) => void;
+  onEdit?: (id: string) => void;
   autoFocus?: boolean;
   onRows?: (ids: readonly string[]) => void;
   keys?: Readonly<Record<string, (id: string) => void>>;
@@ -113,7 +114,7 @@ export interface TreeProps {
 
 const never = () => false;
 
-export function Tree({ roots, mark, current, defaultOpen = never, onActivate, autoFocus, onRows, keys, label, testid, className, empty }: TreeProps) {
+export function Tree({ roots, mark, current, defaultOpen = never, onActivate, onEdit, autoFocus, onRows, keys, label, testid, className, empty }: TreeProps) {
   const [chosen, setChosen] = useState<ReadonlyMap<string, boolean>>(new Map());
   const [cursorId, setCursorId] = useState<string | undefined>(undefined);
   const lastKey = useRef("");
@@ -194,6 +195,10 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, au
         activate(cursor);
         break;
       default: {
+        if (e.key === "c" && onEdit && cursor.leaf) {
+          onEdit(cursor.id);
+          break;
+        }
         const own = keys?.[e.key];
         if (!own) return;
         own(cursor.id);
@@ -223,7 +228,8 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, au
             data-cursor={selected ? "true" : undefined}
             onClick={() => {
               setCursorId(r.id);
-              activate(r);
+              if (onEdit && r.leaf) onEdit(r.id);
+              else activate(r);
             }}
           >
             <Glyph glyph={selected ? mark : ""} className="zr-tree-mark" />

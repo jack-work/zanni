@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createStore, Provider } from "jotai";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { App } from "../src/app";
@@ -161,5 +161,66 @@ describe("bench hooks", () => {
     for (const id of ["composer-input", "send", "transcript-scroller", "pit-grip"]) expect(document.querySelectorAll('[data-testid="' + id + '"]').length, id).toBe(1);
     expect(document.querySelectorAll('[data-testid="topology-row"]').length).toBeGreaterThan(5);
     expect(document.querySelector('[data-testid="composer-input"]')!.tagName).toBe("TEXTAREA");
+  });
+});
+
+describe("the state pit writes", () => {
+  const openState = async () => {
+    open("#/gluck/" + "c0ffee01".repeat(4));
+    await waitFor(() => expect(document.querySelector(".fw-status-handle")).toBeTruthy());
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Open controls" }));
+    });
+    act(() => {
+      fireEvent.click(screen.getByText("State"));
+    });
+    await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id='mantra']")).toBeTruthy());
+  };
+
+  it("sets the mantra from a tap on its value, and the tree shows the new one", async () => {
+    await openState();
+    fireEvent.click(document.querySelector(".zr-tree-row[data-id='mantra']")!);
+    const box = screen.getByRole("textbox", { name: "Value" }) as HTMLTextAreaElement;
+    expect(box.value.startsWith('"')).toBe(true);
+    fireEvent.change(box, { target: { value: "Edited from the web" } });
+    fireEvent.click(screen.getByRole("button", { name: "Set" }));
+    await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id='mantra']")?.textContent).toContain("Edited from the web"));
+    expect((core as MockCore & { sets?: { keys: string[] }[] }).sets?.[0]?.keys).toEqual(["mantra"]);
+  });
+
+  it("shows the refusal when a reserved key is tried, and keeps the editor open", async () => {
+    await openState();
+    fireEvent.click(screen.getByRole("button", { name: "Set a key" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Key" }), { target: { value: "system.model" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Value" }), { target: { value: "x" } });
+    fireEvent.click(screen.getByRole("button", { name: "Set" }));
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toMatch(/^system\.model is read-only here: /));
+    expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Key" }));
+  });
+
+  it("reads the value as JSON when it parses and as a string when it does not, as the pager does", async () => {
+    await openState();
+    fireEvent.click(screen.getByRole("button", { name: "Set a key" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Key" }), { target: { value: "count" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Value" }), { target: { value: "42" } });
+    fireEvent.click(screen.getByRole("button", { name: "Set" }));
+    await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id='count'] .zr-tree-value")?.textContent).toBe("42"));
+    fireEvent.click(document.querySelector(".zr-tree-row[data-id='count']")!);
+    expect((screen.getByRole("textbox", { name: "Value" }) as HTMLTextAreaElement).value).toBe("42");
+    fireEvent.change(screen.getByRole("textbox", { name: "Value" }), { target: { value: "forty two" } });
+    fireEvent.click(screen.getByRole("button", { name: "Set" }));
+    await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id='count'] .zr-tree-value")?.textContent).toBe('"forty two"'));
+  });
+
+  it("opens the editor on c over a leaf, and Escape returns to the tree", async () => {
+    await openState();
+    const tree = screen.getByRole("tree", { name: "Bound form" });
+    tree.focus();
+    let guard = 0;
+    while (tree.querySelector("[data-cursor]")?.getAttribute("data-id") !== "mantra" && guard++ < 20) fireEvent.keyDown(tree, { key: "j" });
+    fireEvent.keyDown(tree, { key: "c" });
+    expect(screen.getByRole("textbox", { name: "Value" })).toBeTruthy();
+    fireEvent.keyDown(screen.getByRole("textbox", { name: "Value" }), { key: "Escape" });
+    expect(screen.getByRole("tree", { name: "Bound form" })).toBeTruthy();
   });
 });

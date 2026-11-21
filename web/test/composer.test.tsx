@@ -7,6 +7,7 @@ import { dictatedAtom, draftAtom, SAVE_DELAY_MS } from "zanni-react/jotai";
 import { glyphs } from "zanni-react";
 import { mockDoor, type MockCore } from "./mock";
 import type { AriaClient } from "figaro-forms/aria";
+import { glyphs } from "figaro-forms/glyphs";
 
 const MAIN = "c0ffee01".repeat(4);
 let core: MockCore;
