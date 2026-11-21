@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, type KeyboardEvent, type ReactNode, type Ref } from "react";
-import { Button } from "./button";
+import { Pill, PillPair, type PillSpec } from "./pill";
 import { Strip, type StripProps } from "./strip";
 import { useLinger } from "./motion";
 import { onKeyboard } from "./viewport";
@@ -13,6 +13,9 @@ export interface ComposerProps {
   label?: string;
   placeholder?: string;
   sendLabel: string;
+  sendGlyph: string;
+  attach?: PillSpec;
+  command?: PillSpec;
   sendDisabled?: boolean;
   running?: boolean;
   strip?: Omit<StripProps, "leaving"> | null;
@@ -49,7 +52,7 @@ export function useSizeVar(ref: { current: HTMLElement | null }, name: string): 
 }
 
 export function Composer(props: ComposerProps) {
-  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendDisabled, running, strip, stripActions, accessory, grip, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
+  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendGlyph, attach, command, sendDisabled, running, strip, stripActions, accessory, grip, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
   const form = useRef<HTMLFormElement | null>(null);
   const input = useRef<HTMLTextAreaElement | null>(null);
   const typing = useRef(false);
@@ -128,7 +131,8 @@ export function Composer(props: ComposerProps) {
           {frozen.current.kind === "running" ? stripActions : null}
         </Strip>
       )}
-      <div className="zr-compose-row">
+      <div className="zr-compose-row" data-attach={attach ? "" : undefined}>
+        {attach && <Pill {...attach} className="zr-attach" />}
         <textarea
           ref={setInput}
           className={["zr-input", inputClassName].filter(Boolean).join(" ")}
@@ -144,11 +148,10 @@ export function Composer(props: ComposerProps) {
           enterKeyHint={coarse ? "enter" : "send"}
         />
         {accessory}
-        <Button variant="accent" type="submit" className={["zr-send", sendClassName].filter(Boolean).join(" ")} disabled={sendDisabled} onMouseDown={(ev) => ev.preventDefault()}>
-          <span className={swap.current.swapped ? "zr-swap" : undefined} key={sendLabel}>
-            {sendLabel}
-          </span>
-        </Button>
+        <PillPair label="Send">
+          {command && <Pill {...command} className="zr-command" />}
+          <Pill glyph={sendGlyph} label={sendLabel} type="submit" disabled={sendDisabled} className={["zr-send", sendClassName].filter(Boolean).join(" ")} data-swapped={swap.current.swapped ? "" : undefined} key={sendLabel} />
+        </PillPair>
       </div>
     </form>
   );
