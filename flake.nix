@@ -394,6 +394,13 @@
           name = "zanni-check";
         };
 
+        devShells.ui-audit = pkgs.mkShell {
+          name = "zanni-ui-audit";
+          buildInputs = [ pkgs.nodejs (pkgs.python3.withPackages (ps: [ ps.playwright ])) ];
+          PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
+          PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+        };
+
         devShells.default = pkgs.mkShell {
           name = "zanni";
           buildInputs = [
