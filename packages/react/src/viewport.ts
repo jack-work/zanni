@@ -25,6 +25,23 @@ export function frameOf(vv: Pick<VisualViewportLike, "height" | "offsetTop" | "s
   return { height, top, inset, keyboard: inset >= KEYBOARD_MIN };
 }
 
+type ViewportSource = { visualViewport?: VisualViewportLike | null };
+
+export function viewportHeight(): number {
+  const vv = (window as unknown as ViewportSource).visualViewport;
+  return vv ? frameOf(vv, window.innerHeight).height : Math.round(window.innerHeight);
+}
+
+export function onViewportChange(fn: () => void): () => void {
+  const vv = (window as unknown as ViewportSource).visualViewport;
+  vv?.addEventListener("resize", fn);
+  window.addEventListener("resize", fn);
+  return () => {
+    vv?.removeEventListener("resize", fn);
+    window.removeEventListener("resize", fn);
+  };
+}
+
 function clear(root: HTMLElement): void {
   for (const name of ["--zr-vv-h", "--zr-vv-top", "--zr-kb"]) root.style.removeProperty(name);
   if (!root.getAttribute("style")) root.removeAttribute("style");
@@ -38,7 +55,7 @@ export function onKeyboard(fn: (open: boolean) => void): () => void {
 }
 
 export function trackViewport(root: HTMLElement = document.documentElement): () => void {
-  const vv = (window as unknown as { visualViewport?: VisualViewportLike | null }).visualViewport;
+  const vv = (window as unknown as ViewportSource).visualViewport;
   if (!vv) return () => {};
   let last = "";
   let open = false;

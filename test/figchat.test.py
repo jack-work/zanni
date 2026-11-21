@@ -1,4 +1,5 @@
 import json
+import re
 import time
 import os
 import subprocess
@@ -33,6 +34,31 @@ def press_ms(pg):
 
 def settle_motion(pg):
     pg.evaluate("Promise.all(document.getAnimations().map(a => a.finished.catch(() => null)))")
+
+
+def open_pit(pg):
+    if not pg.locator(".zr-pit").count():
+        pg.locator(".zr-composer .zr-grip").focus()
+        pg.keyboard.press("Enter")
+    pg.wait_for_selector(".zr-pit[data-snap='half']")
+
+
+def close_pit(pg):
+    pg.keyboard.press("Escape")
+    pg.wait_for_selector(".zr-pit", state="detached")
+
+
+def voice_pressed(pg):
+    open_pit(pg)
+    got = pg.locator(".fw-voice").get_attribute("aria-pressed")
+    close_pit(pg)
+    return got
+
+
+def toggle_voice(pg):
+    open_pit(pg)
+    pg.locator(".fw-voice").click()
+    close_pit(pg)
 
 
 def until(pg, js, timeout=10000):
@@ -266,10 +292,13 @@ try:
             for b in pg.locator(".fw-stop").all():
                 hit_area(pg, b, "stop buttons")
             assert pg.locator(".zr-strip-time").inner_text()[0].isdigit()
-            pg.evaluate("(() => { const s = document.querySelector('[data-zr-scroll]'); s.scrollTop = s.scrollHeight; })()")
-            pg.wait_for_timeout(100)
-            last = pg.evaluate("(() => { const n = [...document.querySelectorAll('.nodi-turn-body > *')].pop(); return n.getBoundingClientRect().bottom; })()")
-            top = pg.locator(".zr-composer").bounding_box()["y"]
+            for _ in range(60):
+                pg.evaluate("(() => { const s = document.querySelector('[data-zr-scroll]'); s.scrollTop = s.scrollHeight; })()")
+                pg.wait_for_timeout(50)
+                last = pg.evaluate("(() => { const n = [...document.querySelectorAll('.nodi-turn-body > *')].pop(); return n.getBoundingClientRect().bottom; })()")
+                top = pg.locator(".zr-composer").bounding_box()["y"]
+                if last <= top + 1:
+                    break
             assert last <= top + 1, "scrolled to the bottom, the last node ends above the composer: %s vs %s" % (last, top)
             no_sideways(pg, width, "running turn")
             snap(pg, "running-%s-%d" % (scheme, width))
@@ -382,9 +411,9 @@ try:
         pg = fresh()
         door_v = door(12)
         attend(pg, door_v, MAIN)
-        assert pg.locator(".fw-voice").get_attribute("aria-pressed") == "false", "voice starts off"
-        pg.locator(".fw-voice").click()
-        assert pg.locator(".fw-voice").get_attribute("aria-pressed") == "true"
+        assert voice_pressed(pg) == "false", "voice starts off"
+        toggle_voice(pg)
+        assert voice_pressed(pg) == "true"
         send(pg, "just a [plain] hello")
         pg.wait_for_selector(".nodi-turn[data-turn='27'] .voce[data-for='27']", timeout=15000)
         assert pg.locator(".nodi-turn[data-turn='27'] .nodi-prose .voce").count() == 1, "one player per turn, inside a prose node"
@@ -406,7 +435,7 @@ try:
         attend(pg, door_h, MAIN)
         pg.locator(".fw-hands").click()
         assert pg.locator(".fw-hands").get_attribute("aria-pressed") == "true"
-        assert pg.locator(".fw-voice").get_attribute("aria-pressed") == "true", "hands-free turns the voice on"
+        assert voice_pressed(pg) == "true", "hands-free turns the voice on"
         pg.locator(".fw-mic").click()
         until(pg, "document.querySelector('.fw').dataset.mic === 'recording'", 10000)
         send(pg, "just a [plain] hello")
@@ -421,7 +450,7 @@ try:
         assert pg.locator(".fw-hands").get_attribute("aria-pressed") == "false"
         pg.goto("about:blank")
         attend(pg, door_h, MAIN)
-        assert pg.locator(".fw-hands").get_attribute("aria-pressed") == "false" and pg.locator(".fw-voice").get_attribute("aria-pressed") == "false", "a reload starts with hands-free and voice off"
+        assert pg.locator(".fw-hands").get_attribute("aria-pressed") == "false" and voice_pressed(pg) == "false", "a reload starts with hands-free and voice off"
         pg.close()
 
         mic_door = door(12)
@@ -457,7 +486,7 @@ try:
         say_door = door(12)
         attend(pg, say_door, MAIN, 5)
         pg.wait_for_selector(".nodi-turn[data-turn='5']")
-        assert pg.locator(".fw-voice").get_attribute("aria-pressed") == "false", "voice is off while Play asks the gateway to speak"
+        assert voice_pressed(pg) == "false", "voice is off while Play asks the gateway to speak"
         pg.locator(".nodi-turn[data-turn='5'] .fw-play").click()
         for _ in range(100):
             if say_door.state()["says"] == [5]:
@@ -521,9 +550,348 @@ try:
             assert not pg.errors, pg.errors
             ctx.close()
 
+        def finger(pg, cdp, phone):
+            class Finger:
+                def down(self, x, y):
+                    self.x, self.y = x, y
+                    if phone:
+                        cdp.send("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": [{"x": x, "y": y}]})
+                    else:
+                        pg.mouse.move(x, y)
+                        pg.mouse.down()
+
+                def move(self, y, steps=8, gap=30):
+                    y0 = self.y
+                    for i in range(1, steps + 1):
+                        yy = y0 + (y - y0) * i / steps
+                        if phone:
+                            cdp.send("Input.dispatchTouchEvent", {"type": "touchMove", "touchPoints": [{"x": self.x, "y": yy}]})
+                        else:
+                            pg.mouse.move(self.x, yy)
+                        if gap:
+                            pg.wait_for_timeout(gap)
+                    self.y = y
+
+                def hold(self, ms=160):
+                    pg.wait_for_timeout(ms)
+
+                def up(self):
+                    if phone:
+                        cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
+                    else:
+                        pg.mouse.up()
+            return Finger()
+
+        PIT = "() => { const p = document.querySelector('.zr-pit'); if (!p) return null; const b = p.getBoundingClientRect(); return { snap: p.dataset.snap, dragging: p.hasAttribute('data-dragging'), top: b.top, height: b.height, bottom: b.bottom, left: b.left, width: b.width }; }"
+
+        def pit_at(pg, snap, height_px, what):
+            until(pg, "(() => { const p = document.querySelector('.zr-pit'); return !!p && p.dataset.snap === '%s' && !p.hasAttribute('data-dragging'); })()" % snap, 3000)
+            settle_motion(pg)
+            got = pg.evaluate(PIT)
+            assert abs(got["height"] - height_px) <= 2, "%s: expected a pit %dpx tall, got %s" % (what, height_px, got)
+            assert abs(got["bottom"] - pg.evaluate("innerHeight")) <= 1, "%s: the pit sits on the bottom edge: %s" % (what, got)
+            return got
+
+        def pit_gone(pg, what):
+            pg.wait_for_selector(".zr-pit", state="detached", timeout=3000)
+            assert pg.evaluate("document.documentElement.style.getPropertyValue('--zr-pit-h')") == "", what
+
+        def centre(loc):
+            b = loc.bounding_box()
+            return b["x"] + b["width"] / 2, b["y"] + b["height"] / 2
+
+        for width, height in ((390, 844), (1280, 800)):
+            phone = width < 600
+            pit_door = door(12)
+            ctx = browser.new_context(viewport={"width": width, "height": height}, is_mobile=phone, has_touch=phone)
+            pg = ctx.new_page()
+            pg.errors = []
+            pg.on("pageerror", lambda e: pg.errors.append(str(e)))
+            pg.on("console", lambda m: pg.errors.append(m.text) if m.type == "error" else None)
+            cdp = ctx.new_cdp_session(pg)
+            attend(pg, pit_door, MAIN)
+            f = finger(pg, cdp, phone)
+            grip = pg.locator(".zr-composer .zr-grip")
+            assert grip.is_visible() and pg.locator(".zr-pit").count() == 0
+            gb, cb = grip.bounding_box(), pg.locator(".zr-composer").bounding_box()
+            assert abs((gb["y"] + gb["height"] / 2) - cb["y"]) <= 4, "the grip sits on the composer's top edge: %s %s" % (gb, cb)
+            half, full = round(height / 2), height
+
+            gx, gy = centre(grip)
+            f.down(gx, gy)
+            f.move(height * 0.5)
+            assert pg.evaluate(PIT) and pg.evaluate(PIT)["dragging"], "the pit follows the finger at %d" % width
+            mid = pg.evaluate(PIT)
+            assert abs(mid["top"] - height * 0.5) <= 2, "the pit's top edge is under the finger: %s" % mid
+            f.hold()
+            f.up()
+            pit_at(pg, "half", half, "dragged from the composer edge to the middle")
+            assert pg.locator(".zr-pit").get_attribute("role") == "dialog"
+            assert pg.locator("#app [style]").count() == 0, "dragging writes no style attribute under the CSP"
+            snap(pg, "pit-half-%d" % width)
+            sans_free(pg, "the pit at %d" % width)
+            if phone:
+                assert pg.locator(".zr-pit-scrim").count() == 1 and pg.locator(".zr-pit").get_attribute("aria-modal") == "true"
+                assert pg.locator(".zr-pit[data-docked]").count() == 0
+            else:
+                assert pg.locator(".zr-pit-scrim").count() == 0, "the docked drawer has no scrim"
+                box = pg.locator(".zr-pit").bounding_box()
+                assert box["width"] <= 736 + 1 and abs(box["x"] + box["width"] / 2 - (320 + (width - 320) / 2)) <= 1, "docked to the transcript pane: %s" % box
+                assert pg.locator(".zr-pit[data-docked]").count() == 1
+
+            hx, hy = centre(pg.locator(".zr-pit-handle"))
+            f.down(hx, hy)
+            f.move(height * 0.2)
+            f.hold()
+            f.up()
+            pit_at(pg, "half", half, "released above half but short of the top 15 percent, it stays half")
+
+            hx, hy = centre(pg.locator(".zr-pit-handle"))
+            f.down(hx, hy)
+            f.move(height * 0.1)
+            f.hold()
+            f.up()
+            pit_at(pg, "full", full, "past the top 15 percent it snaps full")
+            snap(pg, "pit-full-%d" % width)
+
+            hx, hy = centre(pg.locator(".zr-pit-handle"))
+            f.down(hx, hy)
+            f.move(height * 0.55)
+            f.hold()
+            f.up()
+            pit_at(pg, "half", half, "dragged down from full to just past half, it settles half")
+
+            hx, hy = centre(pg.locator(".zr-pit-handle"))
+            f.down(hx, hy)
+            f.move(height * 0.95)
+            f.hold()
+            f.up()
+            pit_gone(pg, "dragged down past the bottom quarter, it closes")
+
+            gx, gy = centre(grip)
+            f.down(gx, gy)
+            f.move(gy - 150, steps=5, gap=0)
+            f.up()
+            pit_at(pg, "half", half, "a flick up from the composer edge lands on half")
+            hx, hy = centre(pg.locator(".zr-pit-handle"))
+            f.down(hx, hy)
+            f.move(hy - 150, steps=4, gap=0)
+            f.up()
+            pit_at(pg, "full", full, "a flick up from half lands on full")
+            hx, hy = centre(pg.locator(".zr-pit-handle"))
+            f.down(hx, hy)
+            f.move(hy + 200, steps=4, gap=0)
+            f.up()
+            pit_at(pg, "half", half, "a flick down from full lands on half")
+            hx, hy = centre(pg.locator(".zr-pit-handle"))
+            f.down(hx, hy)
+            f.move(hy + 200, steps=4, gap=0)
+            f.up()
+            pit_gone(pg, "a flick down from half closes")
+
+            grip.focus()
+            pg.keyboard.press("Enter")
+            pit_at(pg, "half", half, "Enter on the grip opens half")
+            assert pg.evaluate("!!document.activeElement.closest('.zr-pit')"), "focus moves into the pit"
+            pg.locator(".zr-pit-handle").focus()
+            pg.keyboard.press("ArrowUp")
+            pit_at(pg, "full", full, "ArrowUp on the handle goes full")
+            pg.keyboard.press("ArrowDown")
+            pit_at(pg, "half", half, "ArrowDown on the handle goes back to half")
+            pg.keyboard.press("Escape")
+            pit_gone(pg, "Escape closes")
+            assert pg.evaluate("document.activeElement.className") == "zr-grip", "focus returns to the grip"
+            grip.click()
+            pit_at(pg, "half", half, "a tap on the grip opens half")
+            if phone:
+                pg.locator(".zr-pit-scrim").click(position={"x": 10, "y": 10})
+            else:
+                pg.locator(".zr-pit-head button", has_text="Close").click()
+            pit_gone(pg, "scrim or Close closes")
+            assert not pg.errors, pg.errors
+            ctx.close()
+
+        for width, height in ((390, 844), (1280, 800)):
+            phone = width < 600
+            ctx = browser.new_context(viewport={"width": width, "height": height}, is_mobile=phone, has_touch=phone)
+            pg = ctx.new_page()
+            pg.errors = []
+            pg.on("pageerror", lambda e: pg.errors.append(str(e)))
+            pg.goto(fast.url)
+            pg.wait_for_selector(".zr-thread")
+            assert pg.locator(".fw-top, .fw-mark, .fw-title").count() == 0, "the header is gone"
+            assert pg.locator(".fw-head").count() == 0, "no logo on the list"
+            assert pg.locator(".fw-status").is_visible() == phone, "the slim status bar is a phone thing"
+            attend(pg, fast, MAIN)
+            assert pg.locator(".fw-head").count() == 0, "no logo while attending"
+            assert pg.locator(".fw-top-new, .fw-bar").count() == 0
+            if phone:
+                bar = pg.locator(".fw-status")
+                until(pg, "document.querySelector('.fw-status-mantra') && document.querySelector('.fw-status-mantra').textContent.length > 0", 8000)
+                box = bar.bounding_box()
+                assert box["y"] == 0 and box["height"] <= 32, "slim bar at the top: %s" % box
+                assert pg.locator(".fw-status-link").inner_text() == "Live"
+                assert len(pg.locator(".fw-status-id").inner_text()) == 8
+                pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop = 400")
+                pg.wait_for_timeout(100)
+                assert abs(bar.bounding_box()["y"]) <= 1, "the status bar stays while the transcript scrolls"
+                top = pg.locator(".fw-status").evaluate("n => getComputedStyle(n).position")
+                assert top == "relative", "the bar is outside the scroller, not stuck to the page"
+            open_pit(pg)
+            assert pg.locator("[data-action='new']").is_visible() and pg.locator(".fw-voice").is_visible(), "every removed control is one tap from the pit"
+            pg.locator("[data-action='state']").click()
+            until(pg, "document.querySelector('.fw-pit-fact[data-key=\"system.thinking_effort\"] dd') && document.querySelector('.fw-pit-fact[data-key=\"system.thinking_effort\"] dd').textContent === 'high'", 8000)
+            facts = pg.locator(".fw-pit-fact").all_inner_texts()
+            joined = " ".join(facts)
+            assert "Live" in joined and MAIN in joined and "Zanni" in joined, facts
+            pg.locator(".fw-pit-back").click()
+            assert pg.locator(".fw-head").count() == 0, "no logo below full screen"
+            pg.locator(".zr-pit-handle").focus()
+            pg.keyboard.press("ArrowUp")
+            pit_at(pg, "full", height, "full screen pit")
+            assert pg.locator(".zr-pit .fw-head").count() == 1, "the logo appears only in the full-screen pit"
+            assert pg.locator(".zr-pit-bar .zr-btn").evaluate("n => getComputedStyle(n).display") == "none", "the full pit's head is the icon and the title"
+            assert pg.locator(".zr-pit-title").inner_text().strip() != ""
+            snap(pg, "header-drop-full-%d" % width)
+            pg.keyboard.press("ArrowDown")
+            pit_at(pg, "half", round(height / 2), "back to half")
+            pg.locator("[data-action='new']").click()
+            pg.wait_for_selector(".zr-pit", state="detached")
+            pg.wait_for_selector(".fw-new-form")
+            snap(pg, "header-drop-new-%d" % width)
+            assert not pg.errors, pg.errors
+            ctx.close()
+
+        for width, height in ((390, 844), (1280, 800)):
+            phone = width < 600
+            ctl_door = door(12)
+            ctx = browser.new_context(viewport={"width": width, "height": height}, is_mobile=phone, has_touch=phone)
+            pg = ctx.new_page()
+            pg.errors = []
+            pg.on("pageerror", lambda e: pg.errors.append(str(e)))
+            pg.on("console", lambda m: pg.errors.append(m.text) if m.type == "error" else None)
+            attend(pg, ctl_door, MAIN)
+            open_pit(pg)
+            first = pg.locator(".zr-pit-row").evaluate_all("rows => rows.map(r => r.dataset.action)")
+            assert first == ["new", "state", "tail-fork", "fork-at", "tree", "recent", "outfits", "voice"], first
+            glyph = lambda a: pg.locator(".zr-pit-row[data-action='%s'] .zr-pit-row-glyph" % a).inner_text()
+            assert [glyph("state"), glyph("fork-at"), glyph("tree")] == ["웃", "⑂", "웃"], "each row wears its pager glyph"
+            if not phone:
+                box, side = pg.locator(".zr-pit").bounding_box(), pg.locator(".fw-side").bounding_box()
+                assert abs(box["x"] - (side["x"] + side["width"])) <= 1 or box["x"] >= side["x"] + side["width"] - 1, "the drawer starts at the transcript pane: %s %s" % (box, side)
+            pg.locator("[data-action='tree']").click()
+            until(pg, "document.querySelectorAll('.zr-pit-row[data-id]').length >= 8", 8000)
+            depths = pg.evaluate("[...document.querySelectorAll('.zr-pit-row[data-id]')].map(r => r.dataset.depth)")
+            assert "0" in depths and "1" in depths, "the tree nests: %s" % depths
+            assert pg.locator(".zr-pit-row[data-id='%s']" % MAIN).get_attribute("aria-current") == "true", "the attended aria is marked"
+            pg.locator(".zr-pit-row[data-id='%s']" % LANE).click()
+            pg.wait_for_selector(".zr-pit", state="detached")
+            until(pg, "location.hash.includes('%s')" % LANE, 5000)
+            until(pg, "document.querySelector('.fw').dataset.link === 'live'", 8000)
+            open_pit(pg)
+            first = pg.locator(".zr-pit-row").evaluate_all("rows => rows.map(r => r.dataset.action)")
+            assert first[0] == "tree", "the row used last comes first: %s" % first
+            pg.locator("[data-action='recent']").click()
+            until(pg, "document.querySelectorAll('.zr-pit-row[data-id]').length >= 5", 8000)
+            pg.locator(".fw-pit-back").click()
+            close_pit(pg)
+            pg.reload()
+            until(pg, "document.querySelector('.fw').dataset.link === 'live'", 15000)
+            open_pit(pg)
+            order = pg.locator(".zr-pit-row").evaluate_all("rows => rows.map(r => r.dataset.action)")
+            assert order[:2] == ["recent", "tree"], "last-used order survives a reload: %s" % order
+            close_pit(pg)
+
+            attend(pg, ctl_door, MAIN)
+            open_pit(pg)
+            pg.locator("[data-action='fork-at']").click()
+            pg.locator(".fw-forkat-form input").fill("20")
+            pg.locator(".fw-forkat-form textarea").fill("what if we waited")
+            pg.locator(".fw-forkat-form button[type=submit]").click()
+            pg.wait_for_selector(".zr-pit", state="detached")
+            until(pg, "location.hash.includes(':20') && !location.hash.includes('%s')" % MAIN, 8000)
+            until(pg, "document.querySelector('.fw').dataset.link === 'live'", 8000)
+            pg.wait_for_selector(".fw-fork-banner", timeout=8000)
+            banner = pg.locator(".fw-fork-banner").inner_text()
+            assert "Fork of" in banner and "at turn 20" in banner and banner.startswith("⑂"), banner
+            assert pg.locator(".fw-fork-banner").get_attribute("data-fresh") is not None
+            assert pg.locator(".nodi-turn[data-fresh]").count() == 0, "history does not animate in on a fork"
+            until(pg, "document.querySelector('.fw-status-fork') !== null || getComputedStyle(document.querySelector('.fw-status')).display === 'none'", 8000)
+            sent = ctl_door.state()["sent"]
+            assert any(s["text"] == "what if we waited" and s["id"] != MAIN for s in sent), sent
+            turns_now = turns_shown(pg)
+            assert turns_now and max(turns_now) < 30 and 20 in turns_now, "only the window around the fork turn was read in: %s" % turns_now
+            snap(pg, "fork-%d" % width)
+
+            attend(pg, ctl_door, MAIN)
+            open_pit(pg)
+            pg.locator("[data-action='tail-fork']").click()
+            pg.wait_for_selector(".zr-pit", state="detached")
+            until(pg, "!location.hash.includes('%s')" % MAIN, 8000)
+            pg.wait_for_selector(".fw-fork-banner", timeout=8000)
+            assert "at turn" not in pg.locator(".fw-fork-banner").inner_text()
+            assert not pg.errors, pg.errors
+            ctx.close()
+
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True, reduced_motion="reduce")
+        pg = ctx.new_page()
+        pg.errors = []
+        pg.on("pageerror", lambda e: pg.errors.append(str(e)))
+        cdp = ctx.new_cdp_session(pg)
+        attend(pg, door(12), MAIN)
+        f = finger(pg, cdp, True)
+        gx, gy = centre(pg.locator(".zr-composer .zr-grip"))
+        f.down(gx, gy)
+        f.move(300)
+        f.hold()
+        f.up()
+        pit_at(pg, "half", 422, "reduced motion still drags")
+        assert pg.evaluate("parseFloat(getComputedStyle(document.querySelector('.zr-pit')).transitionDuration) * 1000") <= 1
+        pg.keyboard.press("Escape")
+        pg.wait_for_selector(".zr-pit", state="detached", timeout=1000)
+        assert not pg.errors, pg.errors
+        ctx.close()
+
+        sess_door = door(12)
+        pg = fresh()
+        attend(pg, sess_door, MAIN)
+        pg.locator(".zr-input").fill("typed")
+        said = pg.locator(".nodi-turn[data-turn='26'] .nodi-said").first
+        said.scroll_into_view_if_needed()
+        said.tap()
+        pg.wait_for_selector(".fw-sheet")
+        pg.locator(".fw-sheet-act[data-action='play']").click()
+        pg.wait_for_selector(".fw-sheet .voce", timeout=5000)
+        until(pg, "['playing','idle','expired','error'].includes(document.querySelector('.fw-sheet .voce').dataset.state)", 10000)
+        pg.locator(".fw-sheet-act[data-action='retranscribe']").click()
+        pg.wait_for_selector(".fw-sheet-text", timeout=5000)
+        pg.keyboard.press("Escape")
+        toggle_voice(pg)
+        for _ in range(100):
+            if any(g["kind"] == "audio-ws" for g in sess_door.state()["sessions"]):
+                break
+            pg.wait_for_timeout(50)
+        got = sess_door.state()["sessions"]
+        kinds = {g["kind"] for g in got}
+        assert {"door-ws", "audio-ws", "stt-key", "audio-key"} <= kinds, kinds
+        ids = {g["header"] or g["query"] for g in got}
+        assert len(ids) == 1 and len(next(iter(ids))) == 16, "one id for the whole page load: %s" % got
+        assert re.fullmatch(r"[A-Za-z0-9_-]{16}", next(iter(ids))), ids
+        for g in got:
+            if g["kind"] in ("stt", "stt-key", "audio-key-status"):
+                assert g["header"], "fetches carry the header: %s" % g
+            if g["kind"] in ("door-ws", "audio-ws", "audio-key"):
+                assert g["query"], "upgrades and the audio element carry the query: %s" % g
+        sid = next(iter(ids))
+        pg.reload()
+        until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'", timeout=15000)
+        later = {g["header"] or g["query"] for g in sess_door.state()["sessions"]}
+        assert len(later) == 2 and sid in later, "a reload mints a new id: %s" % later
+        pg.close()
+
         MOTION = """() => {
           const over = [];
-          for (const n of document.querySelectorAll('.zr-composer, .zr-composer *, .fw-top *, .fw-main button')) {
+          for (const n of document.querySelectorAll('.zr-composer, .zr-composer *, .fw-status *, .fw-main button')) {
             const cs = getComputedStyle(n);
             const ms = (v) => v.split(',').map(x => x.trim()).map(x => x.endsWith('ms') ? parseFloat(x) : parseFloat(x) * 1000);
             if (cs.animationName !== 'none' && Math.max(...ms(cs.animationDuration)) > 1) over.push(n.className + ' animation ' + cs.animationName + ' ' + cs.animationDuration);

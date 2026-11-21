@@ -18,6 +18,7 @@ export interface ComposerProps {
   strip?: Omit<StripProps, "leaving"> | null;
   stripActions?: ReactNode;
   accessory?: ReactNode;
+  grip?: ReactNode;
   focusTick?: number;
   inputRef?: Ref<HTMLTextAreaElement>;
   heightVar?: string;
@@ -48,7 +49,7 @@ export function useSizeVar(ref: { current: HTMLElement | null }, name: string): 
 }
 
 export function Composer(props: ComposerProps) {
-  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendDisabled, running, strip, stripActions, accessory, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
+  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendDisabled, running, strip, stripActions, accessory, grip, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
   const form = useRef<HTMLFormElement | null>(null);
   const input = useRef<HTMLTextAreaElement | null>(null);
   const typing = useRef(false);
@@ -121,6 +122,7 @@ export function Composer(props: ComposerProps) {
         submit();
       }}
     >
+      {grip}
       {shown.mounted && frozen.current && (
         <Strip {...frozen.current} leaving={shown.leaving}>
           {frozen.current.kind === "running" ? stripActions : null}

@@ -1,4 +1,4 @@
-import { Button, PlayerIsland, Plain, Sheet as ZSheet, type PlayRequest } from "../../index";
+import { Button, PlayerIsland, Plain, Sheet as ZSheet, audioKeyUrl, withSession, type PlayRequest } from "../../index";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useRef, useState } from "react";
 import { joinDictation } from "../lib/mic";
@@ -40,7 +40,7 @@ function SheetBody({ target }: { target: SheetTarget }) {
   const [result, setResult] = useState("");
   const [request, setRequest] = useState<PlayRequest | null>(null);
 
-  const src = useCallback((key: string) => audioUrl.replace(/\/$/, "") + "/key/" + key.split("/").map(encodeURIComponent).join("/"), [audioUrl]);
+  const src = useCallback((key: string) => withSession(audioKeyUrl(audioUrl, key)), [audioUrl]);
 
   const context: SheetContext = {
     target,

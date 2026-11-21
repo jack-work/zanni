@@ -172,6 +172,6 @@ export interface SpeechTransport {
 }
 
 export interface SpeechApi {
-  gateway(opts: { url: string; window?: Window; base?: string }): SpeechTransport;
+  gateway(opts: { url: string; window?: Window; base?: string; session?: string | (() => string) }): SpeechTransport;
   none(): SpeechTransport;
 }

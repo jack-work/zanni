@@ -1,3 +1,4 @@
+import { sessionHeaders } from "../../session";
 export interface SttReply {
   text?: string;
   duration_ms?: number;
@@ -32,7 +33,7 @@ export function dictate(url: string, f: typeof fetch = (...a) => window.fetch(..
         method: "POST",
         credentials: "same-origin",
         cache: "no-store",
-        headers: { Accept: "application/json", "Content-Type": blob.type || "application/octet-stream" },
+        headers: sessionHeaders({ Accept: "application/json", "Content-Type": blob.type || "application/octet-stream" }),
         body: blob,
       }),
     );
@@ -40,5 +41,5 @@ export function dictate(url: string, f: typeof fetch = (...a) => window.fetch(..
 
 export function retranscribe(url: string, key: string, f: typeof fetch = (...a) => window.fetch(...a)): Promise<SttReply> {
   const path = key.split("/").map(encodeURIComponent).join("/");
-  return f(url.replace(/\/$/, "") + "/key/" + path, { method: "POST", credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } }).then(reply);
+  return f(url.replace(/\/$/, "") + "/key/" + path, { method: "POST", credentials: "same-origin", cache: "no-store", headers: sessionHeaders({ Accept: "application/json" }) }).then(reply);
 }

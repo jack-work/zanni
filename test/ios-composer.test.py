@@ -101,7 +101,10 @@ with sync_playwright() as p:
     assert "maximum-scale" not in meta(pg) and "user-scalable" not in meta(pg), "pinch zoom stays available: " + meta(pg)
     sizes = pg.evaluate("[...document.querySelectorAll('textarea, input, select')].map(n => [n.className, parseFloat(getComputedStyle(n).fontSize)])")
     assert sizes and all(px >= 16 for _, px in sizes), "an input under 16px makes iOS zoom on focus: %s" % sizes
-    pg.locator(".fw-top-new").tap()
+    pg.locator(".zr-composer .zr-grip").focus()
+    pg.keyboard.press("Enter")
+    pg.wait_for_selector(".zr-pit[data-snap='half']")
+    pg.locator("[data-action='new']").tap()
     pg.wait_for_selector(".fw-new-form")
     sizes = pg.evaluate("[...document.querySelectorAll('textarea, input, select')].map(n => [n.className, parseFloat(getComputedStyle(n).fontSize)])")
     assert len(sizes) >= 2 and all(px >= 16 for _, px in sizes), "the New figaro form inputs are 16px or more: %s" % sizes

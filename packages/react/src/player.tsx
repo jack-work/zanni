@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { sessionHeaders } from "./session";
 import { voce, type VocePlayer } from "./zanni";
 
 export interface PlayRequest {
@@ -25,7 +26,7 @@ export function PlayerIsland({ request, src, label = "Message audio", className 
     const made = voce.create(document, {
       audioId: "",
       src: (k: string) => srcRef.current(k),
-      status: (k: string) => window.fetch(srcRef.current(k), { method: "GET", credentials: "same-origin", cache: "no-store", headers: { Range: "bytes=0-0" } }).then((r) => r.status),
+      status: (k: string) => window.fetch(srcRef.current(k), { method: "GET", credentials: "same-origin", cache: "no-store", headers: sessionHeaders({ Range: "bytes=0-0" }) }).then((r) => r.status),
       label,
     });
     slot.current?.replaceChildren(made.el);

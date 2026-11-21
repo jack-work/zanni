@@ -12,6 +12,7 @@ import { useVoice } from "./use-voice";
 import { linkAtom } from "../state/aria";
 import type { Attended } from "../state/route";
 import { openSheetAtom } from "../state/sheet";
+import { ForkBanner } from "./fork-banner";
 import { Composer } from "./composer";
 import { TurnActions } from "./turn-actions";
 
@@ -176,6 +177,7 @@ export function AriaView({ attended }: { attended: Attended }) {
           <h1 className="fw-h1" tabIndex={-1} ref={headRef}>
             <Plain text={heading} />
           </h1>
+          <ForkBanner attended={attended} />
           <div className="fw-metrics">{metrics && <p className="nodi-metrics">{metrics}</p>}</div>
           {olderAvailable && (
             <Button variant="quiet" size="compact" className="fw-older" ref={olderRef} disabled={loadingOlder} onClick={() => loadOlder().catch(() => {})}>

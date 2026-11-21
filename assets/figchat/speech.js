@@ -152,6 +152,7 @@
     var timers = { set: opts.setTimeout || function (f, ms) { return win.setTimeout(f, ms); }, clear: opts.clearTimeout || function (t) { win.clearTimeout(t); } };
     function urlFor(aria) {
       var u = new URL(base.replace(/\/$/, '') + '/' + encodeURIComponent(aria), opts.base || win.document.baseURI);
+      if (opts.session) u.searchParams.set('session', typeof opts.session === 'function' ? opts.session() : opts.session);
       u.protocol = u.protocol === 'https:' ? 'wss:' : u.protocol === 'http:' ? 'ws:' : u.protocol;
       return u.href;
     }

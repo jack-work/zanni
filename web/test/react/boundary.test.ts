@@ -12,8 +12,8 @@ function files(dir: string): string[] {
 }
 
 describe("the package boundary", () => {
-  it("the root entry never reaches for jotai, figaro-forms values or the app", () => {
-    const bad = files(src).filter((f) => /from "(jotai|figaro-forms)[^"]*"/.test(readFileSync(f, "utf8").replace(/import type [^;]*;/g, "")) || /from "\.\/jotai/.test(readFileSync(f, "utf8")));
+  it("the root entry never reaches for jotai, figaro-forms values (bar the glyph table) or the app", () => {
+    const bad = files(src).filter((f) => /from "(jotai|figaro-forms)[^"]*"/.test(readFileSync(f, "utf8").replace(/import type [^;]*;/g, "").replace(/from "figaro-forms\/glyphs"/g, "")) || /from "\.\/jotai/.test(readFileSync(f, "utf8")));
     expect(bad).toEqual([]);
   });
 

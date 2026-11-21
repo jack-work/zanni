@@ -11,6 +11,8 @@ const step = process.argv[3] ? Number(process.argv[3]) : 15;
 const core = mock.create({ step, pageBytes: 3000 });
 const seen = { upgrades: 0, refused: 0, audio: 0, stt: [], retranscribed: [], says: [] };
 const expired = new Set([5, 6]);
+const sessions = [];
+const noteSession = (kind, req, url) => sessions.push({ kind, header: req.headers['x-figchat-session'] || '', query: url.searchParams.get('session') || '' });
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.woff2': 'font/woff2', '.json': 'application/json' };
 const csp = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; media-src 'self' blob:; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
@@ -30,7 +32,7 @@ const server = http.createServer((req, res) => {
   if (url.pathname.startsWith('/chat/assets/')) { file(res, url.pathname.slice('/chat/assets/'.length), { 'Cache-Control': 'private, no-cache' }); return; }
   if (url.pathname === '/__state') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ ids: core.ids, sent: core.sent || [], interrupts: core.interrupts || [], dropped: core.dropped, upgrades: seen.upgrades, audio: seen.audio, stt: seen.stt, retranscribed: seen.retranscribed, says: seen.says, calls: core.calls.map((c) => c.method) }));
+    res.end(JSON.stringify({ ids: core.ids, sent: core.sent || [], interrupts: core.interrupts || [], dropped: core.dropped, upgrades: seen.upgrades, audio: seen.audio, stt: seen.stt, retranscribed: seen.retranscribed, sessions, says: seen.says, calls: core.calls.map((c) => c.method) }));
     return;
   }
   if (url.pathname === '/__drop') {
@@ -40,6 +42,7 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (url.pathname === '/stt' && req.method === 'POST') {
+    noteSession('stt', req, url);
     let size = 0;
     const type = req.headers['content-type'] || '';
     req.on('data', (c) => { size += c.length; });
@@ -53,6 +56,7 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (url.pathname.startsWith('/stt/key/') && req.method === 'POST') {
+    noteSession('stt-key', req, url);
     const key = decodeURIComponent(url.pathname.slice('/stt/key/'.length));
     seen.retranscribed.push(key);
     const clip = /\/in$/.test(key);
@@ -61,6 +65,7 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (url.pathname.startsWith('/audio/key/')) {
+    noteSession(req.headers.range === 'bytes=0-0' ? 'audio-key-status' : 'audio-key', req, url);
     const gone = /:(\d+)\/out$/.exec(decodeURIComponent(url.pathname));
     if (gone && expired.has(Number(gone[1]))) { res.writeHead(404, { 'Cache-Control': 'private, no-store' }); res.end('gone'); return; }
     const pcm = Buffer.concat(speech.chunks('replay').map((b) => Buffer.from(b)));
@@ -181,9 +186,10 @@ server.on('upgrade', (req, socket) => {
   const origin = req.headers.origin || '';
   const same = origin === 'http://' + req.headers.host;
   const am = /^\/audio\/([0-9a-f]{32})$/.exec(url.pathname);
-  if (same && am) { audioSocket(req, socket, am[1]); return; }
+  if (same && am) { noteSession('audio-ws', req, url); audioSocket(req, socket, am[1]); return; }
   if (url.pathname !== '/door' || !same) { seen.refused++; socket.destroy(); return; }
   seen.upgrades++;
+  noteSession('door-ws', req, url);
   sockets.add(socket);
   handshake(req, socket);
   const conn = core.attach({

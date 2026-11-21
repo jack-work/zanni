@@ -1,7 +1,7 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useRef } from "react";
 import { VoiceHub } from "../lib/voice-hub";
-import { voce } from "../../index";
+import { audioKeyUrl, sessionHeaders, voce, withSession } from "../../index";
 import { audioSessionAtom, cancelSpeechAtom, speakingAtom, speechTransportAtom, voiceAtom, voiceControlAtom } from "../state/audio";
 import { bootAtom } from "../state/boot";
 import { composerNoteAtom, keyOf } from "../state/composer";
@@ -26,14 +26,14 @@ export function useVoice({ aria, store }: Attended): void {
   voice.current = voiceOn;
 
   useEffect(() => {
-    const src = (key: string) => audioUrl.replace(/\/$/, "") + "/key/" + key.split("/").map(encodeURIComponent).join("/");
+    const src = (key: string) => withSession(audioKeyUrl(audioUrl, key));
     const made = new VoiceHub(
       {
         doc: document,
         voce,
         session,
         audioSrc: src,
-        audioStatus: (key) => window.fetch(src(key), { method: "GET", credentials: "same-origin", cache: "no-store", headers: { Range: "bytes=0-0" } }).then((r) => r.status),
+        audioStatus: (key) => window.fetch(src(key), { method: "GET", credentials: "same-origin", cache: "no-store", headers: sessionHeaders({ Range: "bytes=0-0" }) }).then((r) => r.status),
         speaking: (s) => setSpeaking(s ? { aria, ...s } : null),
         slot: slotQuery,
         firstSlot,

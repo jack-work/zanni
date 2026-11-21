@@ -1,6 +1,6 @@
 import { atom } from "jotai";
 import { AudioSession, pingPcm, type SessionType } from "../lib/audio-session";
-import { speech, voce, type PcmFormat } from "../../index";
+import { sessionId, speech, voce, type PcmFormat } from "../../index";
 import { bootAtom } from "./boot";
 
 const PING_FORMAT: PcmFormat = { format: "pcm", rate: 24000, bits: 16, channels: 1 };
@@ -76,4 +76,4 @@ export const replayAtom = atom(null, (get, _set, turn: number) => {
   get(voiceControlAtom)?.replay(turn);
 });
 
-export const speechTransportAtom = atom((get) => speech.gateway({ url: get(bootAtom).audioUrl }));
+export const speechTransportAtom = atom((get) => speech.gateway({ url: get(bootAtom).audioUrl, session: sessionId }));

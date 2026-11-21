@@ -1,4 +1,4 @@
-import { Button, Composer as ZComposer } from "../../index";
+import { Button, Composer as ZComposer, PitGrip } from "../../index";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { memo, useEffect, useRef, useState } from "react";
 import { clock } from "../../index";
@@ -69,6 +69,7 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
       running={running}
       focusTick={focusTick}
       inputRef={input}
+      grip={<PitGrip />}
       strip={showStrip ? { kind: running ? "running" : "note", text: line.text, time: line.time } : null}
       stripActions={
         <>
