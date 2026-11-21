@@ -178,6 +178,37 @@ describe("drafts", () => {
     expect(window.localStorage.getItem("fw.draft." + key)).toBeNull();
   });
 
+  it("save at once when the page is closed or hidden", () => {
+    const store = createStore();
+    const key = "gluck/aria-three";
+    store.set(draftAtom(key), "typed a moment ago");
+    expect(window.localStorage.getItem("fw.draft." + key)).toBeNull();
+    window.dispatchEvent(new Event("pagehide"));
+    expect(window.localStorage.getItem("fw.draft." + key)).toBe("typed a moment ago");
+  });
+
+  it("hold the sent text until the door has taken it", async () => {
+    attend(1);
+    await live();
+    const held = "fw.unsent.gluck/" + MAIN;
+    fireEvent.change(input(), { target: { value: "please run the tests" } });
+    act(() => screen.getByRole("button", { name: "Send" }).click());
+    expect(window.localStorage.getItem(held)).toBe("please run the tests");
+    expect(input().value).toBe("");
+    await waitFor(() => expect(core.sent?.[0]?.text).toBe("please run the tests"));
+    await waitFor(() => expect(window.localStorage.getItem(held)).toBeNull());
+  });
+
+  it("bring back a send the page was closed on, until the draft is cleared", async () => {
+    window.localStorage.setItem("fw.unsent.gluck/aria-two", "never sent");
+    vi.resetModules();
+    const fresh = await import("zanni-react/jotai");
+    const store = createStore();
+    expect(store.get(fresh.draftAtom("gluck/aria-two"))).toBe("never sent");
+    store.set(fresh.draftAtom("gluck/aria-two"), "");
+    expect(window.localStorage.getItem("fw.unsent.gluck/aria-two")).toBeNull();
+  });
+
   it("one draft per aria", () => {
     const store = createStore();
     store.set(draftAtom("gluck/a"), "for a");

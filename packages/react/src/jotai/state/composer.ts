@@ -37,10 +37,11 @@ export function composerAtom(key: string): PrimitiveAtom<ComposerState> {
 }
 
 const storageKey = (key: string) => "fw.draft." + key;
+const unsentKey = (key: string) => "fw.unsent." + key;
 
 function readDraft(key: string): string {
   try {
-    return window.localStorage.getItem(storageKey(key)) ?? "";
+    return window.localStorage.getItem(storageKey(key)) || window.localStorage.getItem(unsentKey(key)) || "";
   } catch {
     return "";
   }
@@ -49,10 +50,43 @@ function readDraft(key: string): string {
 function saveDraft(key: string, text: string): void {
   try {
     if (text) window.localStorage.setItem(storageKey(key), text);
-    else window.localStorage.removeItem(storageKey(key));
+    else {
+      window.localStorage.removeItem(storageKey(key));
+      window.localStorage.removeItem(unsentKey(key));
+    }
   } catch {
     return;
   }
+}
+
+function holdUnsent(key: string, text: string): void {
+  try {
+    window.localStorage.setItem(unsentKey(key), text);
+  } catch {
+    return;
+  }
+}
+
+function dropUnsent(key: string): void {
+  try {
+    window.localStorage.removeItem(unsentKey(key));
+  } catch {
+    return;
+  }
+}
+
+const unsaved = new Map<string, string>();
+
+function flushDrafts(): void {
+  for (const [key, text] of unsaved) saveDraft(key, text);
+  unsaved.clear();
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("pagehide", flushDrafts);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushDrafts();
+  });
 }
 
 export function draftAtom(key: string): PrimitiveAtom<string> {
@@ -68,8 +102,15 @@ export function draftAtom(key: string): PrimitiveAtom<string> {
         if (timer) clearTimeout(timer);
         if (text === "") {
           timer = undefined;
+          unsaved.delete(key);
           saveDraft(key, "");
-        } else timer = setTimeout(() => saveDraft(key, text), SAVE_DELAY_MS);
+        } else {
+          unsaved.set(key, text);
+          timer = setTimeout(() => {
+            unsaved.delete(key);
+            saveDraft(key, text);
+          }, SAVE_DELAY_MS);
+        }
       },
     ) as PrimitiveAtom<string>;
     drafts.set(key, a);
@@ -122,6 +163,7 @@ export const sendAtom = atom(null, async (get, set): Promise<boolean> => {
   set(comp, (s) => ({ ...s, sending: true, note: "" }));
   const give = () => get(draft) === "" && set(draft, text);
   set(draft, "");
+  holdUnsent(key, text);
   try {
     return await traced("send", { "figaro.aria": at.aria }, async () => {
       if (held.length) {
@@ -141,6 +183,7 @@ export const sendAtom = atom(null, async (get, set): Promise<boolean> => {
       } else if (dictation) await quaDictated(at.client, at.aria, text, dictation);
       else await at.client.peek(at.aria).qua(text);
       set(comp, (s) => ({ ...s, sending: false }));
+      dropUnsent(key);
       set(dictatedAtom(key), null);
       return true;
     });
