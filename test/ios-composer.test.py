@@ -444,6 +444,8 @@ with sync_playwright() as p:
     for b in pg.locator(".nodi-turn[data-turn='26'] .fw-inline-btn").all():
         box = b.bounding_box()
         assert box["width"] >= 44 and box["height"] >= 44, "a message button is thumb size: %s" % box
+        b.evaluate("n => n.scrollIntoView({ block: 'center' })")
+        pg.wait_for_timeout(250)
         assert_centred(b, "a message button's glyph on an iPhone")
     shot_sheet = "Refused to apply a stylesheet"
     pg.errors = [e for e in pg.errors if shot_sheet not in e]
