@@ -169,11 +169,13 @@ try:
         for width, height in ((390, 844), (1280, 800)):
             pg = fresh(width, height)
             pg.goto(fast.url)
-            pg.wait_for_selector(".zr-thread")
+            pg.wait_for_selector(".zr-tree-row")
             assert pg.title() == "figaro web"
             until(pg, "document.fonts.check('26px \"Jacquard 24\"')")
             assert pg.evaluate("document.querySelectorAll('script:not([src]), style, [style]').length") == 0, "no inline script or style under the CSP"
-            assert pg.locator(".zr-thread").count() == 8, "list is paged at eight"
+            assert pg.locator(".zr-tree-row").count() >= 5, "the topology is one tree"
+            assert pg.locator(".zr-tree thead th").all_inner_texts() == ["ARIA", "ID", "DETAIL"], "the tree wears figaro list -g's columns"
+            assert "1" in pg.evaluate("[...document.querySelectorAll('.zr-tree-row')].map(a => a.dataset.depth)"), "children nest under their parent"
             sans_free(pg, "the list at %d" % width)
             no_sideways(pg, width, "the list")
             assert not pg.errors, pg.errors
@@ -188,18 +190,14 @@ try:
             first = turns_shown(pg)
             assert first and first[-1] == 26 and len(first) < 26, "tail page only: %s" % first
             assert first == sorted(first) and len(set(first)) == len(first), first
-            pg.wait_for_selector(".zr-thread", state="attached")
-            rows = pg.locator(".zr-thread").count()
-            assert rows == 8, "list is paged at eight, got %d" % rows
+            pg.wait_for_selector(".zr-tree-row", state="attached")
             if width >= 900:
                 assert pg.locator(".fw-side").is_visible(), "the list sits beside the transcript at 1280"
             else:
                 assert not pg.locator(".fw-side").is_visible(), "one pane at 390"
             if width >= 900:
-                pg.locator(".fw-more").click()
-                until(pg, "document.querySelectorAll('.zr-thread').length > 8")
-                depths = pg.evaluate("[...document.querySelectorAll('.zr-thread')].map(a => a.dataset.depth)")
-                assert "1" in depths, "children are indented under their parent: %s" % depths
+                assert pg.locator(".zr-tree-row[data-id='%s']" % MAIN).get_attribute("aria-selected") == "true", "the attended aria is the selected row"
+                assert pg.locator(".zr-tree-row[data-id='%s']" % LANE).count() == 1, "the path to the attended aria is open"
             snap(pg, "attend-light-" + tag)
 
             before = len(turns_shown(pg))
@@ -309,7 +307,7 @@ try:
             until(pg, "document.querySelector(\".nodi-turn[data-turn='27'] .nodi-thought\").innerText.includes('answer plainly')", 5000)
             thinking.locator("summary").click()
             assert thinking.evaluate("n => n.open") is False, "a fold stays collapsible"
-            kinds = pg.evaluate("[...document.querySelectorAll('.nodi-turn[data-turn=\"27\"] .nodi-turn-body > *')].map(n => n.className.split(' ')[0])")
+            kinds = pg.evaluate("[...document.querySelectorAll('.nodi-turn[data-turn=\"27\"] .nodi-turn-body > *')].map(n => n.className.split(' ')[0]).filter(c => c !== 'fw-inline')")
             assert kinds == ["nodi-input", "nodi-thinking", "nodi-prose", "nodi-tool", "nodi-prose"], kinds
             assert "please run the tests" in pg.locator(".nodi-turn[data-turn='27'] .nodi-input").inner_text()
             assert pg.locator(".zr-input").input_value() == ""
@@ -338,7 +336,7 @@ try:
                 prose = pg.locator(".nodi-turn[data-turn='%s'] .nodi-prose" % want).count()
                 assert prose <= 2, "no node drawn twice after the reconnect: %d" % prose
         last = turns_shown(pg)[-1]
-        body = pg.evaluate("[...document.querySelectorAll('.nodi-turn[data-turn=\"%d\"] .nodi-turn-body > *')].map(n => n.className.split(' ')[0])" % last)
+        body = pg.evaluate("[...document.querySelectorAll('.nodi-turn[data-turn=\"%d\"] .nodi-turn-body > *')].map(n => n.className.split(' ')[0]).filter(c => c !== 'fw-inline')" % last)
         assert body == ["nodi-input", "nodi-thinking", "nodi-prose", "nodi-tool", "nodi-prose"], body
         assert pg.locator(".nodi-turn[data-turn='%d'] .nodi-tool[data-status='ok']" % last).count() == 1
         assert not [e for e in pg.errors if "WebSocket" not in e and "websocket" not in e and "ERR_" not in e], pg.errors
@@ -398,8 +396,8 @@ try:
         pg.locator(".zr-input").fill("half a thought")
         pg.wait_for_timeout(600)
         pg.locator(".fw-back").click()
-        pg.wait_for_selector(".zr-thread")
-        pg.locator(".zr-thread[data-id='%s']" % LANE).click()
+        pg.wait_for_selector(".zr-tree-row")
+        pg.locator(".zr-tree-row[data-id='%s'] .zr-tree-hit" % LANE).click()
         until(pg, "document.querySelector('.fw').dataset.link === 'live'", timeout=10000)
         assert pg.locator(".zr-input").input_value() == "", "another aria has its own draft"
         pg.goto("about:blank")
@@ -423,7 +421,7 @@ try:
         sans_free(pg, "voice player")
         assert door_v.state()["audio"] >= 1, "the gateway audio socket was opened by the voice toggle"
         pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])", timeout=10000)
-        pg.locator(".nodi-turn[data-turn='26'] .fw-play").click()
+        pg.locator(".nodi-turn[data-turn='26'] .fw-inline[data-kind='prose'] .fw-play").click()
         pg.wait_for_selector(".nodi-turn[data-turn='26'] .voce[data-for='26']", timeout=5000)
         until(pg, "['loading','playing','idle'].includes(document.querySelector(\".nodi-turn[data-turn='26'] .voce\").dataset.state)", 10000)
         assert pg.evaluate("window.localStorage.length + window.sessionStorage.length") == 0 or not pg.evaluate("Object.keys(window.localStorage).concat(Object.keys(window.sessionStorage)).some(k => /voice|hands/i.test(k))"), "voice and hands-free are never stored"
@@ -435,6 +433,7 @@ try:
         attend(pg, door_h, MAIN)
         pg.locator(".fw-hands").click()
         assert pg.locator(".fw-hands").get_attribute("aria-pressed") == "true"
+        assert pg.locator(".fw-inline").count() == 0 and pg.locator(".fw-play-big").count() > 0, "hands-free keeps the large Play and drops the small buttons"
         assert voice_pressed(pg) == "true", "hands-free turns the voice on"
         pg.locator(".fw-mic").click()
         until(pg, "document.querySelector('.fw').dataset.mic === 'recording'", 10000)
@@ -487,7 +486,7 @@ try:
         attend(pg, say_door, MAIN, 5)
         pg.wait_for_selector(".nodi-turn[data-turn='5']")
         assert voice_pressed(pg) == "false", "voice is off while Play asks the gateway to speak"
-        pg.locator(".nodi-turn[data-turn='5'] .fw-play").click()
+        pg.locator(".nodi-turn[data-turn='5'] .fw-inline[data-kind='prose'] .fw-play").click()
         for _ in range(100):
             if say_door.state()["says"] == [5]:
                 break
@@ -496,7 +495,7 @@ try:
         until(pg, "(() => { const v = document.querySelector(\".nodi-turn[data-turn='5'] .voce\"); return !!v && ['live','draining','idle','playing'].includes(v.dataset.state); })()", 10000)
         assert pg.locator(".voce[data-state='expired']").count() == 0
         assert say_door.state()["audio"] >= 1, "the gateway socket opened for the ask"
-        pg.locator(".nodi-turn[data-turn='6'] .fw-play").click()
+        pg.locator(".nodi-turn[data-turn='6'] .fw-inline[data-kind='prose'] .fw-play").click()
         for _ in range(100):
             if say_door.state()["says"] == [5, 6]:
                 break
@@ -509,44 +508,44 @@ try:
         pg.close()
 
         for width, height in ((390, 844), (1280, 800)):
-            sheet_door = door(12)
+            inline_door = door(12)
             phone = width < 600
             ctx = browser.new_context(viewport={"width": width, "height": height}, is_mobile=phone, has_touch=phone)
             pg = ctx.new_page()
             pg.errors = []
             pg.on("pageerror", lambda e: pg.errors.append(str(e)))
             pg.on("console", lambda m: pg.errors.append(m.text) if m.type == "error" else None)
-            attend(pg, sheet_door, MAIN)
+            attend(pg, inline_door, MAIN)
             pg.locator(".zr-input").fill("typed")
-            said = pg.locator(".nodi-turn[data-turn='26'] .nodi-said").first
-            said.scroll_into_view_if_needed()
-            said.tap() if phone else said.click()
-            pg.wait_for_selector(".fw-sheet")
-            settle_motion(pg)
-            box = pg.locator(".fw-sheet").bounding_box()
-            assert abs(box["y"] + box["height"] - height) <= 1, "the sheet sits on the bottom edge: %s" % box
-            assert box["x"] >= 0 and box["x"] + box["width"] <= width, box
-            assert pg.locator(".fw-sheet-act").all_inner_texts() == ["Play", "Re-transcribe"]
-            for b in pg.locator(".fw-sheet-act").all():
-                hit_area(pg, b, "sheet actions")
-            snap(pg, "sheet-%d" % width)
-            sans_free(pg, "the sheet at %d" % width)
-            pg.locator(".fw-sheet-act[data-action='play']").click()
-            pg.wait_for_selector(".fw-sheet .voce", timeout=5000)
-            until(pg, "['loading','playing','idle','expired','error'].includes(document.querySelector('.fw-sheet .voce').dataset.state)", 10000)
-            pg.locator(".fw-sheet-act[data-action='retranscribe']").click()
-            pg.wait_for_selector(".fw-sheet-text", timeout=5000)
-            assert pg.locator(".fw-sheet-text").inner_text() == "re-heard words"
-            assert sheet_door.state()["retranscribed"] == ["gluck/" + MAIN + ":26/in"], sheet_door.state()["retranscribed"]
-            pg.locator(".fw-sheet-act[data-action='use']").click()
-            pg.wait_for_selector(".fw-sheet", state="detached", timeout=3000)
+            mine = pg.locator(".nodi-turn[data-turn='26'] .fw-inline[data-kind='input']")
+            mine.scroll_into_view_if_needed()
+            assert mine.locator(".fw-inline-btn").evaluate_all("bs => bs.map(b => b.dataset.action)") == ["play", "retranscribe"]
+            assert mine.locator(".fw-inline-btn").all_inner_texts() == ["▸", "✎"], "the buttons wear pager glyphs"
+            said_box = pg.locator(".nodi-turn[data-turn='26'] .nodi-said").first.bounding_box()
+            bar_box = mine.bounding_box()
+            assert bar_box["y"] >= said_box["y"] + said_box["height"] - 1 and bar_box["y"] - (said_box["y"] + said_box["height"]) < 40, "the buttons sit right under the message: %s %s" % (said_box, bar_box)
+            for b in mine.locator(".fw-inline-btn").all():
+                assert b.bounding_box()["height"] <= 40, "small buttons"
+            assert pg.locator(".zr-scrim, .zr-sheet").count() == 0
+            snap(pg, "inline-%d" % width)
+            sans_free(pg, "the inline buttons at %d" % width)
+            pg.locator(".nodi-turn[data-turn='26'] .nodi-said").first.click()
+            assert pg.locator(".zr-scrim, .zr-sheet").count() == 0, "tapping a message opens nothing"
+            mine.locator("[data-action='play']").click()
+            pg.wait_for_selector(".fw-inline-player .voce", timeout=5000)
+            until(pg, "['loading','playing','idle','expired','error'].includes(document.querySelector('.fw-inline-player .voce').dataset.state)", 10000)
+            mine.locator("[data-action='retranscribe']").click()
+            pg.wait_for_selector(".fw-inline-heard", timeout=5000)
+            assert "re-heard words" in pg.locator(".fw-inline-heard").inner_text()
+            assert inline_door.state()["retranscribed"] == ["gluck/" + MAIN + ":26/in"], inline_door.state()["retranscribed"]
+            assert pg.locator(".zr-scrim, .zr-sheet").count() == 0, "no shaded sheet for re-transcribe"
+            pg.locator(".fw-inline-heard [data-action='use']").click()
             assert pg.locator(".zr-input").input_value() == "typed re-heard words"
-            prose = pg.locator(".nodi-turn[data-turn='26'] .nodi-prose").first
-            prose.tap() if phone else prose.click()
-            pg.wait_for_selector(".fw-sheet[data-kind='prose']")
-            assert pg.locator(".fw-sheet-act").all_inner_texts() == ["Play"]
-            pg.keyboard.press("Escape")
-            pg.wait_for_selector(".fw-sheet", state="detached", timeout=3000)
+            theirs = pg.locator(".nodi-turn[data-turn='26'] .fw-inline[data-kind='prose']")
+            assert theirs.locator(".fw-inline-btn").all_inner_texts() == ["▸"]
+            theirs.locator("[data-action='play']").click()
+            pg.wait_for_selector(".nodi-turn[data-turn='26'] .voce[data-for='26']", timeout=5000)
+            assert pg.locator(".fw-play-big").count() == 0
             assert not pg.errors, pg.errors
             ctx.close()
 
@@ -718,7 +717,7 @@ try:
             pg.errors = []
             pg.on("pageerror", lambda e: pg.errors.append(str(e)))
             pg.goto(fast.url)
-            pg.wait_for_selector(".zr-thread")
+            pg.wait_for_selector(".zr-tree-row")
             assert pg.locator(".fw-top, .fw-mark, .fw-title").count() == 0, "the header is gone"
             assert pg.locator(".fw-head").count() == 0, "no logo on the list"
             assert pg.locator(".fw-status").is_visible() == phone, "the slim status bar is a phone thing"
@@ -780,11 +779,13 @@ try:
                 box, side = pg.locator(".zr-pit").bounding_box(), pg.locator(".fw-side").bounding_box()
                 assert abs(box["x"] - (side["x"] + side["width"])) <= 1 or box["x"] >= side["x"] + side["width"] - 1, "the drawer starts at the transcript pane: %s %s" % (box, side)
             pg.locator("[data-action='tree']").click()
-            until(pg, "document.querySelectorAll('.zr-pit-row[data-id]').length >= 8", 8000)
-            depths = pg.evaluate("[...document.querySelectorAll('.zr-pit-row[data-id]')].map(r => r.dataset.depth)")
+            until(pg, "document.querySelectorAll('.zr-pit .zr-tree-row').length >= 8", 8000)
+            depths = pg.evaluate("[...document.querySelectorAll('.zr-pit .zr-tree-row')].map(r => r.dataset.depth)")
             assert "0" in depths and "1" in depths, "the tree nests: %s" % depths
-            assert pg.locator(".zr-pit-row[data-id='%s']" % MAIN).get_attribute("aria-current") == "true", "the attended aria is marked"
-            pg.locator(".zr-pit-row[data-id='%s']" % LANE).click()
+            assert pg.locator(".zr-pit .zr-tree-row[data-id='%s']" % MAIN).get_attribute("aria-selected") == "true", "the attended aria is marked"
+            assert pg.locator(".zr-pit .zr-tree-row[data-id='%s'] .zr-tree-branch" % LANE).inner_text() in ("├─", "└─"), "branch glyphs are the pager's"
+            assert pg.locator(".zr-pit .zr-tree-row[data-id='%s'] .zr-tree-marker" % MAIN).inner_text() == "●", "the attended row wears the pager's here mark"
+            pg.locator(".zr-pit .zr-tree-row[data-id='%s'] .zr-tree-hit" % LANE).click()
             pg.wait_for_selector(".zr-pit", state="detached")
             until(pg, "location.hash.includes('%s')" % LANE, 5000)
             until(pg, "document.querySelector('.fw').dataset.link === 'live'", 8000)
@@ -856,16 +857,13 @@ try:
         pg = fresh()
         attend(pg, sess_door, MAIN)
         pg.locator(".zr-input").fill("typed")
-        said = pg.locator(".nodi-turn[data-turn='26'] .nodi-said").first
-        said.scroll_into_view_if_needed()
-        said.tap()
-        pg.wait_for_selector(".fw-sheet")
-        pg.locator(".fw-sheet-act[data-action='play']").click()
-        pg.wait_for_selector(".fw-sheet .voce", timeout=5000)
-        until(pg, "['playing','idle','expired','error'].includes(document.querySelector('.fw-sheet .voce').dataset.state)", 10000)
-        pg.locator(".fw-sheet-act[data-action='retranscribe']").click()
-        pg.wait_for_selector(".fw-sheet-text", timeout=5000)
-        pg.keyboard.press("Escape")
+        mine = pg.locator(".nodi-turn[data-turn='26'] .fw-inline[data-kind='input']")
+        mine.scroll_into_view_if_needed()
+        mine.locator("[data-action='play']").click()
+        pg.wait_for_selector(".fw-inline-player .voce", timeout=5000)
+        until(pg, "['playing','idle','expired','error'].includes(document.querySelector('.fw-inline-player .voce').dataset.state)", 10000)
+        mine.locator("[data-action='retranscribe']").click()
+        pg.wait_for_selector(".fw-inline-heard", timeout=5000)
         toggle_voice(pg)
         for _ in range(100):
             if any(g["kind"] == "audio-ws" for g in sess_door.state()["sessions"]):

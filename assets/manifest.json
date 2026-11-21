@@ -532,8 +532,8 @@
       "knobs": ["--placet-ui", "--placet-display", "--placet-code", "--placet-bar", "--placet-width", "--z-control-hit"]
     },
     "react": {
-      "summary": "zanni-react: the React package under packages/react. Button, ButtonGroup, Sheet, Composer, Strip, List, Fold, the transcript views, follow-the-bottom and a voce player island, state-free; zanni-react/jotai binds them to figaro-forms and Jotai. figaro web is built on it. Framework-free sites wear the same look from zanni-react.css.",
-      "classes": ["zr-btn", "zr-group", "zr-sheet", "zr-scrim", "zr-composer", "zr-strip", "zr-list", "zr-row", "zr-thread", "zr-fold", "zr-work", "zr-actionbar", "zr-latest"],
+      "summary": "zanni-react: the React package under packages/react. Button, ButtonGroup, Sheet, Composer, Strip, Tree, Pit, Fold, the transcript views, follow-the-bottom and a voce player island, state-free; zanni-react/jotai binds them to figaro-forms and Jotai. figaro web is built on it. Framework-free sites wear the same look from zanni-react.css.",
+      "classes": ["zr-btn", "zr-group", "zr-sheet", "zr-scrim", "zr-composer", "zr-strip", "zr-tree", "zr-pit", "zr-fold", "zr-work", "zr-actionbar", "zr-latest"],
       "files": ["../packages/react/src/zanni-react.css"],
       "docs": "docs/react.md",
       "example": "examples/react.html",

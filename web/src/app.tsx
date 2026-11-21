@@ -1,7 +1,7 @@
 import { useAtomValue } from "jotai";
 import { useSyncExternalStore } from "react";
 import { PitProvider } from "zanni-react";
-import { AriaView, BoundPit, NewFigaro, attendedAtom, attendedRunningAtom, audioSessionAtom, BoundSheet as Sheet, linkAtom, micAtom, Roster, routeAtom, routeKindAtom, StatusBar } from "zanni-react/jotai";
+import { AriaView, BoundPit, NewFigaro, attendedAtom, attendedRunningAtom, audioSessionAtom, linkAtom, micAtom, Roster, routeAtom, routeKindAtom, StatusBar } from "zanni-react/jotai";
 
 function ListHint() {
   return (
@@ -46,7 +46,6 @@ export function App() {
             {attended ? <AriaView key={attended.store + "/" + attended.aria} attended={attended} /> : route?.aria ? <NoStore store={route.store} /> : <ListHint />}
           </div>
         </div>
-        <Sheet />
         <NewFigaro />
         <BoundPit />
       </div>

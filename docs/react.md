@@ -12,7 +12,9 @@ dependency react only. `zanni-react/jotai` binds them to figaro-forms and Jotai:
 |---|---|
 | `Button`, `ButtonGroup` | the z2 control scale (`size` compact or default, `variant` outline, quiet, ghost, accent); `aria-pressed` makes a toggle |
 | `Sheet` | scrim and bottom sheet: Escape, focus in and back, Tab trap, keeps its content through the exit animation |
-| `ListRow`, `List`, `ActionBar`, `Fold` | roster rows with depth and current mark; hover-reveal per-row actions (always on the last row and on touch); a details with a spring-height body |
+| `ActionBar`, `Fold` | hover-reveal per-row actions (always on the last row and on touch); a details with a spring-height body |
+| `Tree` | figaro's figtree in a browser: branch, marker, badge and label kept apart, optional field columns with a header, colour rules by field value, row washes, collapsible rows, a current mark; `treeRows` is the pure walk |
+| `PitProvider`, `PitGrip`, `Pit`, `PitList`, `PitRow` | the drawer dragged from the composer edge (closed, half, full), its rows |
 | `TurnView`, `ProseView`, `ToolView`, `ThinkingView`, `WorkGroup`, `TranscriptContext` | the nodi transcript as React; the context carries two app hooks: open the message sheet, per-turn actions |
 | `useFollow`, `LatestPill`, `PlayerIsland` | follow the bottom with a Latest pill and prepend anchor; a voce player the component owns |
 | `nodi`, `speech`, `voce`, work helpers | the framework-free zanni modules and the pure grouping and timing functions |

@@ -155,12 +155,13 @@ html { scroll-padding-bottom: var(--zr-composer-h, 0px); }
 .fw-mic[aria-pressed="true"] { background: var(--z-fail); border-color: var(--z-fail); color: var(--z-ground); }
 .fw-mic[aria-pressed="true"]::before { border-radius: 0; background: currentColor; }
 
-.fw-tap { cursor: pointer; }
-.fw-tap:focus-visible { outline-offset: 2px; }
-.fw-sheet-actions { display: flex; flex-wrap: wrap; gap: var(--z-space-3, 8px); }
-.fw-sheet-note { font: 400 1.0625rem / 1.2 var(--fw-mono); color: var(--z-warn); }
-.fw-sheet-result { display: flex; flex-direction: column; align-items: flex-start; gap: var(--z-space-3, 8px); }
-.fw-sheet-text { font-size: 1.1875rem; overflow-wrap: anywhere; }
+.fw-inline { display: flex; flex-direction: column; align-items: flex-start; gap: var(--z-space-2, 4px); }
+.fw-inline-bar { display: flex; gap: var(--z-space-2, 4px); }
+.fw-inline-btn { min-width: 32px; min-height: 28px; padding: 0 var(--z-space-2, 4px); font-size: 1.25rem; line-height: 1; opacity: 0.7; }
+.fw-inline-btn:hover, .fw-inline-btn:focus-visible { opacity: 1; }
+@media (pointer: coarse) { .fw-inline-btn { min-width: 40px; min-height: 36px; } }
+.fw-inline-note { margin: 0; font: 400 1.0625rem / 1.2 var(--fw-mono); color: var(--z-warn); }
+.fw-inline-heard { display: flex; align-items: center; gap: var(--z-space-3, 8px); margin: 0; font-size: 1.1875rem; overflow-wrap: anywhere; }
 
 .fw button { transition-property: scale; transition-duration: var(--fw-d-pop); transition-timing-function: var(--fw-pop); }
 .fw button:active:not(:disabled) { scale: 0.94; transition-duration: var(--fw-d-press); }

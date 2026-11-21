@@ -11,9 +11,9 @@ import { micCancelAtom } from "../state/mic";
 import { useVoice } from "./use-voice";
 import { linkAtom } from "../state/aria";
 import type { Attended } from "../state/route";
-import { openSheetAtom } from "../state/sheet";
 import { ForkBanner } from "./fork-banner";
 import { Composer } from "./composer";
+import { InlineActions } from "./inline-actions";
 import { TurnActions } from "./turn-actions";
 
 const DEEP_LIMIT = 60;
@@ -152,8 +152,7 @@ export function AriaView({ attended }: { attended: Attended }) {
     return () => watch.disconnect();
   }, [followed, olderAvailable, loadOlder]);
 
-  const openSheet = useSetAtom(openSheetAtom);
-  const transcript = useMemo(() => ({ open: (kind: "input" | "prose", turn: number) => openSheet({ kind, turn }), actions: (turn: number) => <TurnActions turn={turn} /> }), [openSheet]);
+  const transcript = useMemo(() => ({ actions: (turn: number) => <TurnActions turn={turn} />, below: (kind: "input" | "prose", turn: number) => <InlineActions kind={kind} turn={turn} /> }), []);
   const status = note || pageError;
   const metrics = snap.metrics ? nodi.metricsLine(snap.metrics) : "";
 

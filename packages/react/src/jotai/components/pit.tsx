@@ -3,6 +3,7 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useState } from "react";
 import { PIT_ROWS, EFFORT_KEY, FORKED_FROM_KEY, byLastUsed, stateRows, valueAt, type PitRowId, type PitView } from "../lib/pit-rows";
 import { PHASE_WORDS, labelOf } from "../lib/roster";
+import { TopologyTree, FormTree } from "./tree-view";
 import { turnsAtom, linkAtom } from "../state/aria";
 import { toggleVoiceAtom, voiceAtom } from "../state/audio";
 import { bootAtom } from "../state/boot";
@@ -138,7 +139,6 @@ function StateView() {
   if (mantra) facts.push(["Mantra", mantra]);
   if (from) facts.push(["Fork of", from]);
   facts.push(["Effort", effort ?? (bound?.ready ? "unset" : "…"), EFFORT_KEY]);
-  const rows = stateRows(bound?.root).filter((r) => r.key !== EFFORT_KEY);
   return (
     <>
       <dl className="fw-pit-state">
@@ -149,16 +149,7 @@ function StateView() {
           </div>
         ))}
       </dl>
-      {attended && (
-        <dl className="fw-pit-state fw-pit-form" aria-label="Bound form">
-          {rows.map((r) => (
-            <div key={r.key} className="fw-pit-fact" data-key={r.key}>
-              <dt>{r.key}</dt>
-              <dd>{r.value}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
+      {attended && <FormTree root={bound?.root} />}
       <p className="fw-note">{bound?.error ? "State is not available: " + bound.error : "Read-only for now."}</p>
     </>
   );
@@ -205,38 +196,7 @@ function ForkAtView() {
 
 function TreeView() {
   const pit = usePit();
-  const tree = useAtomValue(treeStateAtom);
-  const attended = useAtomValue(attendedAtom);
-  const store = useAtomValue(storeNameAtom);
-  const go = useSetAtom(goAtom);
-  if (!tree) return <p className="fw-note">No store.</p>;
-  const items: { id: string; depth: number }[] = [];
-  const walk = (ids: readonly string[], depth: number) => {
-    for (const id of ids) {
-      items.push({ id, depth });
-      walk(tree.nodes.get(id)?.children ?? [], depth + 1);
-    }
-  };
-  walk(tree.roots, 0);
-  const mark = (status: string, state: string) => (status === "retired" ? glyphs.dead : status === "reaped" ? glyphs.absent : state === "active" ? glyphs["state.here"] : glyphs["state.idle"]);
-  const visit = (id: string) => {
-    pit?.setSnap("closed");
-    go({ store, aria: id });
-  };
-  return (
-    <>
-      {!tree.ready && tree.nodes.size === 0 && <p className="fw-note">{tree.error ? "No tree: " + tree.error : "Loading the tree"}</p>}
-      <PitList label="Tree">
-        {items.map(({ id, depth }) => {
-          const n = tree.nodes.get(id)!;
-          return <PitRow key={id} id={id} depth={depth} glyph={mark(n.status, n.state)} label={n.mantra || n.label} meta={n.state} current={attended?.aria === id} onClick={() => visit(id)} />;
-        })}
-        {[...tree.reaped.values()].map((n) => (
-          <PitRow key={n.id} id={n.id} glyph={glyphs.absent} label={n.mantra || n.label} meta="reaped" onClick={() => visit(n.id)} />
-        ))}
-      </PitList>
-    </>
-  );
+  return <TopologyTree onVisit={() => pit?.setSnap("closed")} />;
 }
 
 function RecentView() {

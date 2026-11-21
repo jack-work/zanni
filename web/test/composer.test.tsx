@@ -168,7 +168,7 @@ describe("drafts", () => {
   });
 });
 
-describe("the message sheet", () => {
+describe("the buttons under a message", () => {
   const stubFetch = (handler: (url: string, init?: RequestInit) => Response | Promise<Response>) => {
     const calls: string[] = [];
     vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
@@ -180,79 +180,71 @@ describe("the message sheet", () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  const tapped = async (selector: string) => {
+  const under = '.nodi-turn[data-turn="26"] ';
+  const ready = async () => {
     attend(1);
     await live();
-    await waitFor(() => expect(document.querySelector(selector)).toBeTruthy());
-    act(() => (document.querySelector(selector) as HTMLElement).click());
-    await waitFor(() => expect(document.querySelector(".fw-sheet")).toBeTruthy());
+    await waitFor(() => expect(document.querySelector(under + '.fw-inline[data-kind="input"]')).toBeTruthy());
   };
+  const press = (selector: string) => act(() => (document.querySelector(selector) as HTMLElement).click());
 
-  it("opens on a tapped message of yours with play and re-transcribe", async () => {
-    await tapped('.nodi-turn[data-turn="26"] .nodi-said');
-    expect(document.querySelector(".fw-sheet")!.getAttribute("data-kind")).toBe("input");
-    expect([...document.querySelectorAll(".fw-sheet-act")].map((b) => b.textContent)).toEqual(["Play", "Re-transcribe"]);
-    expect(document.querySelector(".zr-sheet-title")!.textContent).toContain("Turn 26");
+  it("sit under a message of yours with play and re-transcribe, and under a reply with play only, no sheet or scrim", async () => {
+    await ready();
+    const mine = [...document.querySelectorAll(under + '.fw-inline[data-kind="input"] .fw-inline-btn')].map((b) => b.getAttribute("data-action"));
+    expect(mine).toEqual(["play", "retranscribe"]);
+    await waitFor(() => expect(document.querySelector(under + '.fw-inline[data-kind="prose"]')).toBeTruthy());
+    expect([...document.querySelectorAll(under + '.fw-inline[data-kind="prose"] .fw-inline-btn')].map((b) => b.getAttribute("data-action"))).toEqual(["play"]);
+    expect(document.querySelector(".zr-scrim")).toBeNull();
+    expect(document.querySelector(".fw-sheet")).toBeNull();
+    expect(document.querySelector(under + '.fw-inline [data-action="play"]')!.textContent).toBe("▸");
   });
 
-  it("opens on a tapped reply with play only", async () => {
-    await tapped('.nodi-turn[data-turn="26"] .nodi-prose');
-    expect(document.querySelector(".fw-sheet")!.getAttribute("data-kind")).toBe("prose");
-    expect([...document.querySelectorAll(".fw-sheet-act")].map((b) => b.textContent)).toEqual(["Play"]);
+  it("do not open anything when a message is tapped", async () => {
+    await ready();
+    press(under + ".nodi-said");
+    expect(document.querySelector(".zr-sheet, .zr-scrim")).toBeNull();
   });
 
-  it("does not open when a link or a tool summary is what was tapped", async () => {
-    attend(1);
-    await live();
-    await waitFor(() => expect(document.querySelector(".nodi-tool summary")).toBeTruthy());
-    act(() => (document.querySelector(".nodi-tool summary") as HTMLElement).click());
-    expect(document.querySelector(".fw-sheet")).toBeNull();
-  });
-
-  it("closes on Escape, the scrim and Close", async () => {
-    await tapped('.nodi-turn[data-turn="26"] .nodi-said');
-    fireEvent.keyDown(document, { key: "Escape" });
-    expect(document.querySelector(".fw-sheet")).toBeNull();
-    act(() => (document.querySelector('.nodi-turn[data-turn="26"] .nodi-said') as HTMLElement).click());
-    act(() => (document.querySelector(".zr-scrim") as HTMLElement).click());
-    expect(document.querySelector(".fw-sheet")).toBeNull();
-    act(() => (document.querySelector('.nodi-turn[data-turn="26"] .nodi-said') as HTMLElement).click());
-    act(() => screen.getByText("Close").click());
-    expect(document.querySelector(".fw-sheet")).toBeNull();
-  });
-
-  it("re-transcribes the stored clip by its key and offers the new text for the composer", async () => {
+  it("re-transcribe the stored clip by its key and offer the new text for the composer", async () => {
     const calls = stubFetch(() => new Response(JSON.stringify({ text: "re-heard words", duration_ms: 900, audio_id: "x" }), { status: 200 }));
-    await tapped('.nodi-turn[data-turn="26"] .nodi-said');
+    await ready();
     fireEvent.change(input(), { target: { value: "typed" } });
-    act(() => screen.getByText("Re-transcribe").click());
-    await waitFor(() => expect(document.querySelector(".fw-sheet-text")!.textContent).toBe("re-heard words"));
+    press(under + '.fw-inline[data-kind="input"] [data-action="retranscribe"]');
+    await waitFor(() => expect(document.querySelector(".fw-inline-heard")!.textContent).toContain("re-heard words"));
     expect(calls[0]).toBe("stt/key/gluck/" + MAIN + "%3A26/in");
-    act(() => screen.getByText("Use text").click());
-    expect(document.querySelector(".fw-sheet")).toBeNull();
+    press('.fw-inline-heard [data-action="use"]');
+    expect(document.querySelector(".fw-inline-heard")).toBeNull();
     expect(input().value).toBe("typed re-heard words");
   });
 
-  it("says so when no recording is held under the key", async () => {
+  it("say so when no recording is held under the key", async () => {
     stubFetch(() => new Response(JSON.stringify({ error: "no clip" }), { status: 404 }));
-    await tapped('.nodi-turn[data-turn="26"] .nodi-said');
-    act(() => screen.getByText("Re-transcribe").click());
-    await waitFor(() => expect(document.querySelector(".fw-sheet-note")!.textContent).toBe("No recording for this message."));
-    expect(document.querySelector(".fw-sheet-text")).toBeNull();
+    await ready();
+    press(under + '.fw-inline[data-kind="input"] [data-action="retranscribe"]');
+    await waitFor(() => expect(document.querySelector(".fw-inline-note")!.textContent).toBe("No recording for this message."));
+    expect(document.querySelector(".fw-inline-heard")).toBeNull();
   });
 
-  it("plays a reply where it is drawn, by the turn's own Play, and closes", async () => {
+  it("play a reply where it is drawn", async () => {
     stubFetch(() => new Response("", { status: 206 }));
-    await tapped('.nodi-turn[data-turn="26"] .nodi-prose');
-    act(() => (document.querySelector(".fw-sheet-act[data-action='play']") as HTMLElement).click());
-    expect(document.querySelector(".fw-sheet")).toBeNull();
+    await ready();
+    await waitFor(() => expect(document.querySelector(under + '.fw-inline[data-kind="prose"]')).toBeTruthy());
+    press(under + '.fw-inline[data-kind="prose"] [data-action="play"]');
     expect(document.querySelector('.nodi-turn[data-turn="26"] .voce[data-for="26"]')).toBeTruthy();
   });
 
-  it("plays your own clip inside the sheet", async () => {
+  it("play your own clip right under it", async () => {
     stubFetch(() => new Response("", { status: 206 }));
-    await tapped('.nodi-turn[data-turn="26"] .nodi-said');
-    act(() => (document.querySelector(".fw-sheet-act[data-action='play']") as HTMLElement).click());
-    expect(document.querySelector(".fw-sheet .fw-sheet-player .voce")).toBeTruthy();
+    await ready();
+    press(under + '.fw-inline[data-kind="input"] [data-action="play"]');
+    expect(document.querySelector(under + '.fw-inline[data-kind="input"] .fw-inline-player .voce')).toBeTruthy();
+  });
+
+  it("give way to the large Play in hands-free mode", async () => {
+    await ready();
+    expect(document.querySelector(".fw-play-big")).toBeNull();
+    press(".fw-hands");
+    await waitFor(() => expect(document.querySelector(".fw-inline")).toBeNull());
+    expect(document.querySelectorAll(".fw-play-big").length).toBeGreaterThan(0);
   });
 });

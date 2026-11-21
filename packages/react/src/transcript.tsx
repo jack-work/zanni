@@ -1,5 +1,5 @@
 import { formatWorkedTime, groupWork, stepsTitle, type Work } from "./work";
-import { createContext, memo, useContext, useEffect, useMemo, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import { createContext, memo, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Fold } from "./fold";
 import { reducedMotion } from "./motion";
 import { glyphs } from "./glyphs";
@@ -9,8 +9,8 @@ import { BlockView, Plain } from "./text";
 export type TapKind = "input" | "prose";
 
 export interface TranscriptHooks {
-  open?: (kind: TapKind, turn: number) => void;
   actions?: (turn: number) => ReactNode;
+  below?: (kind: TapKind, turn: number) => ReactNode;
 }
 
 export const TranscriptContext = createContext<TranscriptHooks>({});
@@ -24,41 +24,19 @@ function settled(item: { settled: boolean }): { "data-settled"?: "" } {
   return item.settled ? { "data-settled": "" } : {};
 }
 
-const NOT_A_TAP = "a, button, summary, input, textarea, .voce";
-
-function useTap(kind: TapKind, turn: number) {
-  const hooks = useContext(TranscriptContext);
-  const open = (to: { kind: TapKind; turn: number }) => hooks.open?.(to.kind, to.turn);
-  return {
-    tabIndex: 0,
-    "aria-haspopup": "dialog" as const,
-    onClick: (ev: MouseEvent<HTMLElement>) => {
-      if ((ev.target as Element).closest(NOT_A_TAP)) return;
-      if (window.getSelection()?.toString()) return;
-      open({ kind, turn });
-    },
-    onKeyDown: (ev: KeyboardEvent<HTMLElement>) => {
-      if (ev.target !== ev.currentTarget || (ev.key !== "Enter" && ev.key !== " ")) return;
-      ev.preventDefault();
-      open({ kind, turn });
-    },
-  };
-}
-
 function stamp(ms: unknown): string {
   const t = Number(ms);
   return isFinite(t) && t > 0 ? new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
 }
 
 export function InputView({ input, turn }: { input: InputModel; turn: number }) {
-  const tap = useTap("input", turn);
   const first = input.parts[0];
   return (
     <div className="nodi-input" data-from={first ? first.role : "you"}>
       {input.parts.map((p, i) => {
         const when = i === 0 ? stamp(input.at) : "";
         return (
-          <div key={i} className="nodi-said fw-tap" data-from={p.role} {...tap}>
+          <div key={i} className="nodi-said" data-from={p.role}>
             <div className="nodi-by">
               <span className="nodi-who">
                 <Plain text={p.label} />
@@ -85,9 +63,8 @@ export interface ProseProps {
 export const ProseView = memo(
   function ProseView({ item, turn, speaking, spokenChars }: ProseProps) {
     const blocks = useMemo(() => nodi.blocks(item.text), [item.text]);
-    const tap = useTap("prose", turn);
     return (
-      <div className="nodi-prose fw-tap" {...tap} {...settled(item)} {...(speaking ? { "data-speaking": "" } : {})} {...(speaking && spokenChars !== undefined ? { "data-spoken-chars": String(spokenChars) } : {})}>
+      <div className="nodi-prose" {...settled(item)} {...(speaking ? { "data-speaking": "" } : {})} {...(speaking && spokenChars !== undefined ? { "data-spoken-chars": String(spokenChars) } : {})}>
         <div className="nodi-text">
           {blocks.map((b, i) => (
             <BlockView key={i} block={b} />
@@ -296,7 +273,9 @@ export const TurnView = memo(
       </div>
       <div className="nodi-turn-body">
         {m.input && m.input.parts.length > 0 && <InputView input={m.input} turn={m.turn} />}
+        {m.input && m.input.parts.length > 0 && hooks.below?.("input", m.turn)}
         {rows.map((row) => (row.kind === "group" ? <WorkGroup key={row.key} items={row.items} /> : <ItemView key={row.key + row.kind} item={row} turn={m.turn} speaking={mine} />))}
+        {!m.open && m.items.some((i) => i.kind === "prose") && hooks.below?.("prose", m.turn)}
         {m.end &&
           (m.end.kind === "error" ? (
             <p className="nodi-error" role="alert">

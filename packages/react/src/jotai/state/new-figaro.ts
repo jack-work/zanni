@@ -1,6 +1,6 @@
 import { atom } from "jotai";
 import { goAtom, clientAtom, storeNameAtom, attendedAtom } from "./route";
-import { rosterActionAtom, rosterAtom, depthsAtom } from "./roster";
+import { rosterActionAtom, rosterAtom } from "./roster";
 import { labelOf } from "../lib/roster";
 import { bootAtom } from "./boot";
 
@@ -24,7 +24,7 @@ export interface Root {
 
 export const rootsAtom = atom<Root[]>((get) => {
   const rows = get(rosterAtom).rows;
-  const depth = get(depthsAtom);
+  const known = new Set(rows.map((r) => r.id));
   const attended = get(attendedAtom);
   const out: Root[] = [];
   const seen = new Set<string>();
@@ -38,7 +38,7 @@ export const rootsAtom = atom<Root[]>((get) => {
     const row = rows.find((r) => r.id === attended.aria);
     add(attended.aria, row ? labelOf(row) : attended.aria.slice(0, 8));
   }
-  for (const r of rows) if ((depth[r.id] ?? 0) === 0) add(r.id, labelOf(r));
+  for (const r of rows) if (!r.parent || !known.has(r.parent)) add(r.id, labelOf(r));
   return out;
 });
 

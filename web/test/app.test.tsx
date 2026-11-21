@@ -30,23 +30,23 @@ afterEach(() => {
 });
 
 describe("the list", () => {
-  it("pages eight at a time and indents children under their parent", async () => {
+  it("draws the topology as one tree, children under their parent, and a tap attends", async () => {
     open("#/");
-    await waitFor(() => expect(document.querySelectorAll(".zr-thread")).toHaveLength(8));
+    await waitFor(() => expect(document.querySelectorAll(".zr-tree-row").length).toBeGreaterThan(5));
     expect(app().dataset.route).toBe("list");
-    expect(document.querySelector(".fw-more")).toBeTruthy();
-    act(() => screen.getByText("More arias").click());
-    await waitFor(() => expect(document.querySelectorAll(".zr-thread").length).toBeGreaterThan(8));
-    const depths = [...document.querySelectorAll<HTMLElement>(".zr-thread")].map((a) => a.dataset.depth);
+    const depths = [...document.querySelectorAll<HTMLElement>(".zr-tree-row")].map((r) => r.dataset.depth);
+    expect(depths).toContain("0");
     expect(depths).toContain("1");
-    expect(document.querySelector(".fw-more")).toBeNull();
+    const lane = document.querySelector<HTMLElement>(".zr-tree-row[data-id='" + "c0ffee02".repeat(4) + "'] .zr-tree-hit")!;
+    act(() => lane.click());
+    await waitFor(() => expect(window.location.hash).toBe("#/gluck/" + "c0ffee02".repeat(4)));
   });
 
-  it("says what it is waiting on and what policy hid", async () => {
+  it("says what it is waiting on", async () => {
     open("#/");
-    expect(screen.getByText("Loading arias.")).toBeTruthy();
-    await waitFor(() => expect(document.querySelectorAll(".zr-thread").length).toBe(8));
-    expect(screen.queryByText("Loading arias.")).toBeNull();
+    expect(screen.getByText("Loading the topology.")).toBeTruthy();
+    await waitFor(() => expect(document.querySelectorAll(".zr-tree-row").length).toBeGreaterThan(0));
+    expect(screen.queryByText("Loading the topology.")).toBeNull();
   });
 });
 
@@ -60,7 +60,7 @@ describe("attending an aria", () => {
     expect(first.length).toBeLessThan(26);
     expect(first).toEqual([...first].sort((a, b) => a - b));
     expect(app().dataset.route).toBe("aria");
-    await waitFor(() => expect(document.querySelector(".zr-thread[aria-current='page']")).toBeTruthy());
+    await waitFor(() => expect(document.querySelector(".zr-tree-row[aria-selected='true']")).toBeTruthy());
   });
 
   it("draws unknown nodes by name, who said what, and tool blocks open", async () => {
