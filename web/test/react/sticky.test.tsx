@@ -97,7 +97,7 @@ function transcript(turns: TurnModel[], actions?: (n: number) => React.ReactNode
       <TranscriptContext value={{ actions }}>
         <ol className="nodi-turns">
           {turns.map((t) => (
-            <TurnView key={t.key} turn={t} speaking={null} fresh={false} />
+            <TurnView key={t.key} turn={t} speaking={null} fresh={false} pinned />
           ))}
         </ol>
       </TranscriptContext>
