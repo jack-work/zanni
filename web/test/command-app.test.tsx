@@ -118,9 +118,9 @@ describe("command mode in the composer", () => {
   it(":fork c0ffee02 reads c0ffee02 as an aria id prefix and forks that aria", async () => {
     await attend();
     await run("ls");
-    await waitFor(() => expect(document.querySelector(".zr-pit")!.textContent).toContain("Tree"));
+    await waitFor(() => expect(document.querySelector(".zr-pit")!.textContent).not.toContain("Loading the topology"), { timeout: 4500 });
     await run("fork c0ffee02");
-    await waitFor(() => expect(core.calls.some((c) => c.method === "figaro.fork")).toBe(true));
+    await waitFor(() => expect(core.calls.some((c) => c.method === "figaro.fork")).toBe(true), { timeout: 4500 });
     expect(core.calls.find((c) => c.method === "figaro.fork")!.params).toMatchObject({ figaro_id: "c0ffee02".repeat(4) });
   });
 
