@@ -227,7 +227,9 @@ try:
             assert pg.locator(".nodi-said[data-from='aria'] .nodi-who").first.inner_text() == "Il Zanni"
             assert pg.locator(".nodi-said[data-from='caller'] .nodi-who").first.inner_text() == "the King"
             assert pg.locator(".nodi-said[data-from='you']").count() > 3
+            hydrated(5)
             assert pg.locator(".nodi-steering .nodi-who").first.inner_text() == "Il Zanni"
+            hydrated(7)
             tool = pg.locator(".nodi-turn[data-turn='7'] .nodi-tool")
             assert tool.evaluate("n => n.open") is True, "tool blocks are open by default"
             until(pg, "document.querySelector(\".nodi-turn[data-turn='7'] .nodi-tool-args\").innerText.includes('go test')", 5000)
