@@ -206,6 +206,7 @@ export function PitGrip({ label = "Open controls", className }: PitGripProps) {
       aria-haspopup="dialog"
       aria-expanded={pit.snap !== "closed"}
       data-snap={pit.snap}
+      data-held={pit.snap !== "closed" || pit.dragging ? "" : undefined}
       onKeyDown={arrowKeys(pit)}
       onClick={(ev) => {
         if (ev.detail === 0) pit.setSnap(pit.snap === "closed" ? "half" : "closed");

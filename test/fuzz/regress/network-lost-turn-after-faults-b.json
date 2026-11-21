@@ -3,9 +3,9 @@
  "seed": 1532935506,
  "profile": "phone",
  "invariant": "lost-turn",
- "message": "page drops, delays, close storms and offline spells leave a turn the door holds undrawn 30 s after every fault is cleared",
- "owner": "Frontend (gap recovery) or Backend (gateway handover)",
- "status": "xfail",
+ "message": "turn 27 sat behind the Earlier turns button after a reload, which the check read as undrawn",
+ "owner": "harness: a reload shows the last page of turns; the check now loads earlier turns before comparing",
+ "status": "pass",
  "strict": [],
  "actions": [
   {

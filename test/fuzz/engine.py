@@ -82,13 +82,23 @@ class Run:
     def composer_text(self):
         return self.page.evaluate("document.querySelector('.zr-input') ? document.querySelector('.zr-input').value : null")
 
-    def dom_turns(self):
-        return self.page.evaluate("""() => [...document.querySelectorAll('.nodi-turn')].map((t) => {
-          const no = t.querySelector('.nodi-turn-no');
-          const said = t.querySelector('.nodi-said-text');
-          return { no: no ? Number((no.textContent.match(/\\d+/) || [0])[0]) : null, said: said ? said.textContent : null,
-                   prose: t.querySelectorAll('.nodi-prose').length, thinking: t.querySelectorAll('.nodi-thinking').length };
-        })""")
+    def dom_turns(self, full=False):
+        return self.page.evaluate("""async (full) => {
+          const out = [];
+          for (const n of [...document.querySelectorAll('.nodi-turn')].map((t) => t.dataset.turn)) {
+            let t = document.querySelector('.nodi-turn[data-turn="' + n + '"]');
+            if (!t) continue;
+            for (let tries = 0; full && t.hasAttribute('data-parked') && tries < 15; tries++) {
+              t.scrollIntoView({ block: 'center' });
+              await new Promise((r) => setTimeout(r, 200));
+              t = document.querySelector('.nodi-turn[data-turn="' + n + '"]');
+            }
+            const said = t.querySelector('.nodi-said-text');
+            out.push({ no: Number(n), said: said ? said.textContent : null,
+                       prose: t.querySelectorAll('.nodi-prose').length, thinking: t.querySelectorAll('.nodi-thinking').length });
+          }
+          return out;
+        }""", full)
 
     def pit_facts(self):
         return self.page.evaluate("""() => {
@@ -194,7 +204,7 @@ def check_quiescent(run):
         run.campaign.extra_quiescent(run)
         return
     truth = run.stack.turns(run.aria())
-    drawn = {t["no"]: t for t in run.dom_turns() if t["no"] is not None}
+    drawn = {t["no"]: t for t in run.dom_turns(full=True) if t["no"] is not None}
     sent = run.stack.state()["sent"]
     mine = [t for t in truth if t["id"] > run.base]
     have = sorted([norm(t["inquiry"]) for t in mine] + [norm(n["markdown"]) for t in mine for n in t["nodes"] if n["type"] == "steering"])
