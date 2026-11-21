@@ -113,15 +113,16 @@ def playback_failure(f, st, final=False):
     chunks = {int(k): v for k, v in f["chunks"].items()}
     live = [p for p in f["played"] if p["id"] in chunks and not (p["stopAt"] is not None and p["stopAt"] <= p["at"])]
     live.sort(key=lambda p: p["at"])
-    seen = set()
+    seen = {}
     prev = None
     for p in live:
         c = chunks[p["id"]]
         key = (c["turn"], c["node"], c["offset"])
         if key in seen and p["stopAt"] is None:
-            return Failure("chunk-played-twice", "turn %s node %s offset %s was scheduled to play twice" % key)
+            o = seen[key]
+            return Failure("chunk-played-twice", "turn %s node %s offset %s was scheduled to play twice (page socket %s at %s ms, then socket %s at %s ms, %d ms apart)" % (key + (o[0]["sid"], o[0]["t"], c["sid"], c["t"], c["t"] - o[0]["t"])))
         if p["stopAt"] is None:
-            seen.add(key)
+            seen[key] = (c, p)
         if prev:
             pp, pc = prev
             if (c["turn"], c["offset"]) < (pc["turn"], pc["offset"]):
