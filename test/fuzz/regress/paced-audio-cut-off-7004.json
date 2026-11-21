@@ -4,8 +4,8 @@
  "profile": "desktop",
  "invariant": "audio-cut-off",
  "message": "turn 35 ended with 2 of 2 chunks never played to their end (first at offset 0)",
- "owner": "Backend gateway/audio hub (suspected, intermittent: fails 1 in 2 on v0.18.1, passes on 55f5252); not minimal, 40 actions",
- "status": "xfail",
+ "owner": "fixed by forms v0.18.2 on the gateway side",
+ "status": "pass",
  "strict": [],
  "actions": [
   {
