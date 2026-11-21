@@ -74,6 +74,42 @@ async function test(name, fn) {
     assert.deepStrictEqual(m.items.map((i) => [i.node, i.text]), [[0, 'a'], [1, 'b'], [2, 'c']]);
   });
 
+  await test('markdown: a GFM table is a block with alignment, escaped pipes and code kept whole, and a short row is padded', () => {
+    const b = nodi.blocks('| a | b | c |\n|---|:-:|--:|\n| 1 | 2 |\n| x \\| y | `p|q` | z |\n\nafter');
+    assert.deepStrictEqual(b.map((x) => x.kind), ['table', 'p']);
+    assert.deepStrictEqual(b[0].align, ['', 'center', 'right']);
+    assert.deepStrictEqual(b[0].head, ['a', 'b', 'c']);
+    assert.deepStrictEqual(b[0].rows, [['1', '2', ''], ['x | y', '`p|q`', 'z']]);
+    assert.deepStrictEqual(nodi.blocks('a | b\nnot a delimiter').map((x) => x.kind), ['p'], 'a header with no delimiter row is a paragraph');
+    assert.deepStrictEqual(nodi.blocks('| a |\n|---|\n| 1 |\n```\ncode\n```').map((x) => x.kind), ['table', 'code'], 'a fence ends the table');
+  });
+
+  await test('markdown: while a reply streams, a half-typed row or delimiter stays out and an open fence shows as code', () => {
+    const typing = nodi.blocks('| a | b |\n|---|---|\n| 1 | 2 |\n| 3 | ', true);
+    assert.deepStrictEqual(typing[0].rows, [['1', '2']], 'the row being typed waits for its line to end');
+    assert.strictEqual(nodi.blocks('| a | b |\n|---|---|\n| 1 | 2 |\n| 3 | 4 |', false)[0].rows.length, 2, 'a settled message keeps its last row');
+    assert.deepStrictEqual(nodi.blocks('| a | b |\n|--', true).map((x) => x.kind), ['p'], 'a delimiter being typed is not shown as text');
+    assert.deepStrictEqual(nodi.blocks('| a | b |\n|---|---|\n', true).map((x) => x.kind), ['table']);
+    const fence = nodi.blocks('text\n\n```go\nfmt.Println(', true);
+    assert.deepStrictEqual(fence.map((x) => x.kind), ['p', 'code']);
+    assert.strictEqual(fence[1].open, true);
+  });
+
+  await test('markdown: appending re-parses only the last block, equals a fresh parse at every prefix, and keeps settled blocks as the same objects', () => {
+    const full = '# Title\n\nSome text here.\n\n- one\n- two\n\n```go\nfmt.Println(1)\n```\n\n| a | b | c |\n|---|:-:|--:|\n| 1 | 2 | 3 |\n| x | y | z |\n\nafter the table\n';
+    const st = nodi.streamState();
+    let before = [];
+    for (let k = 1; k <= full.length; k++) {
+      const live = k < full.length;
+      const got = nodi.stream(st, full.slice(0, k), live);
+      assert.deepStrictEqual(got, nodi.blocks(full.slice(0, k), live), 'prefix ' + k);
+      for (let i = 0; i < before.length - 1; i++) assert.strictEqual(got[i], before[i], 'block ' + i + ' keeps its identity at prefix ' + k);
+      before = got;
+    }
+    const again = nodi.stream(st, 'different start', false);
+    assert.deepStrictEqual(again, nodi.blocks('different start', false), 'text that is not an extension starts over');
+  });
+
   await test('metrics line is short and says when the context is a guess', () => {
     assert.strictEqual(nodi.metricsLine({ context_tokens: 12345, context_exact: false, tokens_in: 800, tokens_out: 1500000, cache_read_tokens: 0, cache_write_tokens: 0 }), 'ctx ~12.3k \u00b7 in 800 \u00b7 out 1.5M');
     assert.strictEqual(nodi.metricsLine(undefined), '');

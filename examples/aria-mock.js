@@ -223,6 +223,8 @@
       t.open = null;
     }
 
+    var MD_REPLY = '# Findings\n\nThe cause is a stale cursor.\n\n- read backward\n- follow live\n\n```go\nfmt.Println(cursor)\n```\n\n| file | lines | note |\n|------|------:|:----:|\n| a.go | 12 | ok |\n| b.go | 7 | slow |\n| c.go | 3 | new |\n\nThat is all.\n';
+
     function pieces(text) { return text.match(/\S+\s*|\s+/g) || []; }
 
     function streamText(a, t, idx, type, text, chunks) {
@@ -244,14 +246,15 @@
 
     function plan(a, t, text) {
       var s = [], tool = /\[tool\]|run|test|check|build/i.test(text) && !/\[plain\]/.test(text);
-      var think = !/\[plain\]/.test(text), n = 0, idx;
+      var think = !/\[plain\]/.test(text), n = 0, idx, md = /\[md\]/.test(text);
+      if (md) tool = false;
       var call = 'call_live' + t.id;
       var gap = function (fn, ms) { s.push({ fn: fn, wait: ms == null ? step : ms }); };
       var seq = function (list) { list.forEach(function (f) { gap(f); }); };
       if (/\[error\]/.test(text)) { gap(function () { a.run.failure = 'error: gateway: HTTP 400: the fake model refused on purpose'; }); return s; }
       if (think) { idx = n++; seq(streamText(a, t, idx, 'thinking', THOUGHTS[t.id % THOUGHTS.length] + ' Then I will answer plainly and name the file.')); }
       idx = n++;
-      seq(streamText(a, t, idx, 'prose', tool ? 'Let me look.' : OPENERS[t.id % OPENERS.length] + BODIES[t.id % BODIES.length], 2));
+      seq(streamText(a, t, idx, 'prose', md ? MD_REPLY : tool ? 'Let me look.' : OPENERS[t.id % OPENERS.length] + BODIES[t.id % BODIES.length], 2));
       if (tool) {
         idx = n++;
         var args = { command: 'go test ./api/livedoc/... -run Settle' };

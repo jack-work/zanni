@@ -18,6 +18,19 @@ Draws a figaro's transcript from figaro-forms/aria's native fold: `snapshot().vi
   `caller` for any other label) and `label`. `items` are prose, thinking,
   steering, tool or unknown, chosen by `node.type` only. `end` is kept only for
   an error or a reason other than `stop`.
+- `nodi.blocks(text, live)` parses markdown into p, h, hr, ul, ol, quote, code
+  and table blocks (GFM: a header line with a pipe, a delimiter row of the same
+  width, then rows; `:--`, `:-:`, `--:` set `align`; `\|` and code spans keep
+  their pipes; a short row is padded). With `live` true the line being typed
+  stays out: a half-written row or delimiter waits for its newline, and an open
+  fence is a code block with `open: true`.
+- `nodi.stream(state, text, live)` is the same parse for a text that only grows.
+  `state` comes from `nodi.streamState()` and remembers where the last block
+  started; a delta re-parses only from there, every earlier block is the same
+  object as before, and text that is not an extension starts over. It equals
+  `blocks(text, live)` at every prefix (`test/nodi.test.js`). zanni-react's
+  `BlockView` is memoized on block content, so settled blocks keep their DOM
+  nodes and do no work while a reply streams.
 - `nodi.log(doc, ol, {decorate})` keeps `ol` in step with a model.
   `update(model)` reuses elements by turn and node, only moves what is out of
   place, and rebuilds only the markdown block a delta lands in. `turnEl(n)`,

@@ -58,34 +58,74 @@
     return out;
   }
 
-  function blocks(text) {
-    var lines = String(text == null ? '' : text).split('\n'), out = [], para = [], i = 0, m;
+  var DELIM = /^\s{0,3}\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
+
+  function cells(line) {
+    var out = [], cur = '', tick = false, t = line.trim();
+    if (t.charAt(0) === '|') t = t.slice(1);
+    for (var k = 0; k < t.length; k++) {
+      var c = t.charAt(k);
+      if (c === '\\' && t.charAt(k + 1) === '|') { cur += '|'; k++; continue; }
+      if (c === '`') tick = !tick;
+      if (c === '|' && !tick) { out.push(cur.trim()); cur = ''; continue; }
+      cur += c;
+    }
+    if (cur.trim() !== '' || t.charAt(t.length - 1) !== '|') out.push(cur.trim());
+    return out;
+  }
+
+  function aligns(line) {
+    return cells(line).map(function (c) {
+      var l = c.charAt(0) === ':', r = c.charAt(c.length - 1) === ':';
+      return l && r ? 'center' : r ? 'right' : l ? 'left' : '';
+    });
+  }
+
+  function tableAt(lines, i) {
+    if (i + 1 >= lines.length || lines[i].indexOf('|') < 0 || !DELIM.test(lines[i + 1]) || lines[i + 1].indexOf('-') < 0) return null;
+    var head = cells(lines[i]), align = aligns(lines[i + 1]);
+    if (head.length !== align.length || head.length < 1) return null;
+    return { head: head, align: align };
+  }
+
+  function parse(lines, live) {
+    var out = [], starts = [], para = [], paraAt = 0, i = 0, m;
     var flush = function () {
-      if (para.length) out.push({ kind: 'p', text: para.join('\n') });
+      if (para.length) { out.push({ kind: 'p', text: para.join('\n') }); starts.push(paraAt); }
       para = [];
     };
+    var open = function (block, at) { flush(); out.push(block); starts.push(at); };
+    var typing = function (k) { return live && k === lines.length - 1 && lines.length > 1; };
     while (i < lines.length) {
-      var line = lines[i];
+      var line = lines[i], at = i, tb;
       if ((m = FENCE.exec(line))) {
-        flush();
         var body = [], closed = false, mark = m[1];
         for (i++; i < lines.length; i++) {
           if (lines[i].trim().indexOf(mark) === 0 && /^\s*[`~]+\s*$/.test(lines[i])) { closed = true; i++; break; }
           body.push(lines[i]);
         }
-        out.push({ kind: 'code', lang: m[2], text: body.join('\n'), open: !closed });
+        open({ kind: 'code', lang: m[2], text: body.join('\n'), open: !closed }, at);
         continue;
       }
       if (!line.trim()) { flush(); i++; continue; }
       if ((m = /^\s{0,3}(#{1,6})\s+(.*?)\s*#*\s*$/.exec(line))) {
-        flush();
-        out.push({ kind: 'h', level: m[1].length, text: m[2] });
+        open({ kind: 'h', level: m[1].length, text: m[2] }, at);
         i++;
         continue;
       }
-      if (/^\s{0,3}([-*_])(\s*\1){2,}\s*$/.test(line)) { flush(); out.push({ kind: 'hr' }); i++; continue; }
+      if (/^\s{0,3}([-*_])(\s*\1){2,}\s*$/.test(line)) { open({ kind: 'hr' }, at); i++; continue; }
+      if ((tb = tableAt(lines, i))) {
+        var rows = [];
+        for (i += 2; i < lines.length && lines[i].trim() && lines[i].indexOf('|') >= 0 && !FENCE.test(lines[i]); i++) {
+          if (typing(i)) { i++; break; }
+          var row = cells(lines[i]);
+          while (row.length < tb.head.length) row.push('');
+          rows.push(row.slice(0, tb.head.length));
+        }
+        open({ kind: 'table', align: tb.align, head: tb.head, rows: rows }, at);
+        continue;
+      }
       if ((m = ITEM.exec(line))) {
-        flush();
         var list = { kind: m[2] ? 'ol' : 'ul', start: m[2] ? Number(m[2]) : 1, items: [] };
         while (i < lines.length && lines[i].trim() && !FENCE.test(lines[i])) {
           var it = ITEM.exec(lines[i]);
@@ -94,21 +134,63 @@
           else list.items[list.items.length - 1] += '\n' + lines[i].trim();
           i++;
         }
-        out.push(list);
+        open(list, at);
         continue;
       }
       if (/^\s{0,3}>\s?/.test(line)) {
-        flush();
         var quote = [];
         while (i < lines.length && /^\s{0,3}>\s?/.test(lines[i])) quote.push(lines[i++].replace(/^\s{0,3}>\s?/, ''));
-        out.push({ kind: 'quote', text: quote.join('\n') });
+        open({ kind: 'quote', text: quote.join('\n') }, at);
         continue;
       }
+      if (!para.length) paraAt = i;
       para.push(line);
       i++;
     }
     flush();
+    return { blocks: out, starts: starts };
+  }
+
+  function dropTyping(lines) {
+    var n = lines.length;
+    if (n < 2) return lines;
+    var last = lines[n - 1];
+    if (last !== '' && /^[\s|:\-]*$/.test(last) && last.indexOf('|') >= 0 && lines[n - 2].indexOf('|') >= 0) return lines.slice(0, n - 1);
+    return lines;
+  }
+
+  function blocks(text, live) {
+    var lines = String(text == null ? '' : text).split('\n');
+    return parse(live ? dropTyping(lines) : lines, !!live).blocks;
+  }
+
+  function streamState() { return { text: '', live: false, blocks: [], offsets: [] }; }
+
+  function lineOffsets(lines) {
+    var at = 0, out = [];
+    for (var k = 0; k < lines.length; k++) { out.push(at); at += lines[k].length + 1; }
     return out;
+  }
+
+  function stream(state, text, live) {
+    text = String(text == null ? '' : text);
+    live = !!live;
+    var keep = 0, base = 0;
+    if (state.blocks.length && text.length >= state.text.length && text.lastIndexOf(state.text, 0) === 0) {
+      keep = state.blocks.length - 1;
+      base = state.offsets[keep];
+    } else {
+      state.blocks = [];
+      state.offsets = [];
+    }
+    var tail = text.slice(base), lines = tail.split('\n');
+    var got = parse(live ? dropTyping(lines) : lines, live);
+    var offs = lineOffsets(lines);
+    state.blocks = state.blocks.slice(0, keep).concat(got.blocks);
+    state.offsets = state.offsets.slice(0, keep).concat(got.starts.map(function (st) { return base + offs[st]; }));
+    state.text = text;
+    state.live = live;
+    return state.blocks.slice();
   }
 
   function who(sender, name) {
@@ -267,6 +349,18 @@
         b.items.forEach(function (t) { n.appendChild(inline(d, d.el('li'), spans(t))); });
         return n;
       case 'quote': return inline(d, d.el('blockquote', 'nodi-quote'), spans(b.text));
+      case 'table':
+        n = d.el('table', 'nodi-table');
+        var hr = d.el('tr');
+        b.head.forEach(function (t, c) { var th = inline(d, d.el('th'), spans(t)); if (b.align[c]) th.setAttribute('data-align', b.align[c]); hr.appendChild(th); });
+        n.appendChild(d.el('thead')).appendChild(hr);
+        var tb = n.appendChild(d.el('tbody'));
+        b.rows.forEach(function (r) {
+          var tr = d.el('tr');
+          r.forEach(function (t, c) { var td = inline(d, d.el('td'), spans(t)); if (b.align[c]) td.setAttribute('data-align', b.align[c]); tr.appendChild(td); });
+          tb.appendChild(tr);
+        });
+        return n;
       default: return inline(d, d.el('p', 'nodi-p'), spans(b.text));
     }
   }
@@ -546,6 +640,8 @@
   return {
     reveal: reveal,
     blocks: blocks,
+    streamState: streamState,
+    stream: stream,
     spans: spans,
     who: who,
     model: model,

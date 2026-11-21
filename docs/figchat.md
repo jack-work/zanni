@@ -14,7 +14,7 @@ The visible title is "figaro web". Identifiers (`packages.figchat-shell`,
 
 zanni's rule "no framework and no runtime" yields for figaro web only, by
 Gluck's order. The zanni components stay framework-free; figaro web wraps them.
-`nodi`'s pure functions (`model`, `blocks`, `spans`, `reveal`, `metricsLine`)
+`nodi`'s pure functions (`model`, `blocks`, `stream`, `spans`, `reveal`, `metricsLine`)
 and `voce`, the player, are imported from `assets/`; React draws the DOM that
 `nodi.css` and `voce.css` style, so those sheets apply unchanged.
 

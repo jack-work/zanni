@@ -12,6 +12,7 @@ dependency react only. `zanni-react/jotai` binds them to figaro-forms and Jotai:
 |---|---|
 | `Button`, `ButtonGroup` | the z2 control scale (`size` compact or default, `variant` outline, quiet, ghost, accent); `aria-pressed` makes a toggle |
 | `Sheet` | scrim and bottom sheet: Escape, focus in and back, Tab trap, keeps its content through the exit animation |
+| `BlockView` | one markdown block (paragraph, heading, list, quote, code, table), memoized on its content: a streaming reply re-renders only its trailing block, and a closed message draws the same way |
 | `ActionBar`, `Fold` | hover-reveal per-row actions (always on the last row and on touch); a details with a spring-height body |
 | `Tree` | the pager's formView in a browser: one row per `formNode` (`key: value` leaves aligned per parent, `name (N)  child · labels` closed, `name (N)` open, guides, no header, no arrow), a cursor row with j/k/u/d/gg/G, `l` open, `h` close or climb, Enter toggles or calls `onActivate`; `treeRows` is the pure walk |
 | `PitProvider`, `PitGrip`, `Pit`, `PitList`, `PitRow` | the drawer dragged from the composer edge (closed, half, full), its rows |
