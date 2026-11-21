@@ -6,6 +6,8 @@ import type { TurnModel } from "zanni-react";
 const TURN_H = 600;
 const BAR_H = 28;
 const PANE_H = 500;
+const QUESTION_H = 100;
+const PAST = BAR_H + QUESTION_H + 20;
 
 const question = (n: number) => "Question " + n + " first line\nsecond line of " + n;
 
@@ -29,8 +31,9 @@ function turnOf(el: Element): number {
 function rectOf(el: Element): DOMRect {
   const root = document.querySelector("[data-zr-scroll]")!;
   if (el === root) return { top: 0, bottom: PANE_H, left: 0, right: 390, width: 390, height: PANE_H } as DOMRect;
-  const top = turnOf(el) * TURN_H - scrollTop + (el.classList.contains("zr-sticky-sentinel") ? BAR_H : 0);
-  const height = el.classList.contains("zr-sticky-sentinel") ? 0 : TURN_H;
+  const asked = el.classList.contains("nodi-input");
+  const top = turnOf(el) * TURN_H - scrollTop + (asked ? BAR_H : 0);
+  const height = asked ? QUESTION_H : TURN_H;
   return { top, bottom: top + height, left: 0, right: 390, width: 390, height } as DOMRect;
 }
 
@@ -147,7 +150,7 @@ describe("the sticky head over a scrolling transcript", () => {
       expect(head(container, n).querySelector(".zr-sticky-line")).toBeNull();
     }
 
-    scrollTo(TURN_H + 80);
+    scrollTo(TURN_H + PAST);
     expect(head(container, 2).hasAttribute("data-pinned")).toBe(true);
     expect(double(head(container, 2))).toBe(true);
     expect(head(container, 2).querySelector(".zr-sticky-line")!.textContent).toContain("Question 2 first line");
@@ -155,7 +158,7 @@ describe("the sticky head over a scrolling transcript", () => {
     expect(head(container, 1).hasAttribute("data-pinned")).toBe(false);
     expect(head(container, 3).hasAttribute("data-pinned")).toBe(false);
 
-    scrollTo(2 * TURN_H + 80);
+    scrollTo(2 * TURN_H + PAST);
     expect(head(container, 3).hasAttribute("data-pinned")).toBe(true);
     expect(head(container, 2).hasAttribute("data-pinned")).toBe(false);
     expect(head(container, 2).querySelector(".zr-sticky-line")).toBeNull();
@@ -165,9 +168,28 @@ describe("the sticky head over a scrolling transcript", () => {
     expect(double(head(container, 3))).toBe(false);
   });
 
+  it("keeps the rule single and the line away until the whole question has passed under the bar", () => {
+    const { container } = transcript([turn(1), turn(2)]);
+    const gone = TURN_H + BAR_H + QUESTION_H - BAR_H;
+    scrollTo(TURN_H + 10);
+    scrollTo(gone - 1);
+    expect(head(container, 2).hasAttribute("data-pinned")).toBe(false);
+    expect(double(head(container, 2))).toBe(false);
+    expect(head(container, 2).querySelector(".zr-sticky-line")).toBeNull();
+
+    scrollTo(gone + 1);
+    expect(head(container, 2).hasAttribute("data-pinned")).toBe(true);
+    expect(double(head(container, 2))).toBe(true);
+    expect(head(container, 2).querySelector(".zr-sticky-line")).not.toBeNull();
+
+    scrollTo(gone - 1);
+    expect(head(container, 2).hasAttribute("data-pinned")).toBe(false);
+    expect(double(head(container, 2))).toBe(false);
+  });
+
   it("does not pin a turn whose question is blank, and disables its tap", () => {
     const { container } = transcript([turn(1, null), turn(2, "  \n ")]);
-    scrollTo(TURN_H + 80);
+    scrollTo(TURN_H + PAST);
     expect(head(container, 2).querySelector(".zr-sticky-line")).toBeNull();
     expect(tap(container, 1).disabled).toBe(true);
     expect(tap(container, 2).disabled).toBe(true);
@@ -175,7 +197,7 @@ describe("the sticky head over a scrolling transcript", () => {
 
   it("opens the whole question on a tap, goes full on a quick second tap, and shuts on a slow one", () => {
     const { container } = transcript([turn(1), turn(2)]);
-    scrollTo(TURN_H + 80);
+    scrollTo(TURN_H + PAST);
     let now = 1000;
     vi.spyOn(performance, "now").mockImplementation(() => now);
     const h = head(container, 2);
@@ -217,16 +239,35 @@ describe("the sticky head over a scrolling transcript", () => {
 
   it("taps the pinned line as well as the bar", () => {
     const { container } = transcript([turn(1), turn(2)]);
-    scrollTo(TURN_H + 80);
+    scrollTo(TURN_H + PAST);
     fireEvent.click(head(container, 2).querySelector(".zr-sticky-line")!, { detail: 1 });
     expect(head(container, 2).dataset.head).toBe("open");
+  });
+
+  it("focuses the bar on a tap of the pinned line or of the bar, so Escape and F reach it", () => {
+    const { container } = transcript([turn(1), turn(2)]);
+    scrollTo(TURN_H + PAST);
+    const h = head(container, 2);
+    expect(document.activeElement).not.toBe(tap(container, 2));
+
+    fireEvent.click(h.querySelector(".zr-sticky-line")!, { detail: 1 });
+    expect(h.dataset.head).toBe("open");
+    expect(document.activeElement).toBe(tap(container, 2));
+    fireEvent.keyDown(document.activeElement!, { key: "F" });
+    expect(h.dataset.head).toBe("full");
+    fireEvent.keyDown(document.activeElement!, { key: "Escape" });
+    expect(h.dataset.head).toBe("shut");
+
+    (document.activeElement as HTMLElement).blur();
+    fireEvent.click(tap(container, 2), { detail: 1 });
+    expect(document.activeElement).toBe(tap(container, 2));
   });
 
   it("scrolls the open question a line at a time on j and k", () => {
     const { container } = transcript([turn(1)]);
     const h = head(container, 1);
     fireEvent.click(tap(container, 1), { detail: 0 });
-    const panel = h.querySelector<HTMLElement>(".zr-sticky-panel")!;
+    const panel = h.querySelector<HTMLElement>(".zr-sticky-scroll")!;
     const by = vi.fn();
     panel.scrollBy = by;
     fireEvent.keyDown(tap(container, 1), { key: "j" });

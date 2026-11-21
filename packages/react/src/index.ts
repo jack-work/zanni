@@ -28,7 +28,7 @@ export { Fold } from "./fold";
 export type { FoldProps } from "./fold";
 export { FIT_ELLIPSIS, Fit, firstLine, fitText } from "./fit";
 export type { Fitted } from "./fit";
-export { DOUBLE_TAP_MS, RULE_CELLS, Rule, Sticky, keyMode, tapMode, usePinned } from "./sticky";
+export { DOUBLE_TAP_MS, QuestionMark, RULE_CELLS, Rule, Sticky, keyMode, tapMode, usePinned } from "./sticky";
 export type { HeadMode, StickyProps } from "./sticky";
 export { BlockView, Plain } from "./text";
 export { InputView, ProseView, SteeringView, ThinkingView, ToolView, TurnView, UnknownView, WorkGroup, TranscriptContext, toolStatusWord } from "./transcript";

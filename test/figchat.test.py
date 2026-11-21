@@ -298,6 +298,7 @@ try:
             attend(pg, fast, MAIN, 12)
             pg.wait_for_selector(".nodi-turn[data-turn='12']")
             place = "(y) => { const s = document.querySelector('[data-zr-scroll]'); const t = document.querySelector(\".nodi-turn[data-turn='12']\"); s.scrollTop += t.getBoundingClientRect().top - s.getBoundingClientRect().top + y; }"
+            past = "(d) => { const s = document.querySelector('[data-zr-scroll]'); const q = document.querySelector(\".nodi-turn[data-turn='12'] .nodi-input\"); const b = document.querySelector(\".nodi-turn[data-turn='12'] .zr-sticky-bar\"); s.scrollTop += q.getBoundingClientRect().bottom - (s.getBoundingClientRect().top + b.offsetHeight) - d; }"
             head = ".nodi-turn[data-turn='12'] .zr-sticky"
             spread = "() => getComputedStyle(document.querySelector(\"%s .zr-rule\")).getPropertyValue('--zr-spread').trim()" % head
             pg.evaluate(place, -4)
@@ -307,7 +308,13 @@ try:
             assert pg.locator(".nodi-turn-head").count() == 0, "the sticky bar replaced the per-turn header"
             assert pg.evaluate(spread) == "0%", "the rule rests single"
 
-            pg.evaluate(place, 120)
+            pg.evaluate(past, 12)
+            pg.wait_for_timeout(300)
+            assert pg.locator(head + "[data-pinned]").count() == 0, "a question still on screen is not pinned"
+            assert pg.locator(head + " .zr-sticky-line").count() == 0, "no line is floated over a question still on screen"
+            assert pg.evaluate(spread) == "0%", "no double rule cuts a question still on screen"
+
+            pg.evaluate(past, -12)
             until(pg, "!!document.querySelector(\"%s[data-pinned]\")" % head)
             until(pg, "(" + spread + ")() === '50%'", 3000)
             got = pg.evaluate("""() => {
@@ -323,6 +330,19 @@ try:
             assert got["label"] == "Turn 12", got
             snap(pg, "sticky-pinned-" + str(width))
 
+            line = pg.locator(head + " .zr-sticky-line").bounding_box()
+            lx, ly = line["x"] + 40, line["y"] + line["height"] / 2
+            if phone:
+                pg.touchscreen.tap(lx, ly)
+            else:
+                pg.mouse.click(lx, ly)
+            until(pg, "document.querySelector(\"%s\").dataset.head === 'open'" % head, 3000)
+            assert pg.evaluate("document.activeElement.classList.contains('zr-sticky-tap')"), "a tap on the line focuses the bar"
+            pg.keyboard.press("F")
+            until(pg, "document.querySelector(\"%s\").dataset.head === 'full'" % head, 3000)
+            pg.keyboard.press("Escape")
+            until(pg, "document.querySelector(\"%s\").dataset.head === 'shut'" % head, 3000)
+
             asked = pg.evaluate("[...document.querySelectorAll(\".nodi-turn[data-turn='12'] .nodi-input .nodi-said-text\")].map(n => n.innerText).join('\\n\\n')")
             box = pg.locator(head + " .zr-sticky-tap").bounding_box()
             x, y = box["x"] + 40, box["y"] + box["height"] / 2
@@ -334,6 +354,9 @@ try:
             assert pg.locator(head + " .zr-sticky-tap").get_attribute("aria-expanded") == "true"
             assert pg.locator(head + " .zr-sticky-panel").inner_text().strip() == asked.strip(), "a tap opens the whole question: %r" % asked
             assert pg.locator(head + " .zr-sticky-glyph").inner_text() == "\u2227"
+            pg.wait_for_timeout(400)
+            whole = pg.evaluate("""() => { const n = document.querySelector(".nodi-turn[data-turn='12'] .zr-sticky-scroll"); const lh = parseFloat(getComputedStyle(n).lineHeight); return { rows: n.clientHeight / lh, lh: lh }; }""")
+            assert abs(whole["rows"] - round(whole["rows"])) < 0.02, "the open question shows whole lines: %s" % whole
             snap(pg, "sticky-open-" + str(width))
             pg.keyboard.press("Escape")
             until(pg, "document.querySelector(\"%s\").dataset.head === 'shut'" % head, 3000)
@@ -351,6 +374,8 @@ try:
               return { bottom: p.bottom, composer: c.top };
             }""")
             assert room["bottom"] <= room["composer"] + 1, "the full question stops above the composer: %s" % room
+            whole = pg.evaluate("""() => { const n = document.querySelector(".nodi-turn[data-turn='12'] .zr-sticky-scroll"); const lh = parseFloat(getComputedStyle(n).lineHeight); return { rows: n.clientHeight / lh, lh: lh }; }""")
+            assert abs(whole["rows"] - round(whole["rows"])) < 0.02, "the open question shows whole lines: %s" % whole
             snap(pg, "sticky-full-" + str(width))
             pg.keyboard.press("Escape")
             until(pg, "document.querySelector(\"%s\").dataset.head === 'shut'" % head, 3000)

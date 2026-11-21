@@ -5,7 +5,7 @@ import { reducedMotion } from "./motion";
 import { glyphs } from "./glyphs";
 import { nodi, type InputModel, type Item, type ProseItem, type SteeringItem, type ThinkingItem, type ToolItem, type TurnModel, type UnknownItem } from "./zanni";
 import { BlockView, Plain } from "./text";
-import { Sticky } from "./sticky";
+import { QuestionMark, Sticky } from "./sticky";
 
 export type TapKind = "input" | "prose";
 
@@ -33,8 +33,9 @@ function stamp(ms: unknown): string {
 
 export function InputView({ input, turn }: { input: InputModel; turn: number }) {
   const first = input.parts[0];
+  const mark = useContext(QuestionMark);
   return (
-    <div className="nodi-input" data-from={first ? first.role : "you"}>
+    <div ref={mark} className="nodi-input" data-from={first ? first.role : "you"}>
       {input.parts.map((p, i) => {
         const when = i === 0 ? stamp(input.at) : "";
         return (
