@@ -162,7 +162,7 @@ export function AriaView({ attended }: { attended: Attended }) {
   const tree = useAtomValue(treeStateAtom);
   const transcript = useMemo(
     () => ({
-      actions: (turn: number) => <TurnActions turn={turn} />,
+      actions: (turn: number, playable: boolean) => <TurnActions turn={turn} playable={playable} />,
       below: (kind: "input" | "prose", turn: number) => <InlineActions kind={kind} turn={turn} />,
       nameOf: (id: string) => tree?.nodes.get(id)?.handle ?? id.slice(0, 8),
     }),

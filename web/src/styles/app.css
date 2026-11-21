@@ -231,5 +231,6 @@ body.fw-page {
 .fw .fw-use { min-height: 44px; }
 .nodi-tool-args { white-space: pre-wrap; overflow-wrap: anywhere; }
 .nodi-turn-tools .fw-play-icon { min-width: 44px; min-height: 36px; padding: 0; font-size: 2rem; }
+.nodi-turn-tools .fw-play-big { min-width: 56px; min-height: 44px; }
 .nodi-turn-tools .fw-fork-here { min-height: 36px; font-size: 1.1875rem; }
 @media (pointer: coarse) { .fw .fw-stop { min-height: 36px; } }

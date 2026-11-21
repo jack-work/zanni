@@ -11,7 +11,7 @@ import { BlockView, Plain } from "./text";
 export type TapKind = "input" | "prose";
 
 export interface TranscriptHooks {
-  actions?: (turn: number) => ReactNode;
+  actions?: (turn: number, playable: boolean) => ReactNode;
   below?: (kind: TapKind, turn: number) => ReactNode;
   nameOf?: (aria: string) => string;
 }
@@ -272,7 +272,7 @@ function TurnContent({ turn: m, speaking }: { turn: TurnModel; speaking: Speakin
       <div className="nodi-turn-head">
         <span className="nodi-turn-no">Turn {m.turn}</span>
         {m.forkedFrom && <span className="nodi-turn-fork">{glyphs.fork + " " + (hooks.nameOf?.(m.forkedFrom) ?? m.forkedFrom.slice(0, 8))}</span>}
-        <span className="nodi-turn-tools">{hooks.actions?.(m.turn)}</span>
+        <span className="nodi-turn-tools">{hooks.actions?.(m.turn, !m.open && m.items.some((i) => i.kind === "prose"))}</span>
       </div>
       <div className="nodi-turn-body">
         {m.input && m.input.parts.length > 0 && <InputView input={m.input} turn={m.turn} />}

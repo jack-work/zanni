@@ -5,7 +5,7 @@ import { composerAtom, forkAtom, keyOf } from "../state/composer";
 import { linkAtom } from "../state/aria";
 import { attendedAtom } from "../state/route";
 
-export function TurnActions({ turn }: { turn: number }) {
+export function TurnActions({ turn, playable }: { turn: number; playable: boolean }) {
   const at = useAtomValue(attendedAtom);
   const link = useAtomValue(linkAtom);
   const fork = useSetAtom(forkAtom);
@@ -14,12 +14,8 @@ export function TurnActions({ turn }: { turn: number }) {
   const forking = useAtomValue(composerAtom(at ? keyOf(at.store, at.aria) : "")).forking;
   return (
     <ActionBar>
-      {handsFree ? (
-        <Button variant="ghost" size="compact" className="fw-play fw-play-big" onClick={() => replay(turn)}>
-          Play
-        </Button>
-      ) : (
-        <Button variant="ghost" size="compact" className="fw-play fw-play-icon" aria-label="Play" title="Play" data-action="play" onClick={() => replay(turn)}>
+      {playable && (
+        <Button variant="ghost" size="compact" className={handsFree ? "fw-play fw-play-icon fw-play-big" : "fw-play fw-play-icon"} aria-label="Play" title="Play" data-action="play" onClick={() => replay(turn)}>
           <Glyph glyph={glyphs["state.running"]} />
         </Button>
       )}
