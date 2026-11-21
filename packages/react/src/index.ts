@@ -26,6 +26,8 @@ export { Hints } from "./hints";
 export type { Chip, HintsProps } from "./hints";
 export { Fold } from "./fold";
 export type { FoldProps } from "./fold";
+export { FIT_ELLIPSIS, Fit, firstLine, fitText } from "./fit";
+export type { Fitted } from "./fit";
 export { BlockView, Plain } from "./text";
 export { InputView, ProseView, SteeringView, ThinkingView, ToolView, TurnView, UnknownView, WorkGroup, TranscriptContext, toolStatusWord } from "./transcript";
 export type { ProseProps, Speaking, TapKind, TranscriptHooks, TurnViewProps } from "./transcript";

@@ -312,3 +312,7 @@
 .zr-tray-x { position: relative; width: 32px; height: 32px; padding: 0; border: 0; background: transparent; color: var(--z-muted); font: inherit; cursor: pointer; touch-action: manipulation; }
 .zr-tray-x::before { content: ""; position: absolute; inset: -6px 0; }
 .zr-tray-x:hover, .zr-tray-x:focus-visible { color: var(--z-ink); }
+
+.zr-fit { position: relative; display: block; min-width: 0; overflow: hidden; white-space: nowrap; }
+.zr-fit-more { color: var(--z-muted); }
+.zr-fit-probe { position: absolute; top: 0; left: 0; visibility: hidden; white-space: pre; pointer-events: none; }
