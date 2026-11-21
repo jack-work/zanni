@@ -193,7 +193,8 @@ describe("the buttons under a message", () => {
     const mine = [...document.querySelectorAll(under + '.fw-inline[data-kind="input"] .fw-inline-btn')].map((b) => b.getAttribute("data-action"));
     expect(mine).toEqual(["play", "retranscribe"]);
     expect(document.querySelector('.fw-inline[data-kind="prose"]')).toBeNull();
-    expect(document.querySelector(under + ".nodi-turn-head .fw-play-icon")!.getAttribute("aria-label")).toBe("Play reply");
+    expect(document.querySelector(under + ".nodi-turn-head .fw-play-icon")!.getAttribute("aria-label")).toBe("Play inquiry and reply");
+    expect(document.querySelector(under + ".nodi-turn-body .fw-output-play [data-action=\"play\"]")!.getAttribute("aria-label")).toBe("Play reply");
     expect(document.querySelector(".zr-scrim")).toBeNull();
     expect(document.querySelector(".fw-sheet")).toBeNull();
     expect(document.querySelector(under + '.fw-inline [data-action="play"]')!.textContent).toBe("▸");
@@ -230,8 +231,15 @@ describe("the buttons under a message", () => {
   it("play a reply where it is drawn", async () => {
     stubFetch(() => new Response("", { status: 206 }));
     await ready();
-    press(under + ".nodi-turn-head .fw-play-icon");
+    press(under + ".fw-output-play [data-action=\"play\"]");
     expect(document.querySelector('.nodi-turn[data-turn="26"] .voce[data-for="26"]')).toBeTruthy();
+  });
+
+  it("play inquiry then reply from the top button", async () => {
+    stubFetch(() => new Response("", { status: 206 }));
+    await ready();
+    press(under + ".nodi-turn-head .fw-play-icon");
+    await waitFor(() => expect(document.querySelector(under + '.fw-inline[data-kind="input"] .fw-inline-player .voce')).toBeTruthy());
   });
 
   it("play your own clip right under it", async () => {

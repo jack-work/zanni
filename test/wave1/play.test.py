@@ -50,7 +50,30 @@ def main():
                         sized = {(f["w"], f["h"], f["mid"]) for f in facts if f["icons"]}
                         rep.check(len(sized) == 1, "%s %s: every icon has the same size and place: %s" % (width, mode, sized))
 
+                def three():
+                    nonlocal pg
+                    ctx.add_init_script("window.__plays = []; const p = HTMLMediaElement.prototype.play; HTMLMediaElement.prototype.play = function () { window.__plays.push(this.src.split('/').slice(-2).join('/').split('?')[0]); return p.call(this); };")
+                    pg = ctx.new_page()
+                    pg.goto(door.url + "#/gluck/" + MAIN)
+                    until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'", 15000)
+                    pg.wait_for_selector(".nodi-turn[data-turn='26'] .nodi-turn-head")
+                    pg.wait_for_timeout(800)
+                    t = ".nodi-turn[data-turn='26']"
+                    rep.check(pg.locator(t + " [data-action='play']").count() == 3, "%d: three play buttons on a turn with an inquiry and output (got %d)" % (width, pg.locator(t + " [data-action='play']").count()))
+                    labels = pg.evaluate("[...document.querySelectorAll(\"%s [data-action='play']\")].map((b) => [b.getAttribute('aria-label'), b.textContent.trim()])" % t)
+                    rep.check(labels == [["Play inquiry and reply", "▸"], ["Play your message", "▸"], ["Play reply", "▸"]], "%d: top, under the inquiry, under the output, unlabelled but for aria: %s" % (width, labels))
+                    pg.locator(t + " .nodi-turn-head [data-action='play']").click()
+                    pg.wait_for_timeout(4000)
+                    plays = pg.evaluate("window.__plays")
+                    rep.check(len(plays) >= 2 and plays[0].endswith("/in") and plays[1].endswith("/out"), "%d: the top button plays the inquiry, then the output: %s" % (width, plays))
+                    pg.evaluate("window.__plays.length = 0")
+                    pg.locator(t + " .fw-output-play [data-action='play']").click()
+                    pg.wait_for_timeout(1500)
+                    plays = pg.evaluate("window.__plays")
+                    rep.check(len(plays) == 1 and plays[0].endswith("/out"), "%d: the button under the output plays only the output: %s" % (width, plays))
+
                 rep.run("play icon at %dx%d" % (width, height), run)
+                rep.run("three play buttons at %dx%d" % (width, height), three)
                 ctx.close()
             browser.close()
     finally:

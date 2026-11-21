@@ -1,11 +1,11 @@
 import { Button, Glyph, PlayerIsland, Plain, audioKeyUrl, glyphs, withSession, type PlayRequest } from "../../index";
 import { useAtomValue, useSetAtom } from "jotai";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { clipKey, transcribeClip } from "../lib/clips";
 import { joinDictation } from "../lib/mic";
 import { retranscribe } from "../lib/stt";
 import { beginAction, traced } from "../../trace";
-import { handsFreeAtom, replayAtom } from "../state/audio";
+import { handsFreeAtom, inquiryPlayAtom, replayAtom } from "../state/audio";
 import { bootAtom } from "../state/boot";
 import { draftAtom, keyOf } from "../state/composer";
 import { attendedAtom } from "../state/route";
@@ -19,11 +19,30 @@ export function InlineActions({ kind, turn }: { kind: "input" | "prose"; turn: n
   const [request, setRequest] = useState<PlayRequest | null>(null);
   const [note, setNote] = useState("");
   const [heard, setHeard] = useState("");
-  if (!at || handsFree || kind === "prose") return null;
+  const ask = useAtomValue(inquiryPlayAtom);
+  const then = useRef(false);
+  const mineKey = at ? clipKey(at.store, at.aria, turn, "in") : "";
+  useEffect(() => {
+    if (kind !== "input" || !at || !ask || ask.turn !== turn) return;
+    then.current = ask.then;
+    beginAction("speak", { "figaro.aria": at.aria });
+    setRequest({ key: mineKey });
+  }, [ask, kind, turn, at, mineKey]);
+  if (!at || handsFree) return null;
+  if (kind === "prose") {
+    return (
+      <div className="fw-output-play">
+        <Button variant="ghost" size="compact" className="fw-play fw-output-btn" data-action="play" aria-label="Play reply" title="Play reply" onClick={() => replay(turn)}>
+          <Glyph glyph={glyphs["state.running"]} />
+        </Button>
+      </div>
+    );
+  }
   const key = clipKey(at.store, at.aria, turn, "in");
   const play = () => {
     if (kind !== "input") return replay(turn);
     beginAction("speak", { "figaro.aria": at.aria });
+    then.current = false;
     setRequest({ key });
   };
   const transcribe = async () => {
@@ -43,7 +62,7 @@ export function InlineActions({ kind, turn }: { kind: "input" | "prose"; turn: n
           <Glyph glyph={glyphs["transcript.result"]} />
         </Button>
       </div>
-      {kind === "input" && <PlayerIsland className="fw-inline-player" request={request} src={(k) => withSession(audioKeyUrl(audioUrl, k))} />}
+      {kind === "input" && <PlayerIsland className="fw-inline-player" request={request} src={(k) => withSession(audioKeyUrl(audioUrl, k))} done={() => then.current && replay(turn)} />}
       {note && (
         <p className="fw-inline-note" role="status">
           {note}
