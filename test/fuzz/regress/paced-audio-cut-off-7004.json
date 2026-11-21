@@ -1,0 +1,206 @@
+{
+ "campaign": "paced",
+ "seed": 7004,
+ "profile": "desktop",
+ "invariant": "audio-cut-off",
+ "message": "turn 35 ended with 2 of 2 chunks never played to their end (first at offset 0)",
+ "owner": "Backend gateway/audio hub (suspected, intermittent: fails 1 in 2 on v0.18.1, passes on 55f5252); not minimal, 40 actions",
+ "status": "xfail",
+ "strict": [],
+ "actions": [
+  {
+   "k": "wait",
+   "ms": 800
+  },
+  {
+   "k": "voice",
+   "to": "off"
+  },
+  {
+   "k": "send",
+   "n": 2,
+   "kind": "[long]"
+  },
+  {
+   "k": "send",
+   "n": 3,
+   "kind": "[long] again"
+  },
+  {
+   "k": "voice",
+   "to": "toggle"
+  },
+  {
+   "k": "mic"
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "door.bearer",
+    "ms": 1500
+   }
+  },
+  {
+   "k": "send",
+   "n": 7,
+   "kind": "[long] again"
+  },
+  {
+   "k": "navigate"
+  },
+  {
+   "k": "voice",
+   "to": "toggle"
+  },
+  {
+   "k": "send",
+   "n": 10,
+   "kind": "[plain]"
+  },
+  {
+   "k": "pace",
+   "jitter": 0,
+   "p": 0.005,
+   "slow": 500,
+   "per": 48000
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "page.close",
+    "code": 1011,
+    "audio": true
+   }
+  },
+  {
+   "k": "pace",
+   "jitter": 20,
+   "p": 0,
+   "slow": 800,
+   "per": 480
+  },
+  {
+   "k": "page2",
+   "to": "open"
+  },
+  {
+   "k": "send",
+   "n": 15,
+   "kind": "[long] again"
+  },
+  {
+   "k": "wait",
+   "ms": 300
+  },
+  {
+   "k": "wait",
+   "ms": 800
+  },
+  {
+   "k": "send",
+   "n": 18,
+   "kind": "[plain]"
+  },
+  {
+   "k": "mic"
+  },
+  {
+   "k": "send",
+   "n": 20,
+   "kind": "[long] again"
+  },
+  {
+   "k": "mic"
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "door.lapse",
+    "notice": true,
+    "audio": null
+   }
+  },
+  {
+   "k": "page2",
+   "to": "voice"
+  },
+  {
+   "k": "wait",
+   "ms": 800
+  },
+  {
+   "k": "wait",
+   "ms": 2000
+  },
+  {
+   "k": "pace",
+   "jitter": 80,
+   "p": 0,
+   "slow": 200,
+   "per": 48000
+  },
+  {
+   "k": "page2",
+   "to": "voice"
+  },
+  {
+   "k": "mic"
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "clear"
+   }
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "page.close",
+    "code": 1001,
+    "audio": true
+   }
+  },
+  {
+   "k": "send",
+   "n": 31,
+   "kind": "[plain]"
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "door.lapse",
+    "notice": true,
+    "audio": null
+   }
+  },
+  {
+   "k": "send",
+   "n": 33,
+   "kind": "[plain]"
+  },
+  {
+   "k": "bounce"
+  },
+  {
+   "k": "navigate"
+  },
+  {
+   "k": "mic"
+  },
+  {
+   "k": "send",
+   "n": 37,
+   "kind": "[plain]"
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "door.bearer",
+    "ms": 1500
+   }
+  },
+  {
+   "k": "mic"
+  }
+ ]
+}
