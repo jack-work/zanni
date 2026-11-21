@@ -2,6 +2,8 @@ export { Button, ButtonGroup } from "./button";
 export type { ButtonGroupProps, ButtonProps, ButtonSize, ButtonVariant } from "./button";
 export { Sheet } from "./sheet";
 export type { SheetProps } from "./sheet";
+export { marks, pitFaces, selectionGlyph, SELECTION } from "./glyphs";
+export type { PitFace, PitFaceId } from "./glyphs";
 export { EXIT_MS, reducedMotion, transition, useLinger } from "./motion";
 export { Strip } from "./strip";
 export type { StripProps } from "./strip";
