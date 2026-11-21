@@ -369,6 +369,7 @@
           node test/figchat.test.js
           node test/react-example.test.js
           python3 test/figchat.test.py ${self.packages.${system}.figchat-shell} 2>&1 | tee $out
+          env LD_LIBRARY_PATH=${pkgs.mesa}/lib:${pkgs.libglvnd}/lib __EGL_VENDOR_LIBRARY_FILENAMES=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless python3 test/ios-composer.test.py ${self.packages.${system}.figchat-shell} 2>&1 | tee -a $out
         '';
 
         checks.rotolo = pkgs.runCommand "zanni-rotolo-test" {
