@@ -125,6 +125,22 @@
     }
 
     var ids = core.ids;
+    if (o.fixture) {
+      var walk = function (level, parent) {
+        Object.keys(level).forEach(function (handle, i) {
+          var n = level[handle];
+          var row = { state: n.state === 'active' ? 'idle' : n.state, mantra: n.mantra, handle: handle };
+          if (parent) row.parent = parent;
+          if (n.role) row.roles = [n.role];
+          add(n.id, row, seedSmall(3, base, i + 1));
+          core.arias[n.id].fixture = n;
+          walk(n.forks || {}, n.id);
+        });
+      };
+      walk(o.fixture.arias.arias, '');
+      core.ids = ids = Object.assign({ main: o.fixture.attend }, o.fixture.ids || {});
+      core.fixture = o.fixture;
+    } else {
     add(ids.main, { state: 'idle', mantra: 'Zanni: ship ordine & Sugiyama layered layout', roles: ['@zanni'], handle: 'zanni' }, seedMain(base));
     add(ids.lane, { state: 'idle', mantra: 'Frontend Engineer / figchat web', parent: ids.main, roles: ['@lane'] }, seedSmall(4, base, 1));
     add(ids.spain, { state: 'dormant', mantra: 'Backend: spain edge for fig.kelliher.info', parent: ids.main }, seedSmall(2, base, 2));
@@ -133,6 +149,7 @@
     add(ids.forms, { state: 'idle', mantra: 'forms-aria lane', parent: ids.engineer }, seedSmall(3, base, 5));
     for (var k = 7; k <= 13; k++) add(aid(k), { state: 'idle', mantra: 'Scratch ' + (k - 6), parent: k % 2 ? ids.engineer : undefined }, seedSmall(1 + (k % 3), base, k));
     core.arias[aid(13)].row.mantra = EVIL;
+    }
 
     function reply(conn, id, result) { conn.sink.text(JSON.stringify({ jsonrpc: '2.0', id: id, result: result })); }
     function fail(conn, id, code, message) { conn.sink.text(JSON.stringify({ jsonrpc: '2.0', id: id, error: { code: code, message: message } })); }
@@ -344,7 +361,7 @@
 
     var methods = {
       'angelus.hello': function (c, id) {
-        reply(c, id, { version: 1, capabilities: ['qua.images', 'unfollow', 'follow.channels'], node: 'mock-node', principal: { kind: 'user', id: 'gluck@edge.test' } });
+        reply(c, id, { version: 1, capabilities: ['qua.images', 'unfollow', 'follow.channels'], node: core.fixture ? Object.keys(core.fixture.troupe)[0] : 'mock-node', principal: { kind: 'user', id: 'gluck@edge.test' } });
       },
       'figaro.form': function (c, id, p) {
         var root = formRoot(p.figaro_id);
@@ -437,7 +454,8 @@
       return out;
     }
     function formRoot(id) {
-      if (id === '@troupe') return { 'mock-node': { self: true, form: '@arias' } };
+      if (id === '@troupe') return core.fixture ? clone(core.fixture.troupe) : { 'mock-node': { self: true, form: '@arias' } };
+      if (id === '@arias' && core.fixture) return clone(core.fixture.arias);
       if (id === '@arias') { var root = ariasRoot(); root.roles = {}; return root; }
       if (id === '@recent') return recentRoot();
       var a = core.arias[id];

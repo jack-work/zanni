@@ -8,7 +8,8 @@ const speech = require('../assets/figchat/speech.js');
 
 const dir = process.argv[2];
 const step = process.argv[3] ? Number(process.argv[3]) : 15;
-const core = mock.create({ step, pageBytes: 3000 });
+const fixture = process.env.FIGCHAT_FIXTURE ? JSON.parse(fs.readFileSync(process.env.FIGCHAT_FIXTURE, 'utf8')) : undefined;
+const core = mock.create({ step, pageBytes: 3000, fixture });
 const seen = { upgrades: 0, refused: 0, audio: 0, stt: [], retranscribed: [], says: [], stream: [] };
 const expired = new Set([5, 6]);
 const sessions = [];
