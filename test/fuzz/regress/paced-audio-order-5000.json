@@ -4,8 +4,8 @@
  "profile": "desktop",
  "invariant": "audio-order",
  "message": "audio.chunk for turn 30 before any audio.start",
- "owner": "Backend gateway/audio hub: a page joining mid-turn got audio.chunk with no audio.start; fixed by lane/audio-late-start 55f5252, drop the xfail when the flake pin takes it",
- "status": "xfail",
+ "owner": "fixed by forms v0.18.2 on the gateway side",
+ "status": "pass",
  "strict": [],
  "actions": [
   {
