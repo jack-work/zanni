@@ -51,8 +51,9 @@ def until(pg, js, timeout=10000):
 
 
 class Door:
-    def __init__(self, bundle, step):
-        self.proc = subprocess.Popen(["node", os.path.join(root, "test", "figchat-server.js"), bundle, str(step)], stdout=subprocess.PIPE, text=True)
+    def __init__(self, bundle, step, **bench):
+        flags = [x for k, v in bench.items() for x in ("--" + k, str(v))]
+        self.proc = subprocess.Popen(["node", os.path.join(root, "test", "figchat-server.js"), bundle, str(step)] + flags, stdout=subprocess.PIPE, text=True)
         self.port = int(self.proc.stdout.readline())
         self.base = "http://127.0.0.1:%d" % self.port
         self.url = self.base + "/chat/"
