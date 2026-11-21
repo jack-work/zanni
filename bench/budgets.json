@@ -1,22 +1,27 @@
 {
- "from": "2026-11-21-bf617a2.json",
+ "from": "2026-11-21-bf617a2.json, bundle sizes and session.* and attach.1.app_mark from the finish run",
  "margin": 0.5,
  "metrics": {
+  "attach.1.app_mark.p50": {
+   "budget": 39.9,
+   "margin": 1.0,
+   "slack": 30
+  },
   "attach.1.first_frame.p50": {
    "budget": 49.5,
    "margin": 1.0,
    "slack": 30
   },
   "bundle.code_brotli": {
-   "budget": 115817,
+   "budget": 115887,
    "margin": 0.05
   },
   "bundle.code_gzip": {
-   "budget": 132838,
+   "budget": 133053,
    "margin": 0.05
   },
   "bundle.code_raw": {
-   "budget": 436211,
+   "budget": 436821,
    "margin": 0.05
   },
   "history.rows.2.keydown_to_paint.p50": {
@@ -120,6 +125,28 @@
   "scroll_dom.frame_ms.p95": {
    "budget": 16.7,
    "margin": 1.0
+  },
+  "session.dom_per_turn": {
+   "budget": 124.0,
+   "margin": 0.1,
+   "slack": 1
+  },
+  "session.door_in_bytes_per_turn": {
+   "budget": 30867,
+   "margin": 0.1
+  },
+  "session.heap_end": {
+   "budget": 94237804,
+   "margin": 0.3
+  },
+  "session.heap_per_turn": {
+   "budget": 173259,
+   "margin": 0.3
+  },
+  "session.listeners_per_turn": {
+   "budget": 4.0,
+   "margin": 0,
+   "slack": 1
   },
   "wire.door_in_bytes_per_turn": {
    "budget": 23895,
