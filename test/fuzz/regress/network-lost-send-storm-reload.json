@@ -4,8 +4,8 @@
  "profile": "desktop",
  "invariant": "lost-send",
  "message": "\"net16 [md]\" was sent from the page and never reached the door, and is not in the composer",
- "owner": "Frontend (a send followed by a page reload after a close storm is lost, composer empty)",
- "status": "xfail",
+ "owner": "fixed in composer state: a draft saves on pagehide, a send is held until the door takes it",
+ "status": "pass",
  "strict": [
   "lapse-no-notice"
  ],
