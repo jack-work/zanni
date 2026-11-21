@@ -166,6 +166,9 @@ try:
             pg.goto(door.url + "#/gluck/" + aria + (":%d" % turn if turn else ""))
             until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'", timeout=15000)
 
+        def held(pg):
+            return pg.evaluate("Number(document.querySelector('.nodi-turns').dataset.held)")
+
         def turns_shown(pg):
             return pg.evaluate("[...document.querySelectorAll('.nodi-turn')].map(n => Number(n.dataset.turn))")
 
@@ -206,7 +209,7 @@ try:
                 assert pg.locator(".zr-tree-row[data-id='%s']" % LANE).count() == 1, "the path to the attended aria is open"
             snap(pg, "attend-light-" + tag)
 
-            before = len(turns_shown(pg))
+            before = held(pg)
             for _ in range(40):
                 if pg.locator(".nodi-turn[data-turn='4']").count():
                     break
@@ -214,11 +217,11 @@ try:
                 pg.wait_for_timeout(120)
             assert pg.locator(".nodi-turn[data-turn='4']").count() == 1, "scrolling up pages older turns in: %s" % turns_shown(pg)
             got = turns_shown(pg)
-            assert len(got) - before >= 10, "read back ten turns or more: %d -> %d" % (before, len(got))
+            assert held(pg) - before >= 10, "read back ten turns or more: %d -> %d" % (before, held(pg))
             assert got == sorted(got) and len(set(got)) == len(got), "older pages land in order without repeats: %s" % got
             def hydrated(n):
-                pg.evaluate("document.querySelector(\".nodi-turn[data-turn='%d']\").scrollIntoView()" % n)
-                until(pg, "!document.querySelector(\".nodi-turn[data-turn='%d']\").hasAttribute('data-parked')" % n)
+                pg.evaluate("location.hash = '#/gluck/%s:%d'" % (MAIN, n))
+                until(pg, "!!document.querySelector(\".nodi-turn[data-turn='%d'] .nodi-turn-body\")" % n)
 
             hydrated(6)
             assert pg.locator(".nodi-unknown").count() == 1, pg.locator(".nodi-unknown").count()

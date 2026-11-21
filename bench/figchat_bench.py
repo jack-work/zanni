@@ -22,6 +22,7 @@ except ImportError:
     brotli = None
 
 HASHED = re.compile(r"-[A-Za-z0-9_-]{8}\.[a-z0-9]+$")
+HELD = "Number(document.querySelector('.nodi-turns').dataset.held)"
 GATEWAY_ASSETS = "private, max-age=3600"
 LONG_REPLY = 24000
 FRAME_MS = 40
@@ -371,7 +372,7 @@ def run(bundle, quick=False):
             d = Door(bundle, 40, history=max(targets) + 50, page=24000, **paced(6000))
             pg = page()
             attend(pg, d)
-            held = "document.querySelectorAll('.nodi-turn').length"
+            held = HELD
             rows = []
             for target in targets:
                 stall = time.time() + 240
@@ -379,7 +380,7 @@ def run(bundle, quick=False):
                     n = pg.evaluate(held)
                     pg.evaluate("document.querySelector('[data-testid=transcript-scroller]').scrollTop = 0")
                     try:
-                        until(pg, "document.querySelectorAll('.nodi-turn').length > %d" % n, 5000)
+                        until(pg, HELD + " > %d" % n, 5000)
                     except AssertionError:
                         pg.evaluate("document.querySelector('[data-testid=transcript-scroller]').scrollTop = 200")
                     pg.wait_for_timeout(450)
@@ -458,7 +459,7 @@ def run(bundle, quick=False):
         long = pg.evaluate("window.__bench.longtasks.splice(0)")
         fps = len(frames) / (sum(frames) / 1000) if frames else 0
         out["scroll"] = {"history_turns": 10000, "fps": round(fps, 1), "frame_ms": stats(frames), "frames_over_33ms": sum(1 for f in frames if f > 33.4),
-                         "longtasks": len(long), "longtask_ms": round(sum(t[1] for t in long), 1), "turns_loaded": pg.evaluate("document.querySelectorAll('.nodi-turn').length"),
+                         "longtasks": len(long), "longtask_ms": round(sum(t[1] for t in long), 1), "turns_loaded": pg.evaluate(HELD),
                          "dom_nodes": pg.evaluate("document.getElementsByTagName('*').length"), "scroll_top": pg.evaluate(sc + ".scrollTop")}
         pg.context.close()
         d.stop()

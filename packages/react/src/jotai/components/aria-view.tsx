@@ -1,4 +1,4 @@
-import { Button, LatestPill, scrollRoot, scrollToBottom, useFollow, Plain, TranscriptContext, TurnView } from "../../index";
+import { Button, LatestPill, scrollRoot, scrollToBottom, useFollow, useTurnWindow, Plain, TranscriptContext, TurnView } from "../../index";
 import { useAtomValue, useSetAtom } from "jotai";
 import { ariaAtom } from "figaro-forms/aria/jotai";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -18,8 +18,6 @@ import { InlineActions } from "./inline-actions";
 import { TurnActions } from "./turn-actions";
 
 const DEEP_LIMIT = 60;
-const PINNED = 3;
-const EAGER = 8;
 const FLASH_MS = 1800;
 
 const turnEl = (turn: number): HTMLElement | null => document.querySelector<HTMLElement>('.nodi-turn[data-turn="' + turn + '"]');
@@ -44,6 +42,7 @@ export function AriaView({ attended }: { attended: Attended }) {
   const paneRef = useRef<HTMLElement | null>(null);
   const olderRef = useRef<HTMLButtonElement | null>(null);
   const headRef = useRef<HTMLHeadingElement | null>(null);
+  const listRef = useRef<HTMLOListElement | null>(null);
   const anchor = useRef<{ turn: number; top: number } | null>(null);
   const loading = useRef(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -62,6 +61,7 @@ export function AriaView({ attended }: { attended: Attended }) {
   const handsFree = useAtomValue(handsFreeAtom);
   const toggleHandsFree = useSetAtom(toggleHandsFreeAtom);
   const speaking = useAtomValue(speakingAtom);
+  const { jump, ...win } = useTurnWindow(turns, listRef, speaking && speaking.aria === aria ? [speaking.turn] : []);
   const cancelMic = useSetAtom(micCancelAtom);
   useVoice(attended);
   useEffect(() => () => cancelMic(), [cancelMic]);
@@ -111,6 +111,7 @@ export function AriaView({ attended }: { attended: Attended }) {
   const seek = useCallback(
     async (turn: number) => {
       for (let n = 0; n <= DEEP_LIMIT; n++) {
+        if (!turnEl(turn)) jump(turn);
         const el = await appears(turn);
         if (el) {
           el.scrollIntoView();
@@ -129,7 +130,7 @@ export function AriaView({ attended }: { attended: Attended }) {
       }
       scrollToBottom();
     },
-    [client, aria, loadOlder],
+    [client, aria, loadOlder, jump],
   );
 
   useEffect(() => {
@@ -201,10 +202,11 @@ export function AriaView({ attended }: { attended: Attended }) {
             </Button>
           )}
           <TranscriptContext value={transcript}>
-            <ol className="nodi-turns" aria-label="Transcript">
-              {turns.map((t, i) => (
-                <TurnView key={t.key} turn={t} speaking={speakingHere} fresh={baseline !== null && t.turn > baseline} pinned={i >= turns.length - PINNED} eager={i >= turns.length - EAGER} />
-              ))}
+            <ol ref={listRef} className="nodi-turns" aria-label="Transcript" data-held={turns.length}>
+              {win.spans.flatMap((span, k) => [
+                ...(win.windowed ? [<li key={"gap" + k} className="nodi-gap" data-slot={k} aria-hidden="true" />] : []),
+                ...turns.slice(span.from, span.to).map((t) => <TurnView key={t.key} turn={t} speaking={speakingHere} fresh={baseline !== null && t.turn > baseline} />),
+              ])}
             </ol>
           </TranscriptContext>
           {status && <p className="fw-note">{status}</p>}

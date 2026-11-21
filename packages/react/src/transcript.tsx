@@ -1,7 +1,5 @@
 import { formatWorkedTime, groupWork, stepsTitle, type Work } from "./work";
-import { createContext, memo, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { scrollRoot } from "./follow";
-import { PARK_HEIGHT, parkHeight, watchNear } from "./park";
+import { createContext, memo, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Fold } from "./fold";
 import { reducedMotion } from "./motion";
 import { glyphs } from "./glyphs";
@@ -257,22 +255,24 @@ export interface TurnViewProps {
   turn: TurnModel;
   speaking: Speaking | null;
   fresh: boolean;
-  pinned?: boolean;
-  eager?: boolean;
 }
 
 const spokenIn = (s: Speaking | null, turn: number): string => (s && s.turn === turn ? s.node + ":" + s.chars : "");
 
-function TurnContent({ turn: m, speaking }: { turn: TurnModel; speaking: Speaking | null }) {
+export const TurnView = memo(
+  function TurnView({ turn: m, speaking, fresh }: TurnViewProps) {
+  const state = m.end ? (m.end.kind === "error" ? "failed" : "ended") : m.open ? "open" : "done";
   const mine = speaking && speaking.turn === m.turn ? speaking : null;
   const rows = useMemo(() => groupWork(m.items), [m.items]);
   const hooks = useContext(TranscriptContext);
   return (
-    <>
+    <li className="nodi-turn zr-host" data-turn={m.turn} data-state={state} {...(fresh ? { "data-fresh": "" } : {})}>
       <div className="nodi-turn-head">
         <span className="nodi-turn-no">Turn {m.turn}</span>
         {m.forkedFrom && <span className="nodi-turn-fork">{glyphs.fork + " " + (hooks.nameOf?.(m.forkedFrom) ?? m.forkedFrom.slice(0, 8))}</span>}
-        <span className="nodi-turn-tools">{hooks.actions?.(m.turn)}</span>
+        <span className="nodi-turn-tools">
+          {hooks.actions?.(m.turn)}
+        </span>
       </div>
       <div className="nodi-turn-body">
         {m.input && m.input.parts.length > 0 && <InputView input={m.input} turn={m.turn} />}
@@ -290,36 +290,8 @@ function TurnContent({ turn: m, speaking }: { turn: TurnModel; speaking: Speakin
             </p>
           ))}
       </div>
-    </>
+    </li>
   );
-}
-
-export const TurnView = memo(
-  function TurnView({ turn: m, speaking, fresh, pinned, eager }: TurnViewProps) {
-    const state = m.end ? (m.end.kind === "error" ? "failed" : "ended") : m.open ? "open" : "done";
-    const li = useRef<HTMLLIElement | null>(null);
-    const [near, setNear] = useState(() => !!eager || typeof IntersectionObserver === "undefined");
-    const height = useRef(PARK_HEIGHT);
-    const shown = !!pinned || near || (!!speaking && speaking.turn === m.turn);
-    const showing = useRef(shown);
-    showing.current = shown;
-    useEffect(() => {
-      const el = li.current;
-      const root = scrollRoot();
-      if (!el || !root || typeof IntersectionObserver === "undefined") return;
-      return watchNear(el, root, (isNear, h) => {
-        if (!isNear && showing.current) height.current = h;
-        setNear(isNear);
-      });
-    }, []);
-    useLayoutEffect(() => {
-      if (!shown) parkHeight(m.turn, height.current);
-    }, [shown, m.turn]);
-    return (
-      <li ref={li} className="nodi-turn zr-host" data-turn={m.turn} data-state={state} {...(fresh ? { "data-fresh": "" } : {})} {...(shown ? {} : { "data-parked": "" })}>
-        {shown && <TurnContent turn={m} speaking={speaking} />}
-      </li>
-    );
   },
-  (a, b) => a.turn === b.turn && a.fresh === b.fresh && !!a.pinned === !!b.pinned && spokenIn(a.speaking, a.turn.turn) === spokenIn(b.speaking, b.turn.turn),
+  (a, b) => a.turn === b.turn && a.fresh === b.fresh && spokenIn(a.speaking, a.turn.turn) === spokenIn(b.speaking, b.turn.turn),
 );
