@@ -71,6 +71,10 @@ not in atoms.
 
 ## What the app does
 
+- State: the bound form as the same Tree; a tap or `c` on a value opens Set and
+  Unset, and Set a key adds one, all through figaro-forms' `boundFormWriterOf`.
+  The daemon refuses `system.*`, `runtime.*`, `name` and `role-name`, and the
+  pit shows its reason.
 - List: the topology Tree (one `Tree` with the pager's formNode semantics),
   opened to the attended aria's chain; turn counts and mantras come from each
   aria's own facts (`ariaFactsAtom`), not the roster page.
