@@ -1,4 +1,4 @@
-import { Button, Pit as ZPit, pitFaces } from "../../index";
+import { Button, Pit as ZPit, glyphs } from "../../index";
 import { useAtomValue, useSetAtom } from "jotai";
 import { PHASE_WORDS } from "../lib/roster";
 import { linkAtom } from "../state/aria";
@@ -10,7 +10,7 @@ export function Pit() {
   const toggleVoice = useSetAtom(toggleVoiceAtom);
   const word = PHASE_WORDS[link] ?? "";
   return (
-    <ZPit className="fw-pit" label="Controls" title="figaro" glyph={pitFaces.form.glyph}>
+    <ZPit className="fw-pit" label="Controls" title="figaro" glyph={glyphs["pit.form"]}>
       {word && (
         <p className="fw-pit-link" role="status">
           {word}

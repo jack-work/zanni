@@ -524,30 +524,33 @@ try:
 
         def finger(pg, cdp, phone):
             class Finger:
+                clock = time.time()
+
+                def send(self, kind, y, down=True):
+                    if phone:
+                        cdp.send("Input.dispatchTouchEvent", {"type": kind, "touchPoints": [{"x": self.x, "y": y}] if down else [], "timestamp": self.clock})
+                    else:
+                        cdp.send("Input.dispatchMouseEvent", {"type": kind, "x": self.x, "y": y, "button": "left" if kind != "mouseMoved" else "none", "buttons": 1 if kind != "mouseReleased" else 0, "clickCount": 1 if kind != "mouseMoved" else 0, "timestamp": self.clock})
+
                 def down(self, x, y):
                     self.x, self.y = x, y
-                    if phone:
-                        cdp.send("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": [{"x": x, "y": y}]})
-                    else:
-                        pg.mouse.move(x, y)
-                        pg.mouse.down()
+                    self.clock += 1
+                    self.send("touchStart" if phone else "mousePressed", y)
 
                 def move(self, y, steps=8, gap=30):
                     y0 = self.y
                     for i in range(1, steps + 1):
-                        yy = y0 + (y - y0) * i / steps
-                        if phone:
-                            cdp.send("Input.dispatchTouchEvent", {"type": "touchMove", "touchPoints": [{"x": self.x, "y": yy}]})
-                        else:
-                            pg.mouse.move(self.x, yy)
-                        pg.wait_for_timeout(gap)
+                        self.clock += gap / 1000.0
+                        self.send("touchMove" if phone else "mouseMoved", y0 + (y - y0) * i / steps)
+                        pg.wait_for_timeout(20)
                     self.y = y
 
+                def hold(self, ms=160):
+                    self.clock += ms / 1000.0
+
                 def up(self):
-                    if phone:
-                        cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
-                    else:
-                        pg.mouse.up()
+                    self.clock += 0.001
+                    self.send("touchEnd" if phone else "mouseReleased", self.y, down=False)
             return Finger()
 
         PIT = "() => { const p = document.querySelector('.zr-pit'); if (!p) return null; const b = p.getBoundingClientRect(); return { snap: p.dataset.snap, dragging: p.hasAttribute('data-dragging'), top: b.top, height: b.height, bottom: b.bottom, left: b.left, width: b.width }; }"
@@ -591,7 +594,7 @@ try:
             assert pg.evaluate(PIT)["dragging"], "the pit follows the finger"
             mid = pg.evaluate(PIT)
             assert abs(mid["top"] - height * 0.5) <= 2, "the pit's top edge is under the finger: %s" % mid
-            pg.wait_for_timeout(160)
+            f.hold()
             f.up()
             pit_at(pg, "half", half, "dragged from the composer edge to the middle")
             assert pg.locator(".zr-pit").get_attribute("role") == "dialog"
@@ -610,14 +613,14 @@ try:
             hx, hy = centre(pg.locator(".zr-pit-handle"))
             f.down(hx, hy)
             f.move(height * 0.2)
-            pg.wait_for_timeout(160)
+            f.hold()
             f.up()
             pit_at(pg, "half", half, "released above half but short of the top 15 percent, it stays half")
 
             hx, hy = centre(pg.locator(".zr-pit-handle"))
             f.down(hx, hy)
             f.move(height * 0.1)
-            pg.wait_for_timeout(160)
+            f.hold()
             f.up()
             pit_at(pg, "full", full, "past the top 15 percent it snaps full")
             snap(pg, "pit-full-%d" % width)
@@ -625,14 +628,14 @@ try:
             hx, hy = centre(pg.locator(".zr-pit-handle"))
             f.down(hx, hy)
             f.move(height * 0.55)
-            pg.wait_for_timeout(160)
+            f.hold()
             f.up()
             pit_at(pg, "half", half, "dragged down from full to just past half, it settles half")
 
             hx, hy = centre(pg.locator(".zr-pit-handle"))
             f.down(hx, hy)
             f.move(height * 0.95)
-            pg.wait_for_timeout(160)
+            f.hold()
             f.up()
             pit_gone(pg, "dragged down past the bottom quarter, it closes")
 
@@ -689,7 +692,7 @@ try:
         gx, gy = centre(pg.locator(".zr-composer .zr-grip"))
         f.down(gx, gy)
         f.move(300)
-        pg.wait_for_timeout(160)
+        f.hold()
         f.up()
         pit_at(pg, "half", 422, "reduced motion still drags")
         assert pg.evaluate("parseFloat(getComputedStyle(document.querySelector('.zr-pit')).transitionDuration) * 1000") <= 1

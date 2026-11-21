@@ -163,7 +163,7 @@
           };
           sourceRoot = "zanni-source/web";
           nodejs = pkgs.nodejs_24;
-          npmDepsHash = "sha256-XbJnlxHhtzPhj+zrWnQ07XlkDTJaCh/vU/tYmO0zDAY=";
+          npmDepsHash = "sha256-as0RxyNxPwbUI/nfV5Bh3QQQPKAAUmb4MJU2GJQ99DI=";
           makeCacheWritable = true;
           doCheck = true;
           checkPhase = ''

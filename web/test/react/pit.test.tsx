@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { Button, Pit, PitGrip, PitProvider, pitFaces, pitHeight, pitSettle, pitStep, marks } from "zanni-react";
+import { Button, Pit, PitGrip, PitProvider, glyphs, pitHeight, pitSettle, pitStep } from "zanni-react";
 
 const H = 800;
 
@@ -43,7 +43,7 @@ function Harness() {
   return (
     <PitProvider>
       <PitGrip />
-      <Pit label="Controls" title="Pit" glyph={pitFaces.form.glyph} docked>
+      <Pit label="Controls" title="Pit" glyph={glyphs["pit.form"]} docked>
         <Button>Inside</Button>
       </Pit>
     </PitProvider>
@@ -112,7 +112,7 @@ describe("Pit", () => {
     render(<Harness />);
     fireEvent.click(screen.getByRole("button", { name: "Open controls" }));
     expect(document.querySelector(".zr-pit-glyph")!.textContent).toBe("웃");
-    expect(marks.delta).toBe("Δ");
-    expect(marks.fork).toBe("⑂");
+    expect(glyphs.delta).toBe("Δ");
+    expect(glyphs.fork).toBe("⑂");
   });
 });
