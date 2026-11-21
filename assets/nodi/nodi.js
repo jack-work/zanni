@@ -242,6 +242,25 @@
     return JSON.stringify(shown, null, 2);
   }
 
+  function argsOf(n) {
+    if (n.args && typeof n.args === 'object' && !Array.isArray(n.args)) return n.args;
+    if (typeof n.input === 'string' && n.input) {
+      try { var whole = JSON.parse(n.input); if (whole && typeof whole === 'object' && !Array.isArray(whole)) return whole; } catch (e) { return null; }
+    }
+    return null;
+  }
+
+  function firstArgText(n) {
+    var a = argsOf(n);
+    if (!a) return undefined;
+    var names = Object.keys(a).sort();
+    for (var i = 0; i < names.length; i++) {
+      var t = argText(n, names[i]);
+      if (t) return t;
+    }
+    return undefined;
+  }
+
   function itemOf(n) {
     var type = n && n.type;
     var settled = !!(n && n.settled);
@@ -258,7 +277,7 @@
         status: n.status === 'ok' || n.status === 'error' ? n.status : 'running',
         summary: n.summary == null ? '' : String(n.summary),
         label: n.label == null ? '' : String(n.label),
-        head: argText(n, n.head_arg) || '',
+        head: argText(n, n.head_arg) || (n.label ? firstArgText(n) : '') || '',
         body: n.body_arg ? argText(n, n.body_arg) : undefined,
         diff: n.diff === true,
         args: argsShown(n),
