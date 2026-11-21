@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { joinDictation, Mic, micFault, micType, type MicDeps, type MicSnapshot } from "../src/lib/mic";
-import { dictate, retranscribe, SttError } from "../src/lib/stt";
+import { joinDictation, Mic, micFault, micType, type MicDeps, type MicSnapshot } from "zanni-react/jotai";
+import { dictate, retranscribe, SttError } from "zanni-react/jotai";
 
 class FakeRecorder extends EventTarget {
   static types = ["audio/webm;codecs=opus"];

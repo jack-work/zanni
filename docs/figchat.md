@@ -60,7 +60,7 @@ figaro-forms (`figaro-forms/aria/jotai`): `ariaAtom`, `ariaPhaseAtom`,
 `{rows, next, refused, loading, error}`, write `"more"` or `"refresh"`;
 refetched when the connection reopens).
 
-`web/src/state`: `bootAtom` (stores, door paths), `routeAtom`/`goAtom`,
+`packages/react/src/jotai/state`: `bootAtom` (stores, door paths), `routeAtom`/`goAtom`,
 `clientAtom`, `attendedAtom`; `rosterAtom`, `depthsAtom`; per aria and
 memoised by client: `turnsAtom` (nodi's model, turns reused while unchanged),
 `runningAtom`, `workAtom` (verb and start of the open turn), `noteAtom`;

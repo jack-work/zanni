@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { depths, labelOf, refusalText } from "../src/lib/roster";
-import { parseRoute, routeFor } from "../src/lib/route";
+import { depths, labelOf, refusalText } from "zanni-react/jotai";
+import { parseRoute, routeFor } from "zanni-react/jotai";
 
 describe("route", () => {
   it("round trips store, aria and an optional turn", () => {

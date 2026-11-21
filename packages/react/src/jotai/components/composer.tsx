@@ -1,7 +1,7 @@
-import { Button, Composer as ZComposer } from "zanni-react";
+import { Button, Composer as ZComposer } from "../../index";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useRef, useState } from "react";
-import { clock } from "zanni-react";
+import { clock } from "../../index";
 import { micAtom, micToggleAtom, dictationFocusAtom } from "../state/mic";
 import { linkAtom, runningAtom, workAtom } from "../state/aria";
 import { composerAtom, composerNoteAtom, draftAtom, interruptAtom, keyOf, sendAtom } from "../state/composer";

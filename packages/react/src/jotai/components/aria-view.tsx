@@ -1,4 +1,4 @@
-import { Button, LatestPill, nodi, scrollToBottom, useFollow, Plain, TranscriptContext, TurnView } from "zanni-react";
+import { Button, LatestPill, nodi, scrollToBottom, useFollow, Plain, TranscriptContext, TurnView } from "../../index";
 import { useAtomValue, useSetAtom } from "jotai";
 import { ariaAtom } from "figaro-forms/aria/jotai";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";

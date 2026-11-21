@@ -1,4 +1,4 @@
-import { Button, List, ListRow, Plain } from "zanni-react";
+import { Button, List, ListRow, Plain } from "../../index";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect } from "react";
 import { labelOf } from "../lib/roster";

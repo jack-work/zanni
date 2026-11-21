@@ -13,34 +13,34 @@ Jotai
 
 assistant-ui, commit 3c1497d
   Copyright (c) 2026 AgentbaseAI Inc.
-  web/src/lib/follow.ts
+  packages/react/src/follow.ts, latest.tsx
     <- packages/react/src/primitives/thread/useThreadViewportAutoScroll.ts and
        ThreadScrollToBottom.ts: stay at the bottom while at the bottom, let go when
        the reader scrolls up, a Latest pill when content lands below. Rewritten over
        window scroll.
-  web/src/components/aria-view.tsx (the prepend anchor)
+  packages/react/src/jotai/components/aria-view.tsx (the prepend anchor)
     <- packages/react/src/primitives/thread/useThreadViewportAutoScroll.ts: earlier
        turns page in above without moving what the reader sees.
-  web/src/lib/work.ts (groupWork)
+  packages/react/src/work.ts (groupWork)
     <- packages/react/src/primitives/message/MessagePartsGrouped.tsx and
        packages/core/src/react/utils/groupParts.ts: adjacent work parts fold into one
        group. The grouping function only.
-  web/src/components/composer.tsx (submit rules)
+  packages/react/src/composer.tsx (submit rules)
     <- packages/react/src/primitives/composer/ComposerInput.tsx: Enter sends,
        Shift+Enter breaks the line, never during IME composition.
-  web/src/styles/app.css (.fw-actions)
+  packages/react/src/actions.tsx and zanni-react.css (.zr-actionbar)
     <- packages/react/src/primitives/actionBar/ActionBarRoot.tsx: autohide "not-last".
 
 Volt, commit cfe5d484
   Copyright (c) 2026 - present Volt ADK
   Copyright (c) 2015 - present Microsoft Corporation
-  web/src/lib/work.ts (stepsTitle, liveVerb, formatWorkedTime)
+  packages/react/src/work.ts (stepsTitle, liveVerb, formatWorkedTime)
     <- apps/client-core/src/rows.ts: the group line, the verb of a running step,
        time as "1m 3s". Adapted to nodi's item kinds.
-  web/src/state/composer.ts (draftAtom)
+  packages/react/src/jotai/state/composer.ts (draftAtom)
     <- apps/client-core/src/drafts.ts: a draft per conversation, saved after a pause,
        cleared on send.
-  web/src/components/composer.tsx, sheet.tsx (the strip and the sheet)
+  packages/react/src/composer.tsx, strip.tsx, sheet.tsx (the strip and the sheet)
     <- apps/mobile Composer and Trays: a send button that changes meaning while a
        turn runs; things above the composer enter from below and leave downward.
        Read for the pattern, not copied.

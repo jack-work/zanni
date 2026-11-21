@@ -2,8 +2,8 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { createStore, Provider } from "jotai";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/app";
-import { bootAtom } from "../src/state/boot";
-import { draftAtom, SAVE_DELAY_MS } from "../src/state/composer";
+import { bootAtom } from "zanni-react/jotai";
+import { draftAtom, SAVE_DELAY_MS } from "zanni-react/jotai";
 import { mockDoor, type MockCore } from "./mock";
 import type { AriaClient } from "figaro-forms/aria";
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AudioSession, pingPcm, type Held, type SessionType } from "../src/lib/audio-session";
+import { AudioSession, pingPcm, type Held, type SessionType } from "zanni-react/jotai";
 
 function rig() {
   const log: string[] = [];

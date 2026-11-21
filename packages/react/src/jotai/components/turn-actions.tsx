@@ -1,4 +1,4 @@
-import { ActionBar, Button } from "zanni-react";
+import { ActionBar, Button } from "../../index";
 import { useAtomValue, useSetAtom } from "jotai";
 import { replayAtom } from "../state/audio";
 import { composerAtom, forkAtom, keyOf } from "../state/composer";

@@ -1,7 +1,7 @@
 import { atom } from "jotai";
 import { flushSync } from "react-dom";
 import type { AriaClient } from "figaro-forms/aria";
-import { transition } from "zanni-react";
+import { transition } from "../../index";
 import { parseRoute, routeFor, type Route } from "../lib/route";
 import { bootAtom } from "./boot";
 

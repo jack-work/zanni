@@ -1,13 +1,6 @@
 import { useAtomValue } from "jotai";
 import { useSyncExternalStore } from "react";
-import { attendedRunningAtom, linkAtom } from "./state/aria";
-import { audioSessionAtom } from "./state/audio";
-import { micAtom } from "./state/mic";
-import { AriaView } from "./components/aria-view";
-import { Roster } from "./components/roster";
-import { Sheet } from "./components/sheet";
-import { TopBar } from "./components/topbar";
-import { attendedAtom, routeAtom, routeKindAtom } from "./state/route";
+import { AriaView, attendedAtom, attendedRunningAtom, audioSessionAtom, BoundSheet as Sheet, linkAtom, micAtom, Roster, routeAtom, routeKindAtom, TopBar } from "zanni-react/jotai";
 
 function ListHint() {
   return (

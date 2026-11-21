@@ -1,6 +1,6 @@
 import { atom } from "jotai";
 import { AudioSession, pingPcm, type SessionType } from "../lib/audio-session";
-import { speech, voce, type PcmFormat } from "zanni-react";
+import { speech, voce, type PcmFormat } from "../../index";
 import { bootAtom } from "./boot";
 
 const PING_FORMAT: PcmFormat = { format: "pcm", rate: 24000, bits: 16, channels: 1 };

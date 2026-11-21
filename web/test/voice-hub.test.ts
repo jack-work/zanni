@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { AudioSession } from "../src/lib/audio-session";
-import { VoiceHub, type SpokenNode } from "../src/lib/voice-hub";
+import { AudioSession } from "zanni-react/jotai";
+import { VoiceHub, type SpokenNode } from "zanni-react/jotai";
 import type { SpeechHandlers, SpeechTransport, VoceApi, VoceOptions, VocePlayer } from "zanni-react";
 
 const ARIA = "c0ffee01".repeat(4);

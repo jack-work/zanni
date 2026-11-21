@@ -1,4 +1,4 @@
-import { Button, PlayerIsland, Plain, Sheet as ZSheet, type PlayRequest } from "zanni-react";
+import { Button, PlayerIsland, Plain, Sheet as ZSheet, type PlayRequest } from "../../index";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useRef, useState } from "react";
 import { joinDictation } from "../lib/mic";

@@ -6,7 +6,7 @@ import { doorUrl, edgeSession } from "figaro-forms/auth";
 import head from "../../assets/parla/figaro-head.png";
 import "./styles/index.css";
 import { App } from "./app";
-import { bootAtom } from "./state/boot";
+import { bootAtom } from "zanni-react/jotai";
 
 const host = document.getElementById("app");
 if (!host) throw new Error("figaro web needs #app");

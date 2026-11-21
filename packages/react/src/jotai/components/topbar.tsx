@@ -1,4 +1,4 @@
-import { Button } from "zanni-react";
+import { Button } from "../../index";
 import { useAtomValue, useSetAtom } from "jotai";
 import { PHASE_WORDS } from "../lib/roster";
 import { bootAtom } from "../state/boot";

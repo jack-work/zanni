@@ -2,7 +2,7 @@ import { act, render, screen, waitFor, within } from "@testing-library/react";
 import { createStore, Provider } from "jotai";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { App } from "../src/app";
-import { bootAtom } from "../src/state/boot";
+import { bootAtom } from "zanni-react/jotai";
 import { mockDoor, type MockCore } from "./mock";
 import type { AriaClient } from "figaro-forms/aria";
 

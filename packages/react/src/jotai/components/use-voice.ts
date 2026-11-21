@@ -1,7 +1,7 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useRef } from "react";
 import { VoiceHub } from "../lib/voice-hub";
-import { voce } from "zanni-react";
+import { voce } from "../../index";
 import { audioSessionAtom, cancelSpeechAtom, speakingAtom, speechTransportAtom, voiceAtom, voiceControlAtom } from "../state/audio";
 import { bootAtom } from "../state/boot";
 import { composerNoteAtom, keyOf } from "../state/composer";
