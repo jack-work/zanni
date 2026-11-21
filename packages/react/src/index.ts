@@ -5,7 +5,7 @@ export type { SheetProps } from "./sheet";
 export { EXIT_MS, reducedMotion, transition, useLinger } from "./motion";
 export { Strip } from "./strip";
 export type { StripProps } from "./strip";
-export { COMPOSER_MAX_LINES, Composer, useCoarsePointer, useSizeVar } from "./composer";
+export { KEYBOARD_CLOSE_SETTLE_MS, Composer, useCoarsePointer, useSizeVar } from "./composer";
 export type { ComposerProps } from "./composer";
 export { ActionBar } from "./actions";
 export { Fold } from "./fold";

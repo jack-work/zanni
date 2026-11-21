@@ -1,9 +1,10 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { Button } from "./button";
 import { Strip, type StripProps } from "./strip";
 import { useLinger } from "./motion";
+import { onKeyboard } from "./viewport";
 
-export const COMPOSER_MAX_LINES = 5;
+export const KEYBOARD_CLOSE_SETTLE_MS = 300;
 
 export interface ComposerProps {
   value: string;
@@ -18,6 +19,7 @@ export interface ComposerProps {
   stripActions?: ReactNode;
   accessory?: ReactNode;
   focusTick?: number;
+  inputRef?: Ref<HTMLTextAreaElement>;
   heightVar?: string;
   className?: string;
   inputClassName?: string;
@@ -46,25 +48,56 @@ export function useSizeVar(ref: { current: HTMLElement | null }, name: string): 
 }
 
 export function Composer(props: ComposerProps) {
-  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendDisabled, running, strip, stripActions, accessory, focusTick, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
+  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendDisabled, running, strip, stripActions, accessory, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
   const form = useRef<HTMLFormElement | null>(null);
   const input = useRef<HTMLTextAreaElement | null>(null);
+  const typing = useRef(false);
   const coarse = useCoarsePointer();
+  const grows = useMemo(() => !(window.CSS?.supports && window.CSS.supports("field-sizing", "content")), []);
   useSizeVar(form, heightVar);
 
   useLayoutEffect(() => {
     const el = input.current;
-    if (!el || (window.CSS?.supports && window.CSS.supports("field-sizing", "content"))) return;
-    el.rows = Math.max(1, Math.min(COMPOSER_MAX_LINES, value.split("\n").length));
-  }, [value]);
+    if (!el || !grows) return;
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + (el.offsetHeight - el.clientHeight) + "px";
+  }, [value, grows]);
+
+  const setInput = (el: HTMLTextAreaElement | null) => {
+    input.current = el;
+    if (typeof inputRef === "function") inputRef(el);
+    else if (inputRef) (inputRef as { current: HTMLTextAreaElement | null }).current = el;
+  };
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const off = onKeyboard((open) => {
+      clearTimeout(timer);
+      if (open) return;
+      timer = setTimeout(() => {
+        if (document.activeElement === input.current) input.current?.blur();
+      }, KEYBOARD_CLOSE_SETTLE_MS);
+    });
+    return () => {
+      clearTimeout(timer);
+      off();
+    };
+  }, []);
 
   useEffect(() => {
     if (focusTick) input.current?.focus({ preventScroll: true });
   }, [focusTick]);
 
   const onKey = (ev: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (ev.key !== "Enter" || ev.shiftKey || ev.nativeEvent.isComposing || coarse) return;
+    if (ev.key !== "Enter" || ev.shiftKey || ev.nativeEvent.isComposing || ev.keyCode === 229 || coarse) return;
     ev.preventDefault();
+    submit();
+  };
+
+  const submit = () => {
+    const keep = typing.current || document.activeElement === input.current;
+    typing.current = false;
+    if (keep) input.current?.focus({ preventScroll: true });
     void onSubmit();
   };
 
@@ -80,9 +113,12 @@ export function Composer(props: ComposerProps) {
       className={["zr-composer", className].filter(Boolean).join(" ")}
       aria-label={label}
       data-running={running ? "" : undefined}
+      onPointerDown={() => {
+        typing.current = document.activeElement === input.current;
+      }}
       onSubmit={(ev) => {
         ev.preventDefault();
-        void onSubmit();
+        submit();
       }}
     >
       {shown.mounted && frozen.current && (
@@ -92,7 +128,7 @@ export function Composer(props: ComposerProps) {
       )}
       <div className="zr-compose-row">
         <textarea
-          ref={input}
+          ref={setInput}
           className={["zr-input", inputClassName].filter(Boolean).join(" ")}
           rows={1}
           value={value}
@@ -100,9 +136,13 @@ export function Composer(props: ComposerProps) {
           aria-label={label}
           onChange={(ev) => onChange(ev.target.value)}
           onKeyDown={onKey}
+          autoCapitalize="sentences"
+          autoCorrect="off"
+          spellCheck={false}
+          enterKeyHint={coarse ? "enter" : "send"}
         />
         {accessory}
-        <Button variant="accent" type="submit" className={["zr-send", sendClassName].filter(Boolean).join(" ")} disabled={sendDisabled}>
+        <Button variant="accent" type="submit" className={["zr-send", sendClassName].filter(Boolean).join(" ")} disabled={sendDisabled} onMouseDown={(ev) => ev.preventDefault()}>
           <span className={swap.current.swapped ? "zr-swap" : undefined} key={sendLabel}>
             {sendLabel}
           </span>
