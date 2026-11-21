@@ -1,7 +1,7 @@
 import { atom } from "jotai";
 import { sessionUrl } from "../../index";
 import { captureFrames, browserMedia } from "../lib/capture";
-import { Dictation, dictationSocketUrl, type SocketLike } from "../lib/dictation";
+import type { Dictation, SocketLike } from "../lib/dictation";
 import { canRecord, joinDictation, type MicSnapshot } from "../lib/mic";
 import { audioSessionAtom, unlockAudio } from "./audio";
 import { bootAtom } from "./boot";
@@ -21,7 +21,7 @@ function writeLevel(value: number): void {
   else root.removeProperty(MIC_LEVEL_VAR);
 }
 
-export const micToggleAtom = atom(null, (get, set) => {
+export const micToggleAtom = atom(null, async (get, set) => {
   const at = get(attendedAtom);
   if (!at) return;
   const session = get(audioSessionAtom);
@@ -29,7 +29,8 @@ export const micToggleAtom = atom(null, (get, set) => {
   let mic = get(controller);
   if (!mic) {
     const stt = get(bootAtom).sttUrl;
-    mic = new Dictation({
+    const { Dictation, dictationSocketUrl } = await import("../lib/dictation");
+    mic = get(controller) ?? new Dictation({
       media: browserMedia(),
       now: () => Date.now(),
       open: (target) => new WebSocket(sessionUrl(dictationSocketUrl(stt, target, navigator.language || "en-US")).href) as unknown as SocketLike,
@@ -39,8 +40,10 @@ export const micToggleAtom = atom(null, (get, set) => {
       setTimeout: (fn, ms) => window.setTimeout(fn, ms),
       clearTimeout: (id) => window.clearTimeout(id as number),
     });
-    mic.subscribe((snap) => set(micAtom, snap));
-    set(controller, mic);
+    if (get(controller) !== mic) {
+      mic.subscribe((snap) => set(micAtom, snap));
+      set(controller, mic);
+    }
   }
   const key = keyOf(at.store, at.aria);
   const base = get(draftAtom(key));

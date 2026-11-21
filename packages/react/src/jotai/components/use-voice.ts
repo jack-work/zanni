@@ -1,6 +1,6 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useRef } from "react";
-import { VoiceHub } from "../lib/voice-hub";
+import type { VoiceHub } from "../lib/voice-hub";
 import { audioKeyUrl, sessionHeaders, voce, withSession } from "../../index";
 import { audioSessionAtom, cancelSpeechAtom, speakingAtom, speechTransportAtom, voiceAtom, voiceControlAtom } from "../state/audio";
 import { bootAtom } from "../state/boot";
@@ -26,33 +26,38 @@ export function useVoice({ aria, store }: Attended): void {
   voice.current = voiceOn;
 
   useEffect(() => {
+    let alive = true;
     const src = (key: string) => withSession(audioKeyUrl(audioUrl, key));
-    const made = new VoiceHub(
-      {
-        doc: document,
-        voce,
-        session,
-        audioSrc: src,
-        audioStatus: (key) => window.fetch(src(key), { method: "GET", credentials: "same-origin", cache: "no-store", headers: sessionHeaders({ Range: "bytes=0-0" }) }).then((r) => r.status),
-        speaking: (s) => setSpeaking(s ? { aria, ...s } : null),
-        slot: slotQuery,
-        firstSlot,
-        wait: pause,
-        note: (text) => {
-          const key = keyOf(store, aria);
-          setNote({ key, note: text });
-          setTimeout(() => setNote({ key, note: "" }), NOTE_MS);
+    void import("../lib/voice-hub").then(({ VoiceHub }) => {
+      if (!alive) return;
+      const made = new VoiceHub(
+        {
+          doc: document,
+          voce,
+          session,
+          audioSrc: src,
+          audioStatus: (key) => window.fetch(src(key), { method: "GET", credentials: "same-origin", cache: "no-store", headers: sessionHeaders({ Range: "bytes=0-0" }) }).then((r) => r.status),
+          speaking: (s) => setSpeaking(s ? { aria, ...s } : null),
+          slot: slotQuery,
+          firstSlot,
+          wait: pause,
+          note: (text) => {
+            const key = keyOf(store, aria);
+            setNote({ key, note: text });
+            setTimeout(() => setNote({ key, note: "" }), NOTE_MS);
+          },
         },
-      },
-      aria,
-      store,
-      transport,
-    );
-    hub.current = made;
-    made.voice(voice.current);
-    setControl({ replay: (turn) => made.replay(turn) });
+        aria,
+        store,
+        transport,
+      );
+      hub.current = made;
+      made.voice(voice.current);
+      setControl({ replay: (turn) => made.replay(turn) });
+    });
     return () => {
-      made.close();
+      alive = false;
+      hub.current?.close();
       hub.current = null;
       setControl(null);
       setSpeaking(null);

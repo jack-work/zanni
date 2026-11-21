@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { Dictation, FINISH_WAIT_MS, QUEUE_FRAMES, dictationSocketUrl, joinDictation, micFault, retranscribe, streamFault, SttError, type Capture, type DictationDeps, type MicSnapshot, type SocketLike } from "zanni-react/jotai";
+import { joinDictation, micFault, retranscribe, streamFault, SttError, type MicSnapshot } from "zanni-react/jotai";
+import { Dictation, FINISH_WAIT_MS, QUEUE_FRAMES, dictationSocketUrl, type Capture, type DictationDeps, type SocketLike } from "../../packages/react/src/jotai/lib/dictation";
 
 class FakeSocket implements SocketLike {
   binaryType = "blob";
