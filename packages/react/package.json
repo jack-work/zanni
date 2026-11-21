@@ -11,6 +11,6 @@
   },
   "peerDependencies": {
     "react": "^19",
-    "figaro-forms": ">=0.10"
+    "figaro-forms": ">=0.14"
   }
 }
