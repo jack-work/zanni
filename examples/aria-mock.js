@@ -333,7 +333,9 @@
       core.arias[nid] = { row: {}, turns: turns, run: null, queue: [], dormant: false };
       core.arias[nid].row = { id: nid, short: nid.slice(0, 8), kind: 'figaro', state: 'idle', mantra: 'Fork of ' + (a.row.mantra || id.slice(0, 8)), parent: id, created_at: clock() };
       metricsOf[nid] = Object.assign({}, metricsOf[id]);
+      core.arias[nid].forkedFrom = id;
       core.order.splice(core.order.indexOf(id) + 1, 0, nid);
+      timers.set(function () { pushForm('@arias'); pushForm('@recent'); }, 0);
       return { parent: id, continuation: id, alternative: nid };
     }
 
@@ -341,7 +343,13 @@
       'angelus.hello': function (c, id) {
         reply(c, id, { version: 1, capabilities: ['qua.images', 'unfollow', 'follow.channels'], node: 'mock-node', principal: { kind: 'user', id: 'gluck@edge.test' } });
       },
+      'figaro.form': function (c, id, p) {
+        var root = formRoot(p.figaro_id);
+        if (!root) { fail(c, id, -32000, 'figaro: form ' + p.figaro_id + ' not found'); return; }
+        reply(c, id, { snapshot: root, version: 1, incarnation: formInc[p.figaro_id] || 1, origin: '' });
+      },
       'figaro.follow': function (c, id, p) {
+        if (formRoot(p.figaro_id) && !core.arias[p.figaro_id]) { c.follows[p.figaro_id] = true; reply(c, id, { ok: true, figaro_id: p.figaro_id }); return; }
         if (!core.arias[p.figaro_id]) { fail(c, id, -32000, 'figaro: aria ' + p.figaro_id + ' not found'); return; }
         c.follows[p.figaro_id] = true;
         reply(c, id, { ok: true, figaro_id: p.figaro_id });
@@ -389,6 +397,54 @@
       },
       'figaro.list': function (c, id, p) { reply(c, id, listRows(p || {})); }
     };
+
+    var formInc = {};
+    var formLabel = function (row) { return row.handle || row.mantra || row.short; };
+    function ariasRoot() {
+      var rows = core.order.map(function (id) { return core.arias[id].row; });
+      var byParent = {};
+      rows.forEach(function (r) { var p = r.parent && core.arias[r.parent] ? r.parent : ''; (byParent[p] = byParent[p] || []).push(r); });
+      var used = {};
+      function level(parent) {
+        var out = {};
+        (byParent[parent] || []).forEach(function (r) {
+          var label = formLabel(r);
+          if (used[label]) label = label + ' ' + r.short;
+          used[label] = true;
+          var node = { id: r.id, state: r.state, mantra: r.mantra, active_at: r.last_active || r.created_at };
+          if (r.roles && r.roles.length) node.role = r.roles.join(' ');
+          var kids = level(r.id);
+          if (Object.keys(kids).length) node.forks = kids;
+          out[label] = node;
+        });
+        return out;
+      }
+      return { arias: level('') };
+    }
+    function recentRoot() {
+      var out = {};
+      core.order.forEach(function (id) {
+        var r = core.arias[id].row;
+        out[r.short] = { id: r.id, handle: r.handle || '', title: r.mantra, state: r.state, active_at: r.last_active || r.created_at };
+      });
+      return out;
+    }
+    function formRoot(id) {
+      if (id === '@troupe') return { 'mock-node': { self: true, form: '@arias' } };
+      if (id === '@arias') return ariasRoot();
+      if (id === '@recent') return recentRoot();
+      var a = core.arias[id];
+      if (!a) return null;
+      var sys = { model: 'claude-sonnet-5', provider: 'anthropic', thinking_effort: id === core.ids.main ? 'high' : 'medium', cwd: '/home/gluck/dev/zanni' };
+      if (a.forkedFrom) sys.forked_from = a.forkedFrom;
+      return { mantra: a.row.mantra, system: sys };
+    }
+    function pushForm(id) {
+      formInc[id] = (formInc[id] || 1) + 1;
+      var text = JSON.stringify({ jsonrpc: '2.0', method: 'form.delta', params: { schema: 1, figaro_id: id, version: 1, incarnation: formInc[id], patch: {} } });
+      core.conns.slice().forEach(function (c) { if (c.open && c.follows[id]) c.sink.text(text); });
+    }
+    core.pushForm = pushForm;
 
     core.attach = function (sink) {
       var conn = { sink: sink, follows: {}, open: true };

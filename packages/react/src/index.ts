@@ -2,6 +2,8 @@ export { Button, ButtonGroup } from "./button";
 export type { ButtonGroupProps, ButtonProps, ButtonSize, ButtonVariant } from "./button";
 export { Sheet } from "./sheet";
 export type { SheetProps } from "./sheet";
+export { PitList, PitRow } from "./pit-row";
+export type { PitRowProps } from "./pit-row";
 export { Pit, PitGrip, PitProvider, PIT_FLICK, PIT_FULL_ZONE, PIT_HEIGHT_VAR, pitHeight, pitSettle, pitStep, usePit } from "./pit";
 export type { PitGripProps, PitProps, PitProviderProps, PitSnap } from "./pit";
 export { glyphDocs, glyphs } from "./glyphs";

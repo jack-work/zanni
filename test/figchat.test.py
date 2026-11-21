@@ -292,10 +292,13 @@ try:
             for b in pg.locator(".fw-stop").all():
                 hit_area(pg, b, "stop buttons")
             assert pg.locator(".zr-strip-time").inner_text()[0].isdigit()
-            pg.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
-            pg.wait_for_timeout(100)
-            last = pg.evaluate("(() => { const n = [...document.querySelectorAll('.nodi-turn-body > *')].pop(); return n.getBoundingClientRect().bottom; })()")
-            top = pg.locator(".zr-composer").bounding_box()["y"]
+            for _ in range(60):
+                pg.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
+                pg.wait_for_timeout(50)
+                last = pg.evaluate("(() => { const n = [...document.querySelectorAll('.nodi-turn-body > *')].pop(); return n.getBoundingClientRect().bottom; })()")
+                top = pg.locator(".zr-composer").bounding_box()["y"]
+                if last <= top + 1:
+                    break
             assert last <= top + 1, "scrolled to the bottom, the last node ends above the composer: %s vs %s" % (last, top)
             no_sideways(pg, width, "running turn")
             snap(pg, "running-%s-%d" % (scheme, width))
@@ -633,7 +636,7 @@ try:
             else:
                 assert pg.locator(".zr-pit-scrim").count() == 0, "the docked drawer has no scrim"
                 box = pg.locator(".zr-pit").bounding_box()
-                assert box["width"] <= 736 + 1 and abs(box["x"] + box["width"] / 2 - width / 2) <= 1, "docked to the column: %s" % box
+                assert box["width"] <= 736 + 1 and abs(box["x"] + box["width"] / 2 - (320 + (width - 320) / 2)) <= 1, "docked to the transcript pane: %s" % box
                 assert pg.locator(".zr-pit[data-docked]").count() == 1
 
             hx, hy = centre(pg.locator(".zr-pit-handle"))
@@ -735,10 +738,13 @@ try:
                 top = pg.locator(".fw-status").evaluate("n => getComputedStyle(n).position")
                 assert top == "sticky"
             open_pit(pg)
+            assert pg.locator("[data-action='new']").is_visible() and pg.locator(".fw-voice").is_visible(), "every removed control is one tap from the pit"
+            pg.locator("[data-action='state']").click()
+            until(pg, "document.querySelector('.fw-pit-fact[data-key=\"system.thinking_effort\"] dd') && document.querySelector('.fw-pit-fact[data-key=\"system.thinking_effort\"] dd').textContent === 'high'", 8000)
             facts = pg.locator(".fw-pit-fact").all_inner_texts()
             joined = " ".join(facts)
             assert "Live" in joined and MAIN in joined and "Zanni" in joined, facts
-            assert pg.locator(".fw-pit-new").is_visible() and pg.locator(".fw-voice").is_visible(), "every removed control is one tap from the pit"
+            pg.locator(".fw-pit-back").click()
             assert pg.locator(".fw-head").count() == 0, "no logo below full screen"
             pg.locator(".zr-pit-handle").focus()
             pg.keyboard.press("ArrowUp")
@@ -749,10 +755,81 @@ try:
             snap(pg, "header-drop-full-%d" % width)
             pg.keyboard.press("ArrowDown")
             pit_at(pg, "half", round(height / 2), "back to half")
-            pg.locator(".fw-pit-new").click()
+            pg.locator("[data-action='new']").click()
             pg.wait_for_selector(".zr-pit", state="detached")
             pg.wait_for_selector(".fw-new-form")
             snap(pg, "header-drop-new-%d" % width)
+            assert not pg.errors, pg.errors
+            ctx.close()
+
+        for width, height in ((390, 844), (1280, 800)):
+            phone = width < 600
+            ctl_door = door(12)
+            ctx = browser.new_context(viewport={"width": width, "height": height}, is_mobile=phone, has_touch=phone)
+            pg = ctx.new_page()
+            pg.errors = []
+            pg.on("pageerror", lambda e: pg.errors.append(str(e)))
+            pg.on("console", lambda m: pg.errors.append(m.text) if m.type == "error" else None)
+            attend(pg, ctl_door, MAIN)
+            open_pit(pg)
+            first = pg.locator(".zr-pit-row").evaluate_all("rows => rows.map(r => r.dataset.action)")
+            assert first == ["new", "state", "tail-fork", "fork-at", "tree", "recent", "outfits", "voice"], first
+            glyph = lambda a: pg.locator(".zr-pit-row[data-action='%s'] .zr-pit-row-glyph" % a).inner_text()
+            assert [glyph("state"), glyph("fork-at"), glyph("tree")] == ["웃", "⑂", "웃"], "each row wears its pager glyph"
+            if not phone:
+                box, side = pg.locator(".zr-pit").bounding_box(), pg.locator(".fw-side").bounding_box()
+                assert abs(box["x"] - (side["x"] + side["width"])) <= 1 or box["x"] >= side["x"] + side["width"] - 1, "the drawer starts at the transcript pane: %s %s" % (box, side)
+            pg.locator("[data-action='tree']").click()
+            until(pg, "document.querySelectorAll('.zr-pit-row[data-id]').length >= 8", 8000)
+            depths = pg.evaluate("[...document.querySelectorAll('.zr-pit-row[data-id]')].map(r => r.dataset.depth)")
+            assert "0" in depths and "1" in depths, "the tree nests: %s" % depths
+            assert pg.locator(".zr-pit-row[data-id='%s']" % MAIN).get_attribute("aria-current") == "true", "the attended aria is marked"
+            pg.locator(".zr-pit-row[data-id='%s']" % LANE).click()
+            pg.wait_for_selector(".zr-pit", state="detached")
+            until(pg, "location.hash.includes('%s')" % LANE, 5000)
+            until(pg, "document.querySelector('.fw').dataset.link === 'live'", 8000)
+            open_pit(pg)
+            first = pg.locator(".zr-pit-row").evaluate_all("rows => rows.map(r => r.dataset.action)")
+            assert first[0] == "tree", "the row used last comes first: %s" % first
+            pg.locator("[data-action='recent']").click()
+            until(pg, "document.querySelectorAll('.zr-pit-row[data-id]').length >= 5", 8000)
+            pg.locator(".fw-pit-back").click()
+            close_pit(pg)
+            pg.reload()
+            until(pg, "document.querySelector('.fw').dataset.link === 'live'", 15000)
+            open_pit(pg)
+            order = pg.locator(".zr-pit-row").evaluate_all("rows => rows.map(r => r.dataset.action)")
+            assert order[:2] == ["recent", "tree"], "last-used order survives a reload: %s" % order
+            close_pit(pg)
+
+            attend(pg, ctl_door, MAIN)
+            open_pit(pg)
+            pg.locator("[data-action='fork-at']").click()
+            pg.locator(".fw-forkat-form input").fill("20")
+            pg.locator(".fw-forkat-form textarea").fill("what if we waited")
+            pg.locator(".fw-forkat-form button[type=submit]").click()
+            pg.wait_for_selector(".zr-pit", state="detached")
+            until(pg, "location.hash.includes(':20') && !location.hash.includes('%s')" % MAIN, 8000)
+            until(pg, "document.querySelector('.fw').dataset.link === 'live'", 8000)
+            pg.wait_for_selector(".fw-fork-banner", timeout=8000)
+            banner = pg.locator(".fw-fork-banner").inner_text()
+            assert "Fork of" in banner and "at turn 20" in banner and banner.startswith("⑂"), banner
+            assert pg.locator(".fw-fork-banner").get_attribute("data-fresh") is not None
+            assert pg.locator(".nodi-turn[data-fresh]").count() == 0, "history does not animate in on a fork"
+            until(pg, "document.querySelector('.fw-status-fork') !== null || getComputedStyle(document.querySelector('.fw-status')).display === 'none'", 8000)
+            sent = ctl_door.state()["sent"]
+            assert any(s["text"] == "what if we waited" and s["id"] != MAIN for s in sent), sent
+            turns_now = turns_shown(pg)
+            assert turns_now and max(turns_now) < 30 and 20 in turns_now, "only the window around the fork turn was read in: %s" % turns_now
+            snap(pg, "fork-%d" % width)
+
+            attend(pg, ctl_door, MAIN)
+            open_pit(pg)
+            pg.locator("[data-action='tail-fork']").click()
+            pg.wait_for_selector(".zr-pit", state="detached")
+            until(pg, "!location.hash.includes('%s')" % MAIN, 8000)
+            pg.wait_for_selector(".fw-fork-banner", timeout=8000)
+            assert "at turn" not in pg.locator(".fw-fork-banner").inner_text()
             assert not pg.errors, pg.errors
             ctx.close()
 

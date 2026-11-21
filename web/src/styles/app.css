@@ -71,6 +71,15 @@ body.fw-page {
 .fw-status-id { color: var(--z-ink); }
 .fw-status-mantra { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--z-ink); }
 .fw-head { width: 20px; height: 20px; image-rendering: pixelated; border: 2px solid var(--z-accent); background: var(--z-ground); }
+.fw-status-fork { color: var(--z-accent); }
+.fw-fork-banner { position: sticky; top: calc(var(--fw-bar) + env(safe-area-inset-top)); z-index: 2; background: var(--z-ground); display: flex; align-items: baseline; gap: var(--z-space-3, 8px); margin: 0; padding: var(--z-space-2, 4px) 0; border-bottom: 1px dashed var(--z-accent); font: 400 1.125rem / 1.2 var(--fw-mono); letter-spacing: 0.04em; color: var(--z-muted); }
+.fw-fork-banner a { color: var(--accent-ink); }
+.fw-fork-mark { color: var(--z-accent); }
+.fw-fork-banner[data-fresh] { animation: fw-fork-in var(--fw-d-slide) var(--fw-out); }
+@keyframes fw-fork-in { from { opacity: 0; translate: 0 -8px; } }
+.fw-pit-form { margin-top: var(--z-space-3, 8px); padding-top: var(--z-space-3, 8px); border-top: 1px solid var(--z-line); font-size: 1rem; }
+.fw-pit-form .fw-pit-fact dt { width: 11rem; overflow-wrap: anywhere; }
+.fw-pit-fact[data-key="system.thinking_effort"] dd { color: var(--z-accent); }
 .fw-pit-state { display: flex; flex-direction: column; gap: var(--z-space-2, 4px); margin: 0; font: 400 1.125rem / 1.2 var(--fw-mono); letter-spacing: 0.04em; }
 .fw-pit-fact { display: flex; gap: var(--z-space-4, 12px); }
 .fw-pit-fact dt { flex: none; width: 5rem; color: var(--z-muted); }
@@ -115,6 +124,7 @@ body.fw-page {
 
 
 @media (min-width: 900px) {
+  .fw { --zr-pit-left: var(--fw-side); --fw-bar: 0px; }
   .fw-status { display: none; }
   .fw-body { display: grid; grid-template-columns: var(--fw-side) minmax(0, 1fr); align-items: start; }
   .fw[data-route] .fw-side {

@@ -3,6 +3,7 @@ import { audioSessionAtom, cancelSpeechAtom, unlockAudio } from "./audio";
 import { goAtom, attendedAtom } from "./route";
 import { rosterActionAtom } from "./roster";
 import { linkAtom } from "./aria";
+import { ForkedButUnsent } from "figaro-forms/aria";
 
 export const SAVE_DELAY_MS = 400;
 
@@ -113,18 +114,43 @@ export const interruptAtom = atom(null, async (get, set, queue: "keep" | "clear"
   }
 });
 
-export const forkAtom = atom(null, async (get, set, atTurn: number) => {
+export interface ForkRequest {
+  readonly turn: number;
+  readonly text?: string;
+}
+
+export interface ForkMark {
+  readonly aria: string;
+  readonly parent: string;
+  readonly turn: number;
+}
+
+export const forkMarkAtom = atom<ForkMark | null>(null);
+
+export const forkAtom = atom(null, async (get, set, req: number | ForkRequest) => {
   const at = get(attendedAtom);
   if (!at) return;
+  const { turn, text } = typeof req === "number" ? { turn: req, text: undefined } : req;
   const comp = composerAtom(keyOf(at.store, at.aria));
   if (get(comp).forking) return;
   set(comp, (s) => ({ ...s, forking: true, note: "" }));
+  let alternative = "";
+  let note = "";
   try {
-    const res = await at.client.peek(at.aria).fork(atTurn ? { atTurn } : {});
-    set(comp, (s) => ({ ...s, forking: false }));
-    void set(rosterActionAtom, "refresh");
-    set(goAtom, { store: at.store, aria: res.alternative });
+    if (turn) alternative = (await at.client.forkAt(at.aria, turn, text)).id;
+    else alternative = (await at.client.tailFork(at.aria)).alternative;
   } catch (err) {
-    set(comp, (s) => ({ ...s, forking: false, note: "Not forked: " + reason(err) }));
+    if (err instanceof ForkedButUnsent) {
+      alternative = err.fork.alternative;
+      note = "Forked, but the first message was not sent: " + reason(err.cause);
+    } else {
+      set(comp, (s) => ({ ...s, forking: false, note: "Not forked: " + reason(err) }));
+      return;
+    }
   }
+  set(comp, (s) => ({ ...s, forking: false }));
+  set(forkMarkAtom, { aria: alternative, parent: at.aria, turn });
+  void set(rosterActionAtom, "refresh");
+  set(goAtom, { store: at.store, aria: alternative, ...(turn ? { turn } : {}) });
+  if (note) set(composerAtom(keyOf(at.store, alternative)), (s) => ({ ...s, note }));
 });

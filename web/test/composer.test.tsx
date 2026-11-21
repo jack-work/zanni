@@ -116,8 +116,8 @@ describe("the composer", () => {
     attend(1);
     await live();
     act(() => (document.querySelector(".zr-grip") as HTMLElement).click());
-    await waitFor(() => expect(document.querySelector(".fw-pit-new")).toBeTruthy());
-    act(() => (document.querySelector(".fw-pit-new") as HTMLElement).click());
+    await waitFor(() => expect(document.querySelector('[data-action="new"]')).toBeTruthy());
+    act(() => (document.querySelector('[data-action="new"]') as HTMLElement).click());
     expect(document.querySelector(".zr-pit")).toBeNull();
     await waitFor(() => expect(document.querySelector(".fw-new-form")).toBeTruthy());
     const form = document.querySelector<HTMLFormElement>(".fw-new-form")!;
