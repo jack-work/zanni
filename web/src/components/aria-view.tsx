@@ -1,3 +1,4 @@
+import { Button } from "zanni-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { ariaAtom } from "figaro-forms/aria/jotai";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -163,12 +164,12 @@ export function AriaView({ attended }: { attended: Attended }) {
             Arias
           </a>
           <div className="fw-subtools">
-            <button type="button" className="z2-control fw-hands" data-size="compact" aria-pressed={handsFree} onClick={() => toggleHandsFree()}>
+            <Button variant="quiet" size="compact" className="fw-hands" aria-pressed={handsFree} onClick={() => toggleHandsFree()}>
               Hands-free
-            </button>
-            <button type="button" className="z2-control fw-fork" data-size="compact" disabled={link !== "live" || forking} onClick={() => void fork(0)}>
+            </Button>
+            <Button variant="quiet" size="compact" className="fw-fork" disabled={link !== "live" || forking} onClick={() => void fork(0)}>
               Fork
-            </button>
+            </Button>
           </div>
         </div>
         <h1 className="fw-h1" tabIndex={-1} ref={headRef}>
@@ -176,9 +177,9 @@ export function AriaView({ attended }: { attended: Attended }) {
         </h1>
         <div className="fw-metrics">{metrics && <p className="nodi-metrics">{metrics}</p>}</div>
         {olderAvailable && (
-          <button type="button" className="z2-control fw-older" data-size="compact" ref={olderRef} disabled={loadingOlder} onClick={() => loadOlder().catch(() => {})}>
+          <Button variant="quiet" size="compact" className="fw-older" ref={olderRef} disabled={loadingOlder} onClick={() => loadOlder().catch(() => {})}>
             Earlier turns
-          </button>
+          </Button>
         )}
         <ol className="nodi-turns" aria-label="Transcript">
           {turns.map((t) => (
@@ -189,9 +190,9 @@ export function AriaView({ attended }: { attended: Attended }) {
       </main>
       <Composer attended={attended} toBottom={toBottom} />
       {follow.unseen && (
-        <button type="button" className="z2-control fw-latest" onClick={toBottom}>
+        <Button variant="accent" className="fw-latest" onClick={toBottom}>
           Latest
-        </button>
+        </Button>
       )}
     </section>
   );

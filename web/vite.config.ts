@@ -4,6 +4,7 @@ import type { Plugin } from "vite";
 import { defineConfig } from "vitest/config";
 
 const assets = resolve(import.meta.dirname, "../assets");
+const pkg = resolve(import.meta.dirname, "../packages/react/src");
 const door = process.env.FIGCHAT_DOOR ?? "http://127.0.0.1:8099";
 
 function zanniModules(): Plugin {
@@ -20,6 +21,13 @@ function zanniModules(): Plugin {
 
 export default defineConfig({
   base: "./",
+  resolve: {
+    alias: [
+      { find: /^zanni-react\/jotai$/, replacement: resolve(pkg, "jotai.ts") },
+      { find: /^zanni-react$/, replacement: resolve(pkg, "index.ts") },
+    ],
+    dedupe: ["react", "react-dom", "jotai"],
+  },
   plugins: [zanniModules(), react()],
   build: {
     outDir: "dist",

@@ -13,7 +13,12 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "types": ["vite/client", "node"],
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "zanni-react": ["../packages/react/src/index.ts"],
+      "zanni-react/jotai": ["../packages/react/src/jotai.ts"],
+      "*": ["./node_modules/@types/*", "./node_modules/*"]
+    }
   },
-  "include": ["src", "test", "vite.config.ts"]
+  "include": ["src", "test", "vite.config.ts", "../packages/react/src"]
 }

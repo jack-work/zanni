@@ -1,3 +1,4 @@
+import { Button } from "zanni-react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import { useLinger } from "../lib/motion";
@@ -66,12 +67,12 @@ function Strip({ attended, note, running, leaving }: { attended: Attended; note:
           <span className="fw-strip-time" aria-hidden="true">
             {clock(now - (work.startedAt ?? seen.current))}
           </span>
-          <button type="button" className="z2-control fw-stop" data-size="compact" disabled={!live} onClick={() => void interrupt("keep")}>
+          <Button variant="quiet" size="compact" className="fw-stop" disabled={!live} onClick={() => void interrupt("keep")}>
             Stop
-          </button>
-          <button type="button" className="z2-control fw-stop fw-stop-clear" data-size="compact" aria-label="Stop and clear the queue" disabled={!live} onClick={() => void interrupt("clear")}>
+          </Button>
+          <Button variant="quiet" size="compact" className="fw-stop fw-stop-clear" aria-label="Stop and clear the queue" disabled={!live} onClick={() => void interrupt("clear")}>
             Stop all
-          </button>
+          </Button>
         </>
       )}
     </div>
@@ -153,21 +154,19 @@ export function Composer({ attended, toBottom }: { attended: Attended; toBottom:
           onChange={(ev) => setDraft(ev.target.value)}
           onKeyDown={onKey}
         />
-        <button
-          type="button"
-          className="z2-control fw-mic"
+        <Button variant="outline" className="fw-mic"
           aria-pressed={mic.state === "recording"}
           disabled={mic.state === "unsupported" || mic.state === "asking" || mic.state === "transcribing"}
           title={mic.state === "unsupported" ? "This browser cannot record audio." : undefined}
           onClick={() => toggleMic()}
         >
           {micLabel}
-        </button>
-        <button type="submit" className="z2-control fw-send" disabled={comp.sending || !live}>
+        </Button>
+        <Button variant="accent" type="submit" className="fw-send" disabled={comp.sending || !live}>
           <span className={labelled.current.swapped ? "fw-swap" : undefined} key={label}>
             {label}
           </span>
-        </button>
+        </Button>
       </div>
     </form>
   );

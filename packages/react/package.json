@@ -1,0 +1,16 @@
+{
+  "name": "zanni-react",
+  "version": "0.31.0",
+  "private": true,
+  "type": "module",
+  "description": "zanni's React components. The root entry is state-free; zanni-react/jotai binds them to figaro-forms.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./jotai": "./src/jotai.ts",
+    "./styles.css": "./src/zanni-react.css"
+  },
+  "peerDependencies": {
+    "react": "^19"
+  },
+  "peerDependenciesMeta": {}
+}

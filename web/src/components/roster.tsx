@@ -1,3 +1,4 @@
+import { Button } from "zanni-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect } from "react";
 import { labelOf } from "../lib/roster";
@@ -29,9 +30,9 @@ export function Roster() {
     <nav className="fw-side" aria-label="Arias">
       <div className="fw-side-head">
         <h2 className="fw-h2">Arias</h2>
-        <button type="button" className="z2-control fw-new" onClick={() => void act("refresh")}>
+        <Button variant="outline" className="fw-new" onClick={() => void act("refresh")}>
           Refresh
-        </button>
+        </Button>
       </div>
       <ul className="fw-threads">
         {roster.rows.map((r) => (
@@ -48,9 +49,9 @@ export function Roster() {
         ))}
       </ul>
       {roster.next && (
-        <button type="button" className="z2-control fw-older fw-more" data-size="compact" onClick={() => void act("more")}>
+        <Button variant="quiet" size="compact" className="fw-older fw-more" onClick={() => void act("more")}>
           More arias
-        </button>
+        </Button>
       )}
       {note && <p className="fw-note">{note}</p>}
     </nav>

@@ -1,3 +1,4 @@
+import { Button } from "zanni-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { joinDictation } from "../lib/mic";
@@ -89,15 +90,15 @@ function SheetBody({ target, leaving }: { target: SheetTarget; leaving: boolean 
           <span className="fw-sheet-title">
             {SPOKEN[target.kind]} · Turn {target.turn}
           </span>
-          <button type="button" className="z2-control fw-sheet-close" data-size="compact" onClick={() => close()}>
+          <Button variant="quiet" size="compact" className="fw-sheet-close" onClick={() => close()}>
             Close
-          </button>
+          </Button>
         </div>
         <div className="fw-sheet-actions">
           {sheetActions[target.kind].map((a, i) => (
-            <button key={a.id} type="button" className="z2-control fw-sheet-act" data-action={a.id} ref={i === 0 ? first : undefined} onClick={() => void a.run(context)}>
+            <Button key={a.id} variant="outline" className="fw-sheet-act" data-action={a.id} ref={i === 0 ? first : undefined} onClick={() => void a.run(context)}>
               {a.label}
-            </button>
+            </Button>
           ))}
         </div>
         <div className="fw-sheet-player" ref={slot} />
@@ -111,9 +112,9 @@ function SheetBody({ target, leaving }: { target: SheetTarget; leaving: boolean 
             <p className="fw-sheet-text">
               <Plain text={result} />
             </p>
-            <button type="button" className="z2-control fw-sheet-act" data-action="use" onClick={adopt}>
+            <Button variant="outline" className="fw-sheet-act" data-action="use" onClick={adopt}>
               Use text
-            </button>
+            </Button>
           </div>
         )}
       </div>

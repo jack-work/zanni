@@ -1,3 +1,4 @@
+import { Button } from "zanni-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { PHASE_WORDS } from "../lib/roster";
 import { bootAtom } from "../state/boot";
@@ -22,9 +23,9 @@ export function TopBar() {
             {word}
           </span>
         )}
-        <button type="button" className="z2-control fw-voice" aria-pressed={voice} onClick={() => toggleVoice()}>
+        <Button variant="outline" className="fw-voice" aria-pressed={voice} onClick={() => toggleVoice()}>
           {voice ? "Voice on" : "Voice off"}
-        </button>
+        </Button>
       </div>
     </header>
   );

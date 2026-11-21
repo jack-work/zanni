@@ -1,3 +1,4 @@
+import { Button } from "zanni-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { replayAtom } from "../state/audio";
 import { composerAtom, forkAtom, keyOf } from "../state/composer";
@@ -12,12 +13,12 @@ export function TurnActions({ turn }: { turn: number }) {
   const forking = useAtomValue(composerAtom(at ? keyOf(at.store, at.aria) : "")).forking;
   return (
     <span className="fw-actions">
-      <button type="button" className="z2-control fw-play" data-size="compact" onClick={() => replay(turn)}>
+      <Button variant="ghost" size="compact" className="fw-play" onClick={() => replay(turn)}>
         Play
-      </button>
-      <button type="button" className="z2-control fw-fork-here" data-size="compact" disabled={link !== "live" || forking} onClick={() => void fork(turn)}>
+      </Button>
+      <Button variant="ghost" size="compact" className="fw-fork-here" disabled={link !== "live" || forking} onClick={() => void fork(turn)}>
         Fork here
-      </button>
+      </Button>
     </span>
   );
 }
