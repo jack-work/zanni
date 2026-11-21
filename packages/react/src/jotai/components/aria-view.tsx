@@ -211,7 +211,7 @@ export function AriaView({ attended }: { attended: Attended }) {
         </main>
       </div>
       {!gone && <Composer attended={attended} toBottom={toBottom} />}
-      {follow.unseen && <LatestPill onClick={toBottom} />}
+      {follow.away && <LatestPill onClick={toBottom} />}
     </section>
   );
 }

@@ -81,7 +81,27 @@ def main():
                     after = pg.evaluate("(() => { const r = document.querySelector('[data-zr-scroll]') || document.scrollingElement; return r.scrollHeight - r.clientHeight - r.scrollTop; })()")
                     rep.check(after < before and after <= 200, "%s: a tap on the target's corner jumps to the latest turn (%s from the bottom before, %s after)" % (tag, before, after))
 
+                def position():
+                    pg.goto(door.url + "#/gluck/" + MAIN)
+                    until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'", 15000)
+                    pg.wait_for_selector(".zr-composer .zr-input")
+                    pg.wait_for_timeout(800)
+                    away = "(() => { const r = document.querySelector('[data-zr-scroll]') || document.scrollingElement; return r.scrollHeight - r.clientHeight - r.scrollTop; })()"
+                    rep.check(pg.locator(".zr-latest").count() == 0, "%s: no pill at the bottom" % tag)
+                    for gap in (40, 80):
+                        pg.evaluate("((g) => { const r = document.querySelector('[data-zr-scroll]') || document.scrollingElement; r.scrollTop = r.scrollHeight - r.clientHeight - g; })(%d)" % gap)
+                        pg.wait_for_timeout(300)
+                        rep.check(pg.locator(".zr-latest").count() == 0, "%s: no pill within the last few lines (%d px up, at %s)" % (tag, gap, pg.evaluate(away)))
+                    pg.evaluate("(() => { const r = document.querySelector('[data-zr-scroll]') || document.scrollingElement; r.scrollTop = r.scrollHeight - r.clientHeight - 400; })()")
+                    pg.wait_for_selector(".zr-latest", timeout=3000)
+                    alpha = pg.evaluate("(() => { const c = getComputedStyle(document.querySelector('.zr-latest')).backgroundColor; const m = c.match(/[\\d.]+/g).map(Number); return m.length > 3 ? m[3] : 1; })()")
+                    rep.check(alpha < 0.95, "%s: the pill is semi-transparent (alpha %s)" % (tag, alpha))
+                    pg.evaluate("(() => { const r = document.querySelector('[data-zr-scroll]') || document.scrollingElement; r.scrollTop = r.scrollHeight - r.clientHeight - 20; })()")
+                    pg.wait_for_timeout(300)
+                    rep.check(pg.locator(".zr-latest").count() == 0, "%s: the pill goes when the view is back near the bottom" % tag)
+
                 rep.run("latest at %s" % tag, run)
+                rep.run("latest follows position at %s" % tag, position)
                 ctx.close()
             browser.close()
     finally:

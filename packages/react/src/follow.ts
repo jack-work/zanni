@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
 export const NEAR_BOTTOM = 160;
+export const AWAY_FROM_BOTTOM = 96;
 
 export function scrollRoot(): HTMLElement {
   return document.querySelector<HTMLElement>("[data-zr-scroll]") ?? (document.scrollingElement as HTMLElement | null) ?? document.documentElement;
@@ -21,7 +22,7 @@ export function scrollToBottom(): void {
 }
 
 export interface Follow {
-  readonly unseen: boolean;
+  readonly away: boolean;
   readonly toBottom: () => void;
   readonly paging: RefObject<boolean>;
 }
@@ -30,11 +31,11 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
   const stuck = useRef(true);
   const lastY = useRef(0);
   const paging = useRef(false);
-  const [unseen, setUnseen] = useState(false);
+  const [away, setAway] = useState(false);
 
   const toBottom = useCallback(() => {
     stuck.current = true;
-    setUnseen(false);
+    setAway(false);
     scrollToBottom();
   }, []);
 
@@ -48,28 +49,26 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
     measure();
     lastY.current = root.scrollTop;
     stuck.current = top - root.scrollTop <= NEAR_BOTTOM;
+    const judge = () => setAway(top - root.scrollTop > AWAY_FROM_BOTTOM);
     const onScroll = () => {
       const y = root.scrollTop;
-      if (top - y <= NEAR_BOTTOM) {
-        stuck.current = true;
-        setUnseen(false);
-      } else if (y < lastY.current) stuck.current = false;
+      if (top - y <= NEAR_BOTTOM) stuck.current = true;
+      else if (y < lastY.current) stuck.current = false;
       lastY.current = y;
+      judge();
     };
+    judge();
     const source = scrollSource(root);
     source.addEventListener("scroll", onScroll, { passive: true });
     const el = pane.current;
     let watch: ResizeObserver | undefined;
     if (el && typeof ResizeObserver !== "undefined") {
-      let paneHeight = el.getBoundingClientRect().height;
       watch = new ResizeObserver(() => {
         const h = el.getBoundingClientRect().height;
-        const grew = h > paneHeight;
-        paneHeight = h;
         measure();
         if (paging.current) return;
         if (stuck.current) root.scrollTop = top;
-        else if (grew) setUnseen(true);
+        judge();
       });
       watch.observe(el);
       if (root !== document.documentElement) watch.observe(root);
@@ -80,5 +79,5 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
     };
   }, [active, pane]);
 
-  return { unseen, toBottom, paging };
+  return { away, toBottom, paging };
 }
