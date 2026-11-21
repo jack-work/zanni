@@ -11,6 +11,7 @@ export type TapKind = "input" | "prose";
 export interface TranscriptHooks {
   actions?: (turn: number) => ReactNode;
   below?: (kind: TapKind, turn: number) => ReactNode;
+  nameOf?: (aria: string) => string;
 }
 
 export const TranscriptContext = createContext<TranscriptHooks>({});
@@ -268,6 +269,7 @@ export const TurnView = memo(
     <li className="nodi-turn zr-host" data-turn={m.turn} data-state={state} {...(fresh ? { "data-fresh": "" } : {})}>
       <div className="nodi-turn-head">
         <span className="nodi-turn-no">Turn {m.turn}</span>
+        {m.forkedFrom && <span className="nodi-turn-fork">{glyphs.fork + " " + (hooks.nameOf?.(m.forkedFrom) ?? m.forkedFrom.slice(0, 8))}</span>}
         <span className="nodi-turn-tools">
           {hooks.actions?.(m.turn)}
         </span>

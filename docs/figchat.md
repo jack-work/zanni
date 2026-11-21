@@ -82,6 +82,12 @@ not in atoms.
   after leaving it, at 390). j k l h gg G Enter as the pager; `x` says "press x
   again to kill <handle>" and a second `x` asks the door, which the delegated
   gateway refuses, and the refusal is shown.
+- Forks: after one the alternative is attended (`#/<store>/<alt>`, no turn), the
+  transcript is the alternative's own history followed to its end, the status bar
+  names it by handle and mantra, and there is no banner and no fork glyph there.
+  The fork's first own turn alone wears `⑂ <parent handle>` in its head (the turn
+  whose form delta sets `system.forked_from`); a tail fork has none until its
+  first prompt. A fork at turn N keeps turns 1 to N-1.
 - Attend: the stream reads backward from the end in byte-budget pages and
   follows live. Following lets go when the reader scrolls up and a Latest pill
   says new content landed below. Earlier turns page in above without moving

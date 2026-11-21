@@ -28,6 +28,17 @@ function sameMsgs(a: readonly Msg[], b: readonly Msg[]): boolean {
   return a.length === b.length && a.every((m, i) => m === b[i]);
 }
 
+const FORKED_FROM = ".system.forked_from";
+
+function forkedFromOf(msgs: readonly Msg[]): string | undefined {
+  for (const m of msgs) {
+    for (const [key, d] of Object.entries(m.formDeltas ?? {})) {
+      if (key.endsWith(FORKED_FROM) && d.event !== "removed" && d.event !== "deleted" && typeof d.value === "string") return d.value;
+    }
+  }
+  return undefined;
+}
+
 export function turnsOf(view: View, ends: Ends, cache: TurnCache): TurnModel[] {
   const groups = new Map<number, Msg[]>();
   for (const m of view.closed ?? []) {
@@ -49,6 +60,8 @@ export function turnsOf(view: View, ends: Ends, cache: TurnCache): TurnModel[] {
     }
     const live = open && open.turn === turn ? open : undefined;
     const model = nodi.model({ closed, open: live } as Parameters<typeof nodi.model>[0], ends)[0]!;
+    const from = forkedFromOf(live ? [...closed, live] : closed);
+    if (from) model.forkedFrom = from;
     const same = hit && JSON.stringify(hit.turn) === JSON.stringify(model);
     const next = same ? hit.turn : model;
     held.set(turn, { msgs: closed, reason, turn: next });

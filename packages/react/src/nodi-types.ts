@@ -91,6 +91,7 @@ export interface TurnModel {
   end: TurnEnd | null;
   open: boolean;
   sealed: boolean;
+  forkedFrom?: string;
 }
 
 export interface NodiApi {

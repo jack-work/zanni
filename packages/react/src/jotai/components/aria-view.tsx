@@ -4,6 +4,7 @@ import { ariaAtom } from "figaro-forms/aria/jotai";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { labelOf } from "../lib/roster";
 import { noteAtom, turnsAtom } from "../state/aria";
+import { treeStateAtom } from "../state/pit";
 import { rosterAtom } from "../state/roster";
 import { composerAtom, forkAtom, keyOf } from "../state/composer";
 import { handsFreeAtom, speakingAtom, toggleHandsFreeAtom } from "../state/audio";
@@ -11,7 +12,6 @@ import { micCancelAtom } from "../state/mic";
 import { useVoice } from "./use-voice";
 import { linkAtom } from "../state/aria";
 import type { Attended } from "../state/route";
-import { ForkBanner } from "./fork-banner";
 import { Composer } from "./composer";
 import { InlineActions } from "./inline-actions";
 import { TurnActions } from "./turn-actions";
@@ -152,7 +152,15 @@ export function AriaView({ attended }: { attended: Attended }) {
     return () => watch.disconnect();
   }, [followed, olderAvailable, loadOlder]);
 
-  const transcript = useMemo(() => ({ actions: (turn: number) => <TurnActions turn={turn} />, below: (kind: "input" | "prose", turn: number) => <InlineActions kind={kind} turn={turn} /> }), []);
+  const tree = useAtomValue(treeStateAtom);
+  const transcript = useMemo(
+    () => ({
+      actions: (turn: number) => <TurnActions turn={turn} />,
+      below: (kind: "input" | "prose", turn: number) => <InlineActions kind={kind} turn={turn} />,
+      nameOf: (id: string) => tree?.nodes.get(id)?.handle ?? id.slice(0, 8),
+    }),
+    [tree],
+  );
   const status = note || pageError;
   const metrics = snap.metrics ? nodi.metricsLine(snap.metrics) : "";
 
@@ -176,7 +184,6 @@ export function AriaView({ attended }: { attended: Attended }) {
           <h1 className="fw-h1" tabIndex={-1} ref={headRef}>
             <Plain text={heading} />
           </h1>
-          <ForkBanner attended={attended} />
           <div className="fw-metrics">{metrics && <p className="nodi-metrics">{metrics}</p>}</div>
           {olderAvailable && (
             <Button variant="quiet" size="compact" className="fw-older" ref={olderRef} disabled={loadingOlder} onClick={() => loadOlder().catch(() => {})}>

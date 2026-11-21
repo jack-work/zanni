@@ -119,14 +119,6 @@ export interface ForkRequest {
   readonly text?: string;
 }
 
-export interface ForkMark {
-  readonly aria: string;
-  readonly parent: string;
-  readonly turn: number;
-}
-
-export const forkMarkAtom = atom<ForkMark | null>(null);
-
 export const forkAtom = atom(null, async (get, set, req: number | ForkRequest) => {
   const at = get(attendedAtom);
   if (!at) return;
@@ -149,8 +141,7 @@ export const forkAtom = atom(null, async (get, set, req: number | ForkRequest) =
     }
   }
   set(comp, (s) => ({ ...s, forking: false }));
-  set(forkMarkAtom, { aria: alternative, parent: at.aria, turn });
   void set(rosterActionAtom, "refresh");
-  set(goAtom, { store: at.store, aria: alternative, ...(turn ? { turn } : {}) });
+  set(goAtom, { store: at.store, aria: alternative });
   if (note) set(composerAtom(keyOf(at.store, alternative)), (s) => ({ ...s, note }));
 });

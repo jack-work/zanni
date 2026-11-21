@@ -98,3 +98,24 @@ describe("turnsOf", () => {
     expect(fast * 5).toBeLessThan(slow);
   });
 });
+
+describe("turnsOf and the fork mark", () => {
+  const delta = (alt: string, value: string, event = "set") => ({ [alt + ".system.forked_from"]: { form: alt, kind: "bound", event, value } });
+
+  it("marks the turn whose own form delta sets forked_from, and no other", () => {
+    const closed = [...settled(2), { turn: 3, from: 0, role: "input", nodes: [], inquiry: "mine", at: 3, formDeltas: delta("alt", "parent-id") }, { turn: 3, from: 0, role: "output", nodes: [], at: 3 }];
+    const got = turnsOf({ closed } as never, {}, newTurnCache());
+    expect(got.map((t) => t.forkedFrom)).toEqual([undefined, undefined, "parent-id"]);
+  });
+
+  it("marks an open turn from its first frame", () => {
+    const open = { ...live(4, 1), formDeltas: delta("alt", "parent-id") };
+    const got = turnsOf({ closed: settled(3), open } as never, {}, newTurnCache());
+    expect(got[3]!.forkedFrom).toBe("parent-id");
+  });
+
+  it("does not mark a turn whose forked_from was removed", () => {
+    const closed = [{ turn: 1, from: 0, role: "input", nodes: [], inquiry: "q", at: 1, formDeltas: delta("alt", "parent-id", "removed") }];
+    expect(turnsOf({ closed } as never, {}, newTurnCache())[0]!.forkedFrom).toBeUndefined();
+  });
+});

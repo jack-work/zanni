@@ -888,18 +888,17 @@ try:
             pg.locator(".fw-forkat-form textarea").fill("what if we waited")
             pg.locator(".fw-forkat-form button[type=submit]").click()
             pg.wait_for_selector(".zr-pit", state="detached")
-            until(pg, "location.hash.includes(':20') && !location.hash.includes('%s')" % MAIN, 8000)
+            until(pg, "/^#\\/gluck\\/[0-9a-f]{32}$/.test(location.hash) && !location.hash.includes('%s')" % MAIN, 8000)
             until(pg, "document.querySelector('.fw').dataset.link === 'live'", 8000)
-            pg.wait_for_selector(".fw-fork-banner", timeout=8000)
-            banner = pg.locator(".fw-fork-banner").inner_text()
-            assert "Fork of" in banner and "at turn 20" in banner and banner.startswith("⑂"), banner
-            assert pg.locator(".fw-fork-banner").get_attribute("data-fresh") is not None
+            assert pg.locator(".fw-fork-banner, .fw-status-fork").count() == 0, "the pager has no fork banner and no fork glyph in the status line"
             assert pg.locator(".nodi-turn[data-fresh]").count() == 0, "history does not animate in on a fork"
-            until(pg, "document.querySelector('.fw-status-fork') !== null || getComputedStyle(document.querySelector('.fw-status')).display === 'none'", 8000)
+            until(pg, "document.querySelector('.nodi-turn[data-turn=\"20\"] .nodi-turn-fork') !== null", 8000)
+            assert pg.locator(".nodi-turn-fork").count() == 1, "the fork's first own turn alone wears the mark"
+            assert pg.locator(".nodi-turn[data-turn='20'] .nodi-turn-fork").inner_text().startswith("\u2442 "), pg.locator(".nodi-turn-fork").inner_text()
             sent = ctl_door.state()["sent"]
             assert any(s["text"] == "what if we waited" and s["id"] != MAIN for s in sent), sent
             turns_now = turns_shown(pg)
-            assert turns_now and max(turns_now) < 30 and 20 in turns_now, "only the window around the fork turn was read in: %s" % turns_now
+            assert turns_now and max(turns_now) == 20, "the fork keeps the turns before 20 and its own prompt: %s" % turns_now
             snap(pg, "fork-%d" % width)
 
             attend(pg, ctl_door, MAIN)
@@ -907,8 +906,8 @@ try:
             pg.locator("[data-action='tail-fork']").click()
             pg.wait_for_selector(".zr-pit", state="detached")
             until(pg, "!location.hash.includes('%s')" % MAIN, 8000)
-            pg.wait_for_selector(".fw-fork-banner", timeout=8000)
-            assert "at turn" not in pg.locator(".fw-fork-banner").inner_text()
+            until(pg, "document.querySelector('.fw').dataset.link === 'live'", 8000)
+            assert pg.locator(".fw-fork-banner, .fw-status-fork, .nodi-turn-fork").count() == 0, "a tail fork has no own turn yet, so no mark anywhere"
             assert not pg.errors, pg.errors
             ctx.close()
 

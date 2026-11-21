@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { EFFORT_KEY, valueAt } from "../lib/pit-rows";
 import { STATUS_SPINNER, ctxLine, stateGlyph } from "../lib/status";
 import { linkAtom, runningAtom, turnsAtom } from "../state/aria";
-import { boundStateAtom, forkedFromAtom, treeStateAtom } from "../state/pit";
+import { boundStateAtom, treeStateAtom } from "../state/pit";
 import { attendedAtom } from "../state/route";
 
 function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomValue<typeof attendedAtom>>>["client"]; aria: string }) {
@@ -16,7 +16,6 @@ function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomVa
   const tree = useAtomValue(treeStateAtom);
   const facts = useAtomValue(ariaFactsAtom(client, aria));
   const bound = useAtomValue(boundStateAtom);
-  const forked = useAtomValue(forkedFromAtom);
   const pit = usePit();
   const [frame, setFrame] = useState(0);
   useEffect(() => {
@@ -35,7 +34,7 @@ function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomVa
   const glyph = stateGlyph({ link, running, failed, interrupted, frame });
   const open = pit && pit.snap !== "closed";
   return (
-    <header className="fw-status" data-link={link} data-fork={forked ? "" : undefined} data-state={running ? "running" : failed ? "error" : interrupted ? "interrupted" : "done"} data-effort={valueAt(bound?.root, EFFORT_KEY)}>
+    <header className="fw-status" data-link={link} data-state={running ? "running" : failed ? "error" : interrupted ? "interrupted" : "done"} data-effort={valueAt(bound?.root, EFFORT_KEY)}>
       {open && (
         <span className="fw-status-pit" aria-hidden="true">
           {glyphs["pit.form"]}
@@ -45,11 +44,6 @@ function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomVa
         {glyph}
       </span>
       <span className="fw-status-handle">{handle}</span>
-      {forked && (
-        <span className="fw-status-fork" title="A fork">
-          {glyphs.fork}
-        </span>
-      )}
       {mantra && <span className="fw-status-mantra">{mantra}</span>}
       {ctx && <span className="fw-status-ctx">{ctx}</span>}
     </header>
