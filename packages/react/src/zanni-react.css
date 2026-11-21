@@ -15,7 +15,7 @@
   border-radius: var(--z-radius-1, 2px);
   background: transparent;
   color: var(--accent-ink);
-  font-family: var(--zr-mono, "VT323", ui-monospace, "SF Mono", Menlo, Consolas, monospace);
+  font-family: var(--zr-mono, "VT323", "Symbols Nerd Font Subset", ui-monospace, "SF Mono", Menlo, Consolas, monospace);
   letter-spacing: 0.04em;
   text-decoration: none;
   cursor: pointer;
@@ -55,7 +55,7 @@
   @starting-style { translate: 0 100%; }
 }
 .zr-sheet[data-leaving] { translate: 0 100%; transition: translate var(--zr-d-exit) var(--zr-out); }
-.zr-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: var(--z-space-3, 8px); font: 400 1.25rem / 1 var(--zr-mono, "VT323", ui-monospace, monospace); letter-spacing: 0.04em; color: var(--z-muted); }
+.zr-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: var(--z-space-3, 8px); font: 400 1.25rem / 1 var(--zr-mono, "VT323", "Symbols Nerd Font Subset", ui-monospace, monospace); letter-spacing: 0.04em; color: var(--z-muted); }
 .zr-sheet-body { display: flex; flex-direction: column; gap: var(--z-space-3, 8px); }
 
 .zr-shell {
@@ -109,11 +109,11 @@
 .zr-grip[data-held] { visibility: hidden; }
 .zr-grip-bar { display: block; width: 40px; height: 4px; background: var(--z-line); }
 .zr-pit-handle:hover .zr-grip-bar, .zr-grip:hover .zr-grip-bar, .zr-grip[aria-expanded="true"] .zr-grip-bar { background: var(--z-accent); }
-.zr-pit-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--z-space-3, 8px); padding: 0 var(--zr-edge-r, 16px) var(--z-space-3, 8px) var(--zr-edge-l, 16px); font: 400 1.25rem / 1 var(--zr-mono, "VT323", ui-monospace, monospace); letter-spacing: 0.04em; color: var(--z-muted); }
+.zr-pit-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--z-space-3, 8px); padding: 0 var(--zr-edge-r, 16px) var(--z-space-3, 8px) var(--zr-edge-l, 16px); font: 400 1.25rem / 1 var(--zr-mono, "VT323", "Symbols Nerd Font Subset", ui-monospace, monospace); letter-spacing: 0.04em; color: var(--z-muted); }
 .zr-pit[data-snap="full"] .zr-pit-bar .zr-btn { display: none; }
 .zr-pit-title { display: block; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .zr-pit-icon { display: inline-flex; vertical-align: middle; margin-right: 0.5em; }
-.zr-tree { width: 100%; font: 400 1.125rem / 1.25 var(--zr-mono, "VT323", ui-monospace, monospace); letter-spacing: 0.04em; color: var(--z-ink); outline: none; }
+.zr-tree { width: 100%; font: 400 1.125rem / 1.25 var(--zr-mono, "VT323", "Symbols Nerd Font Subset", ui-monospace, monospace); letter-spacing: 0.04em; color: var(--z-ink); outline: none; }
 .zr-tree:focus-visible { outline: 2px solid var(--z-focus); outline-offset: -2px; }
 .zr-tree { --zr-tree-indent: 2ch; }
 .zr-tree-row { display: block; min-height: 28px; line-height: 28px; white-space: pre; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
@@ -144,7 +144,7 @@
 .zr-tree-here { margin-left: 2ch; }
 .zr-pit-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--z-rule, var(--z-line)); }
 .zr-pit-li { border-bottom: 1px solid var(--z-rule, var(--z-line)); }
-.zr-pit-row { display: grid; grid-template-columns: 2rem minmax(0, 1fr) auto; align-items: center; gap: var(--z-space-3, 8px); width: 100%; min-height: var(--z-control-hit, 44px); padding: 0; border: 0; background: transparent; color: var(--z-ink); font: 400 1.125rem / 1.2 var(--zr-mono, "VT323", ui-monospace, monospace); letter-spacing: 0.04em; text-align: left; cursor: pointer; }
+.zr-pit-row { display: grid; grid-template-columns: 2rem minmax(0, 1fr) auto; align-items: center; gap: var(--z-space-3, 8px); width: 100%; min-height: var(--z-control-hit, 44px); padding: 0; border: 0; background: transparent; color: var(--z-ink); font: 400 1.125rem / 1.2 var(--zr-mono, "VT323", "Symbols Nerd Font Subset", ui-monospace, monospace); letter-spacing: 0.04em; text-align: left; cursor: pointer; }
 .zr-pit-row[data-depth="1"] { padding-left: 1rem; }
 .zr-pit-row[data-depth="2"] { padding-left: 2rem; }
 .zr-pit-row[data-depth="3"] { padding-left: 3rem; }
@@ -191,13 +191,13 @@
 .zr-compose-row[data-stack] > :not(.zr-input) { animation: zr-below var(--zr-d-slide) var(--zr-spring) both; }
 @keyframes zr-below { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
 .zr-compose-row[data-prompt] { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
-.zr-prompt { font: 400 1.5rem / 1 var(--zr-mono, "VT323", ui-monospace, monospace); color: var(--z-accent); }
+.zr-prompt { font: 400 1.5rem / 1 var(--zr-mono, "VT323", "Symbols Nerd Font Subset", ui-monospace, monospace); color: var(--z-accent); }
 .zr-hints { display: flex; flex-direction: column; gap: var(--z-space-2, 4px); }
-.zr-hint { margin: 0; font: 400 1.0625rem / 1.25 var(--zr-mono, "VT323", ui-monospace, monospace); letter-spacing: 0.04em; color: var(--z-muted); overflow-wrap: anywhere; }
+.zr-hint { margin: 0; font: 400 1.0625rem / 1.25 var(--zr-mono, "VT323", "Symbols Nerd Font Subset", ui-monospace, monospace); letter-spacing: 0.04em; color: var(--z-muted); overflow-wrap: anywhere; }
 .zr-hint[data-refused] { color: var(--z-warn); }
 .zr-hint-usage { color: var(--z-ink); }
 .zr-chips { display: flex; gap: var(--z-space-2, 4px); overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
-.zr-chip { flex: none; display: inline-flex; align-items: baseline; gap: 0.6ch; min-height: 28px; padding: 0 var(--z-space-3, 8px); border: 1px solid var(--z-line); border-radius: 999px; background: var(--z-ground); color: var(--z-ink); font: 400 1.0625rem / 1 var(--zr-mono, "VT323", ui-monospace, monospace); letter-spacing: 0.04em; cursor: pointer; touch-action: manipulation; }
+.zr-chip { flex: none; display: inline-flex; align-items: baseline; gap: 0.6ch; min-height: 28px; padding: 0 var(--z-space-3, 8px); border: 1px solid var(--z-line); border-radius: 999px; background: var(--z-ground); color: var(--z-ink); font: 400 1.0625rem / 1 var(--zr-mono, "VT323", "Symbols Nerd Font Subset", ui-monospace, monospace); letter-spacing: 0.04em; cursor: pointer; touch-action: manipulation; }
 .zr-chip[data-off] { color: var(--z-muted); border-style: dashed; }
 .zr-chip-help { color: var(--z-muted); max-width: 16ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .zr-input {
@@ -231,7 +231,7 @@
   border-radius: 18px;
   background: var(--z-ground-2);
   color: var(--z-ink);
-  font: 400 1.25rem / 1 var(--zr-mono, "VT323", ui-monospace, monospace);
+  font: 400 1.25rem / 1 var(--zr-mono, "VT323", "Symbols Nerd Font Subset", ui-monospace, monospace);
   letter-spacing: 0.04em;
   cursor: pointer;
   -webkit-user-select: none;
@@ -258,7 +258,7 @@
   align-items: center;
   gap: var(--z-space-3, 8px);
   height: 32px;
-  font: 400 1.0625rem / 1 var(--zr-mono, "VT323", ui-monospace, monospace);
+  font: 400 1.0625rem / 1 var(--zr-mono, "VT323", "Symbols Nerd Font Subset", ui-monospace, monospace);
   letter-spacing: 0.04em;
   color: var(--z-muted);
   translate: 0 0;
@@ -285,7 +285,7 @@
 
 .zr-work { min-width: 0; border-left: 2px solid var(--nodi-bar, color-mix(in srgb, var(--z-line) 55%, transparent)); padding-left: var(--z-space-3, 8px); }
 .zr-work[data-live] { border-left-color: var(--z-warn); }
-.zr-work-time { flex: none; margin-left: auto; font: 400 1.0625rem / 1 var(--zr-mono, "VT323", ui-monospace, monospace); }
+.zr-work-time { flex: none; margin-left: auto; font: 400 1.0625rem / 1 var(--zr-mono, "VT323", "Symbols Nerd Font Subset", ui-monospace, monospace); }
 .zr-work-body { display: flex; flex-direction: column; gap: var(--z-space-2, 4px); padding: var(--z-space-2, 4px) 0 var(--z-space-3, 8px); min-width: 0; }
 .zr-work-body > .nodi-thinking, .zr-work-body > .nodi-tool { border-left: 0; padding-left: 0; }
 
@@ -312,7 +312,7 @@
 .zr-ink-base { display: inline-block; width: 0; height: 0; }
 
 .zr-tray { display: flex; flex-direction: column; gap: var(--z-space-2, 4px); margin: 0; padding: 0; list-style: none; }
-.zr-tray-item { overflow: hidden; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: var(--z-space-3, 8px); min-height: 32px; padding: 0 0 0 var(--z-space-3, 8px); border: 1px solid var(--z-line); border-radius: 10px; background: var(--z-ground); font: 400 1.0625rem / 1 var(--zr-mono, "VT323", ui-monospace, monospace); letter-spacing: 0.04em; color: var(--z-ink); }
+.zr-tray-item { overflow: hidden; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: var(--z-space-3, 8px); min-height: 32px; padding: 0 0 0 var(--z-space-3, 8px); border: 1px solid var(--z-line); border-radius: 10px; background: var(--z-ground); font: 400 1.0625rem / 1 var(--zr-mono, "VT323", "Symbols Nerd Font Subset", ui-monospace, monospace); letter-spacing: 0.04em; color: var(--z-ink); }
 .zr-tray-item[data-status="failed"] { border-color: var(--z-fail); }
 .zr-tray-item[data-status="failed"] .zr-tray-mark, .zr-tray-item[data-status="failed"] .zr-tray-meta { color: var(--z-fail); }
 .zr-tray-item[data-status="ready"] .zr-tray-mark { color: var(--z-ok); }

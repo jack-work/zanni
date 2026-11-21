@@ -14,7 +14,7 @@ body.fw-page {
 
 .fw {
   --fw-prose: "EB Garamond", Georgia, "Times New Roman", serif;
-  --fw-mono: "VT323", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --fw-mono: "VT323", "Symbols Nerd Font Subset", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --fw-display: "Jacquard 24", Georgia, serif;
   --zr-mono: var(--fw-mono);
   --zr-sheet-width: var(--fw-width);
