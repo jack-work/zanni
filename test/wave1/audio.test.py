@@ -68,7 +68,7 @@ PACE = """
       let delay = 0;
       if (typeof data !== 'string') {
         this._n++;
-        delay = this._n === 1 ? 400 : 100 / 1.3 + (rnd() * 2 - 1) * 60 + (this._n % 10 === 0 ? 200 : 0);
+        delay = this._n === 1 ? 400 : 100 / 1.3 + (rnd() * 2 - 1) * 60 + (this._n % 10 === 0 ? 100 : 0);
       }
       setTimeout(() => { this.dispatchEvent(new MessageEvent('message', { data })); this._busy = false; this._pump(); }, Math.max(0, delay));
     }
