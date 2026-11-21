@@ -62,11 +62,11 @@ describe("a turn's form deltas", () => {
     expect(row.querySelector(".nodi-delta-to")!.textContent).toBe("n".repeat(40));
   });
 
-  it("floors each value cell at 6 columns, or its own width when shorter, counting a wide glyph as two", () => {
-    view(turn({ "a1.phase": d("a1", "bound", "set", "seed", "an-extremely-long-value"), "a1.zh": d("a1", "bound", "set", "中文", "x") }));
+  it("a value of 6 cells or fewer keeps its drawn width, a longer one floors at 6, a wide glyph counting as two", () => {
+    view(turn({ "a1.phase": d("a1", "bound", "set", "seed", "an-extremely-long-value"), "a1.zh": d("a1", "bound", "set", "中文中文", undefined) }));
     fireEvent.click(mark()!);
-    const cells = [...document.querySelectorAll<HTMLElement>(".nodi-delta-from, .nodi-delta-to")].map((c) => c.style.minWidth);
-    expect(cells).toEqual(["4ch", "6ch", "4ch", "1ch"]);
+    const cells = [...document.querySelectorAll<HTMLElement>(".nodi-delta-from, .nodi-delta-to")].map((c) => c.hasAttribute("data-short"));
+    expect(cells).toEqual([true, false, false, true]);
   });
 
   it("a row opens to its old and new value whole, an object as indented JSON", () => {

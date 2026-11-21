@@ -299,7 +299,7 @@ function Named({ cell, nameOf }: { cell: DeltaCell; nameOf: TranscriptHooks["nam
   return <Plain text={shown(cell, nameOf)} />;
 }
 
-const floorOf = (cell: DeltaCell, nameOf: TranscriptHooks["nameOf"]): CSSProperties => ({ minWidth: Math.min(cellsOf(shown(cell, nameOf)), 6) + "ch" });
+const shortOf = (cell: DeltaCell, nameOf: TranscriptHooks["nameOf"]): string | undefined => (cellsOf(shown(cell, nameOf)) <= 6 ? "" : undefined);
 
 function DeltaEntry({ row, nameOf }: { row: DeltaRow; nameOf: TranscriptHooks["nameOf"] }) {
   const [open, setOpen] = useState(false);
@@ -321,11 +321,11 @@ function DeltaEntry({ row, nameOf }: { row: DeltaRow; nameOf: TranscriptHooks["n
           <Plain text={row.key} />
         </span>
         <span className="nodi-delta-change">
-          <span className="nodi-delta-from" style={floorOf(row.from, nameOf)}>
+          <span className="nodi-delta-from" data-short={shortOf(row.from, nameOf)}>
             <Named cell={row.from} nameOf={nameOf} />
           </span>
           <span className="nodi-delta-arrow"> {"->"} </span>
-          <span className="nodi-delta-to" style={floorOf(row.to, nameOf)}>
+          <span className="nodi-delta-to" data-short={shortOf(row.to, nameOf)}>
             <Named cell={row.to} nameOf={nameOf} />
           </span>
         </span>
