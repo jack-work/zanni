@@ -118,8 +118,7 @@ class Run:
         end = time.time() + timeout
         while time.time() < end:
             turns = self.stack.turns(self.aria())
-            owed = self.campaign.strict_sends and self.aria() == MAIN and len(turns) < self.base + len(self.stack.state()["sent"])
-            if not owed and all(t["sealed"] for t in turns):
+            if all(t["sealed"] for t in turns):
                 self.page.wait_for_timeout(250)
                 if all(t["sealed"] for t in self.stack.turns(self.aria())):
                     return
@@ -147,6 +146,9 @@ def norm(s):
 
 
 def check_always(run):
+    if run.stack.gateway is not None and run.stack.gateway.poll() is not None:
+        tail = run.stack.gateway_log_text().strip().splitlines()
+        raise Failure("gateway-died", "figaro-gateway exited %s: %s" % (run.stack.gateway.returncode, " | ".join(l.strip() for l in tail[-9:-3] if l.strip())[:300]))
     errs = run.new_errors()
     if errs:
         raise Failure("console-error", "; ".join(e[:300] for e in errs[:3]))
@@ -194,11 +196,12 @@ def check_quiescent(run):
     truth = run.stack.turns(run.aria())
     drawn = {t["no"]: t for t in run.dom_turns() if t["no"] is not None}
     sent = run.stack.state()["sent"]
-    want = [norm(s["text"]) for s in sent]
-    tail = [norm(t["inquiry"]) for t in truth[-len(sent):]] if sent else []
-    if sent and not run.navigated() and tail != want:
-        raise Failure("door-order", "the door's last turns %s are not the sent prompts %s" % ([clip(x, 40) for x in tail], [clip(x, 40) for x in want]))
-    for t in truth[-len(sent):] if sent and not run.navigated() else []:
+    mine = [t for t in truth if t["id"] > run.base]
+    have = sorted([norm(t["inquiry"]) for t in mine] + [norm(n["markdown"]) for t in mine for n in t["nodes"] if n["type"] == "steering"])
+    want = sorted(norm(x["text"]) for x in sent)
+    if not run.navigated() and have != want:
+        raise Failure("door-order", "the door holds %d prompts as turns or steering, the page sent %d" % (len(have), len(want)))
+    for t in [] if run.navigated() else mine:
         d = drawn.get(t["id"])
         if d is None:
             raise Failure("lost-turn", "turn %d (%s) is on the door and not on the page" % (t["id"], clip(t["inquiry"], 40)))

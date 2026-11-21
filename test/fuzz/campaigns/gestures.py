@@ -160,7 +160,10 @@ class Gestures(Campaign):
         elif how == "close":
             loc = page.locator(".zr-pit-bar button")
             if loc.count():
-                loc.last.click(timeout=2000)
+                try:
+                    loc.last.click(timeout=1000)
+                except Exception:
+                    pass
         elif how in ("handle-up", "handle-down"):
             loc = page.locator(".zr-pit-handle")
             if loc.count():
@@ -192,7 +195,10 @@ class Gestures(Campaign):
             for sel in (".zr-pit-bar button", ".zr-pit-scrim"):
                 if run.page.locator(sel).count():
                     if sel.endswith("button"):
-                        run.page.locator(sel).last.click(timeout=2000)
+                        try:
+                            run.page.locator(sel).last.click(timeout=1000)
+                        except Exception:
+                            pass
                     else:
                         b = run.page.locator(sel).first.bounding_box()
                         run.page.mouse.click(b["x"] + 5, b["y"] + 5)

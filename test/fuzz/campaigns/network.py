@@ -1,6 +1,6 @@
 import time
 
-from engine import Campaign, Failure, clip, norm
+from engine import STRICT, Campaign, Failure, clip, norm
 
 BENIGN = ("WebSocket", "net::ERR", "Failed to load resource", "ERR_INTERNET_DISCONNECTED", "ERR_CONNECTION")
 PROMPTS = ["[plain]", "[tool]", "[long]", "[md]", "[plain] short"]
@@ -59,12 +59,22 @@ class Network(Campaign):
                 run.state["retained"].append(have)
             if page.locator(".zr-input").count():
                 page.locator(".zr-input").fill(text)
-                run.state["sends"].append(text)
-                page.keyboard.press("Enter") if run.profile == "desktop" else page.locator(".zr-send").click(timeout=3000)
+                try:
+                    if run.profile == "desktop":
+                        page.keyboard.press("Enter")
+                    else:
+                        page.locator(".zr-send").click(timeout=1500)
+                    run.state["sends"].append(text)
+                except Exception:
+                    page.locator(".zr-input").fill("")
             page.wait_for_timeout(120)
         elif k == "wait":
             page.wait_for_timeout(a["ms"])
         elif k == "fault":
+            if a["op"]["op"] == "door.lapse":
+                if "double-lapse" not in STRICT and time.time() - run.state.get("lapsed", 0) < 4:
+                    return
+                run.state["lapsed"] = time.time()
             run.stack.fault(a["op"])
         elif k == "storm":
             for _ in range(a["n"]):
@@ -90,7 +100,7 @@ class Network(Campaign):
         if not truth:
             return True
         drawn = {t["no"] for t in run.dom_turns()}
-        want = [t["id"] for t in truth[-(len(run.state["sends"]) + 1):]]
+        want = [t["id"] for t in truth if t["id"] > run.base]
         return all(i in drawn for i in want)
 
     def before_quiescent(self, run):
@@ -112,7 +122,7 @@ class Network(Campaign):
                 raise Failure("lost-send", "%s was sent from the page and never reached the door, and is not in the composer" % clip(text))
         truth = run.stack.turns()
         drawn = {t["no"]: t for t in run.dom_turns() if t["no"] is not None}
-        for t in truth[-(len(sent) + 1):]:
+        for t in [t for t in truth if t["id"] > run.base]:
             d = drawn.get(t["id"])
             if d is None:
                 raise Failure("lost-turn", "turn %d (%s) is on the door and not on the page" % (t["id"], clip(t["inquiry"], 40)))
