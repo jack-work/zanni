@@ -36,6 +36,12 @@ const server = http.createServer((req, res) => {
     res.end(JSON.stringify({ ids: core.ids, sent: core.sent || [], interrupts: core.interrupts || [], dropped: core.dropped, upgrades: seen.upgrades, audio: seen.audio, attach: seen.attach, stt: seen.stt, retranscribed: seen.retranscribed, sessions, stream: seen.stream, says: seen.says, calls: core.calls.map((c) => c.method) }));
     return;
   }
+  if (url.pathname.startsWith('/__turns/')) {
+    const a = core.arias[url.pathname.slice('/__turns/'.length)];
+    res.writeHead(a ? 200 : 404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(a ? a.turns.map((t) => ({ id: t.id, inquiry: t.inquiry, sealed: !!t.sealed, nodes: t.nodes.map((n) => ({ type: n.type, markdown: n.markdown || '' })) })) : []));
+    return;
+  }
   if (url.pathname === '/__drop') {
     const n = core.drop();
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -232,7 +238,7 @@ server.on('upgrade', (req, socket) => {
   const url = new URL(req.url, 'http://x');
   url.pathname = gatewayPath(url.pathname);
   const origin = req.headers.origin || '';
-  const same = origin === 'http://' + req.headers.host;
+  const same = origin === 'http://' + req.headers.host || (!origin && !!process.env.FIGCHAT_BARE_ORIGIN);
   const am = /^\/audio\/([0-9a-f]{32})$/.exec(url.pathname);
   if (same && url.pathname === '/stt/stream' && /^gluck\/[0-9a-f]{32}$/.test(url.searchParams.get('aria') || '')) { noteSession('stt-ws', req, url); sttStream(req, socket, url); return; }
   if (same && am) { noteSession('audio-ws', req, url); audioSocket(req, socket, am[1]); return; }
