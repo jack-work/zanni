@@ -8,11 +8,12 @@ export interface NewFigaroState {
   readonly open: boolean;
   readonly creating: boolean;
   readonly note: string;
+  readonly outfits?: string;
 }
 
 export const newFigaroAtom = atom<NewFigaroState>({ open: false, creating: false, note: "" });
 
-export const openNewFigaroAtom = atom(null, (_get, set) => set(newFigaroAtom, { open: true, creating: false, note: "" }));
+export const openNewFigaroAtom = atom(null, (_get, set, outfits?: string) => set(newFigaroAtom, { open: true, creating: false, note: "", ...(outfits ? { outfits } : {}) }));
 export const closeNewFigaroAtom = atom(null, (get, set) => {
   if (!get(newFigaroAtom).creating) set(newFigaroAtom, { open: false, creating: false, note: "" });
 });

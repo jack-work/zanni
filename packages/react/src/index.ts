@@ -8,7 +8,7 @@ export { PitList, PitRow } from "./pit-row";
 export type { PitRowProps } from "./pit-row";
 export { Pit, PitGrip, PitProvider, PIT_FLICK, PIT_FULL_ZONE, PIT_HEIGHT_VAR, pitHeight, pitSettle, pitStep, usePit } from "./pit";
 export type { PitGripProps, PitProps, PitProviderProps, PitSnap } from "./pit";
-export { glyphDocs, glyphs } from "./glyphs";
+export { glyphDocs, glyphs, voiceGlyph } from "./glyphs";
 export type { GlyphDoc, GlyphName } from "./glyphs";
 export { SESSION_HEADER, SESSION_PARAM, audioKeyUrl, mintSessionId, sessionHeaders, sessionId, sessionUrl, withSession } from "./session";
 export { EXIT_MS, reducedMotion, transition, useLinger } from "./motion";

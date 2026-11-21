@@ -9,7 +9,7 @@ const speech = require('../assets/figchat/speech.js');
 const dir = process.argv[2];
 const step = process.argv[3] ? Number(process.argv[3]) : 15;
 const core = mock.create({ step, pageBytes: 3000 });
-const seen = { upgrades: 0, refused: 0, audio: 0, stt: [], retranscribed: [], says: [] };
+const seen = { upgrades: 0, refused: 0, audio: 0, stt: [], retranscribed: [], says: [], stream: [] };
 const expired = new Set([5, 6]);
 const sessions = [];
 const noteSession = (kind, req, url) => sessions.push({ kind, header: req.headers['x-figchat-session'] || '', query: url.searchParams.get('session') || '' });
@@ -32,7 +32,7 @@ const server = http.createServer((req, res) => {
   if (url.pathname.startsWith('/chat/assets/')) { file(res, url.pathname.slice('/chat/assets/'.length), { 'Cache-Control': 'private, no-cache' }); return; }
   if (url.pathname === '/__state') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ ids: core.ids, sent: core.sent || [], interrupts: core.interrupts || [], dropped: core.dropped, upgrades: seen.upgrades, audio: seen.audio, stt: seen.stt, retranscribed: seen.retranscribed, sessions, says: seen.says, calls: core.calls.map((c) => c.method) }));
+    res.end(JSON.stringify({ ids: core.ids, sent: core.sent || [], interrupts: core.interrupts || [], dropped: core.dropped, upgrades: seen.upgrades, audio: seen.audio, stt: seen.stt, retranscribed: seen.retranscribed, sessions, stream: seen.stream, says: seen.says, calls: core.calls.map((c) => c.method) }));
     return;
   }
   if (url.pathname === '/__drop') {
@@ -98,7 +98,7 @@ function handshake(req, socket) {
   socket.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ' + accept + '\r\n\r\n');
 }
 
-function reader(socket, onText) {
+function reader(socket, onText, onBinary) {
   let buf = Buffer.alloc(0);
   socket.on('data', (d) => {
     buf = Buffer.concat([buf, d]);
@@ -114,6 +114,7 @@ function reader(socket, onText) {
       const opcode = buf[0] & 15;
       buf = buf.subarray(at + 4 + len);
       if (opcode === 1) onText(data.toString('utf8'));
+      else if (opcode === 2 && onBinary) onBinary(data);
       else if (opcode === 8) { socket.end(frame(8, Buffer.alloc(0))); return; }
       else if (opcode === 9) socket.write(frame(10, data));
     }
@@ -180,12 +181,46 @@ function audioSocket(req, socket, aria) {
   socket.on('error', done);
 }
 
+function sttStream(req, socket, url) {
+  const run = { aria: url.searchParams.get('aria'), lang: url.searchParams.get('lang'), at: Date.now(), frames: [], first: 0, ended: false, cancelled: false, closedAt: 0 };
+  seen.stream.push(run);
+  handshake(req, socket);
+  sockets.add(socket);
+  const send = (o) => { if (!socket.destroyed) socket.write(frame(1, Buffer.from(JSON.stringify(o)))); };
+  const finals = [];
+  send({ type: 'ready' });
+  const fail = (code, text) => { send({ type: 'error', code, text }); socket.end(frame(8, Buffer.alloc(0))); };
+  reader(socket, (text) => {
+    let msg;
+    try { msg = JSON.parse(text); } catch (e) { fail('bad-request', 'not json'); return; }
+    if (msg.type === 'end') {
+      run.ended = true;
+      send({ type: 'done', audio_id: 'stream-1', duration_ms: run.frames.length * 40, text: finals.join(' ') + (finals.length ? ' ' : '') + 'please' });
+      socket.end(frame(8, Buffer.alloc(0)));
+    } else if (msg.type === 'cancel') {
+      run.cancelled = true;
+      socket.end(frame(8, Buffer.alloc(0)));
+    } else fail('bad-request', 'unknown frame');
+  }, (buf) => {
+    if (buf.length % 2 || buf.length > 6400) { fail('bad-request', 'bad pcm frame'); return; }
+    if (!run.first) run.first = Date.now();
+    run.frames.push(buf.length);
+    const n = run.frames.length;
+    if (n === 5) send({ type: 'partial', text: 'what is', offset_ms: 0 });
+    else if (n === 10) { finals.push('what is the crossing count'); send({ type: 'final', text: 'what is the crossing count', offset_ms: 0, duration_ms: 400 }); }
+    else if (n === 12) send({ type: 'partial', text: 'please', offset_ms: 500 });
+  });
+  socket.on('close', () => { run.closedAt = Date.now(); sockets.delete(socket); });
+  socket.on('error', () => sockets.delete(socket));
+}
+
 server.on('upgrade', (req, socket) => {
   const url = new URL(req.url, 'http://x');
   url.pathname = gatewayPath(url.pathname);
   const origin = req.headers.origin || '';
   const same = origin === 'http://' + req.headers.host;
   const am = /^\/audio\/([0-9a-f]{32})$/.exec(url.pathname);
+  if (same && url.pathname === '/stt/stream' && /^gluck\/[0-9a-f]{32}$/.test(url.searchParams.get('aria') || '')) { noteSession('stt-ws', req, url); sttStream(req, socket, url); return; }
   if (same && am) { noteSession('audio-ws', req, url); audioSocket(req, socket, am[1]); return; }
   if (url.pathname !== '/door' || !same) { seen.refused++; socket.destroy(); return; }
   seen.upgrades++;

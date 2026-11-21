@@ -1,183 +1,250 @@
 import { describe, expect, it } from "vitest";
-import { joinDictation, Mic, micFault, micType, type MicDeps, type MicSnapshot } from "zanni-react/jotai";
-import { dictate, retranscribe, SttError } from "zanni-react/jotai";
+import { Dictation, FINISH_WAIT_MS, QUEUE_FRAMES, dictationSocketUrl, joinDictation, micFault, retranscribe, streamFault, SttError, type Capture, type DictationDeps, type MicSnapshot, type SocketLike } from "zanni-react/jotai";
 
-class FakeRecorder extends EventTarget {
-  static types = ["audio/webm;codecs=opus"];
-  static isTypeSupported(t: string) {
-    return FakeRecorder.types.includes(t);
+class FakeSocket implements SocketLike {
+  binaryType = "blob";
+  readyState = 0;
+  onopen: (() => void) | null = null;
+  onmessage: ((ev: { data: unknown }) => void) | null = null;
+  onclose: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  sent: (string | ArrayBuffer)[] = [];
+  closed: number[] = [];
+  constructor(readonly target: string) {}
+  send(data: string | ArrayBuffer) {
+    this.sent.push(data);
   }
-  state: "inactive" | "recording" = "inactive";
-  mimeType: string;
-  constructor(
-    readonly stream: unknown,
-    o?: { mimeType?: string },
-  ) {
-    super();
-    this.mimeType = o?.mimeType ?? "";
+  close(code?: number) {
+    this.readyState = 3;
+    this.closed.push(code ?? 0);
   }
-  start() {
-    this.state = "recording";
+  open() {
+    this.readyState = 1;
+    this.onopen?.();
   }
-  stop() {
-    this.state = "inactive";
-    const ev = new Event("dataavailable") as Event & { data: Blob };
-    ev.data = new Blob(["abc"], { type: this.mimeType });
-    this.dispatchEvent(ev);
-    this.dispatchEvent(new Event("stop"));
+  say(frame: unknown) {
+    this.onmessage?.({ data: JSON.stringify(frame) });
+  }
+  drop() {
+    this.readyState = 3;
+    this.onclose?.();
+  }
+  texts() {
+    return this.sent.filter((x): x is string => typeof x === "string").map((x) => JSON.parse(x) as { type: string });
+  }
+  frames() {
+    return this.sent.filter((x): x is ArrayBuffer => typeof x !== "string");
   }
 }
 
-function rig(over: Partial<MicDeps> = {}) {
+function rig(over: Partial<DictationDeps> = {}) {
   const tracks: string[] = [];
   const recording: boolean[] = [];
+  const levels: number[] = [];
+  const sockets: FakeSocket[] = [];
+  const timers: { fn: () => void; ms: number }[] = [];
+  let push: (pcm: ArrayBuffer, level: number) => void = () => {};
+  const stopped: string[] = [];
   const stream = { getTracks: () => [{ stop: () => tracks.push("stopped") }] } as unknown as MediaStream;
-  const timers: (() => void)[] = [];
-  const deps: MicDeps = {
-    media: { devices: { getUserMedia: () => Promise.resolve(stream) }, Recorder: FakeRecorder as unknown as typeof MediaRecorder },
+  const deps: DictationDeps = {
+    media: { devices: { getUserMedia: () => Promise.resolve(stream) }, streaming: true },
     now: () => 1000,
-    transcribe: async () => ({ text: " what is the crossing count " }),
+    open: (target) => {
+      const s = new FakeSocket(target);
+      sockets.push(s);
+      return s;
+    },
+    capture: async (_s, onFrame) => {
+      push = onFrame;
+      const cap: Capture = { stop: () => stopped.push("capture") };
+      return cap;
+    },
     recording: (on) => recording.push(on),
-    setTimeout: (fn) => {
-      timers.push(fn);
+    level: (v) => levels.push(v),
+    setTimeout: (fn, ms) => {
+      timers.push({ fn, ms });
       return timers.length;
     },
     clearTimeout: () => {},
     ...over,
   };
-  const mic = new Mic(deps);
+  const mic = new Dictation(deps);
   const seen: MicSnapshot[] = [];
   mic.subscribe((s) => seen.push(s));
-  return { mic, tracks, recording, timers, seen };
+  return { mic, tracks, recording, levels, sockets, timers, stopped, seen, frame: (n = 1280, level = 0.5) => push(new ArrayBuffer(n), level) };
 }
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
+const frame = (type: string, rest: object = {}) => ({ type, ...rest });
 
-describe("mic", () => {
-  it("records, transcribes and hands the text over, releasing the microphone and the session", async () => {
-    const { mic, tracks, recording, seen } = rig();
+describe("streaming dictation", () => {
+  it("opens the socket when the mic arms, meters at once, and fills the text before the user stops", async () => {
+    const r = rig();
+    const got: [string, boolean][] = [];
+    expect(r.mic.snapshot().state).toBe("idle");
+    r.mic.toggle("gluck/a", (t, f) => got.push([t, f]));
+    expect(r.sockets).toHaveLength(1);
+    expect(r.sockets[0]!.target).toBe("gluck/a");
+    expect(r.sockets[0]!.binaryType).toBe("arraybuffer");
+    expect(r.mic.snapshot().state).toBe("asking");
+    await flush();
+    expect(r.mic.snapshot()).toMatchObject({ state: "recording", began: 1000 });
+    r.frame(1280, 0.7);
+    expect(r.levels).toContain(0.7);
+    expect(r.sockets[0]!.frames()).toHaveLength(0);
+    r.sockets[0]!.open();
+    expect(r.sockets[0]!.frames()).toHaveLength(1);
+    r.frame();
+    expect(r.sockets[0]!.frames()).toHaveLength(2);
+    r.sockets[0]!.say(frame("ready"));
+    r.sockets[0]!.say(frame("partial", { text: "what is", offset_ms: 0 }));
+    r.sockets[0]!.say(frame("partial", { text: "what is the cross", offset_ms: 0 }));
+    r.sockets[0]!.say(frame("final", { text: "what is the crossing count", offset_ms: 0, duration_ms: 1500 }));
+    r.sockets[0]!.say(frame("partial", { text: "please", offset_ms: 1600 }));
+    expect(got.map((g) => g[0])).toEqual(["what is", "what is the cross", "what is the crossing count", "what is the crossing count please"]);
+    expect(got.every((g) => g[1] === false)).toBe(true);
+    expect(r.mic.snapshot().state).toBe("recording");
+  });
+
+  it("on stop sends end, waits for done, then hands over the settled text and lets everything go", async () => {
+    const r = rig();
+    const got: [string, boolean][] = [];
+    r.mic.toggle("gluck/a", (t, f) => got.push([t, f]));
+    await flush();
+    r.sockets[0]!.open();
+    r.frame();
+    r.mic.toggle("gluck/a", () => {});
+    expect(r.sockets[0]!.texts()).toEqual([{ type: "end" }]);
+    expect(r.mic.snapshot().state).toBe("transcribing");
+    expect(r.stopped).toEqual(["capture"]);
+    expect(r.tracks).toEqual(["stopped"]);
+    r.sockets[0]!.say(frame("done", { audio_id: "x", duration_ms: 1500, text: " what is the crossing count " }));
+    expect(got[got.length - 1]).toEqual(["what is the crossing count", true]);
+    expect(r.seen.map((s) => s.state)).toEqual(["asking", "recording", "transcribing", "idle"]);
+    expect(r.mic.snapshot().note).toBe("");
+    expect(r.sockets[0]!.closed).toEqual([1000]);
+    expect(r.recording).toEqual([true, false]);
+    expect(r.levels[r.levels.length - 1]).toBe(0);
+  });
+
+  it("keeps up to two seconds of audio for a slow socket and drops the oldest beyond it", async () => {
+    const r = rig();
+    r.mic.toggle("t", () => {});
+    await flush();
+    for (let i = 0; i < QUEUE_FRAMES + 20; i++) r.frame();
+    r.sockets[0]!.open();
+    expect(r.sockets[0]!.frames()).toHaveLength(QUEUE_FRAMES);
+  });
+
+  it("gives up waiting for done and keeps what was heard", async () => {
+    const r = rig();
     const got: string[] = [];
-    expect(mic.snapshot().state).toBe("idle");
-    mic.toggle("gluck/a", (t) => got.push(t));
-    expect(mic.snapshot().state).toBe("asking");
+    r.mic.toggle("t", (t) => got.push(t));
     await flush();
-    expect(mic.snapshot()).toMatchObject({ state: "recording", began: 1000 });
-    mic.toggle("gluck/a", (t) => got.push(t));
-    await flush();
-    await flush();
-    expect(got).toEqual(["what is the crossing count"]);
-    expect(seen.map((s) => s.state)).toEqual(["asking", "recording", "transcribing", "idle"]);
-    expect(mic.snapshot().note).toBe("");
-    expect(tracks).toEqual(["stopped"]);
-    expect(recording).toEqual([true, false]);
-  });
-
-  it("says why when the browser cannot record or the user refuses", async () => {
-    const bare = new Mic({ media: { devices: undefined, Recorder: undefined }, now: () => 0, transcribe: async () => ({}), recording: () => {}, setTimeout: () => 0, clearTimeout: () => {} });
-    expect(bare.snapshot().state).toBe("unsupported");
-    bare.toggle("t", () => {});
-    expect(bare.snapshot().state).toBe("unsupported");
-    const { mic, recording } = rig({ media: { devices: { getUserMedia: () => Promise.reject(Object.assign(new Error("x"), { name: "NotAllowedError" })) }, Recorder: FakeRecorder as unknown as typeof MediaRecorder } });
-    mic.toggle("gluck/a", () => {});
-    await flush();
-    expect(mic.snapshot().state).toBe("idle");
-    expect(mic.snapshot().note).toContain("Microphone blocked");
-    expect(recording).toEqual([true, false]);
-  });
-
-  it("reports an empty transcript and a failed upload", async () => {
-    const empty = rig({ transcribe: async () => ({ text: "  " }) });
-    empty.mic.toggle("t", () => {});
-    await flush();
-    empty.mic.toggle("t", () => {});
-    await flush();
-    await flush();
-    expect(empty.mic.snapshot().note).toBe("Heard no words. Try again.");
-    const down = rig({ transcribe: async () => Promise.reject(new SttError("unsupported audio type", 415)) });
-    down.mic.toggle("t", () => {});
-    await flush();
-    down.mic.toggle("t", () => {});
-    await flush();
-    await flush();
-    expect(down.mic.snapshot().note).toBe("Not transcribed: unsupported audio type");
+    r.sockets[0]!.open();
+    r.sockets[0]!.say(frame("final", { text: "kept words" }));
+    r.mic.toggle("t", () => {});
+    const wait = r.timers[r.timers.length - 1]!;
+    expect(wait.ms).toBe(FINISH_WAIT_MS);
+    wait.fn();
+    expect(got[got.length - 1]).toBe("kept words");
+    expect(r.mic.snapshot().state).toBe("idle");
   });
 
   it("stops by itself at the clip cap", async () => {
-    const { mic, timers, seen } = rig();
-    mic.toggle("t", () => {});
+    const r = rig();
+    r.mic.toggle("t", () => {});
     await flush();
-    expect(timers).toHaveLength(1);
-    timers[0]!();
-    await flush();
-    expect(seen.map((s) => s.state)).toContain("transcribing");
+    r.timers[0]!.fn();
+    expect(r.mic.snapshot().state).toBe("transcribing");
   });
 
-  it("cancel drops the clip: nothing is transcribed and the mic is let go", async () => {
-    const { mic, tracks } = rig();
+  it("says why when the browser cannot stream or the user refuses", async () => {
+    const bare = new Dictation({ media: { devices: undefined, streaming: false }, now: () => 0, open: () => new FakeSocket("x"), capture: async () => ({ stop() {} }), recording: () => {}, level: () => {}, setTimeout: () => 0, clearTimeout: () => {} });
+    expect(bare.snapshot().state).toBe("unsupported");
+    bare.toggle("t", () => {});
+    expect(bare.snapshot().state).toBe("unsupported");
+    const r = rig({ media: { devices: { getUserMedia: () => Promise.reject(Object.assign(new Error("x"), { name: "NotAllowedError" })) }, streaming: true } });
+    r.mic.toggle("t", () => {});
+    await flush();
+    expect(r.mic.snapshot().state).toBe("idle");
+    expect(r.mic.snapshot().note).toContain("Microphone blocked");
+    expect(r.recording).toEqual([true, false]);
+    expect(r.sockets[0]!.closed).toEqual([1000]);
+  });
+
+  it("turns a server error into a note, keeping the words so far", async () => {
+    const r = rig();
+    const got: [string, boolean][] = [];
+    r.mic.toggle("t", (t, f) => got.push([t, f]));
+    await flush();
+    r.sockets[0]!.open();
+    r.sockets[0]!.say(frame("final", { text: "some words" }));
+    r.sockets[0]!.say(frame("error", { code: "idle", text: "no audio for 10 s" }));
+    expect(got[got.length - 1]).toEqual(["some words", true]);
+    expect(r.mic.snapshot()).toMatchObject({ state: "idle", note: "No sound was heard." });
+    const busy = rig();
+    busy.mic.toggle("t", () => {});
+    await flush();
+    busy.sockets[0]!.say(frame("error", { code: "busy", text: "" }));
+    expect(busy.mic.snapshot().note).toBe("Dictation is busy. Try again in a moment.");
+  });
+
+  it("reports a dropped socket, and an empty done", async () => {
+    const r = rig();
+    r.mic.toggle("t", () => {});
+    await flush();
+    r.sockets[0]!.drop();
+    expect(r.mic.snapshot()).toMatchObject({ state: "idle", note: "Dictation connection lost." });
+    const e = rig();
+    e.mic.toggle("t", () => {});
+    await flush();
+    e.mic.toggle("t", () => {});
+    e.sockets[0]!.say(frame("done", { text: "  " }));
+    expect(e.mic.snapshot().note).toBe("Heard no words. Try again.");
+  });
+
+  it("cancel tells the server, hands over nothing and lets the mic go", async () => {
+    const r = rig();
     const got: string[] = [];
-    mic.toggle("t", (t) => got.push(t));
+    r.mic.toggle("t", (t) => got.push(t));
     await flush();
-    mic.cancel();
-    await flush();
-    await flush();
+    r.sockets[0]!.open();
+    r.mic.cancel();
+    expect(r.sockets[0]!.texts()).toEqual([{ type: "cancel" }]);
     expect(got).toEqual([]);
-    expect(mic.snapshot()).toMatchObject({ state: "idle", note: "" });
-    expect(tracks).toEqual(["stopped"]);
+    expect(r.mic.snapshot()).toMatchObject({ state: "idle", note: "" });
+    expect(r.tracks).toEqual(["stopped"]);
   });
 
   it("a permission that arrives after cancel is let go at once", async () => {
-    const { mic, tracks } = rig();
-    mic.toggle("t", () => {});
-    mic.cancel();
+    const r = rig();
+    r.mic.toggle("t", () => {});
+    r.mic.cancel();
     await flush();
-    expect(tracks).toEqual(["stopped"]);
-    expect(mic.snapshot().state).toBe("idle");
-  });
-
-  it("picks the first supported container and explains faults", () => {
-    expect(micType(FakeRecorder as unknown as typeof MediaRecorder)).toBe("audio/webm;codecs=opus");
-    FakeRecorder.types = [];
-    expect(micType(FakeRecorder as unknown as typeof MediaRecorder)).toBe("");
-    FakeRecorder.types = ["audio/webm;codecs=opus"];
-    expect(micFault({ name: "NotFoundError" })).toBe("No microphone found.");
-    expect(micFault(new Error("boom"))).toBe("Could not record: boom");
-  });
-
-  it("appends dictation to what was typed with one space between", () => {
-    expect(joinDictation("typed first", "what is it")).toBe("typed first what is it");
-    expect(joinDictation("typed first   ", "what")).toBe("typed first what");
-    expect(joinDictation("  ", "what")).toBe("what");
-    expect(joinDictation("", "what")).toBe("what");
+    expect(r.tracks).toEqual(["stopped"]);
+    expect(r.mic.snapshot().state).toBe("idle");
   });
 });
 
-describe("stt", () => {
-  const ok = (body: unknown, status = 200) => async () => new Response(JSON.stringify(body), { status });
-  it("posts the clip with its own type to the aria's target", async () => {
-    const calls: [string, RequestInit][] = [];
-    const f = (async (u: string, init: RequestInit) => {
-      calls.push([u, init]);
-      return new Response(JSON.stringify({ text: "hi", duration_ms: 1, audio_id: "x" }), { status: 200 });
-    }) as unknown as typeof fetch;
-    const out = await dictate("stt", f)(new Blob(["x"], { type: "audio/webm" }), "gluck/a b");
-    expect(out.text).toBe("hi");
-    expect(calls[0]![0]).toBe("stt?aria=gluck%2Fa%20b");
-    expect((calls[0]![1].headers as Record<string, string>)["Content-Type"]).toBe("audio/webm");
+describe("dictation helpers", () => {
+  it("builds the stream url on the gateway's stt route with the aria, a valid language and the session", () => {
+    const u = dictationSocketUrl("stt", "gluck/abc", "en-US", "https://fig.example/chat/");
+    expect(u.href).toBe("wss://fig.example/chat/stt/stream?aria=gluck%2Fabc&lang=en-US");
+    expect(dictationSocketUrl("stt/", "g/a", "zh-Hans-CN", "http://h/chat/").searchParams.get("lang")).toBe("en-US");
   });
 
-  it("throws the server's words and status", async () => {
-    await expect(dictate("stt", ok({ error: "too large" }, 413) as never)(new Blob(["x"]), "t")).rejects.toMatchObject({ message: "too large", status: 413 });
-    await expect(dictate("stt", (async () => new Response("<html>", { status: 502 })) as never)(new Blob(["x"]), "t")).rejects.toMatchObject({ message: "HTTP 502", status: 502 });
+  it("joins dictation to a draft, explains faults and server codes", () => {
+    expect(joinDictation("typed", "more")).toBe("typed more");
+    expect(joinDictation("", "more")).toBe("more");
+    expect(micFault(Object.assign(new Error("x"), { name: "NotFoundError" }))).toBe("No microphone found.");
+    expect(streamFault("too-long", "")).toBe("Stopped at the length limit.");
+    expect(streamFault("weird", "boom")).toBe("Dictation failed: boom");
   });
 
-  it("re-transcribes a stored clip by its key", async () => {
-    let url = "";
-    const f = (async (u: string) => {
-      url = u;
-      return new Response(JSON.stringify({ text: "again", duration_ms: 2, audio_id: "x" }), { status: 200 });
-    }) as unknown as typeof fetch;
-    expect((await retranscribe("stt", "gluck/c0ffee:3/in", f)).text).toBe("again");
-    expect(url).toBe("stt/key/gluck/c0ffee%3A3/in");
-    await expect(retranscribe("stt", "k", ok({ error: "no clip" }, 404) as never)).rejects.toMatchObject({ status: 404 });
+  it("re-transcribes a stored clip by key", async () => {
+    const f = (async (url: string) => (url === "stt/key/gluck/a%3A1/in" ? new Response(JSON.stringify({ text: "hi" }), { status: 200 }) : new Response(JSON.stringify({ error: "nope" }), { status: 404 }))) as unknown as typeof fetch;
+    expect((await retranscribe("stt", "gluck/a:1/in", f)).text).toBe("hi");
+    await expect(retranscribe("stt", "gluck/a:1/out", f)).rejects.toBeInstanceOf(SttError);
   });
 });

@@ -1,7 +1,7 @@
 import { useAtomValue } from "jotai";
 import { useSyncExternalStore } from "react";
 import { PitProvider, useViewport } from "zanni-react";
-import { AriaView, BoundPit, NewFigaro, attendedAtom, attendedRunningAtom, audioSessionAtom, linkAtom, micAtom, Roster, routeAtom, routeKindAtom, StatusBar } from "zanni-react/jotai";
+import { AriaView, BoundPit, NewFigaro, attendedAtom, attendedRunningAtom, audioSessionAtom, linkAtom, voiceAtom, micAtom, Roster, routeAtom, routeKindAtom, StatusBar } from "zanni-react/jotai";
 
 function ListHint() {
   return (
@@ -31,6 +31,7 @@ export function App() {
   const route = useAtomValue(routeAtom);
   const running = useAtomValue(attendedRunningAtom);
   const mic = useAtomValue(micAtom);
+  const voice = useAtomValue(voiceAtom);
   const session = useAtomValue(audioSessionAtom);
   useViewport();
   const phase = useSyncExternalStore(
@@ -39,7 +40,7 @@ export function App() {
   );
   return (
     <PitProvider>
-      <div className="fw zr-shell" data-link={link} data-route={kind} data-running={running ? "" : undefined} data-mic={mic.state} data-audio={phase}>
+      <div className="fw zr-shell" data-link={link} data-route={kind} data-running={running ? "" : undefined} data-mic={mic.state} data-voice={voice ? "" : undefined} data-audio={phase}>
         <StatusBar />
         <div className="fw-body">
           <Roster />

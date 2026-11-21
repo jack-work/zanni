@@ -395,6 +395,10 @@
         if (!core.arias[p.figaro_id]) { fail(c, id, -32000, 'figaro: aria ' + p.figaro_id + ' not found'); return; }
         reply(c, id, fork(p.figaro_id, p));
       },
+      'angelus.outfits': function (c, id) {
+        var names = ['opus5-ant', 'sonn5-kic', 'default'];
+        reply(c, id, { default: 'sonn5-kic', names: names, outfits: names.map(function (n) { return { name: n, path: '/home/gluck/.config/figaro/outfits/' + n + '.toml', origin: 'user' }; }) });
+      },
       'figaro.list': function (c, id, p) { reply(c, id, listRows(p || {})); }
     };
 

@@ -18,7 +18,7 @@ function NewFigaroBody() {
   const roots = useAtomValue(rootsAtom);
   const create = useSetAtom(createFigaroAtom);
   const [root, setRoot] = useState(roots[0]?.id ?? "");
-  const [outfits, setOutfits] = useState("");
+  const [outfits, setOutfits] = useState(state.outfits ?? "");
   const [text, setText] = useState("");
   const submit = (ev: { preventDefault: () => void }) => {
     ev.preventDefault();

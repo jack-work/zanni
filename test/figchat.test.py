@@ -410,8 +410,12 @@ try:
         door_v = door(12)
         attend(pg, door_v, MAIN)
         assert voice_pressed(pg) == "false", "voice starts off"
+        idle_width = pg.locator(".fw-mic").bounding_box()["width"]
         toggle_voice(pg)
+        settle_motion(pg)
         assert voice_pressed(pg) == "true"
+        assert pg.locator(".fw[data-voice]").count() == 1
+        assert pg.locator(".fw-mic").bounding_box()["width"] > idle_width + 20, "turning voice on grows the input bar's record button"
         send(pg, "just a [plain] hello")
         pg.wait_for_selector(".nodi-turn[data-turn='27'] .voce[data-for='27']", timeout=15000)
         assert pg.locator(".nodi-turn[data-turn='27'] .nodi-prose .voce").count() == 1, "one player per turn, inside a prose node"
@@ -462,13 +466,38 @@ try:
         pg.locator(".zr-input").fill("typed first")
         pg.locator(".fw-mic").tap()
         until(pg, "document.querySelector('.fw').dataset.mic === 'recording'", 10000)
-        pg.wait_for_timeout(600)
+        assert pg.locator(".fw-mic-meter").count() == 1, "the level meter is there the moment the mic is live"
+        for _ in range(100):
+            if mic_door.state()["stream"]:
+                break
+            pg.wait_for_timeout(50)
+        run = mic_door.state()["stream"][0]
+        assert run["aria"] == "gluck/" + MAIN and re.fullmatch(r"[a-z]{2,3}(-[A-Z]{2})?", run["lang"]), run
+        until(pg, "document.querySelector('.zr-input').value.includes('what is')", 10000)
+        assert pg.evaluate("document.querySelector('.fw').dataset.mic") == "recording", "words arrive in the input before he stops"
+        assert pg.locator(".zr-input").input_value().startswith("typed first what is"), pg.locator(".zr-input").input_value()
+        seen_level = False
+        for _ in range(60):
+            if pg.evaluate("document.documentElement.style.getPropertyValue('--fw-mic-level') !== ''"):
+                seen_level = True
+                break
+            pg.wait_for_timeout(50)
+        assert seen_level, "the meter follows the microphone"
+        for _ in range(100):
+            if len(mic_door.state()["stream"][0]["frames"]) >= 14:
+                break
+            pg.wait_for_timeout(50)
         pg.locator(".fw-mic").tap()
-        until(pg, "document.querySelector('.zr-input').value.includes('crossing count')", 10000)
-        assert pg.locator(".zr-input").input_value() == "typed first what is the crossing count", pg.locator(".zr-input").input_value()
-        posts = mic_door.state()["stt"]
-        assert len(posts) == 1 and posts[0]["type"].startswith("audio/") and posts[0]["size"] > 0, posts
-        assert posts[0]["aria"] == "gluck/" + MAIN, posts
+        until(pg, "document.querySelector('.zr-input').value.includes('crossing count please')", 10000)
+        until(pg, "document.querySelector('.fw').dataset.mic === 'idle'", 5000)
+        assert pg.locator(".zr-input").input_value() == "typed first what is the crossing count please", pg.locator(".zr-input").input_value()
+        run = mic_door.state()["stream"][0]
+        assert run["ended"] and not run["cancelled"], run
+        assert set(run["frames"]) == {1280}, "40 ms frames of 16 kHz s16le: %s" % set(run["frames"])
+        assert mic_door.state()["stt"] == [], "nothing is posted for transcription any more"
+        stream_sessions = [g for g in mic_door.state()["sessions"] if g["kind"] == "stt-ws"]
+        assert len(stream_sessions) == 1 and re.fullmatch(r"[A-Za-z0-9_-]{16}", stream_sessions[0]["query"]), stream_sessions
+        assert pg.evaluate("document.documentElement.style.getPropertyValue('--fw-mic-level')") == "", "the meter is cleared"
         assert mic_door.state()["sent"] == [], "the transcript is not sent until Gluck sends it"
         assert pg.evaluate("document.activeElement.className") == "zr-input", "the transcript lands with the cursor in the composer"
         pg.locator(".zr-input").fill("edited words")
@@ -795,12 +824,22 @@ try:
             pg.locator("[data-action='recent']").click()
             until(pg, "document.querySelectorAll('.zr-pit-row[data-id]').length >= 5", 8000)
             pg.locator(".fw-pit-back").click()
+            pg.locator("[data-action='outfits']").click()
+            until(pg, "document.querySelectorAll('.zr-pit-row[data-action=\"outfit\"]').length === 3", 8000)
+            assert pg.locator(".zr-pit-row[data-action='outfit'][data-id='sonn5-kic'] .zr-pit-row-meta").inner_text() == "default"
+            pg.locator(".zr-pit-row[data-action='outfit'][data-id='opus5-ant']").click()
+            pg.wait_for_selector(".fw-new-form")
+            assert pg.locator(".fw-new-form input").input_value() == "opus5-ant", "an outfit from the list is chosen for the new figaro"
+            pg.keyboard.press("Escape")
+            pg.wait_for_selector(".fw-new-form", state="detached")
+            pg.wait_for_selector(".zr-pit", state="detached")
+            open_pit(pg)
             close_pit(pg)
             pg.reload()
             until(pg, "document.querySelector('.fw').dataset.link === 'live'", 15000)
             open_pit(pg)
             order = pg.locator(".zr-pit-row").evaluate_all("rows => rows.map(r => r.dataset.action)")
-            assert order[:2] == ["recent", "tree"], "last-used order survives a reload: %s" % order
+            assert order[:3] == ["outfits", "recent", "tree"], "last-used order survives a reload: %s" % order
             close_pit(pg)
 
             attend(pg, ctl_door, MAIN)

@@ -1,4 +1,4 @@
-import { Button, Composer as ZComposer, PitGrip } from "../../index";
+import { Button, Composer as ZComposer, PitGrip, voiceGlyph } from "../../index";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { memo, useEffect, useRef, useState } from "react";
 import { clock } from "../../index";
@@ -93,7 +93,13 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
             toggleMic();
           }}
         >
+          {voiceGlyph && (
+            <span className="fw-mic-glyph" aria-hidden="true">
+              {voiceGlyph}
+            </span>
+          )}
           {micLabel}
+          {mic.state === "recording" && <span className="fw-mic-meter" aria-hidden="true" />}
         </Button>
       }
     />

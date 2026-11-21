@@ -1,4 +1,4 @@
-import { glyphs } from "../../index";
+import { glyphs, voiceGlyph } from "../../index";
 
 export type PitRowId = "new" | "outfits" | "state" | "tail-fork" | "fork-at" | "tree" | "recent" | "voice";
 export type PitView = "list" | "outfits" | "state" | "fork-at" | "tree" | "recent";
@@ -17,29 +17,12 @@ export const PIT_ROWS: readonly PitRowSpec[] = [
   { id: "tree", label: "Tree", glyph: glyphs["pit.troupe"] },
   { id: "recent", label: "Recent", glyph: glyphs["pit.form"] },
   { id: "outfits", label: "Outfits", glyph: glyphs["pit.models"] },
-  { id: "voice", label: "Voice", glyph: glyphs["pit.notifications"] },
+  { id: "voice", label: "Voice", glyph: voiceGlyph },
 ];
 
 export function byLastUsed(rows: readonly PitRowSpec[], used: Readonly<Record<string, number>>): PitRowSpec[] {
   const order = new Map(rows.map((r, i) => [r.id, i]));
   return [...rows].sort((a, b) => (used[b.id] ?? 0) - (used[a.id] ?? 0) || (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
-}
-
-export interface StateRow {
-  readonly key: string;
-  readonly value: string;
-}
-
-export function stateRows(root: unknown, prefix = ""): StateRow[] {
-  if (root === null || typeof root !== "object" || Array.isArray(root)) return [];
-  const out: StateRow[] = [];
-  for (const k of Object.keys(root).sort()) {
-    const v = (root as Record<string, unknown>)[k];
-    const key = prefix ? prefix + "." + k : k;
-    if (v !== null && typeof v === "object" && !Array.isArray(v)) out.push(...stateRows(v, key));
-    else out.push({ key, value: typeof v === "string" ? v : JSON.stringify(v) });
-  }
-  return out;
 }
 
 export function valueAt(root: unknown, path: string): string | undefined {

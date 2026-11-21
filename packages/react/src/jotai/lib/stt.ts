@@ -26,19 +26,6 @@ async function reply(res: Response): Promise<SttReply> {
   throw new SttError(json && json.error ? String(json.error) : "HTTP " + res.status, res.status);
 }
 
-export function dictate(url: string, f: typeof fetch = (...a) => window.fetch(...a)): (blob: Blob, target: string) => Promise<SttReply> {
-  return async (blob, target) =>
-    reply(
-      await f(url + "?aria=" + encodeURIComponent(target), {
-        method: "POST",
-        credentials: "same-origin",
-        cache: "no-store",
-        headers: sessionHeaders({ Accept: "application/json", "Content-Type": blob.type || "application/octet-stream" }),
-        body: blob,
-      }),
-    );
-}
-
 export function retranscribe(url: string, key: string, f: typeof fetch = (...a) => window.fetch(...a)): Promise<SttReply> {
   const path = key.split("/").map(encodeURIComponent).join("/");
   return f(url.replace(/\/$/, "") + "/key/" + path, { method: "POST", credentials: "same-origin", cache: "no-store", headers: sessionHeaders({ Accept: "application/json" }) }).then(reply);

@@ -1,19 +1,25 @@
 import { atom } from "jotai";
-import { canRecord, joinDictation, Mic, type Media, type MicSnapshot } from "../lib/mic";
-import { dictate } from "../lib/stt";
+import { sessionUrl } from "../../index";
+import { captureFrames, browserMedia } from "../lib/capture";
+import { Dictation, dictationSocketUrl, type SocketLike } from "../lib/dictation";
+import { canRecord, joinDictation, type MicSnapshot } from "../lib/mic";
 import { audioSessionAtom, unlockAudio } from "./audio";
 import { bootAtom } from "./boot";
 import { draftAtom, keyOf } from "./composer";
 import { attendedAtom } from "./route";
 
-function browserMedia(): Media {
-  return { devices: typeof navigator === "undefined" ? undefined : navigator.mediaDevices, Recorder: typeof window === "undefined" ? undefined : window.MediaRecorder };
-}
+export const MIC_LEVEL_VAR = "--fw-mic-level";
 
 export const micAtom = atom<MicSnapshot>({ state: canRecord(browserMedia()) ? "idle" : "unsupported", began: 0, note: "" });
-const controller = atom<Mic | null>(null);
+const controller = atom<Dictation | null>(null);
 
 export const dictationFocusAtom = atom(0);
+
+function writeLevel(value: number): void {
+  const root = document.documentElement.style;
+  if (value > 0) root.setProperty(MIC_LEVEL_VAR, value.toFixed(2));
+  else root.removeProperty(MIC_LEVEL_VAR);
+}
 
 export const micToggleAtom = atom(null, (get, set) => {
   const at = get(attendedAtom);
@@ -22,12 +28,14 @@ export const micToggleAtom = atom(null, (get, set) => {
   unlockAudio(session);
   let mic = get(controller);
   if (!mic) {
-    const stt = dictate(get(bootAtom).sttUrl);
-    mic = new Mic({
+    const stt = get(bootAtom).sttUrl;
+    mic = new Dictation({
       media: browserMedia(),
       now: () => Date.now(),
-      transcribe: stt,
+      open: (target) => new WebSocket(sessionUrl(dictationSocketUrl(stt, target, navigator.language || "en-US")).href) as unknown as SocketLike,
+      capture: captureFrames,
       recording: (on) => session.setRecording(on),
+      level: writeLevel,
       setTimeout: (fn, ms) => window.setTimeout(fn, ms),
       clearTimeout: (id) => window.clearTimeout(id as number),
     });
@@ -35,8 +43,9 @@ export const micToggleAtom = atom(null, (get, set) => {
     set(controller, mic);
   }
   const key = keyOf(at.store, at.aria);
+  const base = get(draftAtom(key));
   mic.toggle(key, (text) => {
-    set(draftAtom(key), (prev) => joinDictation(prev, text));
+    set(draftAtom(key), joinDictation(base, text));
     set(dictationFocusAtom, (n) => n + 1);
   });
 });

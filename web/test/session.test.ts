@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { SESSION_HEADER, audioKeyUrl, mintSessionId, sessionHeaders, sessionId, sessionUrl, withSession } from "zanni-react";
-import { dictate, retranscribe } from "zanni-react/jotai";
+import { retranscribe } from "zanni-react/jotai";
 
 const SHAPE = /^[A-Za-z0-9_-]{16}$/;
 
@@ -32,12 +32,11 @@ describe("session id", () => {
 });
 
 describe("stt calls", () => {
-  it("send the header on dictation and on re-transcription", async () => {
+  it("send the header on re-transcription", async () => {
     const f = vi.fn(async () => new Response(JSON.stringify({ text: "hi" }), { status: 200 }));
-    await dictate("stt", f as unknown as typeof fetch)(new Blob(["x"], { type: "audio/webm" }), "abc");
     await retranscribe("stt", "gluck/abc:1/in", f as unknown as typeof fetch);
     const calls = f.mock.calls as unknown as [string, RequestInit][];
-    expect(calls).toHaveLength(2);
-    for (const [, init] of calls) expect((init.headers as Record<string, string>)[SESSION_HEADER]).toBe(sessionId);
+    expect(calls).toHaveLength(1);
+    expect((calls[0]![1].headers as Record<string, string>)[SESSION_HEADER]).toBe(sessionId);
   });
 });

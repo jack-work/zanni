@@ -1,7 +1,7 @@
 import { Button, Pit as ZPit, PitList, PitRow, glyphs, usePit } from "../../index";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useState } from "react";
-import { PIT_ROWS, EFFORT_KEY, FORKED_FROM_KEY, byLastUsed, stateRows, valueAt, type PitRowId, type PitView } from "../lib/pit-rows";
+import { PIT_ROWS, EFFORT_KEY, FORKED_FROM_KEY, byLastUsed, valueAt, type PitRowId, type PitView } from "../lib/pit-rows";
 import { PHASE_WORDS, labelOf } from "../lib/roster";
 import { TopologyTree, FormTree } from "./tree-view";
 import { turnsAtom, linkAtom } from "../state/aria";
@@ -11,7 +11,7 @@ import { composerAtom, forkAtom, keyOf } from "../state/composer";
 import { openNewFigaroAtom } from "../state/new-figaro";
 import { boundStateAtom, markPitUsedAtom, pitUsedAtom, pitViewAtom, recentStateAtom, treeStateAtom } from "../state/pit";
 import { attendedRowAtom, rosterAtom } from "../state/roster";
-import { attendedAtom, goAtom, storeNameAtom } from "../state/route";
+import { attendedAtom, clientAtom, goAtom, storeNameAtom } from "../state/route";
 
 const TITLES: Record<PitView, string> = {
   list: "",
@@ -230,25 +230,62 @@ function RecentView() {
   );
 }
 
+interface OutfitsReply {
+  default?: string;
+  names?: string[];
+  outfits?: { name: string; path?: string; origin?: string }[];
+}
+
 function OutfitsView() {
+  const pit = usePit();
+  const client = useAtomValue(clientAtom);
   const row = useAtomValue(attendedRowAtom);
   const bound = useAtomValue(boundStateAtom);
-  const system = stateRows(bound?.root).filter((r) => r.key.startsWith("system.") && /(model|provider|credo|tools|methods|thinking)/.test(r.key));
+  const openNew = useSetAtom(openNewFigaroAtom);
+  const [reply, setReply] = useState<OutfitsReply | undefined>();
+  const [error, setError] = useState("");
+  useEffect(() => {
+    if (!client) return;
+    let live = true;
+    client.connection.call<OutfitsReply>("angelus.outfits", {}).then(
+      (r) => live && setReply(r),
+      (err: unknown) => live && setError(err instanceof Error && err.message ? err.message : "network"),
+    );
+    return () => {
+      live = false;
+    };
+  }, [client]);
+  const applied = row?.outfit_name || valueAt(bound?.root, "system.outfit");
+  const names = reply?.outfits?.map((o) => o.name) ?? reply?.names ?? [];
   return (
     <>
-      <dl className="fw-pit-state">
-        <div className="fw-pit-fact">
-          <dt>Outfit</dt>
-          <dd>{row?.outfit_name || "none recorded"}</dd>
-        </div>
-        {system.map((r) => (
-          <div key={r.key} className="fw-pit-fact" data-key={r.key}>
-            <dt>{r.key.slice(7)}</dt>
-            <dd>{r.value}</dd>
+      {applied && (
+        <dl className="fw-pit-state">
+          <div className="fw-pit-fact">
+            <dt>Worn</dt>
+            <dd>{applied}</dd>
           </div>
+        </dl>
+      )}
+      {!reply && <p className="fw-note">{error ? "No outfit list: " + error : "Loading the outfits."}</p>}
+      <PitList label="Outfits">
+        {names.map((n) => (
+          <PitRow
+            key={n}
+            glyph={glyphs["pit.models"]}
+            label={n}
+            meta={n === reply?.default ? "default" : ""}
+            current={n === applied}
+            action="outfit"
+            id={n}
+            onClick={() => {
+              pit?.setSnap("closed");
+              openNew(n);
+            }}
+          />
         ))}
-      </dl>
-      <p className="fw-note">The outfit list needs a door method; choose outfits when you make a new figaro.</p>
+      </PitList>
+      {reply && <p className="fw-note">Tap an outfit to make a new figaro in it.</p>}
     </>
   );
 }

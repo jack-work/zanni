@@ -129,6 +129,32 @@ async function test(name, fn) {
     fs.rmSync(root, { recursive: true, force: true });
   });
 
+  await test('pcm worklet: any input rate becomes 40 ms frames of 16 kHz s16le with a level, and the tone survives', () => {
+    const { Framer, FRAME_SAMPLES } = require('../assets/figchat/pcm-worklet.js');
+    assert.strictEqual(FRAME_SAMPLES, 640);
+    for (const rate of [48000, 44100, 16000]) {
+      const frames = [];
+      const f = new Framer(rate, (buf, level) => frames.push({ buf, level }));
+      let t = 0;
+      for (let k = 0; k < Math.floor(rate / 128); k++) {
+        const blk = new Float32Array(128);
+        for (let i = 0; i < 128; i++) blk[i] = 0.3 * Math.sin(2 * Math.PI * 440 * (t++) / rate);
+        f.push(blk);
+      }
+      assert.ok(frames.length >= 23 && frames.length <= 25, rate + ' Hz gave ' + frames.length + ' frames');
+      assert.ok(frames.every((x) => x.buf.byteLength === 1280), 'every frame is 40 ms of s16le');
+      assert.ok(frames.every((x) => x.level > 0.9), 'a loud tone reads as a high level');
+      const pcm = Int16Array.from(frames.flatMap((x) => [...new Int16Array(x.buf)]));
+      let crossings = 0;
+      for (let i = 1; i < pcm.length; i++) if (pcm[i - 1] <= 0 && pcm[i] > 0) crossings++;
+      const hz = crossings / (pcm.length / 16000);
+      assert.ok(Math.abs(hz - 440) < 25, rate + ' Hz input keeps its pitch: ' + hz);
+    }
+    const quiet = [];
+    new Framer(48000, (b, l) => quiet.push(l)).push(new Float32Array(48000));
+    assert.ok(quiet.length >= 24 && quiet.every((l) => l === 0), 'silence reads as level zero');
+  });
+
   await test('vendored client: SOURCE.json names the figaro-forms revision the tarball was cut from, and the lockfile pins it', () => {
     const web = path.join(__dirname, '..', 'web');
     const src = JSON.parse(fs.readFileSync(path.join(web, 'vendor', 'SOURCE.json'), 'utf8'));
