@@ -146,7 +146,7 @@ def shown(text):
     out = []
     for ch in text:
         c = ord(ch)
-        if any(lo <= c <= hi for lo, hi in CONTROL) and not ("reveal" in STRICT and c in (0x200c, 0x200d)):
+        if any(lo <= c <= hi for lo, hi in CONTROL) and c not in (0x200c, 0x200d):
             out.append("U+%04X" % c)
         else:
             out.append(ch)
