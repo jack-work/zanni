@@ -10,7 +10,8 @@
     "./styles.css": "./src/zanni-react.css"
   },
   "peerDependencies": {
-    "react": "^19"
+    "react": "^19",
+    "figaro-forms": ">=0.6"
   },
-  "peerDependenciesMeta": {}
+  "peerDependenciesMeta": { "figaro-forms": { "optional": true } }
 }

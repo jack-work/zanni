@@ -4,12 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { joinDictation } from "../lib/mic";
 import { clipKey, sheetActions, type SheetContext, type SheetTarget } from "../lib/sheet";
 import { retranscribe } from "../lib/stt";
-import { voce, type VocePlayer } from "../lib/zanni";
+import { voce, type VocePlayer } from "zanni-react";
 import { replayAtom } from "../state/audio";
 import { bootAtom } from "../state/boot";
 import { draftAtom, keyOf } from "../state/composer";
 import { closeSheetAtom, sheetAtom } from "../state/sheet";
-import { Plain } from "./text";
+import { Plain } from "zanni-react";
 
 const SPOKEN = { input: "Your message", prose: "Reply" } as const;
 

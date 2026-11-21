@@ -1,7 +1,7 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { TurnView } from "../src/components/items";
-import type { Item, ToolItem, TurnModel } from "../src/lib/zanni";
+import { TurnView } from "zanni-react";
+import type { Item, ToolItem, TurnModel } from "zanni-react";
 
 const tool = (node: number, name: string, extra: Partial<ToolItem> = {}): ToolItem => ({ key: "n" + node, kind: "tool", node, settled: true, name, status: "ok", summary: "", args: "", input: "", output: "out", outputBase: 0, ms: 0, ...extra });
 const think = (node: number): Item => ({ key: "n" + node, kind: "thinking", node, settled: true, text: "hmm" });
@@ -14,11 +14,11 @@ const kinds = (el: HTMLElement) => [...el.querySelectorAll(".nodi-turn-body > *"
 describe("a turn", () => {
   it("reads words, a fold of work, words", () => {
     const { container } = render(<ol><TurnView turn={turn([prose(0), think(1), tool(2, "read"), tool(3, "read"), tool(4, "bash", { ms: 63_000 }), prose(5)])} speaking={null} fresh={false} /></ol>);
-    expect(kinds(container)).toEqual(["nodi-prose", "fw-work", "nodi-prose"]);
-    const group = container.querySelector<HTMLDetailsElement>(".fw-work")!;
+    expect(kinds(container)).toEqual(["nodi-prose", "zr-work", "nodi-prose"]);
+    const group = container.querySelector<HTMLDetailsElement>(".zr-work")!;
     expect(group.open).toBe(false);
     expect(group.querySelector(".nodi-sum-label")!.textContent).toBe("Explored 2 files, ran 1 command");
-    expect(group.querySelector(".fw-work-time")!.textContent).toBe("1m 3s");
+    expect(group.querySelector(".zr-work-time")!.textContent).toBe("1m 3s");
     expect(group.querySelectorAll(".nodi-thinking, .nodi-tool")).toHaveLength(4);
   });
 
@@ -29,7 +29,7 @@ describe("a turn", () => {
 
   it("marks a running group live", () => {
     const { container } = render(<ol><TurnView turn={turn([think(0), tool(1, "bash", { status: "running" })], { open: true, sealed: false })} speaking={null} fresh={false} /></ol>);
-    expect(container.querySelector(".fw-work")!.hasAttribute("data-live")).toBe(true);
+    expect(container.querySelector(".zr-work")!.hasAttribute("data-live")).toBe(true);
     expect(container.querySelector(".nodi-sum-label")!.textContent).toBe("Running 1 command");
   });
 

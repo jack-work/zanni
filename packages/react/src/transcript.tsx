@@ -1,11 +1,17 @@
-import { useSetAtom } from "jotai";
-import { formatWorkedTime, groupWork, stepsTitle, type Work } from "../lib/work";
-import { memo, useMemo, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
-import type { SheetKind } from "../lib/sheet";
-import { openSheetAtom } from "../state/sheet";
-import { nodi, type InputModel, type Item, type ProseItem, type SteeringItem, type ThinkingItem, type ToolItem, type TurnModel, type UnknownItem } from "../lib/zanni";
+import { formatWorkedTime, groupWork, stepsTitle, type Work } from "./work";
+import { createContext, memo, useContext, useMemo, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import { Fold } from "./fold";
+import { nodi, type InputModel, type Item, type ProseItem, type SteeringItem, type ThinkingItem, type ToolItem, type TurnModel, type UnknownItem } from "./zanni";
 import { BlockView, Plain } from "./text";
-import { TurnActions } from "./turn-actions";
+
+export type TapKind = "input" | "prose";
+
+export interface TranscriptHooks {
+  open?: (kind: TapKind, turn: number) => void;
+  actions?: (turn: number) => ReactNode;
+}
+
+export const TranscriptContext = createContext<TranscriptHooks>({});
 
 const CLIP = 4000;
 
@@ -15,8 +21,9 @@ function settled(item: { settled: boolean }): { "data-settled"?: "" } {
 
 const NOT_A_TAP = "a, button, summary, input, textarea, .voce";
 
-function useTap(kind: SheetKind, turn: number) {
-  const open = useSetAtom(openSheetAtom);
+function useTap(kind: TapKind, turn: number) {
+  const hooks = useContext(TranscriptContext);
+  const open = (to: { kind: TapKind; turn: number }) => hooks.open?.(to.kind, to.turn);
   return {
     tabIndex: 0,
     "aria-haspopup": "dialog" as const,
@@ -88,25 +95,13 @@ export const ProseView = memo(
   (a, b) => a.item.text === b.item.text && a.item.settled === b.item.settled && a.speaking === b.speaking && a.spokenChars === b.spokenChars && a.turn === b.turn,
 );
 
-function Caret({ children }: { children: ReactNode }) {
-  return (
-    <summary className="nodi-sum">
-      <span className="nodi-caret" />
-      {children}
-    </summary>
-  );
-}
-
 export function ThinkingView({ item }: { item: ThinkingItem }) {
   return (
-    <details className="nodi-thinking" {...settled(item)}>
-      <Caret>
-        <span className="nodi-sum-label">Thinking</span>
-      </Caret>
+    <Fold className="nodi-thinking" summary={<span className="nodi-sum-label">Thinking</span>} {...settled(item)}>
       <div className="nodi-thought">
         <Plain text={item.text} />
       </div>
-    </details>
+    </Fold>
   );
 }
 
@@ -138,16 +133,22 @@ export function ToolView({ item }: { item: ToolItem }) {
   const showOut = !!out || item.status !== "running";
   const cut = item.outputBase > 0 || item.output.length > CLIP;
   return (
-    <details className="nodi-tool" data-status={item.status} {...settled(item)}>
-      <Caret>
-        <span className="nodi-tool-name">
-          <Plain text={item.name || "tool"} />
-        </span>
-        <span className="nodi-tool-summary">
-          <Plain text={item.summary} />
-        </span>
-        <span className="nodi-tool-status">{toolStatusWord(item)}</span>
-      </Caret>
+    <Fold
+      className="nodi-tool"
+      data-status={item.status}
+      {...settled(item)}
+      summary={
+        <>
+          <span className="nodi-tool-name">
+            <Plain text={item.name || "tool"} />
+          </span>
+          <span className="nodi-tool-summary">
+            <Plain text={item.summary} />
+          </span>
+          <span className="nodi-tool-status">{toolStatusWord(item)}</span>
+        </>
+      }
+    >
       <div className="nodi-tool-body">
         {shownArgs && (
           <>
@@ -167,7 +168,7 @@ export function ToolView({ item }: { item: ToolItem }) {
           </>
         )}
       </div>
-    </details>
+    </Fold>
   );
 }
 
@@ -190,15 +191,20 @@ export function WorkGroup({ items }: { items: Work[] }) {
   const live = items.some((i) => (i.kind === "tool" ? i.status === "running" : !i.settled));
   const ms = items.reduce((n, i) => n + (i.kind === "tool" ? i.ms : 0), 0);
   return (
-    <details className="fw-work" {...(live ? { "data-live": "" } : {})}>
-      <Caret>
-        <span className="nodi-sum-label">{stepsTitle(items, live)}</span>
-        {ms >= 1000 && <span className="fw-work-time">{formatWorkedTime(ms)}</span>}
-      </Caret>
-      <div className="fw-work-body">
+    <Fold
+      className="zr-work"
+      {...(live ? { "data-live": "" } : {})}
+      summary={
+        <>
+          <span className="nodi-sum-label">{stepsTitle(items, live)}</span>
+          {ms >= 1000 && <span className="zr-work-time">{formatWorkedTime(ms)}</span>}
+        </>
+      }
+    >
+      <div className="zr-work-body">
         {items.map((it) => (it.kind === "thinking" ? <ThinkingView key={it.key} item={it} /> : <ToolView key={it.key} item={it} />))}
       </div>
-    </details>
+    </Fold>
   );
 }
 
@@ -238,12 +244,13 @@ export const TurnView = memo(
   const state = m.end ? (m.end.kind === "error" ? "failed" : "ended") : m.open ? "open" : "done";
   const mine = speaking && speaking.turn === m.turn ? speaking : null;
   const rows = useMemo(() => groupWork(m.items), [m.items]);
+  const hooks = useContext(TranscriptContext);
   return (
-    <li className="nodi-turn" data-turn={m.turn} data-state={state} {...(fresh ? { "data-fresh": "" } : {})}>
+    <li className="nodi-turn zr-host" data-turn={m.turn} data-state={state} {...(fresh ? { "data-fresh": "" } : {})}>
       <div className="nodi-turn-head">
         <span className="nodi-turn-no">Turn {m.turn}</span>
         <span className="nodi-turn-tools">
-          <TurnActions turn={m.turn} />
+          {hooks.actions?.(m.turn)}
         </span>
       </div>
       <div className="nodi-turn-body">

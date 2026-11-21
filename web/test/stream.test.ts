@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AriaClient, type AriaSnapshot } from "figaro-forms/aria";
-import { nodi, type TurnModel } from "../src/lib/zanni";
+import { nodi, type TurnModel } from "zanni-react";
 import { mock, type MockCore } from "./mock";
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));

@@ -16,6 +16,7 @@
     "noEmit": true,
     "paths": {
       "zanni-react": ["../packages/react/src/index.ts"],
+      "figaro-forms/aria": ["./node_modules/figaro-forms/dist/aria/index.d.ts"],
       "zanni-react/jotai": ["../packages/react/src/jotai.ts"],
       "*": ["./node_modules/@types/*", "./node_modules/*"]
     }

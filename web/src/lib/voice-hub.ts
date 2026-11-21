@@ -1,5 +1,5 @@
 import type { AudioSession } from "./audio-session";
-import type { SpeechChunk, SpeechFault, SpeechSession, SpeechStart, SpeechTransport, VocePlayer, VoceApi } from "./nodi-types";
+import type { SpeechChunk, SpeechFault, SpeechSession, SpeechStart, SpeechTransport, VocePlayer, VoceApi } from "zanni-react";
 
 export interface SpokenNode {
   readonly turn: number;

@@ -1,10 +1,9 @@
-import { Button } from "zanni-react";
+import { Button, nodi, Plain, TranscriptContext, TurnView } from "zanni-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { ariaAtom } from "figaro-forms/aria/jotai";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { scrollToBottom, useFollow } from "../lib/follow";
 import { labelOf } from "../lib/roster";
-import { nodi } from "../lib/zanni";
 import { noteAtom, turnsAtom } from "../state/aria";
 import { rosterAtom } from "../state/roster";
 import { composerAtom, forkAtom, keyOf } from "../state/composer";
@@ -13,9 +12,9 @@ import { micCancelAtom } from "../state/mic";
 import { useVoice } from "./use-voice";
 import { linkAtom } from "../state/aria";
 import type { Attended } from "../state/route";
+import { openSheetAtom } from "../state/sheet";
 import { Composer } from "./composer";
-import { TurnView } from "./items";
-import { Plain } from "./text";
+import { TurnActions } from "./turn-actions";
 
 const DEEP_LIMIT = 60;
 const FLASH_MS = 1800;
@@ -153,6 +152,8 @@ export function AriaView({ attended }: { attended: Attended }) {
     return () => watch.disconnect();
   }, [followed, olderAvailable, loadOlder]);
 
+  const openSheet = useSetAtom(openSheetAtom);
+  const transcript = useMemo(() => ({ open: (kind: "input" | "prose", turn: number) => openSheet({ kind, turn }), actions: (turn: number) => <TurnActions turn={turn} /> }), [openSheet]);
   const status = note || pageError;
   const metrics = snap.metrics ? nodi.metricsLine(snap.metrics) : "";
 
@@ -181,11 +182,13 @@ export function AriaView({ attended }: { attended: Attended }) {
             Earlier turns
           </Button>
         )}
-        <ol className="nodi-turns" aria-label="Transcript">
-          {turns.map((t) => (
-            <TurnView key={t.key} turn={t} speaking={speakingHere} fresh={baseline !== null && t.turn > baseline} />
-          ))}
-        </ol>
+        <TranscriptContext value={transcript}>
+          <ol className="nodi-turns" aria-label="Transcript">
+            {turns.map((t) => (
+              <TurnView key={t.key} turn={t} speaking={speakingHere} fresh={baseline !== null && t.turn > baseline} />
+            ))}
+          </ol>
+        </TranscriptContext>
         {status && <p className="fw-note">{status}</p>}
       </main>
       <Composer attended={attended} toBottom={toBottom} />

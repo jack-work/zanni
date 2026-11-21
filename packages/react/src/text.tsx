@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from "react";
-import { nodi, type Block, type Span } from "../lib/zanni";
+import { nodi, type Block, type Span } from "./zanni";
 
 export function Plain({ text }: { text: string }) {
   return (

@@ -143,11 +143,11 @@ try:
         for width, height in ((390, 844), (1280, 800)):
             pg = fresh(width, height)
             pg.goto(fast.url)
-            pg.wait_for_selector(".fw-thread")
+            pg.wait_for_selector(".zr-thread")
             assert pg.title() == "figaro web"
             until(pg, "document.fonts.check('26px \"Jacquard 24\"')")
             assert pg.evaluate("document.querySelectorAll('script:not([src]), style, [style]').length") == 0, "no inline script or style under the CSP"
-            assert pg.locator(".fw-thread").count() == 8, "list is paged at eight"
+            assert pg.locator(".zr-thread").count() == 8, "list is paged at eight"
             sans_free(pg, "the list at %d" % width)
             no_sideways(pg, width, "the list")
             assert not pg.errors, pg.errors
@@ -162,8 +162,8 @@ try:
             first = turns_shown(pg)
             assert first and first[-1] == 26 and len(first) < 26, "tail page only: %s" % first
             assert first == sorted(first) and len(set(first)) == len(first), first
-            pg.wait_for_selector(".fw-thread", state="attached")
-            rows = pg.locator(".fw-thread").count()
+            pg.wait_for_selector(".zr-thread", state="attached")
+            rows = pg.locator(".zr-thread").count()
             assert rows == 8, "list is paged at eight, got %d" % rows
             if width >= 900:
                 assert pg.locator(".fw-side").is_visible(), "the list sits beside the transcript at 1280"
@@ -171,8 +171,8 @@ try:
                 assert not pg.locator(".fw-side").is_visible(), "one pane at 390"
             if width >= 900:
                 pg.locator(".fw-more").click()
-                until(pg, "document.querySelectorAll('.fw-thread').length > 8")
-                depths = pg.evaluate("[...document.querySelectorAll('.fw-thread')].map(a => a.dataset.depth)")
+                until(pg, "document.querySelectorAll('.zr-thread').length > 8")
+                depths = pg.evaluate("[...document.querySelectorAll('.zr-thread')].map(a => a.dataset.depth)")
                 assert "1" in depths, "children are indented under their parent: %s" % depths
             snap(pg, "attend-light-" + tag)
 
@@ -370,8 +370,8 @@ try:
         pg.locator(".zr-input").fill("half a thought")
         pg.wait_for_timeout(600)
         pg.locator(".fw-back").click()
-        pg.wait_for_selector(".fw-thread")
-        pg.locator(".fw-thread[data-id='%s']" % LANE).click()
+        pg.wait_for_selector(".zr-thread")
+        pg.locator(".zr-thread[data-id='%s']" % LANE).click()
         until(pg, "document.querySelector('.fw').dataset.link === 'live'", timeout=10000)
         assert pg.locator(".zr-input").input_value() == "", "another aria has its own draft"
         pg.goto("about:blank")

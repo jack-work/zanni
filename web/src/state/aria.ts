@@ -1,8 +1,8 @@
 import { atom, type Atom } from "jotai";
 import { ariaAtom, ariaConnectionAtom, ariaPhaseAtom } from "figaro-forms/aria/jotai";
 import type { AriaClient, AriaSnapshot, Phase } from "figaro-forms/aria";
-import { nodi, type TurnModel } from "../lib/zanni";
-import { workOf, type Work_ } from "../lib/work";
+import { nodi, type TurnModel } from "zanni-react";
+import { workOf, type Work_ } from "zanni-react";
 import { refusalText } from "../lib/roster";
 import { attendedAtom, clientAtom } from "./route";
 

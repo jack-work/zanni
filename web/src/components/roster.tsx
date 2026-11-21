@@ -1,11 +1,10 @@
-import { Button } from "zanni-react";
+import { Button, List, ListRow, Plain } from "zanni-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect } from "react";
 import { labelOf } from "../lib/roster";
 import { routeFor } from "../lib/route";
 import { attendedAtom, storeNameAtom } from "../state/route";
 import { depthsAtom, rosterActionAtom, rosterAtom, rosterLoadedAtom } from "../state/roster";
-import { Plain } from "./text";
 
 export function Roster() {
   const roster = useAtomValue(rosterAtom);
@@ -34,20 +33,20 @@ export function Roster() {
           Refresh
         </Button>
       </div>
-      <ul className="fw-threads">
+      <List label="Arias">
         {roster.rows.map((r) => (
-          <li key={r.id} className="fw-row">
-            <a className="fw-thread" href={routeFor(store, r.id)} data-id={r.id} data-state={r.state || ""} data-depth={Math.min(6, depth[r.id] ?? 0)} {...(attended && attended.aria === r.id ? { "aria-current": "page" as const } : {})}>
-              <span className="fw-thread-title">
-                <Plain text={labelOf(r)} />
-              </span>
-              <span className="fw-thread-when">
-                <Plain text={(r.state || "") + (r.message_count != null ? " \u00b7 " + r.message_count : "")} />
-              </span>
-            </a>
-          </li>
+          <ListRow
+            key={r.id}
+            id={r.id}
+            href={routeFor(store, r.id)}
+            state={r.state || ""}
+            depth={depth[r.id] ?? 0}
+            current={!!attended && attended.aria === r.id}
+            title={<Plain text={labelOf(r)} />}
+            meta={<Plain text={(r.state || "") + (r.message_count != null ? " \u00b7 " + r.message_count : "")} />}
+          />
         ))}
-      </ul>
+      </List>
       {roster.next && (
         <Button variant="quiet" size="compact" className="fw-older fw-more" onClick={() => void act("more")}>
           More arias
