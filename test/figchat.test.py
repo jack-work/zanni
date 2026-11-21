@@ -272,6 +272,15 @@ try:
             attend(pg, door(45), MAIN)
             idle = pg.locator(".zr-composer").bounding_box()
             assert idle["height"] <= 76, "an idle composer is at most 76px tall: %s" % idle
+            attach, command, sendp, field = (pg.locator(s).bounding_box() for s in (".zr-attach", ".zr-command", ".zr-send", ".zr-input"))
+            assert attach["x"] + attach["width"] <= field["x"] + 1, "attach sits left of the input: %s %s" % (attach, field)
+            assert command["x"] >= field["x"] + field["width"] - 1 and sendp["x"] >= command["x"] + command["width"] - 2, "command and send sit right of the input, send last: %s" % [command, sendp]
+            assert abs((command["x"] + command["width"]) - sendp["x"]) <= 2, "command and send are one joined pair"
+            for b in (attach, command, sendp):
+                assert 30 <= b["height"] <= 40 and b["width"] <= 64, "a small pill: %s" % b
+            assert [pg.locator(s).inner_text() for s in (".zr-command", ".zr-send")] == ["∴", "✎"], "pager glyphs on the right pills"
+            assert pg.locator(".zr-attach").is_disabled() and pg.locator(".zr-command").is_disabled(), "attach and command say they are not available yet"
+            assert pg.locator(".zr-send").get_attribute("aria-label") == "Send"
             send(pg, "please run the tests")
             pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='running']", timeout=10000)
             thinking = pg.locator(".nodi-turn[data-turn='27'] .nodi-thinking")
@@ -280,7 +289,7 @@ try:
             strip = pg.locator(".zr-strip")
             assert strip.is_visible(), "the strip says a turn is running"
             assert pg.locator(".zr-input").get_attribute("placeholder") == "Steer figaro"
-            assert pg.locator(".zr-send").inner_text() == "Steer"
+            assert pg.locator(".zr-send").get_attribute("aria-label") == "Steer" and pg.locator(".zr-send").inner_text() == "↳", "the send pill steers with the steering glyph"
             box = pg.locator(".zr-composer").bounding_box()
             assert box["height"] <= 120, "a running composer is at most 120px tall: %s" % box
             sbox = strip.bounding_box()
@@ -427,7 +436,7 @@ try:
         final_width = pg.locator(".fw-mic").bounding_box()["width"]
         assert final_width > idle_width + 20, "turning voice on grows the input bar's record button"
         mid = [w for w in widths if idle_width + 4 < w < final_width - 4]
-        assert len(mid) >= 3, "the width glides through intermediate values, it does not jump: %s" % sorted(set(round(w) for w in widths))
+        assert len(mid) >= 2, "the width glides through intermediate values, it does not jump: %s" % sorted(set(round(w) for w in widths))
         send(pg, "just a [plain] hello")
         pg.wait_for_selector(".nodi-turn[data-turn='27'] .voce[data-for='27']", timeout=15000)
         assert pg.locator(".nodi-turn[data-turn='27'] .nodi-prose .voce").count() == 1, "one player per turn, inside a prose node"

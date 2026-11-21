@@ -39,7 +39,7 @@ describe("the composer", () => {
     await live();
     fireEvent.change(input(), { target: { value: "please run the tests" } });
     expect((screen.getByRole("button", { name: "Send" }) as HTMLButtonElement).disabled).toBe(false);
-    act(() => screen.getByText("Send").click());
+    act(() => screen.getByRole("button", { name: "Send" }).click());
     await waitFor(() => expect(core.sent?.[0]?.text).toBe("please run the tests"));
     await waitFor(() => expect(input().value).toBe(""));
     await waitFor(() => expect(document.querySelector('.nodi-turn[data-turn="27"]')).toBeTruthy(), { timeout: 5000 });
@@ -71,10 +71,10 @@ describe("the composer", () => {
     await live();
     expect(document.querySelector(".zr-strip")).toBeNull();
     fireEvent.change(input(), { target: { value: "please run the build" } });
-    act(() => screen.getByText("Send").click());
+    act(() => screen.getByRole("button", { name: "Send" }).click());
     await waitFor(() => expect(document.querySelector(".zr-strip[data-kind='running']")).toBeTruthy(), { timeout: 5000 });
     expect(document.querySelector(".fw")!.hasAttribute("data-running")).toBe(true);
-    expect(screen.getByText("Steer")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Steer" })).toBeTruthy();
     expect(input().placeholder).toBe("Steer figaro");
     expect(document.querySelector(".zr-strip-text")!.textContent).not.toBe("");
     expect(document.querySelector(".zr-strip-time")!.textContent).toMatch(/^\d+:\d\d$/);
@@ -82,7 +82,7 @@ describe("the composer", () => {
     await waitFor(() => expect(core.interrupts).toEqual(["keep"]));
     await waitFor(() => expect(document.querySelector(".zr-strip")).toBeNull(), { timeout: 5000 });
     fireEvent.change(input(), { target: { value: "again" } });
-    act(() => screen.getByText("Send").click());
+    act(() => screen.getByRole("button", { name: "Send" }).click());
     await waitFor(() => expect(document.querySelector(".zr-strip[data-kind='running']")).toBeTruthy(), { timeout: 5000 });
     const all = document.querySelector<HTMLElement>(".fw-stop-clear")!;
     expect(all.getAttribute("aria-label")).toBe("Stop and clear the queue");

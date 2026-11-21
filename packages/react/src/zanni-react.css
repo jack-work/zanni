@@ -193,7 +193,6 @@
   -webkit-user-select: none;
   user-select: none;
 }
-.zr-pill::after { content: ""; position: absolute; inset: -4px; }
 .zr-pill:focus-visible { outline: 2px solid var(--z-focus); outline-offset: 2px; }
 .zr-pill:disabled { opacity: 0.45; cursor: not-allowed; }
 .zr-pill[aria-pressed="true"] { background: var(--z-accent); border-color: var(--z-accent); color: var(--z-on-accent); }
