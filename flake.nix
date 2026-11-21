@@ -415,7 +415,7 @@
           chmod -R u+w examples assets test
           bundle=${self.packages.${system}.figchat-shell}
           python3 test/fuzz/regress/run.py $bundle 2>&1 | tee $out
-          for c in composer gestures network; do
+          for c in composer gestures network audio scale; do
             python3 test/fuzz/fuzz.py $bundle --campaign $c --seed 1 --runs 2 --steps 25 --no-shrink --regress-dir $TMPDIR/found 2>&1 | tee -a $out
           done
         '';
