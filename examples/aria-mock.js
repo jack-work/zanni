@@ -223,6 +223,7 @@
       var part = { turn: t.id, inquiry: t.inquiry, sealed: t.sealed, from: from || 0, at: t.at };
       if (t.inquiry_segments) part.inquiry_segments = clone(t.inquiry_segments);
       if (t.formDeltas) part.formDeltas = clone(t.formDeltas);
+      if (t.forked_from) part.forked_from = t.forked_from;
       var nodes = t.nodes.slice(from || 0).map(function (n, i) { return Object.assign({ id: t.id + '.' + ((from || 0) + i) }, clone(n)); });
       if (nodes.length) part.nodes = nodes;
       if (!t.sealed && nodes.length) part.live = { from: 0, v: t.lastV };
@@ -407,6 +408,7 @@
       if (a.forkFresh) {
         t.formDeltas = {};
         t.formDeltas[a.row.id + '.system.forked_from'] = { form: a.row.id, kind: 'bound', event: 'set', value: a.forkedFrom };
+        t.forked_from = a.forkedFrom;
         a.forkFresh = false;
       }
       a.turns.push(t);
@@ -414,6 +416,7 @@
       var run = a.run = { turn: t, script: [], timer: null, failure: '' };
       var opened = { turn: t.id, inquiry: text, sealed: false, from: 0, at: t.at };
       if (t.formDeltas) opened.formDeltas = clone(t.formDeltas);
+      if (t.forked_from) opened.forked_from = t.forked_from;
       pushPage(a.row.id, opened);
       tell({ type: 'begin', aria: a.row.id, turn: t.id });
       run.script = plan(a, t, text, attached || []);

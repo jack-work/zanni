@@ -65,6 +65,10 @@ export interface ToolItem extends ItemBase {
   name: string;
   status: "running" | "ok" | "error";
   summary: string;
+  label: string;
+  head: string;
+  body: string | undefined;
+  diff: boolean;
   args: string;
   input: string;
   output: string;

@@ -215,6 +215,33 @@
     };
   }
 
+  function argText(n, name) {
+    if (!name) return undefined;
+    var v;
+    if (n.args && typeof n.args === 'object' && Object.prototype.hasOwnProperty.call(n.args, name)) v = n.args[name];
+    else if (typeof n.input === 'string' && n.input) {
+      try { var whole = JSON.parse(n.input); if (whole && typeof whole === 'object' && Object.prototype.hasOwnProperty.call(whole, name)) v = whole[name]; }
+      catch (e) {
+        var at = n.input.indexOf(JSON.stringify(name));
+        var m = at < 0 ? null : /^\s*:\s*"((?:[^"\\]|\\.)*)/.exec(n.input.slice(at + JSON.stringify(name).length));
+        if (m) { try { v = JSON.parse('"' + m[1].replace(/\\$/, '') + '"'); } catch (e2) { v = m[1]; } }
+      }
+    }
+    if (v === undefined || v === null) return undefined;
+    return typeof v === 'string' ? v : JSON.stringify(v);
+  }
+
+  function argsShown(n) {
+    if (n.args === undefined) return '';
+    var shown = n.args;
+    if (n.body_arg && shown && typeof shown === 'object' && !Array.isArray(shown)) {
+      shown = Object.assign({}, shown);
+      delete shown[n.body_arg];
+      if (!Object.keys(shown).length) return '';
+    }
+    return JSON.stringify(shown, null, 2);
+  }
+
   function itemOf(n) {
     var type = n && n.type;
     var settled = !!(n && n.settled);
@@ -230,7 +257,11 @@
         name: n.name == null ? '' : String(n.name),
         status: n.status === 'ok' || n.status === 'error' ? n.status : 'running',
         summary: n.summary == null ? '' : String(n.summary),
-        args: n.args === undefined ? '' : JSON.stringify(n.args, null, 2),
+        label: n.label == null ? '' : String(n.label),
+        head: argText(n, n.head_arg) || '',
+        body: n.body_arg ? argText(n, n.body_arg) : undefined,
+        diff: n.diff === true,
+        args: argsShown(n),
         input: n.input == null ? '' : String(n.input),
         output: n.output == null ? '' : String(n.output),
         outputBase: Number(n.output_base) > 0 ? Number(n.output_base) : 0,

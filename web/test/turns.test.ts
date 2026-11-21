@@ -100,22 +100,21 @@ describe("turnsOf", () => {
 });
 
 describe("turnsOf and the fork mark", () => {
-  const delta = (alt: string, value: string, event = "set") => ({ [alt + ".system.forked_from"]: { form: alt, kind: "bound", event, value } });
-
-  it("marks the turn whose own form delta sets forked_from, and no other", () => {
-    const closed = [...settled(2), { turn: 3, from: 0, role: "input", nodes: [], inquiry: "mine", at: 3, formDeltas: delta("alt", "parent-id") }, { turn: 3, from: 0, role: "output", nodes: [], at: 3 }];
+  it("marks the turn whose opening message carries forked_from, and no other", () => {
+    const closed = [...settled(2), { turn: 3, from: 0, role: "input", nodes: [], inquiry: "mine", at: 3, forkedFrom: "parent-id" }, { turn: 3, from: 0, role: "output", nodes: [], at: 3 }];
     const got = turnsOf({ closed } as never, {}, newTurnCache());
     expect(got.map((t) => t.forkedFrom)).toEqual([undefined, undefined, "parent-id"]);
   });
 
   it("marks an open turn from its first frame", () => {
-    const open = { ...live(4, 1), formDeltas: delta("alt", "parent-id") };
+    const open = { ...live(4, 1), forkedFrom: "parent-id" };
     const got = turnsOf({ closed: settled(3), open } as never, {}, newTurnCache());
     expect(got[3]!.forkedFrom).toBe("parent-id");
   });
 
-  it("does not mark a turn whose forked_from was removed", () => {
-    const closed = [{ turn: 1, from: 0, role: "input", nodes: [], inquiry: "q", at: 1, formDeltas: delta("alt", "parent-id", "removed") }];
+  it("reads the field, not a key name: a forked_from delta alone marks nothing", () => {
+    const delta = { "alt.runtime.forked_from": { form: "alt", kind: "bound", event: "set", value: "parent-id" } };
+    const closed = [{ turn: 1, from: 0, role: "input", nodes: [], inquiry: "q", at: 1, formDeltas: delta }];
     expect(turnsOf({ closed } as never, {}, newTurnCache())[0]!.forkedFrom).toBeUndefined();
   });
 });
@@ -134,14 +133,14 @@ describe("turnsOf and the form deltas", () => {
 
   it("drops a fork's birth keys from the turn that carries forked_from, and leaves no deltas when nothing else changed", () => {
     const birth = { ...set("alt", "system.forked_from", undefined, "parent-id"), ...set("alt", "aria_id", undefined, "alt") };
-    const closed = [{ turn: 3, from: 0, role: "input", nodes: [], inquiry: "mine", at: 3, formDeltas: birth }];
+    const closed = [{ turn: 3, from: 0, role: "input", nodes: [], inquiry: "mine", at: 3, forkedFrom: "parent-id", formDeltas: birth }];
     const got = turnsOf({ closed } as never, {}, newTurnCache())[0]!;
     expect(got.forkedFrom).toBe("parent-id");
     expect(got.deltas).toBeUndefined();
   });
 
-  it("reads the runtime-rooted forked_from as well as the legacy one", () => {
-    const closed = [{ turn: 3, from: 0, role: "input", nodes: [], inquiry: "mine", at: 3, formDeltas: set("alt", "runtime.forked_from", undefined, "parent-id") }];
+  it("drops the birth keys under the runtime name as under the legacy one", () => {
+    const closed = [{ turn: 3, from: 0, role: "input", nodes: [], inquiry: "mine", at: 3, forkedFrom: "parent-id", formDeltas: set("alt", "runtime.forked_from", undefined, "parent-id") }];
     const got = turnsOf({ closed } as never, {}, newTurnCache())[0]!;
     expect(got.forkedFrom).toBe("parent-id");
     expect(got.deltas).toBeUndefined();

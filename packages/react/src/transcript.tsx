@@ -138,12 +138,29 @@ export function tailLines(text: string, limit: number): { shown: string; total: 
   return rows.length <= limit ? { shown: text, total: rows.length } : { shown: rows.slice(rows.length - limit).join("\n"), total: rows.length };
 }
 
+function diffSide(line: string): "file" | "hunk" | "add" | "del" | "" {
+  if (line.startsWith("+++") || line.startsWith("---")) return "file";
+  if (line.startsWith("@@")) return "hunk";
+  if (line.startsWith("+")) return "add";
+  if (line.startsWith("-")) return "del";
+  return "";
+}
+
+function DiffLine({ line }: { line: string }) {
+  return (
+    <span className="nodi-diff-line" data-side={diffSide(line)}>
+      <Plain text={line + "\n"} />
+    </span>
+  );
+}
+
 export function ToolView({ item }: { item: ToolItem }) {
   const [all, setAll] = useState(false);
   const shownArgs = item.args || item.input;
-  const out = item.output.length > CLIP ? item.output.slice(item.output.length - CLIP) : item.output;
+  const source = item.body ?? item.output;
+  const out = source.length > CLIP ? source.slice(source.length - CLIP) : source;
   const showOut = !!out || item.status !== "running";
-  const cut = item.outputBase > 0 || item.output.length > CLIP;
+  const cut = (item.body === undefined && item.outputBase > 0) || source.length > CLIP;
   const tail = tailLines(out, OUTPUT_LINES);
   const trimmed = !all && tail.shown !== out;
   const body = trimmed ? tail.shown : out;
@@ -158,10 +175,10 @@ export function ToolView({ item }: { item: ToolItem }) {
         <>
           <ToolMark item={item} />
           <span className="nodi-tool-name">
-            <Plain text={item.name || "tool"} />
+            <Plain text={item.label || item.name || "tool"} />
           </span>
           <span className="nodi-tool-summary">
-            <Plain text={item.summary} />
+            <Plain text={item.head || item.summary} />
           </span>
           <span className="nodi-tool-status">{duration && "[" + duration + "]"}</span>
         </>
@@ -185,8 +202,8 @@ export function ToolView({ item }: { item: ToolItem }) {
                 {"… last " + OUTPUT_LINES + " of " + tail.total + " lines, show all"}
               </button>
             )}
-            <pre className="nodi-pre nodi-tool-out">
-              <Plain text={body || "(no output)"} />
+            <pre className="nodi-pre nodi-tool-out" {...(item.diff ? { "data-diff": "" } : {})}>
+              {item.diff && body ? body.split("\n").map((line, i) => <DiffLine key={i} line={line} />) : <Plain text={body || "(no output)"} />}
             </pre>
           </>
         )}

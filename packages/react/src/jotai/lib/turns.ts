@@ -1,6 +1,6 @@
 import type { Message } from "figaro-forms/aria";
 import type { TurnModel } from "../../index";
-import { deltaRowsOf, nodi, FORKED_FROM_KEYS } from "../../index";
+import { deltaRowsOf, nodi } from "../../index";
 
 type Msg = Message;
 
@@ -29,13 +29,7 @@ function sameMsgs(a: readonly Msg[], b: readonly Msg[]): boolean {
 }
 
 function forkedFromOf(msgs: readonly Msg[]): string | undefined {
-  for (const m of msgs) {
-    for (const [key, d] of Object.entries(m.formDeltas ?? {})) {
-      const bare = key.startsWith(d.form + ".") ? key.slice(d.form.length + 1) : key;
-      if (d.kind === "bound" && FORKED_FROM_KEYS.includes(bare) && d.event !== "removed" && d.event !== "deleted" && typeof d.value === "string") return d.value;
-    }
-  }
-  return undefined;
+  return msgs.find((m) => m.forkedFrom)?.forkedFrom;
 }
 
 function deltasOf(msgs: readonly Msg[], forked: boolean) {

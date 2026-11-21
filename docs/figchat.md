@@ -87,8 +87,14 @@ not in atoms.
   transcript is the alternative's own history followed to its end, the status bar
   names it by handle and mantra, and there is no banner and no fork glyph there.
   The fork's first own turn alone wears `⑂ <parent handle>` in its head (the turn
-  whose form delta sets `runtime.forked_from`, or the older `system.forked_from`);
+  whose opening message carries `forked_from`, the wire field, not a form key);
   a tail fork has none until its first prompt. A fork at turn N keeps turns 1 to N-1.
+- Tool rows: the header wears the node's `label` (else the tool's name) and the
+  value of its `head_arg` (else the daemon's summary). A `body_arg` names the
+  argument drawn in place of the output (and is left out of Arguments), and
+  `diff` colours added, removed, hunk and file lines of whatever is drawn. All
+  four are stamped by the daemon (figaro 0.82.0), so the web keeps no table of
+  tools for them. The vendored figaro-forms is 1c7a9a4 (lane/ir-gaps).
 - Form deltas: a turn whose form changed wears `Δ` in its head, after the fork
   mark, as the pager's gutter does. It opens a table of one row per key, the
   bound form first and unprefixed, other forms dotted onto their id, keys
