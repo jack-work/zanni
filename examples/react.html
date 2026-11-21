@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en" data-theme="figaro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>zanni-react: the parts as markup</title>
+<link rel="stylesheet" href="../assets/fontpack/fonts.css">
+<link rel="stylesheet" href="../assets/v2/z2-tokens.css">
+<link rel="stylesheet" href="../assets/v2/z2-control.css">
+<link rel="stylesheet" href="../packages/react/src/zanni-react.css">
+<link rel="stylesheet" href="../assets/nodi/nodi.css">
+<link rel="stylesheet" href="react.css">
+</head>
+<body>
+<main class="specimen">
+<h1>zanni-react</h1>
+<p>Open this file in a browser, no build step. It is the markup the React components render, so a page without React can wear the same look from <code>zanni-react.css</code>. In React, import <code>Button</code>, <code>Sheet</code>, <code>Composer</code> and the rest from <code>zanni-react</code>; see docs/react.md.</p>
+
+<h2>Button and ButtonGroup</h2>
+<div role="group" aria-label="Buttons" class="zr-group">
+<button type="button" class="z2-control zr-btn" data-size="default" data-variant="outline">Outline</button>
+<button type="button" class="z2-control zr-btn" data-size="default" data-variant="accent">Accent</button>
+<button type="button" class="z2-control zr-btn" data-size="compact" data-variant="quiet">Quiet</button>
+<button type="button" class="z2-control zr-btn" data-size="compact" data-variant="ghost">Ghost</button>
+<button type="button" class="z2-control zr-btn" data-size="default" data-variant="outline" aria-pressed="true">Pressed</button>
+<button type="button" class="z2-control zr-btn" data-size="default" data-variant="outline" disabled>Disabled</button>
+</div>
+
+<h2>List</h2>
+<ul class="zr-list" aria-label="Arias">
+<li class="zr-row"><a class="zr-thread" href="#" aria-current="page" data-state="" data-depth="0"><span class="zr-thread-title">Zanni: ship ordine</span><span class="zr-thread-when">idle &middot; 26</span></a></li>
+<li class="zr-row"><a class="zr-thread" href="#" data-state="" data-depth="1"><span class="zr-thread-title">Frontend Engineer</span><span class="zr-thread-when">idle &middot; 4</span></a></li>
+<li class="zr-row"><a class="zr-thread" href="#" data-state="dormant" data-depth="2"><span class="zr-thread-title">Backend: spain edge</span><span class="zr-thread-when">dormant &middot; 2</span></a></li>
+</ul>
+
+<h2>Fold and work group</h2>
+<details class="zr-fold zr-work" data-live>
+<summary class="nodi-sum"><span class="nodi-caret"></span><span class="nodi-sum-label">Ran 1 command</span><span class="zr-work-time">1m 3s</span></summary>
+<div class="zr-work-body"><details class="zr-fold nodi-thinking"><summary class="nodi-sum"><span class="nodi-caret"></span><span class="nodi-sum-label">Thinking</span></summary><div class="nodi-thought">Read the failure, then run the suite.</div></details></div>
+</details>
+
+<h2>Strip and Composer</h2>
+<form class="zr-composer" aria-label="Message" data-running onsubmit="return false">
+<div class="zr-strip" data-kind="running"><span class="zr-glyph" aria-hidden="true"><i></i><i></i><i></i></span><span class="zr-strip-text" role="status">Running go test ./api/livedoc/...</span><span class="zr-strip-time" aria-hidden="true">0:12</span><button type="button" class="z2-control zr-btn" data-size="compact" data-variant="quiet">Stop</button></div>
+<div class="zr-compose-row"><textarea class="zr-input" rows="1" aria-label="Message" placeholder="Steer figaro"></textarea><button type="button" class="z2-control zr-btn" data-size="default" data-variant="outline">Record</button><button type="submit" class="z2-control zr-btn" data-size="default" data-variant="accent">Steer</button></div>
+</form>
+</main>
+</body>
+</html>

@@ -1,6 +1,6 @@
 {
   "name": "zanni",
-  "version": "0.32.0",
+  "version": "0.32.1",
   "description": "Visual components extracted from figar.org.",
   "components": {
     "boil": {
@@ -530,6 +530,15 @@
       "requires": ["v2"],
       "constructed": true,
       "knobs": ["--placet-ui", "--placet-display", "--placet-code", "--placet-bar", "--placet-width", "--z-control-hit"]
+    },
+    "react": {
+      "summary": "zanni-react: the React package under packages/react. Button, ButtonGroup, Sheet, Composer, Strip, List, Fold, the transcript views, follow-the-bottom and a voce player island, state-free; zanni-react/jotai binds them to figaro-forms and Jotai. figaro web is built on it. Framework-free sites wear the same look from zanni-react.css.",
+      "classes": ["zr-btn", "zr-group", "zr-sheet", "zr-scrim", "zr-composer", "zr-strip", "zr-list", "zr-row", "zr-thread", "zr-fold", "zr-work", "zr-actionbar", "zr-latest"],
+      "files": ["../packages/react/src/zanni-react.css"],
+      "docs": "docs/react.md",
+      "example": "examples/react.html",
+      "requires": ["v2"],
+      "constructed": true
     },
     "voce": {
       "summary": "The per-message audio player: live PCM (24 kHz 16-bit mono) scheduled through WebAudio behind a 120 ms jitter buffer, with no MediaSource, and replay of the stored copy on a plain audio element with a scrubber. An odd-length frame stops the live stream; a 404 on the stored copy reads audio expired.",

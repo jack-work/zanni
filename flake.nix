@@ -163,7 +163,7 @@
           };
           sourceRoot = "zanni-source/web";
           nodejs = pkgs.nodejs_24;
-          npmDepsHash = "sha256-mLN5ZHsKO2C8/mbgrpZffiaYUWQGzHUH6sCJRwplaS8=";
+          npmDepsHash = "sha256-XbJnlxHhtzPhj+zrWnQ07XlkDTJaCh/vU/tYmO0zDAY=";
           makeCacheWritable = true;
           doCheck = true;
           checkPhase = ''
@@ -359,6 +359,7 @@
           cp -r ${./examples} examples
           cp -r ${./test} test
           cp -r ${./bin} bin
+          cp -r ${./packages} packages
           mkdir web
           cp -r ${./web/vendor} web/vendor
           cp ${./web/package-lock.json} web/package-lock.json
@@ -366,6 +367,7 @@
           node test/voce.test.js
           node test/nodi.test.js
           node test/figchat.test.js
+          node test/react-example.test.js
           python3 test/figchat.test.py ${self.packages.${system}.figchat-shell} 2>&1 | tee $out
         '';
 
