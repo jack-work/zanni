@@ -414,11 +414,20 @@ try:
         attend(pg, door_v, MAIN)
         assert voice_pressed(pg) == "false", "voice starts off"
         idle_width = pg.locator(".fw-mic").bounding_box()["width"]
-        toggle_voice(pg)
+        assert pg.locator(".fw-mic .fw-mic-glyph").inner_text() != "", "the record button always wears a glyph"
+        open_pit(pg)
+        pg.evaluate("""() => { window.__widths = []; const mic = document.querySelector('.fw-mic'); const t0 = performance.now(); const tick = () => { window.__widths.push(mic.getBoundingClientRect().width); if (performance.now() - t0 < 1500) requestAnimationFrame(tick); }; requestAnimationFrame(tick); }""")
+        pg.locator(".fw-voice").click()
+        close_pit(pg)
+        pg.wait_for_timeout(1600)
+        widths = pg.evaluate("window.__widths")
         settle_motion(pg)
         assert voice_pressed(pg) == "true"
         assert pg.locator(".fw[data-voice]").count() == 1
-        assert pg.locator(".fw-mic").bounding_box()["width"] > idle_width + 20, "turning voice on grows the input bar's record button"
+        final_width = pg.locator(".fw-mic").bounding_box()["width"]
+        assert final_width > idle_width + 20, "turning voice on grows the input bar's record button"
+        mid = [w for w in widths if idle_width + 4 < w < final_width - 4]
+        assert len(mid) >= 3, "the width glides through intermediate values, it does not jump: %s" % sorted(set(round(w) for w in widths))
         send(pg, "just a [plain] hello")
         pg.wait_for_selector(".nodi-turn[data-turn='27'] .voce[data-for='27']", timeout=15000)
         assert pg.locator(".nodi-turn[data-turn='27'] .nodi-prose .voce").count() == 1, "one player per turn, inside a prose node"

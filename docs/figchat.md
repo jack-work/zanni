@@ -86,10 +86,11 @@ not in atoms.
   (on hover or focus with a fine pointer, always on the last turn and on touch).
 - Adjacent thinking and tool nodes fold into one work group titled by what
   happened in it ("Explored 3 files, ran 1 command").
-- Tapping a message opens one bottom sheet. Actions are registered per message
-  kind (`lib/sheet.ts`): your message has Play (its clip, key `.../in`, in the
-  sheet) and Re-transcribe (`POST stt/key/<key>`, then Use text puts the result
-  in the composer); a reply has Play, the same as the turn's own Play below.
+- Small buttons sit right under a message, no sheet and no scrim: your message
+  has play (its clip, key `.../in`, played in place) and re-transcribe
+  (`POST stt/key/<key>`, then a use button puts the text in the composer); a
+  reply has play, the same as the turn's own. Hands-free hides them and keeps
+  the large Play.
 
 ## Audio
 
@@ -116,9 +117,15 @@ voce no longer touches the session.
   arrival order.
 - Voice and hands-free live in memory only: not in localStorage,
   sessionStorage or a cookie. A reload starts with both off.
-- The mic records with `MediaRecorder` (webm/opus, else mp4), at most five
-  minutes, posts to `stt?aria=<store>/<aria>` and appends the text to the
-  draft. Sending is an ordinary prompt.
+- Dictation streams. Arming the mic opens a WebSocket to `stt/stream` (at the
+  edge `/chat/stt/stream`) with `aria=<store>/<aria>`, `lang` and the session
+  id, before permission or speech. An AudioWorklet (`assets/figchat/pcm-worklet.js`)
+  sends 40 ms frames of 16 kHz mono s16le (1280 bytes); up to two seconds wait
+  in a queue until the socket opens. Partials and finals fill the composer
+  while Gluck is still speaking; stop sends `{"type":"end"}` and the `done`
+  text settles the draft. At most five minutes. A level meter under the record
+  button moves from the first frame. Sending is an ordinary prompt. The frame
+  contract is `2026/11/21/stt-stream-contract.md` in the captains-log.
 
 The gateway contract (`audio.start`, `audio.chunk`, `audio.end`,
 `audio.cancel`, `error`) is in figaro-forms `docs/gateway.md`.
@@ -140,8 +147,8 @@ Server text enters only through `Plain` (`components/text.tsx`), which boxes
 control and bidi characters. No `dangerouslySetInnerHTML` and friends:
 `test/text-sinks.test.ts` fails on any HTML-parsing sink in `src`. Inline
 `style` is used only for the measured `--fw-composer-h` on the root, through
-the CSSOM. The views never touch `fetch` or `WebSocket`; `lib/stt.ts`, the
-speech transport and the figaro-forms client do.
+the CSSOM. The views never touch `fetch` or `WebSocket`; `lib/dictation.ts`, `lib/stt.ts`
+(re-transcribe), the speech transport and the figaro-forms client do.
 
 ## Checks
 
