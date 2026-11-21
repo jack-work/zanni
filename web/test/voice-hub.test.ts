@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { AudioSession } from "zanni-react/jotai";
-import { VoiceHub, type SpokenNode } from "../../packages/react/src/jotai/lib/voice-hub";
+import { VoiceHub, type Played, type SpokenNode } from "../../packages/react/src/jotai/lib/voice-hub";
 import type { SpeechHandlers, SpeechTransport, VoceApi, VoceOptions, VocePlayer } from "zanni-react";
 
 const ARIA = "c0ffee01".repeat(4);
 const FMT = { format: "pcm", rate: 24000, bits: 16, channels: 1 };
 
-function rig(opts: { slots?: boolean; locked?: boolean; played?: Map<string, number> } = {}) {
+function rig(opts: { slots?: boolean; locked?: boolean; played?: Map<string, Played> } = {}) {
   const log: string[] = [];
   const doc = document.implementation.createHTMLDocument("t");
   const slots = new Map<string, HTMLElement>();
@@ -91,24 +91,36 @@ const settle = () => new Promise((r) => setTimeout(r, 20));
 
 describe("the voice hub", () => {
   it("does not play again what an earlier hub of this page already played when the aria is rejoined", async () => {
-    const played = new Map<string, number>();
+    const played = new Map<string, Played>();
     const first = rig({ played });
     first.start(27);
-    first.chunk(27);
-    first.chunk(27);
+    first.chunk(27, 1, 5);
+    first.chunk(27, 1, 12);
     await settle();
     first.hub.close();
     const again = rig({ played });
     again.start(27);
     again.chunk(27, 1, 5, 0);
-    again.chunk(27, 1, 5, 4);
-    again.chunk(27, 1, 5, 8);
+    await settle();
+    expect(again.log).toEqual(["p1 start"]);
+    again.chunk(27, 1, 20, 4);
     await settle();
     expect(again.log).toEqual(["p1 start", "p1 push"]);
     again.start(27, 1, true);
     again.chunk(27, 1, 5, 0);
     await settle();
     expect(again.log.filter((l) => l.endsWith("push"))).toHaveLength(2);
+  });
+
+  it("asks for a say, not the stored copy, to replay a turn it only heard the end of", async () => {
+    const r = rig();
+    r.handlers().start!({ aria: ARIA, turn: 27, key: "gluck/" + ARIA + ":27/out", node: 1, cursor: "27.2", partial: true, ...FMT });
+    r.chunk(27);
+    r.handlers().end!({ aria: ARIA, turn: 27, key: "gluck/" + ARIA + ":27/out", partial: true });
+    await settle();
+    r.hub.voice(false);
+    r.hub.replay(27);
+    expect(r.log.filter((l) => l.startsWith("say"))).toEqual(["say 27"]);
   });
 
   it("speaks a reply into the prose slot of its node and marks the node while it is heard", async () => {

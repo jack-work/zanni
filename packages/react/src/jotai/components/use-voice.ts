@@ -1,6 +1,6 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useRef } from "react";
-import type { VoiceHub } from "../lib/voice-hub";
+import type { Played, VoiceHub } from "../lib/voice-hub";
 import { audioKeyUrl, traceHeaders, voce, withSession } from "../../index";
 import { audioSessionAtom, cancelSpeechAtom, speakingAtom, speechTransportAtom, voiceAtom, voiceControlAtom } from "../state/audio";
 import { bootAtom } from "../state/boot";
@@ -11,7 +11,7 @@ const slotQuery = (turn: number, node: number) => document.querySelector<HTMLEle
 const firstSlot = (turn: number) => document.querySelector<HTMLElement>('.nodi-turn[data-turn="' + turn + '"] [data-voice-slot]');
 const pause = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const NOTE_MS = 4000;
-const played = new Map<string, number>();
+const played = new Map<string, Played>();
 
 export function useVoice({ aria, store }: Attended): void {
   const transport = useAtomValue(speechTransportAtom);
