@@ -41,7 +41,7 @@ class Run:
     def __init__(self, browser, bundle, campaign, profile, gateway=None):
         self.campaign = campaign
         self.profile = profile
-        self.stack = Stack(bundle, step=campaign.step, gateway=gateway if campaign.needs_gateway else None)
+        self.stack = Stack(bundle, step=campaign.step, gateway=gateway if campaign.needs_gateway else None, speech=campaign.needs_speech, door_flags=campaign.door_flags)
         opts = dict(PROFILES[profile])
         if profile == "phone":
             opts["reduced_motion"] = "no-preference"
@@ -51,6 +51,8 @@ class Run:
         except Exception:
             pass
         self.ctx.add_init_script(INIT)
+        if campaign.init_script:
+            self.ctx.add_init_script(campaign.init_script)
         self.page = self.ctx.new_page()
         self.console = []
         self.page.on("console", lambda m: self.console.append(m.text) if m.type == "error" else None)
@@ -225,6 +227,9 @@ class Campaign:
     step = 15
     profiles = ("phone", "desktop")
     needs_gateway = False
+    needs_speech = False
+    door_flags = ()
+    init_script = None
     extra_quiescent = None
     extra_always = None
     tracks_composer = True

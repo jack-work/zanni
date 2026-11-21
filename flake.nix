@@ -121,6 +121,11 @@
         pkgs = nixpkgs.legacyPackages.${system};
         gateway = figaro-forms.packages.${system}.bridge;
         fuzzPython = pkgs.python3.withPackages (ps: [ ps.playwright ]);
+        speechKit = pkgs.runCommand "figfuzz-speech-kit" { } ''
+          mkdir $out
+          cp ${figaro-forms}/packages/bridge/test/fake-speech.ts $out/
+          ln -s ${gateway}/lib/node_modules $out/node_modules
+        '';
       in
       {
         # The tools and the assets travel together: `zanni-inline` without
@@ -400,6 +405,7 @@
           PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
           FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts pkgs.noto-fonts-color-emoji pkgs.noto-fonts-cjk-sans pkgs.noto-fonts ]; };
           FIGFUZZ_GATEWAY = "${gateway}/bin/figaro-gateway";
+          FIGFUZZ_SPEECH_KIT = "${speechKit}";
         } ''
           set -o pipefail
           export HOME=$TMPDIR
@@ -421,9 +427,10 @@
             export PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
             export FONTCONFIG_FILE=${pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts pkgs.noto-fonts-color-emoji pkgs.noto-fonts-cjk-sans pkgs.noto-fonts ]; }}
             export FIGFUZZ_GATEWAY=${gateway}/bin/figaro-gateway
+            export FIGFUZZ_SPEECH_KIT=${speechKit}
             export PATH=${pkgs.nodejs}/bin:$PATH
             bundle=${self.packages.${system}.figchat-shell}
-            exec ${fuzzPython}/bin/python ${./test/fuzz/fuzz.py} "$bundle" "$@"
+            exec ${fuzzPython}/bin/python ${./.}/test/fuzz/fuzz.py "$bundle" "$@"
           '');
         };
 
