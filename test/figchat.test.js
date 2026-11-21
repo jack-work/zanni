@@ -277,14 +277,16 @@ async function test(name, fn) {
     assert.ok(quiet.length >= 24 && quiet.every((l) => l === 0), 'silence reads as level zero');
   });
 
-  await test('vendored client: SOURCE.json names the figaro-forms revision the tarball was cut from, and the lockfile pins it', () => {
+  await test('vendored client: SOURCE.json names the figaro-forms revision and hash of the tarball, and the lockfile points at it with no integrity on any file: entry, which prefetch-npm-deps would look up in an npm cache', () => {
     const web = path.join(__dirname, '..', 'web');
     const src = JSON.parse(fs.readFileSync(path.join(web, 'vendor', 'SOURCE.json'), 'utf8'));
     assert.ok(/^[0-9a-f]{40}$/.test(src.rev));
-    assert.ok(fs.existsSync(path.join(web, 'vendor', src.file)));
+    const bytes = fs.readFileSync(path.join(web, 'vendor', src.file));
+    assert.strictEqual('sha512-' + require('crypto').createHash('sha512').update(bytes).digest('base64'), src.integrity);
     const lock = JSON.parse(fs.readFileSync(path.join(web, 'package-lock.json'), 'utf8'));
     assert.strictEqual(lock.packages['node_modules/figaro-forms'].resolved, 'file:vendor/' + src.file);
-    assert.strictEqual(lock.packages['node_modules/figaro-forms'].integrity, src.integrity);
+    const pinned = Object.entries(lock.packages).filter(([, e]) => typeof e.resolved === 'string' && e.resolved.startsWith('file:') && 'integrity' in e).map(([k]) => k);
+    assert.deepStrictEqual(pinned, []);
   });
 
   process.stdout.write(failed ? failed + ' failed\n' : 'figchat: all passed\n');
