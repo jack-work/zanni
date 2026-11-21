@@ -198,7 +198,7 @@
   display: block;
   width: 100%;
   min-height: 36px;
-  max-height: min(30dvh, 7.75rem);
+  max-height: min(45dvh, 22rem);
   margin: 0;
   padding: 5px var(--z-space-4, 12px);
   border: 1px solid var(--z-line);

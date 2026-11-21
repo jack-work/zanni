@@ -327,6 +327,16 @@ try:
             attend(pg, door(45), MAIN)
             idle = pg.locator(".zr-composer").bounding_box()
             assert idle["height"] <= 76, "an idle composer is at most 76px tall: %s" % idle
+            marks = pg.evaluate("[...document.querySelectorAll('.zr-composer .zr-pill-glyph, .zr-composer .fw-mic-glyph')].map(n => n.textContent)")
+            assert len(marks) >= 3 and not [m for m in marks if re.search("[\U0001F000-\U0001FFFF\uFE0E\uFE0F]", m)], "the compose bar draws no emoji: %s" % marks
+            pg.locator(".zr-input").fill("\n".join("line %d of a long note" % i for i in range(14)))
+            pg.wait_for_timeout(200)
+            grown = pg.locator(".zr-input").bounding_box()
+            assert grown["height"] > 140, "the input grows with its text past four lines: %s" % grown
+            assert grown["height"] <= height * 0.46, "the input leaves the transcript room: %s" % grown
+            pg.locator(".zr-input").fill("")
+            pg.wait_for_timeout(200)
+            assert pg.locator(".zr-composer").bounding_box()["height"] <= 76, "the composer settles back when the text goes"
             sendp, field, attach, command = (pg.locator(s).bounding_box() for s in (".zr-send", ".zr-input", ".zr-attach", ".zr-command"))
             assert pg.locator(".zr-pill:disabled").count() == 0, "no pill is drawn disabled"
             assert attach["x"] + attach["width"] <= field["x"] + 1, "attach sits left of the input: %s %s" % (attach, field)

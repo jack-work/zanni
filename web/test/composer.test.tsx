@@ -267,7 +267,7 @@ describe("the composer's pills", () => {
     expect(g.getAttribute("aria-hidden")).toBe("true");
     expect(g.hasAttribute("style")).toBe(false);
     expect(g.hasAttribute("data-ink")).toBe(false);
-    expect(document.querySelector(".fw-mic .zr-ink")!.textContent).toBe("🎙︎");
+    expect(document.querySelector(".fw-mic .zr-ink")!.textContent).toBe("○");
   });
 });
 

@@ -2,6 +2,6 @@ import { glyphs } from "figaro-forms/glyphs";
 
 export * from "figaro-forms/glyphs";
 
-export const attachGlyph: string = glyphs.attach;
+export const attachGlyph: string = glyphs["pit.models.mark"];
 
-export const voiceGlyph: string = glyphs.voice;
+export const voiceGlyph: string = glyphs["state.idle"];
