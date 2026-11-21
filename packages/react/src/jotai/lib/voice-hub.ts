@@ -44,6 +44,7 @@ class Feed {
   player: VocePlayer | null = null;
   cancelled = false;
   ended = false;
+  unheard = false;
   chain: Promise<void>;
   open!: () => void;
 
@@ -78,7 +79,11 @@ export class VoiceHub {
       {
         start: (e) => this.start(e),
         chunk: (c) => this.chunk(c),
-        end: (e) => this.finish(e.turn, (f) => f.player?.end(e.key || "")),
+        end: (e) =>
+          this.finish(e.turn, (f) => {
+            f.player?.end(e.key || "");
+            if (f.unheard) f.player?.play();
+          }),
         stored: (e) => {
           if (!this.feeds.get(e.turn)?.player) this.play(e.turn);
         },
@@ -206,7 +211,7 @@ export class VoiceHub {
     feed.then(async () => {
       const player = await this.playerFor(feed, e.node);
       if (!player || feed.cancelled) return;
-      player.start({ format: e.format, rate: e.rate, bits: e.bits, channels: e.channels });
+      if (!player.start({ format: e.format, rate: e.rate, bits: e.bits, channels: e.channels }) && e.say) feed.unheard = true;
     });
   }
 
