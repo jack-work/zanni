@@ -10,6 +10,7 @@ export * from "./jotai/lib/audio-session";
 export * from "./jotai/lib/dictation";
 export * from "./jotai/lib/mic";
 export * from "./jotai/lib/roster";
+export * from "./jotai/lib/turns";
 export * from "./jotai/lib/route";
 export * from "./jotai/lib/clips";
 export * from "./jotai/lib/stt";

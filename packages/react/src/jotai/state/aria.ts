@@ -4,6 +4,7 @@ import type { AriaClient, AriaSnapshot, Phase } from "figaro-forms/aria";
 import { nodi, type TurnModel } from "../../index";
 import { workOf, type Work_ } from "../../index";
 import { refusalText } from "../lib/roster";
+import { newTurnCache, turnsOf } from "../lib/turns";
 import { attendedAtom, clientAtom } from "./route";
 
 const families = new WeakMap<AriaClient, Map<string, unknown>>();
@@ -30,24 +31,10 @@ function endsOf(snap: AriaSnapshot): Record<number, { reason?: string }> {
 
 export function turnsAtom(client: AriaClient, aria: string): Atom<TurnModel[]> {
   return memo(client, `turns\0${aria}`, () => {
-    const cache = new Map<string, { sig: string; turn: TurnModel }>();
-    let last: TurnModel[] = [];
+    const cache = newTurnCache();
     return atom((get) => {
       const snap = get(ariaAtom(client, aria));
-      const next = nodi.model(snap.view, endsOf(snap));
-      const seen = new Set<string>();
-      const out = next.map((t) => {
-        const sig = JSON.stringify(t);
-        seen.add(t.key);
-        const hit = cache.get(t.key);
-        if (hit && hit.sig === sig) return hit.turn;
-        cache.set(t.key, { sig, turn: t });
-        return t;
-      });
-      for (const k of cache.keys()) if (!seen.has(k)) cache.delete(k);
-      if (out.length === last.length && out.every((t, i) => t === last[i])) return last;
-      last = out;
-      return out;
+      return turnsOf(snap.view, endsOf(snap), cache);
     });
   });
 }
