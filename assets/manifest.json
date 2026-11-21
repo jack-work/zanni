@@ -1,6 +1,6 @@
 {
   "name": "zanni",
-  "version": "0.33.6",
+  "version": "0.33.7",
   "description": "Visual components extracted from figar.org.",
   "components": {
     "boil": {
