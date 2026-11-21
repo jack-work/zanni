@@ -4,8 +4,8 @@
  "profile": "desktop",
  "invariant": "stuck-pit",
  "message": "after swipes that start on the pit handle and close button, then a drag, the pit panel keeps data-dragging with every pointer up",
- "owner": "Frontend (packages/react pit.tsx)",
- "status": "xfail",
+ "owner": "fixed in pit.tsx: every gesture end clears the drag",
+ "status": "pass",
  "strict": [],
  "actions": [
   {
