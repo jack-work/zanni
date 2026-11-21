@@ -176,6 +176,16 @@
 .zr-composer > * { width: 100%; max-width: calc(var(--zr-measure, 46rem) - var(--zr-edge-l, 16px) - var(--zr-edge-r, 16px)); margin-inline: auto; }
 .zr-compose-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: end; gap: var(--z-space-3, 8px); }
 .zr-compose-row[data-attach] { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+.zr-compose-row[data-prompt] { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
+.zr-prompt { font: 400 1.5rem / 1 var(--zr-mono, "VT323", ui-monospace, monospace); color: var(--z-accent); }
+.zr-hints { display: flex; flex-direction: column; gap: var(--z-space-2, 4px); }
+.zr-hint { margin: 0; font: 400 1.0625rem / 1.25 var(--zr-mono, "VT323", ui-monospace, monospace); letter-spacing: 0.04em; color: var(--z-muted); overflow-wrap: anywhere; }
+.zr-hint[data-refused] { color: var(--z-warn); }
+.zr-hint-usage { color: var(--z-ink); }
+.zr-chips { display: flex; gap: var(--z-space-2, 4px); overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.zr-chip { flex: none; display: inline-flex; align-items: baseline; gap: 0.6ch; min-height: 28px; padding: 0 var(--z-space-3, 8px); border: 1px solid var(--z-line); border-radius: 999px; background: var(--z-ground); color: var(--z-ink); font: 400 1.0625rem / 1 var(--zr-mono, "VT323", ui-monospace, monospace); letter-spacing: 0.04em; cursor: pointer; touch-action: manipulation; }
+.zr-chip[data-off] { color: var(--z-muted); border-style: dashed; }
+.zr-chip-help { color: var(--z-muted); max-width: 16ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .zr-input {
   box-sizing: border-box;
   display: block;

@@ -20,6 +20,8 @@ export { KEYBOARD_CLOSE_SETTLE_MS, Composer, useCoarsePointer, useSizeVar } from
 export type { ComposerProps } from "./composer";
 export { ActionBar } from "./actions";
 export { Glyph, inkOf } from "./ink";
+export { Hints } from "./hints";
+export type { Chip, HintsProps } from "./hints";
 export { Fold } from "./fold";
 export type { FoldProps } from "./fold";
 export { BlockView, Plain } from "./text";
