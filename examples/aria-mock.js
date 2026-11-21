@@ -163,6 +163,11 @@
     add(ids.forms, { state: 'idle', mantra: 'forms-aria lane', parent: ids.engineer }, seedSmall(3, base, 5));
     for (var k = 7; k <= 13; k++) add(aid(k), { state: 'idle', mantra: 'Scratch ' + (k - 6), parent: k % 2 ? ids.engineer : undefined }, seedSmall(1 + (k % 3), base, k));
     core.arias[aid(13)].row.mantra = EVIL;
+    for (var c = 0; c < (o.figaros || 0); c++) {
+      var h = (0xfa000000 + c).toString(16);
+      var parent = c % 5 === 0 ? undefined : core.order[core.order.length - 1 - (c % 3)];
+      add(h + h + h + h, { state: c % 7 === 0 ? 'dormant' : 'idle', mantra: 'Crowd ' + c, parent: parent }, seedSmall(1 + (c % 3), base, c));
+    }
     }
 
     var held = {}, heldSeq = 0, ATTACH_TTL = 15 * 60 * 1000;

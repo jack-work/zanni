@@ -121,6 +121,11 @@
         pkgs = nixpkgs.legacyPackages.${system};
         gateway = figaro-forms.packages.${system}.bridge;
         fuzzPython = pkgs.python3.withPackages (ps: [ ps.playwright ]);
+        speechKit = pkgs.runCommand "figfuzz-speech-kit" { } ''
+          mkdir $out
+          cp ${figaro-forms}/packages/bridge/test/fake-speech.ts $out/
+          ln -s ${gateway}/lib/node_modules $out/node_modules
+        '';
       in
       {
         # The tools and the assets travel together: `zanni-inline` without
@@ -394,6 +399,43 @@
           env LD_LIBRARY_PATH=${pkgs.mesa}/lib:${pkgs.libglvnd}/lib __EGL_VENDOR_LIBRARY_FILENAMES=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless bash test/wave1/run.sh ${self.packages.${system}.figchat-shell} 2>&1 | tee $out
         '';
 
+        checks.figchat-fuzz = pkgs.runCommand "zanni-figchat-fuzz" {
+          nativeBuildInputs = [ pkgs.nodejs fuzzPython ];
+          PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
+          PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+          FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts pkgs.noto-fonts-color-emoji pkgs.noto-fonts-cjk-sans pkgs.noto-fonts ]; };
+          FIGFUZZ_GATEWAY = "${gateway}/bin/figaro-gateway";
+          FIGFUZZ_SPEECH_KIT = "${speechKit}";
+        } ''
+          set -o pipefail
+          export HOME=$TMPDIR
+          cp -r ${./examples} examples
+          cp -r ${./assets} assets
+          cp -r ${./test} test
+          cp -r ${./bench} bench
+          chmod -R u+w examples assets test bench
+          bundle=${self.packages.${system}.figchat-shell}
+          python3 test/fuzz/regress/run.py $bundle 2>&1 | tee $out
+          for c in composer gestures network audio scale; do
+            python3 test/fuzz/fuzz.py $bundle --campaign $c --seed 1 --runs 2 --steps 25 --no-shrink --regress-dir $TMPDIR/found 2>&1 | tee -a $out
+          done
+        '';
+
+        apps.figchat-fuzz = {
+          type = "app";
+          program = toString (pkgs.writeShellScript "figchat-fuzz" ''
+            export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+            export PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
+            export FONTCONFIG_FILE=${pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts pkgs.noto-fonts-color-emoji pkgs.noto-fonts-cjk-sans pkgs.noto-fonts ]; }}
+            export FIGFUZZ_GATEWAY=${gateway}/bin/figaro-gateway
+            export FIGFUZZ_SPEECH_KIT=${speechKit}
+            export PATH=${pkgs.nodejs}/bin:$PATH
+            bundle=${self.packages.${system}.figchat-shell}
+            exec ${fuzzPython}/bin/python ${./.}/test/fuzz/fuzz.py "$bundle" "$@"
+          '');
+        };
+
+
         packages.figchat-bench = pkgs.writeShellApplication {
           name = "figchat-bench";
           runtimeInputs = [ pkgs.nodejs (pkgs.python3.withPackages (ps: [ ps.playwright ps.brotli ])) ];
@@ -432,39 +474,6 @@
           env LD_LIBRARY_PATH=${pkgs.mesa}/lib:${pkgs.libglvnd}/lib __EGL_VENDOR_LIBRARY_FILENAMES=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless python3 bench/figchat_bench.py ${self.packages.${system}.figchat-shell} --sha ${self.shortRev or self.dirtyShortRev or "dirty"} --out $out/result.json
           python3 bench/check.py $out/result.json bench/budgets.json 2>&1 | tee $out/check.txt
         '';
-
-        checks.figchat-fuzz = pkgs.runCommand "zanni-figchat-fuzz" {
-          nativeBuildInputs = [ pkgs.nodejs fuzzPython ];
-          PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
-          PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
-          FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts pkgs.noto-fonts-color-emoji pkgs.noto-fonts-cjk-sans pkgs.noto-fonts ]; };
-          FIGFUZZ_GATEWAY = "${gateway}/bin/figaro-gateway";
-        } ''
-          set -o pipefail
-          export HOME=$TMPDIR
-          cp -r ${./examples} examples
-          cp -r ${./assets} assets
-          cp -r ${./test} test
-          chmod -R u+w examples assets test
-          bundle=${self.packages.${system}.figchat-shell}
-          python3 test/fuzz/regress/run.py $bundle 2>&1 | tee $out
-          for c in composer gestures network; do
-            python3 test/fuzz/fuzz.py $bundle --campaign $c --seed 1 --runs 2 --steps 25 --no-shrink --regress-dir $TMPDIR/found 2>&1 | tee -a $out
-          done
-        '';
-
-        apps.figchat-fuzz = {
-          type = "app";
-          program = toString (pkgs.writeShellScript "figchat-fuzz" ''
-            export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
-            export PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
-            export FONTCONFIG_FILE=${pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts pkgs.noto-fonts-color-emoji pkgs.noto-fonts-cjk-sans pkgs.noto-fonts ]; }}
-            export FIGFUZZ_GATEWAY=${gateway}/bin/figaro-gateway
-            export PATH=${pkgs.nodejs}/bin:$PATH
-            bundle=${self.packages.${system}.figchat-shell}
-            exec ${fuzzPython}/bin/python ${./test/fuzz/fuzz.py} "$bundle" "$@"
-          '');
-        };
 
         checks.rotolo = pkgs.runCommand "zanni-rotolo-test" {
           nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.playwright ps.pillow ])) ];

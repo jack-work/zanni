@@ -17,6 +17,7 @@ const dir = positional[0];
 const step = positional[1] ? Number(positional[1]) : 15;
 const fixture = process.env.FIGCHAT_FIXTURE ? JSON.parse(fs.readFileSync(process.env.FIGCHAT_FIXTURE, 'utf8')) : undefined;
 const bench = { pageBytes: flags.page || 3000 };
+if (flags.figaros) bench.figaros = flags.figaros;
 if (flags.history !== undefined) bench.history = flags.history;
 if (['fps', 'bytes', 'chunk'].some((k) => flags[k] !== undefined)) bench.stream = Object.fromEntries(['fps', 'bytes', 'chunk'].filter((k) => flags[k] !== undefined).map((k) => [k, flags[k]]));
 const core = mock.create(Object.assign({ step, fixture }, bench));
@@ -142,6 +143,7 @@ function handshake(req, socket) {
 
 function reader(socket, onText, onBinary) {
   let buf = Buffer.alloc(0);
+  let parts = [], kind = 0;
   socket.on('data', (d) => {
     buf = Buffer.concat([buf, d]);
     for (;;) {
@@ -153,10 +155,17 @@ function reader(socket, onText, onBinary) {
       const mask = buf.subarray(at, at + 4);
       const data = Buffer.from(buf.subarray(at + 4, at + 4 + len));
       for (let i = 0; i < data.length; i++) data[i] ^= mask[i % 4];
-      const opcode = buf[0] & 15;
+      const opcode = buf[0] & 15, fin = (buf[0] & 128) !== 0;
       buf = buf.subarray(at + 4 + len);
-      if (opcode === 1) onText(data.toString('utf8'));
-      else if (opcode === 2 && onBinary) onBinary(data);
+      if (opcode === 1 || opcode === 2 || opcode === 0) {
+        if (opcode !== 0) { kind = opcode; parts = []; }
+        parts.push(data);
+        if (!fin) continue;
+        const whole = Buffer.concat(parts);
+        parts = [];
+        if (kind === 1) onText(whole.toString('utf8'));
+        else if (kind === 2 && onBinary) onBinary(whole);
+      }
       else if (opcode === 8) { socket.end(frame(8, Buffer.alloc(0))); return; }
       else if (opcode === 9) socket.write(frame(10, data));
     }

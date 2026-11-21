@@ -1,0 +1,28 @@
+{
+ "campaign": "network",
+ "seed": 1532935505,
+ "profile": "desktop",
+ "invariant": "lost-send",
+ "message": "\"net16 [md]\" was sent from the page and never reached the door, and is not in the composer",
+ "owner": "Frontend (a send followed by a page reload after a close storm is lost, composer empty)",
+ "status": "xfail",
+ "strict": [
+  "lapse-no-notice"
+ ],
+ "actions": [
+  {
+   "k": "storm",
+   "n": 5,
+   "gap": 0,
+   "code": 1006
+  },
+  {
+   "k": "send",
+   "n": 16,
+   "kind": "[md]"
+  },
+  {
+   "k": "reload"
+  }
+ ]
+}

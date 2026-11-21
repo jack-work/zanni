@@ -38,12 +38,14 @@ def main():
     ap.add_argument("--replay")
     ap.add_argument("--no-shrink", action="store_true")
     ap.add_argument("--shrink-seconds", type=int, default=240)
+    ap.add_argument("--strict", default="")
     ap.add_argument("--keep-going", action="store_true")
     o = ap.parse_args()
     bundle = os.path.abspath(o.bundle)
     seed = random.SystemRandom().randrange(1, 2 ** 31) if o.seed == "random" else int(o.seed)
     names = list(ALL) if o.campaign == "all" else o.campaign.split(",")
     found = []
+    strict = tuple(x for x in o.strict.split(",") if x)
     with sync_playwright() as p:
         browser = p.chromium.launch(args=ARGS)
         if o.replay:
@@ -71,14 +73,14 @@ def main():
                 n += 1
                 doc = plan(c, s, o.steps)
                 t0 = time.time()
-                f = execute(browser, bundle, c, doc["profile"], doc["actions"], o.gateway)
+                f = execute(browser, bundle, c, doc["profile"], doc["actions"], o.gateway, strict=strict)
                 print("%s seed %d (%s, %d steps): %s %.1fs" % (name, s, doc["profile"], len(doc["actions"]), "ok" if f is None else "FAIL " + str(f), time.time() - t0), flush=True)
                 if f is None:
                     continue
                 actions = doc["actions"][:f.step + 1] if f.step is not None and f.step < len(doc["actions"]) else doc["actions"]
                 if not o.no_shrink:
-                    actions = shrink(browser, bundle, c, doc["profile"], actions, f.invariant, o.gateway, o.shrink_seconds)
-                path = save_regression(o.regress_dir, c, s, doc["profile"], f.invariant, f.message, actions)
+                    actions = shrink(browser, bundle, c, doc["profile"], actions, f.invariant, o.gateway, o.shrink_seconds, strict=strict)
+                path = save_regression(o.regress_dir, c, s, doc["profile"], f.invariant, f.message, actions, strict=strict)
                 print("  wrote %s" % path, flush=True)
                 found.append(path)
                 if not o.keep_going and not o.minutes:

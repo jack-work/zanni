@@ -4,8 +4,8 @@
  "profile": "desktop",
  "invariant": "send-lost",
  "message": "a 140000 character prompt sent from the composer clears the composer and never reaches the door (66000 and 100000 do); no error is shown",
- "owner": "Frontend (refuse and keep the text); Backend if the cap is the gateway's",
- "status": "xfail",
+ "owner": "fixed by the mock door reassembling fragments",
+ "status": "pass",
  "strict": [],
  "actions": [
   {"k": "paste", "rep": ["a", 140000]},
