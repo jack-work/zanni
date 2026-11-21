@@ -58,6 +58,39 @@
 .zr-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: var(--z-space-3, 8px); font: 400 1.25rem / 1 var(--zr-mono, "VT323", ui-monospace, monospace); letter-spacing: 0.04em; color: var(--z-muted); }
 .zr-sheet-body { display: flex; flex-direction: column; gap: var(--z-space-3, 8px); }
 
+.zr-pit {
+  box-sizing: border-box;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  width: 100%;
+  height: var(--zr-pit-h, 0px);
+  max-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--z-ground);
+  border-top: 2px solid var(--z-accent);
+  color: var(--z-ink);
+  transition: height var(--zr-d-slide) var(--zr-out);
+  @starting-style { height: 0; }
+}
+.zr-pit[data-dragging] { transition: none; }
+.zr-pit[data-docked] { max-width: var(--zr-sheet-width, 46rem); margin-inline: auto; }
+.zr-pit-head { flex: none; display: flex; flex-direction: column; align-items: stretch; touch-action: none; -webkit-user-select: none; user-select: none; cursor: grab; }
+.zr-pit-handle, .zr-grip { font: inherit; display: flex; align-items: center; justify-content: center; border: 0; background: transparent; padding: 0; cursor: grab; touch-action: none; }
+.zr-pit-handle { height: 20px; width: 100%; }
+.zr-pit-handle:focus-visible, .zr-grip:focus-visible { outline: 2px solid var(--z-focus); outline-offset: -2px; }
+.zr-grip-bar { display: block; width: 40px; height: 4px; background: var(--z-line); }
+.zr-pit-handle:hover .zr-grip-bar, .zr-grip:hover .zr-grip-bar, .zr-grip[aria-expanded="true"] .zr-grip-bar { background: var(--z-accent); }
+.zr-pit-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--z-space-3, 8px); padding: 0 var(--zr-edge-r, 16px) var(--z-space-3, 8px) var(--zr-edge-l, 16px); font: 400 1.25rem / 1 var(--zr-mono, "VT323", ui-monospace, monospace); letter-spacing: 0.04em; color: var(--z-muted); }
+.zr-pit-glyph { margin-right: 0.5em; color: var(--z-accent); }
+.zr-pit-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: var(--z-space-3, 8px); padding: var(--z-space-3, 8px) var(--zr-edge-r, 16px) calc(var(--z-space-4, 12px) + env(safe-area-inset-bottom)) var(--zr-edge-l, 16px); }
+.zr-composer > .zr-grip { position: absolute; top: -10px; left: 50%; translate: -50% 0; width: 96px; max-width: none; height: 20px; margin: 0; z-index: 1; }
+@media (pointer: coarse) { .zr-composer > .zr-grip { top: -16px; height: 32px; } }
+
 .zr-composer {
   box-sizing: border-box;
   position: sticky;

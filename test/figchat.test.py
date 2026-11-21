@@ -522,6 +522,182 @@ try:
             assert not pg.errors, pg.errors
             ctx.close()
 
+        def finger(pg, cdp, phone):
+            class Finger:
+                def down(self, x, y):
+                    self.x, self.y = x, y
+                    if phone:
+                        cdp.send("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": [{"x": x, "y": y}]})
+                    else:
+                        pg.mouse.move(x, y)
+                        pg.mouse.down()
+
+                def move(self, y, steps=8, gap=30):
+                    y0 = self.y
+                    for i in range(1, steps + 1):
+                        yy = y0 + (y - y0) * i / steps
+                        if phone:
+                            cdp.send("Input.dispatchTouchEvent", {"type": "touchMove", "touchPoints": [{"x": self.x, "y": yy}]})
+                        else:
+                            pg.mouse.move(self.x, yy)
+                        pg.wait_for_timeout(gap)
+                    self.y = y
+
+                def up(self):
+                    if phone:
+                        cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
+                    else:
+                        pg.mouse.up()
+            return Finger()
+
+        PIT = "() => { const p = document.querySelector('.zr-pit'); if (!p) return null; const b = p.getBoundingClientRect(); return { snap: p.dataset.snap, dragging: p.hasAttribute('data-dragging'), top: b.top, height: b.height, bottom: b.bottom, left: b.left, width: b.width }; }"
+
+        def pit_at(pg, snap, height_px, what):
+            until(pg, "(() => { const p = document.querySelector('.zr-pit'); return !!p && p.dataset.snap === '%s' && !p.hasAttribute('data-dragging'); })()" % snap, 3000)
+            settle_motion(pg)
+            got = pg.evaluate(PIT)
+            assert abs(got["height"] - height_px) <= 2, "%s: expected a pit %dpx tall, got %s" % (what, height_px, got)
+            assert abs(got["bottom"] - pg.evaluate("innerHeight")) <= 1, "%s: the pit sits on the bottom edge: %s" % (what, got)
+            return got
+
+        def pit_gone(pg, what):
+            pg.wait_for_selector(".zr-pit", state="detached", timeout=3000)
+            assert pg.evaluate("document.documentElement.style.getPropertyValue('--zr-pit-h')") == "", what
+
+        def centre(loc):
+            b = loc.bounding_box()
+            return b["x"] + b["width"] / 2, b["y"] + b["height"] / 2
+
+        for width, height in ((390, 844), (1280, 800)):
+            phone = width < 600
+            pit_door = door(12)
+            ctx = browser.new_context(viewport={"width": width, "height": height}, is_mobile=phone, has_touch=phone)
+            pg = ctx.new_page()
+            pg.errors = []
+            pg.on("pageerror", lambda e: pg.errors.append(str(e)))
+            pg.on("console", lambda m: pg.errors.append(m.text) if m.type == "error" else None)
+            cdp = ctx.new_cdp_session(pg)
+            attend(pg, pit_door, MAIN)
+            f = finger(pg, cdp, phone)
+            grip = pg.locator(".zr-composer .zr-grip")
+            assert grip.is_visible() and pg.locator(".zr-pit").count() == 0
+            gb, cb = grip.bounding_box(), pg.locator(".zr-composer").bounding_box()
+            assert abs((gb["y"] + gb["height"] / 2) - cb["y"]) <= 4, "the grip sits on the composer's top edge: %s %s" % (gb, cb)
+            half, full = round(height / 2), height
+
+            gx, gy = centre(grip)
+            f.down(gx, gy)
+            f.move(height * 0.5)
+            assert pg.evaluate(PIT)["dragging"], "the pit follows the finger"
+            mid = pg.evaluate(PIT)
+            assert abs(mid["top"] - height * 0.5) <= 2, "the pit's top edge is under the finger: %s" % mid
+            pg.wait_for_timeout(160)
+            f.up()
+            pit_at(pg, "half", half, "dragged from the composer edge to the middle")
+            assert pg.locator(".zr-pit").get_attribute("role") == "dialog"
+            assert pg.locator("#app [style]").count() == 0, "dragging writes no style attribute under the CSP"
+            snap(pg, "pit-half-%d" % width)
+            sans_free(pg, "the pit at %d" % width)
+            if phone:
+                assert pg.locator(".zr-pit-scrim").count() == 1 and pg.locator(".zr-pit").get_attribute("aria-modal") == "true"
+                assert pg.locator(".zr-pit[data-docked]").count() == 0
+            else:
+                assert pg.locator(".zr-pit-scrim").count() == 0, "the docked drawer has no scrim"
+                box = pg.locator(".zr-pit").bounding_box()
+                assert box["width"] <= 736 + 1 and abs(box["x"] + box["width"] / 2 - width / 2) <= 1, "docked to the column: %s" % box
+                assert pg.locator(".zr-pit[data-docked]").count() == 1
+
+            hx, hy = centre(pg.locator(".zr-pit-handle"))
+            f.down(hx, hy)
+            f.move(height * 0.2)
+            pg.wait_for_timeout(160)
+            f.up()
+            pit_at(pg, "half", half, "released above half but short of the top 15 percent, it stays half")
+
+            hx, hy = centre(pg.locator(".zr-pit-handle"))
+            f.down(hx, hy)
+            f.move(height * 0.1)
+            pg.wait_for_timeout(160)
+            f.up()
+            pit_at(pg, "full", full, "past the top 15 percent it snaps full")
+            snap(pg, "pit-full-%d" % width)
+
+            hx, hy = centre(pg.locator(".zr-pit-handle"))
+            f.down(hx, hy)
+            f.move(height * 0.55)
+            pg.wait_for_timeout(160)
+            f.up()
+            pit_at(pg, "half", half, "dragged down from full to just past half, it settles half")
+
+            hx, hy = centre(pg.locator(".zr-pit-handle"))
+            f.down(hx, hy)
+            f.move(height * 0.95)
+            pg.wait_for_timeout(160)
+            f.up()
+            pit_gone(pg, "dragged down past the bottom quarter, it closes")
+
+            gx, gy = centre(grip)
+            f.down(gx, gy)
+            f.move(gy - 150, steps=5, gap=10)
+            f.up()
+            pit_at(pg, "half", half, "a flick up from the composer edge lands on half")
+            hx, hy = centre(pg.locator(".zr-pit-handle"))
+            f.down(hx, hy)
+            f.move(hy - 60, steps=4, gap=10)
+            f.up()
+            pit_at(pg, "full", full, "a flick up from half lands on full")
+            hx, hy = centre(pg.locator(".zr-pit-handle"))
+            f.down(hx, hy)
+            f.move(hy + 120, steps=4, gap=10)
+            f.up()
+            pit_at(pg, "half", half, "a flick down from full lands on half")
+            hx, hy = centre(pg.locator(".zr-pit-handle"))
+            f.down(hx, hy)
+            f.move(hy + 120, steps=4, gap=10)
+            f.up()
+            pit_gone(pg, "a flick down from half closes")
+
+            grip.focus()
+            pg.keyboard.press("Enter")
+            pit_at(pg, "half", half, "Enter on the grip opens half")
+            assert pg.evaluate("!!document.activeElement.closest('.zr-pit')"), "focus moves into the pit"
+            pg.locator(".zr-pit-handle").focus()
+            pg.keyboard.press("ArrowUp")
+            pit_at(pg, "full", full, "ArrowUp on the handle goes full")
+            pg.keyboard.press("ArrowDown")
+            pit_at(pg, "half", half, "ArrowDown on the handle goes back to half")
+            pg.keyboard.press("Escape")
+            pit_gone(pg, "Escape closes")
+            assert pg.evaluate("document.activeElement.className") == "zr-grip", "focus returns to the grip"
+            grip.click()
+            pit_at(pg, "half", half, "a tap on the grip opens half")
+            if phone:
+                pg.locator(".zr-pit-scrim").click(position={"x": 10, "y": 10})
+            else:
+                pg.locator(".zr-pit-head button", has_text="Close").click()
+            pit_gone(pg, "scrim or Close closes")
+            assert not pg.errors, pg.errors
+            ctx.close()
+
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True, reduced_motion="reduce")
+        pg = ctx.new_page()
+        pg.errors = []
+        pg.on("pageerror", lambda e: pg.errors.append(str(e)))
+        cdp = ctx.new_cdp_session(pg)
+        attend(pg, door(12), MAIN)
+        f = finger(pg, cdp, True)
+        gx, gy = centre(pg.locator(".zr-composer .zr-grip"))
+        f.down(gx, gy)
+        f.move(300)
+        pg.wait_for_timeout(160)
+        f.up()
+        pit_at(pg, "half", 422, "reduced motion still drags")
+        assert pg.evaluate("parseFloat(getComputedStyle(document.querySelector('.zr-pit')).transitionDuration) * 1000") <= 1
+        pg.keyboard.press("Escape")
+        pg.wait_for_selector(".zr-pit", state="detached", timeout=1000)
+        assert not pg.errors, pg.errors
+        ctx.close()
+
         MOTION = """() => {
           const over = [];
           for (const n of document.querySelectorAll('.zr-composer, .zr-composer *, .fw-top *, .fw-main button')) {

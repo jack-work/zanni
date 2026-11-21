@@ -16,6 +16,7 @@ export * from "./jotai/lib/stt";
 export * from "./jotai/lib/voice-hub";
 export { AriaView } from "./jotai/components/aria-view";
 export { Composer as BoundComposer } from "./jotai/components/composer";
+export { Pit as BoundPit } from "./jotai/components/pit";
 export { Roster } from "./jotai/components/roster";
 export { Sheet as BoundSheet } from "./jotai/components/sheet";
 export { TopBar } from "./jotai/components/topbar";

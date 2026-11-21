@@ -1,4 +1,4 @@
-import { Button, Composer as ZComposer } from "../../index";
+import { Button, Composer as ZComposer, PitGrip } from "../../index";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useRef, useState } from "react";
 import { clock } from "../../index";
@@ -67,6 +67,7 @@ export function Composer({ attended, toBottom }: { attended: Attended; toBottom:
       sendDisabled={comp.sending || !live}
       running={running}
       focusTick={focusTick}
+      grip={<PitGrip />}
       strip={showStrip ? { kind: running ? "running" : "note", text: line.text, time: line.time } : null}
       stripActions={
         <>
