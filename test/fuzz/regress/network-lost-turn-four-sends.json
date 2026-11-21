@@ -4,8 +4,7 @@
  "profile": "phone",
  "invariant": "lost-turn",
  "message": "turn 27 (\"net4 [plain] short\") is on the door and not on the page",
- "owner": "Frontend (a turn on the door never drawn after four quick sends, no faults); Backend to rule out the gateway",
- "status": "xfail",
+ "status": "pass",
  "strict": [
   "lapse-no-notice"
  ],
