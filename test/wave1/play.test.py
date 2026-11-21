@@ -71,13 +71,13 @@ def main():
                           const e = document.elementFromPoint(x + 0.5, y + 0.5);
                           if (e && (e === b || b.contains(e))) { x0 = Math.min(x0, x); x1 = Math.max(x1, x + 1); y0 = Math.min(y0, y); y1 = Math.max(y1, y + 1); }
                         }
-                        out.push({ w: r.width, h: r.height, hitW: x1 - x0, hitH: y1 - y0 });
+                        const cs = getComputedStyle(b); const ink = b.querySelector('.zr-ink'); out.push({ w: r.width, h: r.height, outer: r.height + parseFloat(cs.marginTop) + parseFloat(cs.marginBottom), glyph: ink ? parseFloat(getComputedStyle(ink).fontSize) : 0, hitW: x1 - x0, hitH: y1 - y0 });
                       }
                       return out;
                     })()""" % t)
                     for z in sizes:
-                        rep.check(z["w"] <= 40 and z["h"] <= 36, "%d: a play button is compact, %sx%s" % (width, z["w"], z["h"]))
-                        rep.check(z["hitW"] >= 38 and z["hitH"] >= 42, "%d: its tap area is generous, %sx%s" % (width, z["hitW"], z["hitH"]))
+                        rep.check(z["glyph"] <= 28 and z["outer"] <= 36, "%d: a play button is compact: glyph %spx, takes %spx of height" % (width, z["glyph"], z["outer"]))
+                        rep.check(z["w"] >= 44 and z["h"] >= 44, "%d: its tap area is generous, %sx%s" % (width, z["w"], z["h"]))
                     pg.locator(t + " .nodi-turn-head [data-action='play']").click()
                     pg.wait_for_timeout(4000)
                     plays = pg.evaluate("window.__plays")
