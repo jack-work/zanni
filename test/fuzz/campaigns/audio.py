@@ -6,7 +6,8 @@ from engine import STRICT, Failure, clip
 
 INSTRUMENT = r"""
 (() => {
-  const A = window.__au = { sockets: [], frames: [], starts: [], overlaps: [], streams: [], stt: [], gum: 0, errors: [] };
+  const A = window.__au = { sockets: [], frames: [], starts: [], overlaps: [], streams: [], stt: [], gum: 0, errors: [], chunks: {}, played: [] };
+  let seq = 0, pendingMeta = null;
   const wall = () => Math.round(performance.now());
   const NativeWS = window.WebSocket;
   let ids = 0;
@@ -25,9 +26,18 @@ INSTRUMENT = r"""
         if (typeof e.data === 'string') {
           let f = null;
           try { f = JSON.parse(e.data); } catch (x) { return; }
+          if (f && f.type === 'audio.chunk') pendingMeta = f;
           if (f && typeof f.type === 'string') A.frames.push({ t: wall(), sid, type: f.type, turn: f.turn, key: f.key, node: f.node, offset: f.offset, bytes: f.bytes, why: f.why });
         } else {
           A.frames.push({ t: wall(), sid, type: 'binary', bytes: e.data.byteLength !== undefined ? e.data.byteLength : e.data.size });
+          if (pendingMeta && e.data instanceof ArrayBuffer && e.data.byteLength >= 4 && e.data.byteLength % 2 === 0) {
+            const id = seq++;
+            const v = new Int16Array(e.data);
+            v[0] = (id % 1000) + 1;
+            v[1] = Math.floor(id / 1000) + 1;
+            A.chunks[id] = { id, t: wall(), sid, turn: pendingMeta.turn, node: pendingMeta.node, offset: pendingMeta.offset, bytes: pendingMeta.bytes };
+          }
+          pendingMeta = null;
         }
       });
       return ws;
@@ -40,18 +50,27 @@ INSTRUMENT = r"""
     const ctx = this.context;
     const dur = this.buffer ? this.buffer.duration : 0;
     const at = Math.max(when || 0, ctx.currentTime);
-    const rec = { t: wall(), at, end: at + dur, stopped: false };
+    const rec = { t: wall(), at, end: at + dur, dur, stopped: false, stopAt: null };
     const clash = sources.filter((s) => !s.stopped && s.end > ctx.currentTime + 0.02 && s.end > at + 0.08 && s.at < at + dur - 0.08);
     if (clash.length) A.overlaps.push({ t: rec.t, at, dur, other: clash.length });
     sources.push(rec);
     if (sources.length > 4000) sources.splice(0, 2000);
     A.starts.push(rec.t);
     this.__rec = rec;
-    this.addEventListener('ended', () => { rec.stopped = true; });
+    if (this.buffer && this.buffer.length >= 2) {
+      const ch = this.buffer.getChannelData(0);
+      const a = Math.round(ch[0] * 32768), b = Math.round(ch[1] * 32768);
+      if (a >= 1 && b >= 1) {
+        rec.id = (a - 1) + 1000 * (b - 1);
+        rec.ctxNow = ctx.currentTime;
+        A.played.push(rec);
+      }
+    }
+    this.addEventListener('ended', () => { rec.stopped = true; rec.ended = true; });
     return start.apply(this, arguments);
   };
   AudioBufferSourceNode.prototype.stop = function () {
-    if (this.__rec) this.__rec.stopped = true;
+    if (this.__rec) { this.__rec.stopped = true; if (this.__rec.stopAt === null) this.__rec.stopAt = this.context.currentTime; }
     return stop.apply(this, arguments);
   };
   const md = navigator.mediaDevices;
@@ -71,6 +90,7 @@ INSTRUMENT = r"""
 
 PROMPTS = ["[plain]", "[tool]", "[long]", "[md]", "[long] again"]
 KEY = "key="
+GAP_S = 0.15
 
 
 class PageState:
@@ -80,6 +100,62 @@ class PageState:
         self.on_at = None
         self.off_at = None
         self.bad_mic_since = None
+        self.stops = []
+
+    def mark_stop(self):
+        try:
+            self.stops.append(self.page.evaluate("window.__au ? window.__au.wall() : 0"))
+        except Exception:
+            pass
+
+
+def playback_failure(f, st, final=False):
+    chunks = {int(k): v for k, v in f["chunks"].items()}
+    live = [p for p in f["played"] if p["id"] in chunks and not (p["stopAt"] is not None and p["stopAt"] <= p["at"])]
+    live.sort(key=lambda p: p["at"])
+    seen = set()
+    prev = None
+    for p in live:
+        c = chunks[p["id"]]
+        key = (c["turn"], c["node"], c["offset"])
+        if key in seen:
+            return Failure("chunk-played-twice", "turn %s node %s offset %s was scheduled to play twice" % key)
+        seen.add(key)
+        if prev:
+            pp, pc = prev
+            if (c["turn"], c["offset"]) < (pc["turn"], pc["offset"]):
+                return Failure("chunk-order", "turn %s offset %s plays after turn %s offset %s" % (c["turn"], c["offset"], pc["turn"], pc["offset"]))
+            gap = p["at"] - (pp["at"] + pp["dur"])
+            if pc["turn"] == c["turn"] and gap > GAP_S:
+                prev_end_wall = pp["t"] + (pp["at"] + pp["dur"] - pp["ctxNow"]) * 1000
+                if c["t"] <= prev_end_wall - 40:
+                    return Failure("chunk-gap", "a %d ms silence inside turn %s before offset %s although the chunk was on the page %d ms earlier" % (gap * 1000, c["turn"], c["offset"], prev_end_wall - c["t"]))
+        prev = (p, c)
+    if not final:
+        return None
+    started = {}
+    ended = set()
+    for fr in f["frames"]:
+        if fr["type"] == "audio.start":
+            started.setdefault(fr["turn"], fr["t"])
+        elif fr["type"] == "audio.end":
+            ended.add(fr["turn"])
+        elif fr["type"] == "audio.cancel":
+            ended.discard(fr["turn"])
+    got = {p["id"]: p for p in f["played"]}
+    for turn in sorted(ended):
+        t0 = started.get(turn)
+        if t0 is None or any(s >= t0 - 50 for s in st.stops):
+            continue
+        mine = sorted((c for c in chunks.values() if c["turn"] == turn), key=lambda c: c["offset"])
+        lost = []
+        for c in mine:
+            p = got.get(c["id"])
+            if p is None or (p["stopAt"] is not None and p["stopAt"] < p["at"] + p["dur"] - 0.02):
+                lost.append(c)
+        if lost:
+            return Failure("audio-cut-off", "turn %s ended with %d of %d chunks never played to their end (first at offset %s)" % (turn, len(lost), len(mine), lost[0]["offset"]))
+    return None
 
 
 def facts(page):
@@ -88,7 +164,7 @@ def facts(page):
       if (!A) return null;
       const mic = document.querySelector('.fw-mic');
       const live = [...document.querySelectorAll('[data-state]')].filter((e) => /^(live|draining)$/.test(e.dataset.state)).length;
-      return { now: A.wall(), frames: A.frames, sockets: A.sockets, starts: A.starts, overlaps: A.overlaps, tracks: A.liveTracks(),
+      return { now: A.wall(), ctx: (A.played.length && A.played[A.played.length - 1].ctxNow) || 0, chunks: A.chunks, played: A.played.map((p) => ({ id: p.id, t: p.t, at: p.at, dur: p.dur, stopAt: p.stopAt, ended: !!p.ended, ctxNow: p.ctxNow })), frames: A.frames, sockets: A.sockets, starts: A.starts, overlaps: A.overlaps, tracks: A.liveTracks(),
                mic: mic ? { label: mic.getAttribute('aria-label'), disabled: mic.disabled, pressed: mic.getAttribute('aria-pressed') } : null,
                level: document.documentElement.style.getPropertyValue('--fw-mic-level'), live };
     }""")
@@ -227,6 +303,8 @@ class Audio(Network):
         page = run.page
         if k == "voice":
             self.set_voice(run, page, a["to"])
+            if not self.ps(run, page).voice:
+                self.ps(run, page).mark_stop()
             page.wait_for_timeout(150)
         elif k == "mic":
             self.mic_toggle(page)
@@ -240,6 +318,8 @@ class Audio(Network):
         elif k == "navigate":
             self.navigate(run)
         else:
+            if k == "send":
+                self.ps(run, page).mark_stop()
             if k == "reload":
                 self.fresh(run, page)
             super().apply(run, a)
@@ -251,6 +331,7 @@ class Audio(Network):
         if st:
             st.voice = False
             st.on_at = st.off_at = None
+            st.stops = []
             st.bad_mic_since = None
 
     def bounce(self, run):
@@ -267,6 +348,7 @@ class Audio(Network):
         other = run.stack.state()["ids"]["lane"]
         page = run.page
         page.evaluate("(h) => { location.hash = h }", "#/gluck/" + other)
+        self.ps(run, page).mark_stop()
         page.wait_for_timeout(600)
         page.evaluate("(h) => { location.hash = h }", "#/gluck/" + MAIN)
         page.wait_for_timeout(300)
@@ -316,6 +398,9 @@ class Audio(Network):
             bad = wire_failure(f["frames"])
             if bad:
                 raise bad
+            bad = playback_failure(f, st)
+            if bad:
+                raise bad
             if f["overlaps"]:
                 raise Failure("double-playback", "%d audio chunks scheduled over audio still playing" % len(f["overlaps"]))
             if st.off_at is not None and not st.voice and (st.on_at is None or st.off_at >= st.on_at):
@@ -354,6 +439,15 @@ class Audio(Network):
             f = facts(st.page)
             if not f:
                 continue
+            end = time.time() + 30
+            while True:
+                bad = playback_failure(f, st, final=True)
+                if not bad or time.time() > end:
+                    break
+                st.page.wait_for_timeout(500)
+                f = facts(st.page)
+            if bad:
+                raise bad
             if os.environ.get("FIGFUZZ_VERBOSE"):
                 kinds = {}
                 for fr in f["frames"]:
