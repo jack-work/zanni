@@ -3,10 +3,11 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const zlib = require('zlib');
 
 const out = process.argv[2];
 if (!out || out === '-h' || out === '--help') {
-  process.stdout.write('usage: figchat-bundle OUT_DIR [DIST_DIR]\n\nFlattens the Vite build of web/ (default web/dist) into OUT_DIR: index.html, then every file\nfrom dist/assets beside it, THIRD-PARTY.txt (from beside dist) and SHA256SUMS. Serve index.html at the app root and the\ndirectory under assets/ beside it, so ./assets/<file> in index.html resolves. Refuses an index.html with\nan inline script or a style attribute (the edge CSP forbids both).\n');
+  process.stdout.write('usage: figchat-bundle OUT_DIR [DIST_DIR]\n\nFlattens the Vite build of web/ (default web/dist) into OUT_DIR: index.html, then every file\nfrom dist/assets beside it, THIRD-PARTY.txt (from beside dist) and STATS.json (raw and gzip bytes per file) and SHA256SUMS. Serve index.html at the app root and the\ndirectory under assets/ beside it, so ./assets/<file> in index.html resolves. Refuses an index.html with\nan inline script or a style attribute (the edge CSP forbids both).\n');
   process.exit(out ? 0 : 2);
 }
 const root = path.join(__dirname, '..');
@@ -24,11 +25,23 @@ fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 fs.copyFileSync(index, path.join(out, 'index.html'));
 const assets = path.join(dist, 'assets');
+const hashed = (f) => /-[A-Za-z0-9_-]{8}\.[a-z0-9]+$/.test(f);
 for (const f of fs.readdirSync(assets)) {
-  if (f === 'index.html' || f === 'THIRD-PARTY.txt' || f === 'SHA256SUMS') { process.stderr.write('figchat-bundle: dist/assets/' + f + ' collides with a bundle file\n'); process.exit(1); }
+  if (!hashed(f)) { process.stderr.write('figchat-bundle: dist/assets/' + f + ' carries no content hash, so it cannot be served immutable\n'); process.exit(1); }
+  if (f === 'index.html' || f === 'THIRD-PARTY.txt' || f === 'SHA256SUMS' || f === 'STATS.json') { process.stderr.write('figchat-bundle: dist/assets/' + f + ' collides with a bundle file\n'); process.exit(1); }
   fs.copyFileSync(path.join(assets, f), path.join(out, f));
 }
 fs.copyFileSync(path.join(dist, '..', 'THIRD-PARTY.txt'), path.join(out, 'THIRD-PARTY.txt'));
+const files = {};
+let raw = 0, gzip = 0;
+for (const f of fs.readdirSync(out).sort()) {
+  const bytes = fs.readFileSync(path.join(out, f));
+  const packed = zlib.gzipSync(bytes, { level: 9 }).length;
+  files[f] = { raw: bytes.length, gzip: packed, hashed: hashed(f) };
+  raw += bytes.length;
+  gzip += packed;
+}
+fs.writeFileSync(path.join(out, 'STATS.json'), JSON.stringify({ version: manifest.version, total: { raw, gzip }, files }, null, 2) + '\n');
 const sums = fs.readdirSync(out).filter((f) => f !== 'SHA256SUMS').sort().map((f) =>
   crypto.createHash('sha256').update(fs.readFileSync(path.join(out, f))).digest('hex') + '  ' + f);
 fs.writeFileSync(path.join(out, 'SHA256SUMS'), sums.join('\n') + '\n');

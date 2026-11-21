@@ -107,15 +107,15 @@ async function test(name, fn) {
     const dist = path.join(root, 'dist');
     fs.mkdirSync(path.join(dist, 'assets'), { recursive: true });
     fs.writeFileSync(path.join(root, 'THIRD-PARTY.txt'), 'notices\n');
-    fs.writeFileSync(path.join(dist, 'assets', 'index-abc.js'), 'export {};\n');
-    fs.writeFileSync(path.join(dist, 'assets', 'style-abc.css'), 'body{}\n');
-    const page = (extra) => '<!doctype html><script type="module" src="./assets/index-abc.js"></script><link rel="stylesheet" href="./assets/style-abc.css">' + extra;
+    fs.writeFileSync(path.join(dist, 'assets', 'index-AbCd1234.js'), 'export {};\n');
+    fs.writeFileSync(path.join(dist, 'assets', 'style-WxYz5678.css'), 'body{}\n');
+    const page = (extra) => '<!doctype html><script type="module" src="./assets/index-AbCd1234.js"></script><link rel="stylesheet" href="./assets/style-WxYz5678.css">' + extra;
     fs.writeFileSync(path.join(dist, 'index.html'), page(''));
     const out = path.join(root, 'out');
     const bundle = (target) => cp.execFileSync('node', [path.join(__dirname, '..', 'bin', 'figchat-bundle'), target, dist], { stdio: 'pipe' });
     bundle(out);
     const files = fs.readdirSync(out).sort();
-    assert.deepStrictEqual(files, ['SHA256SUMS', 'THIRD-PARTY.txt', 'index-abc.js', 'index.html', 'style-abc.css']);
+    assert.deepStrictEqual(files, ['SHA256SUMS', 'STATS.json', 'THIRD-PARTY.txt', 'index-AbCd1234.js', 'index.html', 'style-WxYz5678.css']);
     const index = fs.readFileSync(path.join(out, 'index.html'), 'utf8');
     (index.match(/(?:src|href)="\.\/assets\/[^"]+"/g) || []).forEach((m) => assert.ok(files.includes(m.replace(/^[^"]+"\.\/assets\//, '').slice(0, -1)), m));
     fs.readFileSync(path.join(out, 'SHA256SUMS'), 'utf8').trim().split('\n').forEach((line) => {
@@ -126,6 +126,32 @@ async function test(name, fn) {
       fs.writeFileSync(path.join(dist, 'index.html'), page(bad));
       assert.throws(() => bundle(path.join(root, 'bad')), /inline script or style/, bad);
     });
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  await test('bundle: STATS.json lists every file with raw and gzip bytes, flags content-hashed names, and an unhashed asset fails the build', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'figchat-stats-'));
+    const dist = path.join(root, 'dist');
+    fs.mkdirSync(path.join(dist, 'assets'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'THIRD-PARTY.txt'), 'notices\n');
+    const body = 'export const a = ' + JSON.stringify('x'.repeat(4000)) + ';\n';
+    fs.writeFileSync(path.join(dist, 'assets', 'index-AbCd1234.js'), body);
+    fs.writeFileSync(path.join(dist, 'assets', 'face-q_-9Zk0a.woff2'), 'font');
+    fs.writeFileSync(path.join(dist, 'index.html'), '<!doctype html><script type="module" src="./assets/index-AbCd1234.js"></script>');
+    const bundle = (target) => cp.execFileSync('node', [path.join(__dirname, '..', 'bin', 'figchat-bundle'), target, dist], { stdio: 'pipe' });
+    const out = path.join(root, 'out');
+    bundle(out);
+    const stats = JSON.parse(fs.readFileSync(path.join(out, 'STATS.json'), 'utf8'));
+    assert.deepStrictEqual(Object.keys(stats.files).sort(), ['THIRD-PARTY.txt', 'face-q_-9Zk0a.woff2', 'index-AbCd1234.js', 'index.html']);
+    const js = stats.files['index-AbCd1234.js'];
+    assert.strictEqual(js.raw, Buffer.byteLength(body));
+    assert.strictEqual(js.gzip, require('zlib').gzipSync(body, { level: 9 }).length);
+    assert.ok(js.gzip < js.raw / 4, 'repetitive text compresses');
+    assert.deepStrictEqual(Object.entries(stats.files).filter(([, f]) => f.hashed).map(([n]) => n).sort(), ['face-q_-9Zk0a.woff2', 'index-AbCd1234.js']);
+    assert.strictEqual(stats.total.raw, Object.values(stats.files).reduce((n, f) => n + f.raw, 0));
+    assert.strictEqual(stats.total.gzip, Object.values(stats.files).reduce((n, f) => n + f.gzip, 0));
+    fs.writeFileSync(path.join(dist, 'assets', 'plain.js'), 'x');
+    assert.throws(() => bundle(path.join(root, 'bad')), /no content hash/);
     fs.rmSync(root, { recursive: true, force: true });
   });
 
