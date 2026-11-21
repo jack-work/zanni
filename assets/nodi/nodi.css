@@ -34,7 +34,7 @@
 
 .nodi-prose { min-width: 0; }
 .nodi-text { overflow-wrap: anywhere; min-width: 0; }
-.nodi-prose:not([data-settled]) .nodi-text:empty::after, .nodi-prose:not([data-settled]) .nodi-text > :last-child:is(p, h3, h4, blockquote)::after, .nodi-prose:not([data-settled]) .nodi-text > :last-child:is(ul, ol) > li:last-child::after, .nodi-prose:not([data-settled]) .nodi-text > pre:last-child > code::after { content: ""; display: inline-block; width: 0.45em; height: 0.95em; margin-left: 2px; background: var(--z-accent); vertical-align: -0.12em; }
+.nodi-prose:not([data-settled]) .nodi-text:empty::after, .nodi-prose:not([data-settled]) .nodi-text > :last-child:is(p, h3, h4, blockquote)::after, .nodi-prose:not([data-settled]) .nodi-text > :last-child:is(ul, ol) > li:last-child::after, .nodi-prose:not([data-settled]) .nodi-text > pre:last-child > code::after, .nodi-prose:not([data-settled]) .nodi-text > .nodi-table-wrap:last-child tbody tr:last-child td:last-child::after { content: ""; display: inline-block; width: 0.45em; height: 0.95em; margin-left: 2px; background: var(--z-accent); vertical-align: -0.12em; }
 .nodi-p, .nodi-h, .nodi-quote, .nodi-list, .nodi-pre, .nodi-hr { margin: 0; }
 .nodi-text > * + * { margin-top: 0.55em; }
 .nodi-p { white-space: pre-wrap; }
@@ -47,6 +47,12 @@ ol.nodi-list { list-style: decimal; }
 .nodi-list > li + li { margin-top: 0.2em; }
 .nodi-quote { padding-left: var(--z-space-4, 12px); border-left: 3px solid var(--z-line); color: var(--z-muted); white-space: pre-wrap; }
 .nodi-hr { border: 0; border-top: 1px solid var(--z-line); }
+.nodi-table-wrap { overflow-x: auto; max-width: 100%; }
+.nodi-table { border-collapse: collapse; font-size: 1rem; line-height: 1.3; }
+.nodi-table th, .nodi-table td { padding: 2px var(--z-space-3, 8px); border: 1px solid var(--z-line); text-align: left; vertical-align: top; }
+.nodi-table th { font-weight: 600; background: color-mix(in srgb, var(--z-ink) 6%, transparent); }
+.nodi-table [data-align="center"] { text-align: center; }
+.nodi-table [data-align="right"] { text-align: right; }
 .nodi-code, .nodi-pre { font: 400 1.125rem / 1.25 var(--nodi-mono); }
 .nodi-code { padding: 0 3px; background: color-mix(in srgb, var(--z-ink) 8%, transparent); border-radius: var(--z-radius-1, 2px); }
 .nodi-pre { padding: var(--z-space-3, 8px); overflow-x: auto; white-space: pre; background: color-mix(in srgb, var(--z-ink) 6%, transparent); border: 1px solid var(--z-line); border-radius: var(--z-radius-1, 2px); }

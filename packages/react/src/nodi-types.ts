@@ -17,7 +17,15 @@ export type Block =
   | { kind: "h"; level: number; text: string }
   | { kind: "hr" }
   | { kind: "ul" | "ol"; start: number; items: string[] }
-  | { kind: "quote"; text: string };
+  | { kind: "quote"; text: string }
+  | { kind: "table"; align: string[]; head: string[]; rows: string[][] };
+
+export interface BlockStream {
+  text: string;
+  live: boolean;
+  blocks: Block[];
+  offsets: number[];
+}
 
 export type Role = "you" | "aria" | "caller";
 
@@ -87,7 +95,9 @@ export interface TurnModel {
 
 export interface NodiApi {
   reveal(text: string): Reveal[];
-  blocks(text: string): Block[];
+  blocks(text: string, live?: boolean): Block[];
+  streamState(): BlockStream;
+  stream(state: BlockStream, text: string, live: boolean): Block[];
   spans(text: string, depth?: number): Span[];
   model(view: View | undefined, ends: Record<number, { reason?: string }>): TurnModel[];
   metricsLine(m: unknown): string;

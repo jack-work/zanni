@@ -949,6 +949,42 @@ try:
         assert len(later) == 2 and sid in later, "a reload mints a new id: %s" % later
         pg.close()
 
+        for width, height in ((390, 844), (1280, 800)):
+            phone = width < 600
+            md_door = door(60)
+            pg = fresh(width, height)
+            attend(pg, md_door, MAIN)
+            send(pg, "show me [md] [plain]")
+            pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-prose", timeout=15000)
+            pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-h", timeout=15000)
+            pg.evaluate("document.querySelector(\".nodi-turn[data-turn='27'] .nodi-h\").__kept = 'heading'")
+            seen_partial = False
+            for _ in range(400):
+                got = pg.evaluate("""() => { const t = document.querySelector(".nodi-turn[data-turn='27'] .nodi-table"); return t ? t.querySelectorAll('tbody tr').length : -1; }""")
+                if 0 <= got < 3:
+                    seen_partial = True
+                if got == 3:
+                    break
+                pg.wait_for_timeout(25)
+            assert seen_partial, "the table fills in row by row while the reply streams"
+            pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])", timeout=15000)
+            kinds = pg.evaluate("[...document.querySelectorAll(\".nodi-turn[data-turn='27'] .nodi-text > *\")].map(n => n.className.split(' ')[0])")
+            assert kinds == ["nodi-h", "nodi-p", "nodi-list", "nodi-pre", "nodi-table-wrap", "nodi-p"], kinds
+            assert pg.evaluate("document.querySelector(\".nodi-turn[data-turn='27'] .nodi-h\").__kept") == "heading", "a settled block keeps its element while later blocks stream"
+            assert pg.locator(".nodi-turn[data-turn='27'] .nodi-table th").all_inner_texts() == ["file", "lines", "note"]
+            assert pg.locator(".nodi-turn[data-turn='27'] .nodi-table tbody tr").count() == 3
+            assert pg.locator(".nodi-turn[data-turn='27'] .nodi-table td").nth(1).evaluate("n => getComputedStyle(n).textAlign") == "right"
+            no_sideways(pg, width, "a streamed table")
+            sans_free(pg, "the streamed reply at %d" % width)
+            snap(pg, "stream-md-%d" % width)
+            streamed = pg.locator(".nodi-turn[data-turn='27'] .nodi-text").inner_html()
+            pg.goto("about:blank")
+            attend(pg, md_door, MAIN, 27)
+            pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-table")
+            assert pg.locator(".nodi-turn[data-turn='27'] .nodi-text").inner_html() == streamed, "history draws what the stream drew"
+            assert not pg.errors, pg.errors
+            pg.close()
+
         MOTION = """() => {
           const over = [];
           for (const n of document.querySelectorAll('.zr-composer, .zr-composer *, .fw-status *, .fw-main button')) {

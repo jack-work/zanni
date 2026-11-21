@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from "react";
+import { Fragment, memo, type ReactNode } from "react";
 import { nodi, type Block, type Span } from "./zanni";
 
 export function Plain({ text }: { text: string }) {
@@ -58,8 +58,39 @@ function Inline({ text }: { text: string }) {
   return <Spans spans={nodi.spans(text)} />;
 }
 
-export function BlockView({ block }: { block: Block }) {
+function same(a: Block, b: Block): boolean {
+  return a === b || JSON.stringify(a) === JSON.stringify(b);
+}
+
+export const BlockView = memo(function BlockView({ block }: { block: Block }) {
   switch (block.kind) {
+    case "table":
+      return (
+        <div className="nodi-table-wrap">
+          <table className="nodi-table">
+            <thead>
+              <tr>
+                {block.head.map((t, c) => (
+                  <th key={c} data-align={block.align[c] || undefined}>
+                    <Inline text={t} />
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {block.rows.map((r, i) => (
+                <tr key={i}>
+                  {r.map((t, c) => (
+                    <td key={c} data-align={block.align[c] || undefined}>
+                      <Inline text={t} />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
     case "code":
       return (
         <pre className="nodi-pre">
@@ -104,4 +135,4 @@ export function BlockView({ block }: { block: Block }) {
         </p>
       );
   }
-}
+}, (a, b) => same(a.block, b.block));

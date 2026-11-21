@@ -1,5 +1,5 @@
 import { formatWorkedTime, groupWork, stepsTitle, type Work } from "./work";
-import { createContext, memo, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, memo, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Fold } from "./fold";
 import { reducedMotion } from "./motion";
 import { glyphs } from "./glyphs";
@@ -62,7 +62,8 @@ export interface ProseProps {
 
 export const ProseView = memo(
   function ProseView({ item, turn, speaking, spokenChars }: ProseProps) {
-    const blocks = useMemo(() => nodi.blocks(item.text), [item.text]);
+    const state = useRef(nodi.streamState());
+    const blocks = useMemo(() => nodi.stream(state.current, item.text, !item.settled), [item.text, item.settled]);
     return (
       <div className="nodi-prose" {...settled(item)} {...(speaking ? { "data-speaking": "" } : {})} {...(speaking && spokenChars !== undefined ? { "data-spoken-chars": String(spokenChars) } : {})}>
         <div className="nodi-text">
