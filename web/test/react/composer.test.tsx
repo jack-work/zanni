@@ -4,9 +4,9 @@ import { describe, expect, it, vi } from "vitest";
 import { act } from "@testing-library/react";
 import { Button, Composer, KEYBOARD_CLOSE_SETTLE_MS, Strip, trackViewport } from "zanni-react";
 
-function Harness({ submit = () => {}, running = false, strip = null }: { submit?: () => void; running?: boolean; strip?: { kind: "running" | "note"; text: string; time?: string } | null }) {
+function Harness({ submit = () => {}, running = false, strip = null, onAttach = () => {}, onCommand = () => {}, commandOn = false }: { submit?: () => void; onAttach?: () => void; onCommand?: () => void; commandOn?: boolean; running?: boolean; strip?: { kind: "running" | "note"; text: string; time?: string } | null }) {
   const [v, setV] = useState("");
-  return <Composer value={v} onChange={setV} onSubmit={submit} sendLabel={running ? "Steer" : "Send"} running={running} strip={strip} stripActions={<Button>Stop</Button>} accessory={<Button>Record</Button>} heightVar="--test-h" />;
+  return <Composer value={v} onChange={setV} onSubmit={submit} sendLabel={running ? "Steer" : "Send"} sendGlyph={running ? "↳" : "✎"} attach={{ glyph: "❝", label: "Attach", onClick: onAttach }} command={{ glyph: "∴", label: "Command", pressed: commandOn, onClick: onCommand }} running={running} strip={strip} stripActions={<Button>Stop</Button>} accessory={<Button>Record</Button>} heightVar="--test-h" />;
 }
 
 const box = () => screen.getByLabelText("Message", { selector: "textarea" }) as HTMLTextAreaElement;
@@ -108,5 +108,36 @@ describe("Strip", () => {
     expect(document.querySelector(".zr-glyph")).toBeNull();
     expect(document.querySelector(".zr-strip-time")).toBeNull();
     expect(screen.getByRole("status").textContent).toBe("Transcribing.");
+  });
+
+  it("draws attach on the left and command and send as one pair on the right, each a glyph pill with a name", () => {
+    render(<Harness />);
+    const row = document.querySelector(".zr-compose-row")!;
+    expect(row.firstElementChild!.getAttribute("aria-label")).toBe("Attach");
+    expect(row.firstElementChild!.textContent).toBe("❝");
+    const pair = row.querySelector(".zr-pill-pair")!;
+    expect([...pair.querySelectorAll("button")].map((b) => b.getAttribute("aria-label"))).toEqual(["Command", "Send"]);
+    expect([...pair.querySelectorAll("button")].map((b) => b.textContent)).toEqual(["∴", "✎"]);
+    expect(pair.querySelector("button[type=submit]")).toBe(screen.getByRole("button", { name: "Send" }));
+  });
+
+  it("the send pill wears the steering glyph while running, and the command pill reports its state", () => {
+    const onCommand = vi.fn();
+    const { rerender } = render(<Harness running onCommand={onCommand} />);
+    expect(screen.getByRole("button", { name: "Steer" }).textContent).toBe("↳");
+    fireEvent.click(screen.getByRole("button", { name: "Command" }));
+    expect(onCommand).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "Command" }).getAttribute("aria-pressed")).toBe("false");
+    rerender(<Harness running commandOn />);
+    expect(screen.getByRole("button", { name: "Command" }).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("an attach tap calls back and never submits", () => {
+    const submit = vi.fn();
+    const onAttach = vi.fn();
+    render(<Harness submit={submit} onAttach={onAttach} />);
+    fireEvent.click(screen.getByRole("button", { name: "Attach" }));
+    expect(onAttach).toHaveBeenCalledTimes(1);
+    expect(submit).not.toHaveBeenCalled();
   });
 });

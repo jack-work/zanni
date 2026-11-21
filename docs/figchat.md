@@ -80,8 +80,12 @@ not in atoms.
   what is on screen.
 - Composer: Enter sends, Shift+Enter breaks the line, never during IME
   composition, never on a coarse pointer. While a turn runs the composer gains
-  one 40px line (glyph, what is running, elapsed time, Stop, Stop all) and Send
-  reads Steer. Errors and the mic's notes take that same line. A draft is kept
+  one 40px line (glyph, what is running, elapsed time, Stop, Stop all) and the
+  send pill steers. Three glyph pills sit in the row: attach on the left;
+  command (∴) and send (✎, ↳ while running) on the right as one joined pair,
+  named by `aria-label`, glyphs from figaro-forms. Attach and command are
+  disabled until their lanes land. The record button is glyph-only until voice
+  is on, then widens. Errors and the mic's notes take that same line. A draft is kept
   per aria in localStorage, saved 400ms after typing, cleared on send.
 - Fork sits in the aria header; Fork here and Play in each turn's action bar
   (on hover or focus with a fine pointer, always on the last turn and on touch).

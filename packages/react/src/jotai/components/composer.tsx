@@ -1,4 +1,4 @@
-import { Button, Composer as ZComposer, PitGrip, voiceGlyph } from "../../index";
+import { Button, Composer as ZComposer, PitGrip, attachGlyph, glyphs, voiceGlyph } from "../../index";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { memo, useEffect, useRef, useState } from "react";
 import { clock } from "../../index";
@@ -65,6 +65,9 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
       }}
       placeholder={running ? "Steer figaro" : "Message"}
       sendLabel={running ? "Steer" : "Send"}
+      sendGlyph={running ? glyphs.steering : glyphs.send}
+      attach={{ glyph: attachGlyph, label: "Attach", title: "Attachments are not available yet.", disabled: true }}
+      command={{ glyph: glyphs["pit.command"], label: "Command", title: "Commands are not available yet.", disabled: true }}
       sendDisabled={comp.sending || !live}
       running={running}
       focusTick={focusTick}
@@ -86,6 +89,7 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
           variant="outline"
           className="fw-mic"
           aria-pressed={mic.state === "recording"}
+          aria-label={micLabel}
           disabled={mic.state === "unsupported" || mic.state === "asking" || mic.state === "transcribing"}
           title={mic.state === "unsupported" ? "This browser cannot record audio." : undefined}
           onClick={() => {
@@ -98,7 +102,7 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
               {voiceGlyph}
             </span>
           )}
-          {micLabel}
+          <span className="fw-mic-label">{micLabel}</span>
           {mic.state === "recording" && <span className="fw-mic-meter" aria-hidden="true" />}
         </Button>
       }
