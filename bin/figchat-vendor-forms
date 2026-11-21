@@ -7,7 +7,7 @@ const cp = require('child_process');
 
 const ref = process.argv[2];
 if (!ref || ref === '-h' || ref === '--help') {
-  process.stdout.write('usage: figchat-vendor-forms REF\n\nREF is a figaro-forms tag (v0.6.0) or a full ref (refs/heads/feat/x). Builds the npm tarball\nwith `nix build <figaro-forms on keel>?ref=REF#tarball`, copies figaro-forms-<version>.tgz into web/vendor,\nwrites web/vendor/SOURCE.json (ref, rev, integrity) and points web/package.json at the file, then refreshes web/package-lock.json\nwith `npm install --package-lock-only` and drops the integrity of file: entries, which nixpkgs'\nprefetch-npm-deps would look up in an npm cache they never enter.\n');
+  process.stdout.write('usage: figchat-vendor-forms REF\n\nREF is a figaro-forms tag (v0.6.0) or a full ref (refs/heads/feat/x). Builds the npm tarball\nwith `nix build <figaro-forms on keel>?ref=REF#tarball`, copies figaro-forms-<version>.tgz into web/vendor,\nwrites web/vendor/SOURCE.json (ref, rev, integrity) and points web/package.json at the file, then refreshes web/package-lock.json\nwith `npm install --package-lock-only` and drops the integrity of file: entries, which the nixpkgs\nprefetch-npm-deps would look up in an npm cache they never enter.\n');
   process.exit(ref ? 0 : 2);
 }
 const full = ref.startsWith('refs/') ? ref : 'refs/tags/' + ref;

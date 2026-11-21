@@ -289,6 +289,11 @@ async function test(name, fn) {
     assert.deepStrictEqual(pinned, []);
   });
 
+  await test('vendor script: bin/figchat-vendor-forms parses and prints its usage', () => {
+    const out = require('child_process').execFileSync(process.execPath, [path.join(__dirname, '..', 'bin', 'figchat-vendor-forms'), '--help'], { encoding: 'utf8' });
+    assert.ok(out.startsWith('usage: figchat-vendor-forms REF'));
+  });
+
   process.stdout.write(failed ? failed + ' failed\n' : 'figchat: all passed\n');
   process.exit(failed ? 1 : 0);
 })();
