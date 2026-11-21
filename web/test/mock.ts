@@ -3,7 +3,7 @@ import { AriaClient } from "figaro-forms/aria";
 import type { Dial } from "figaro-forms";
 
 const require = createRequire(import.meta.url);
-const mock = require("../../examples/aria-mock.js") as {
+export const mock = require("../../examples/aria-mock.js") as {
   create(o: { step?: number; pageBytes?: number }): MockCore;
   EVIL: string;
   BIDI: string;
@@ -15,6 +15,7 @@ export interface MockCore {
   sent?: { id: string; text: string }[];
   interrupts?: string[];
   calls: { method: string; params: Record<string, unknown> }[];
+  dropped: number;
   drop(): number;
   running(id: string): boolean;
 }

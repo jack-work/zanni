@@ -4,7 +4,6 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const cp = require('child_process');
-const figchat = require('../assets/figchat/figchat.js');
 const speech = require('../assets/figchat/speech.js');
 const mock = require('../examples/aria-mock.js');
 
@@ -14,30 +13,6 @@ async function test(name, fn) {
 }
 
 (async () => {
-  await test('deep link: store, aria and optional turn round trip', () => {
-    assert.deepStrictEqual(figchat.parseRoute('#/local/abc123'), { store: 'local', aria: 'abc123' });
-    assert.deepStrictEqual(figchat.parseRoute('#/local/abc123:17'), { store: 'local', aria: 'abc123', turn: 17 });
-    assert.deepStrictEqual(figchat.parseRoute('#/local'), { store: 'local', aria: '' });
-    assert.strictEqual(figchat.parseRoute('#/'), null);
-    assert.strictEqual(figchat.parseRoute('#/a/b:x'), null);
-    assert.strictEqual(figchat.routeFor('local', 'abc', 17), '#/local/abc:17');
-    assert.strictEqual(figchat.routeFor('local', 'abc'), '#/local/abc');
-    assert.strictEqual(figchat.routeFor('', 'abc'), '#/');
-    const r = figchat.parseRoute(figchat.routeFor('a b', 'c/d', 3));
-    assert.deepStrictEqual(r, { store: 'a b', aria: 'c/d', turn: 3 });
-  });
-
-  await test('list: depth follows the parent chain in the daemon order, a missing parent is a root', () => {
-    const rows = [{ id: 'a' }, { id: 'b', parent: 'a' }, { id: 'c', parent: 'b' }, { id: 'd', parent: 'gone' }, { id: 'e', parent: 'e' }];
-    assert.deepStrictEqual(figchat.depths(rows), { a: 0, b: 1, c: 2, d: 0, e: 0 });
-  });
-
-  await test('list: the label prefers the mantra, then handle, then the short id', () => {
-    assert.strictEqual(figchat.labelOf({ id: 'abcdef012345', mantra: 'M', handle: 'H', short: 'S' }), 'M');
-    assert.strictEqual(figchat.labelOf({ id: 'abcdef012345', handle: 'H' }), 'H');
-    assert.strictEqual(figchat.labelOf({ id: 'abcdef012345' }), 'abcdef01');
-  });
-
   await test('mock door: list pages in tree order and says where the next page starts', async () => {
     const core = mock.create({ step: 1 });
     const out = [];

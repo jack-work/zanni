@@ -1,90 +1,151 @@
 ---
 name: figchat
-description: The figchat web shell on the figaro-forms aria stream. Read before changing its routes, the speech side channel, how the aria list pages, the bundle layout, or before binding it to a door.
+description: figaro web, the React and Jotai client for the figaro-forms aria stream, shipped as packages.figchat-shell. Read before changing its routes, atoms, the speech and mic paths, the audio session, the bundle layout, or before binding it to a door.
 ---
 
-# figchat
+# figaro web (figchat)
 
 The web chat for figaro. It attends one aria at a time over a door that speaks
-the `figaro-forms/aria` contract (JSON-RPC over WebSocket), draws it with
-`nodi`, and lets Gluck send, interrupt and fork.
+the `figaro-forms/aria` contract (JSON-RPC over WebSocket), draws it in nodi's
+DOM shape, and lets Gluck send, steer, stop, fork, dictate and listen.
+
+The visible title is "figaro web". Identifiers (`packages.figchat-shell`,
+`bin/figchat-bundle`, `test/figchat.test.*`) keep the old name.
+
+zanni's rule "no framework and no runtime" yields for figaro web only, by
+Gluck's order. The zanni components stay framework-free; figaro web wraps them.
+`nodi`'s pure functions (`model`, `blocks`, `spans`, `reveal`, `metricsLine`)
+and `voce`, the player, are imported from `assets/`; React draws the DOM that
+`nodi.css` and `voce.css` style, so those sheets apply unchanged.
+
+## Source and build
+
+`web/` holds the app: `src/lib` (pure code and tests' subjects), `src/state`
+(Jotai atoms), `src/components`, `src/styles`. React 19, Jotai 3, TypeScript,
+Vite, Vitest. `figaro-forms` comes as a vendored npm tarball in `web/vendor`,
+pinned by `package-lock.json`; `bin/figchat-vendor-forms TAG` replaces it
+(`nix build <figaro-forms on keel>?ref=refs/tags/TAG#tarball`) and writes
+`vendor/SOURCE.json`. nodi, voce and `assets/figchat/speech.js` are UMD files;
+a small Vite transform in `vite.config.ts` turns them into default exports.
+
+`packages.figchat-shell` is `buildNpmPackage`: tsc, `vite build`, Vitest, then
+`bin/figchat-bundle` flattens `dist` into the layout the edge serves. The build
+is deterministic (`nix build --rebuild` gives the same `SHA256SUMS`).
+
+`npm run dev` in `web/` serves the app with Vite; `/door`, `/audio` and `/stt`
+proxy to `FIGCHAT_DOOR` (default `http://127.0.0.1:8099`, run
+`node test/figchat-server.js <bundle>` for a mock door that prints its port).
+
+## Deploy contract
+
+A flat directory: `index.html` served at `/chat/`, every other file under
+`/chat/assets/`. The page dials `door`, `audio` and `stt` relative to itself,
+so behind the edge they reach `/chat/door`, `/chat/audio` and `/chat/stt`
+(`lib/figchat-routes.nix` strips `/chat`). Same origin only, no inline script or
+style: `bin/figchat-bundle` refuses an `index.html` that has one, and the edge
+CSP would block it. `THIRD-PARTY.txt` carries the notices and the upstream map.
 
 ## Routes
 
-`#/` the aria list, `#/<store>/<aria>` an aria, `#/<store>/<aria>:<turn>` an aria
-scrolled to a turn (older pages are read until the turn is held, at most 60
-pages). A store names a client in `mount(host, {stores, store})`; one store,
-`local`, is wired by `boot.js`. Under 900 px one of list or aria shows; from
-900 px both.
+`#/` the aria list, `#/<store>/<aria>` an aria, `#/<store>/<aria>:<turn>` an
+aria scrolled to a turn (older pages are read until the turn is held, at most
+60 pages). A store names a client wired in `main.tsx` from `data-store`.
+Under 900 px one of list or aria shows; from 900 px both. Moving between the
+two at that width runs a same-document View Transition where it exists.
 
-## What the shell does
+## Atoms
 
-- List: `figaro.list` in the daemon's order, eight at a time, `More arias` pages
-  with `next_before`. Depth is the parent chain among loaded rows (capped at six).
-  The list reloads when a turn ends and when the tab becomes visible.
-- Attend: `client.attach(id)`. The stream reads backward from the end in
-  byte-budget pages, follows live, and resumes from its own cursor after a drop
-  with no gap and no repeat. The shell redraws from `snapshot().view` (closed and open messages) on every change; a live turn's end comes from `snapshot().ends` (a replayed end carries no reason and draws nothing).
-  Scrolling up (an IntersectionObserver on `Earlier turns`, or the button)
-  calls `loadOlder()` and keeps the scroll anchor.
-- Send is `stream.qua`. While a turn runs the composer says a message will
-  steer it. `Stop` interrupts and keeps the queue, `Stop, clear queue` clears it.
-  `Fork` forks at the end and opens the alternative; `Fork here` on a turn forks
-  at that turn.
-- Phases show in the top bar: Connecting, Catching up, Live, Offline, Not allowed,
-  Not found, Closed.
+figaro-forms (`figaro-forms/aria/jotai`): `ariaAtom`, `ariaPhaseAtom`,
+`ariaConnectionAtom`, `ariaRosterAtom(client, {limit})` (read
+`{rows, next, refused, loading, error}`, write `"more"` or `"refresh"`;
+refetched when the connection reopens).
 
-## Door
+`web/src/state`: `bootAtom` (stores, door paths), `routeAtom`/`goAtom`,
+`clientAtom`, `attendedAtom`; `rosterAtom`, `depthsAtom`; per aria and
+memoised by client: `turnsAtom` (nodi's model, turns reused while unchanged),
+`runningAtom`, `workAtom` (verb and start of the open turn), `noteAtom`;
+`linkAtom` (the attended aria's phase, else the connection); `composerAtom`
+and `draftAtom` per aria; `micAtom`; `voiceAtom`, `handsFreeAtom`,
+`speakingAtom`; `sheetAtom`. Players are imperative and live in `VoiceHub`,
+not in atoms.
 
-`boot.js` dials `data-door` (default `door`, relative to the page, so
-`/chat/door` behind the edge) with `edgeSession()`. The local bridge refuses
-read, qua, interrupt, fork and list, so the shell needs a daemon door or a
-gateway that passes them.
+## What the app does
 
-`assets/aria/aria.js` is figaro-forms/aria cut by `bin/figchat-vendor-aria` from
-a checkout; `SOURCE.json` names the head. It sets `window.figaroAria`.
+- List: eight arias at a time, children indented under their parent (depth
+  capped at six), reloaded when a turn ends and when the tab becomes visible.
+- Attend: the stream reads backward from the end in byte-budget pages and
+  follows live. Following lets go when the reader scrolls up and a Latest pill
+  says new content landed below. Earlier turns page in above without moving
+  what is on screen.
+- Composer: Enter sends, Shift+Enter breaks the line, never during IME
+  composition, never on a coarse pointer. While a turn runs the composer gains
+  one 40px line (glyph, what is running, elapsed time, Stop, Stop all) and Send
+  reads Steer. Errors and the mic's notes take that same line. A draft is kept
+  per aria in localStorage, saved 400ms after typing, cleared on send.
+- Fork sits in the aria header; Fork here and Replay in each turn's action bar
+  (on hover or focus with a fine pointer, always on the last turn and on touch).
+- Adjacent thinking and tool nodes fold into one work group titled by what
+  happened in it ("Explored 3 files, ran 1 command").
+- Tapping a message opens one bottom sheet. Actions are registered per message
+  kind (`lib/sheet.ts`): your message has Play (its clip, key `.../in`) and
+  Re-transcribe (`POST stt/key/<key>`, then Use text puts the result in the
+  composer); a reply has Play (`.../out`).
 
-## Speech and mic (gateway.md)
+## Audio
 
-Audio is the gateway's side channel, `/audio/<aria>` (WebSocket, same origin),
-opened only while the voice toggle is on. One speech session per reply:
+`lib/audio-session.ts` is one state machine over the page's audio: idle,
+playing, recording, recording-with-pending. It owns `navigator.audioSession`:
+`play-and-record` while hands-free or the mic is on, `playback` otherwise.
+voce no longer touches the session.
 
-```
-ready {aria, store}
-audio.start {turn, key, format:'pcm', rate:24000, bits:16, channels:1, node, cursor}
-audio.chunk {turn, node, cursor, offset, bytes}   then one binary frame of PCM
-audio.end   {turn, key}      key = <store>/<aria>:<turn>/out, replay at /audio/key/<key>
-audio.cancel {turn, key, why}   new-turn | interrupt | client
-error {turn?, code, text}
-```
+- Voice speaks replies from the gateway's `/audio/<aria>` into the prose node
+  that owns them, one voce player per turn (`lib/voice-hub.ts`). voce queues:
+  a reply arriving while another speaks waits its turn.
+- Hands-free implies voice. Each arriving reply is announced with a short
+  ping before its audio. A reply that arrives while Gluck records is held with
+  no sound; when he stops there is one ping and the held replies play in
+  arrival order.
+- Voice and hands-free live in memory only: not in localStorage,
+  sessionStorage or a cookie. A reload starts with both off.
+- The mic records with `MediaRecorder` (webm/opus, else mp4), at most five
+  minutes, posts to `stt?aria=<store>/<aria>` and appends the text to the
+  draft. Sending is an ordinary prompt.
 
-`figchatSpeech.gateway({url})` is the real client; `speech.open({aria, watch},
-{ready, start, chunk, end, cancel, error}) -> {voice(on), cancel(), close()}` is
-the interface the shell uses. There is one voce player per turn, inside the
-prose node named by `audio.start`; `data-speaking` marks the node the current
-chunk's `node` names. A client that attaches mid-turn hears from there on; the
-whole turn is replayable by key after `audio.end` (voce fetches it with Range).
-`watch` is for the mock, which speaks the folded turns; the gateway client
-ignores it. Stop sends `{type:"cancel"}`.
+The gateway contract (`audio.start`, `audio.chunk`, `audio.end`,
+`audio.cancel`, `error`) is in figaro-forms `docs/gateway.md`.
 
-The mic posts the recording to `stt?aria=<store>/<aria>` (relative to the page,
-`data-stt`), with the recording's Content-Type, and appends the returned `text`
-to the composer. Sending is an ordinary prompt.
+## Motion
+
+Tokens on `.fw`: `--fw-pop` (zanni's spring), `--fw-spring` (a damped spring,
+13% overshoot, for slides), `--fw-out` (exits never bounce); durations press
+90ms, pop 320ms, slide 420ms, exit 160ms. Buttons press to 0.94. The reader's
+new turn rises 8px on the spring; agent nodes fade in over 160ms; streaming
+text never animates. The strip and the sheet enter from below and leave
+downward in 160ms. Folds animate their height where `interpolate-size` exists.
+`prefers-reduced-motion` sets every duration to 1ms, stops every loop, shows a
+still glyph, and skips the View Transition. No boil anywhere.
 
 ## Laws
 
-Server text enters only through `nodi`'s text function. No innerHTML and friends,
-no inline script, style or handler. The views never touch `fetch` or
-`WebSocket`; the client does.
+Server text enters only through `Plain` (`components/text.tsx`), which boxes
+control and bidi characters. No `dangerouslySetInnerHTML` and friends:
+`test/text-sinks.test.ts` fails on any HTML-parsing sink in `src`. Inline
+`style` is used only for the measured `--fw-composer-h` on the root, through
+the CSSOM. The views never touch `fetch` or `WebSocket`; `lib/stt.ts`, the
+speech transport and the figaro-forms client do.
 
 ## Checks
 
-`test/nodi.test.js` and `test/figchat.test.js` run in node against the real
-vendored client and `examples/aria-mock.js`, a door that speaks the contract's
-frames (rounds, versions, UTF-8 byte patches, steering restarts, a drop in the
-middle of a turn). `test/figchat.test.py` runs Chromium at 390 and 1280 against
-`test/figchat-server.js`, which serves the built bundle under the edge CSP and
-the mock over a real WebSocket. `examples/figchat.html` is the same mock
-in-page.
+`checks.figchat`: Vitest (routes, depths, work groups, mic machine, audio
+session, voice hub, composer, drafts, sheet, the app against
+`examples/aria-mock.js` in-process), the nodi and voce node tests, the mock door
+and speech tests in `test/figchat.test.js`, and `test/figchat.test.py`, which
+runs Chromium at 390 and 1280 (light and dark) against `test/figchat-server.js`:
+the built bundle under the edge CSP and the mock over a real WebSocket. It
+measures the composer (idle at most 76px, running at most 120px, the strip one
+line, the last node above the composer), covers history, paging, deep links,
+hostile text, send, steer, stop, fork, drafts, voice, hands-free hold, the mic,
+the sheet, and runs once with reduced motion to assert nothing computes a
+duration over 1ms.
 
 Left out: tables in markdown, a preview of a recording before it is sent.

@@ -3,27 +3,14 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const nodi = require('../assets/nodi/nodi.js');
-const A = require('../assets/aria/aria.js');
-const mock = require('../examples/aria-mock.js');
 
 let failed = 0;
 async function test(name, fn) {
   try { await fn(); process.stdout.write('ok   ' + name + '\n'); } catch (e) { failed++; process.stdout.write('FAIL ' + name + '\n' + (e && e.stack || e) + '\n'); }
 }
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-async function until(fn, ms) {
-  const end = Date.now() + (ms || 8000);
-  while (Date.now() < end) { if (fn()) return; await wait(10); }
-  throw new Error('timed out waiting: ' + fn);
-}
-
-function clientFor(core) {
-  return new A.AriaClient({ dial: core.dial, retryMinMs: 20, retryMaxMs: 60, pageBytes: 3000 });
-}
 
 (async () => {
   const msg = (turn, nodes, extra) => Object.assign({ turn, from: 0, role: 'output', nodes }, extra || {});
-  const ofTurn = (m, n) => m.find((t) => t.turn === n);
 
   await test('model: a turn becomes input, nodes in order, then an end only when it says something', () => {
     const m = nodi.model({ closed: [msg(3, [
@@ -92,118 +79,14 @@ function clientFor(core) {
     assert.strictEqual(nodi.metricsLine(undefined), '');
   });
 
-  const turnsOf = (snap) => nodi.model(snap.view, doneOf(snap));
-  function doneOf(snap) {
-    const ends = {};
-    (snap.ends || []).forEach((e) => { if (e.done && !e.replayed) ends[e.turn] = e.done; });
-    return ends;
-  }
-
-  await test('stream: the tail read pages back through older turns in order, no duplicates', async () => {
-    const core = mock.create({ step: 1 });
-    const c = clientFor(core);
-    const st = c.attach(core.ids.main);
-    await st.ready();
-    let snap = st.snapshot();
-    const first = turnsOf(snap);
-    assert.ok(first.length >= 1 && first.length < 26, 'one byte-budget page, not the whole transcript');
-    assert.strictEqual(first[first.length - 1].turn, 26);
-    assert.strictEqual(snap.olderAvailable, true);
-    let pages = 0;
-    while (await st.loadOlder()) pages++;
-    snap = st.snapshot();
-    assert.ok(pages >= 3);
-    assert.deepStrictEqual(turnsOf(snap).map((t) => t.turn), Array.from({ length: 26 }, (_, i) => i + 1));
-    assert.strictEqual(snap.olderAvailable, false);
-    c.close();
-  });
-
-  await test('stream: an unknown node in history reaches the view model', async () => {
-    const core = mock.create({ step: 1 });
-    const c = clientFor(core);
-    const st = c.attach(core.ids.main);
-    await st.ready();
-    while (await st.loadOlder());
-    const u = ofTurn(turnsOf(st.snapshot()), 6).items.find((i) => i.kind === 'unknown');
-    assert.ok(u, 'turn 6 carries a sparkle node');
-    assert.strictEqual(u.type, 'sparkle');
-    c.close();
-  });
-
-  await test('stream: a drop in the middle of a turn loses nothing and repeats nothing', async () => {
-    const core = mock.create({ step: 4 });
-    const c = clientFor(core);
-    const st = c.attach(core.ids.main);
-    await st.ready();
-    await st.qua('please run the tests [drop]');
-    await until(() => { const m = turnsOf(st.snapshot()); const l = m[m.length - 1]; return l && l.turn === 27 && !l.open && l.items.length === 4; });
-    assert.ok(core.dropped >= 1, 'the door really dropped the connection');
-    const fresh = clientFor(core);
-    const other = fresh.attach(core.ids.main);
-    await other.ready();
-    const mine = ofTurn(turnsOf(st.snapshot()), 27);
-    const theirs = ofTurn(turnsOf(other.snapshot()), 27);
-    assert.deepStrictEqual(mine.items, theirs.items);
-    assert.deepStrictEqual(mine.items.map((i) => i.kind), ['thinking', 'prose', 'tool', 'prose']);
-    assert.ok(mine.items.every((i) => i.settled));
-    c.close();
-    fresh.close();
-  });
-
-  await test('stream: a message sent while a turn runs is folded in as steering', async () => {
-    const core = mock.create({ step: 4 });
-    const c = clientFor(core);
-    const st = c.attach(core.ids.main);
-    await st.ready();
-    await st.qua('run the build');
-    await wait(30);
-    const r = await st.qua('also mind the dark theme');
-    assert.strictEqual(r.active, true);
-    await until(() => !core.running(core.ids.main), 8000);
-    await until(() => { const m = turnsOf(st.snapshot()); return !m[m.length - 1].open; });
-    const t = turnsOf(st.snapshot()).slice(-1)[0];
-    assert.ok(t.items.some((i) => i.kind === 'steering' && i.text === 'also mind the dark theme'), JSON.stringify(t.items.map((i) => i.kind)));
-    c.close();
-  });
-
-  await test('stream: a failed turn ends in an error the view model keeps', async () => {
-    const core = mock.create({ step: 2 });
-    const c = clientFor(core);
-    const st = c.attach(core.ids.main);
-    await st.ready();
-    await st.qua('[error] now');
-    await until(() => { const l = turnsOf(st.snapshot()).slice(-1)[0]; return l && l.end; });
-    const t = turnsOf(st.snapshot()).slice(-1)[0];
-    assert.strictEqual(t.end.kind, 'error');
-    assert.ok(/refused on purpose/.test(t.end.text));
-    c.close();
-  });
-
-  await test('stream: a replayed end says nothing, a live interrupt is named', async () => {
-    const core = mock.create({ step: 30 });
-    const c = clientFor(core);
-    const st = c.attach(core.ids.main);
-    await st.ready();
-    assert.ok(st.snapshot().ends.every((e) => !e.done), 'history carries no done entry');
-    await st.qua('run a long thing');
-    await wait(60);
-    await st.interrupt({ queue: 'keep' });
-    await until(() => { const l = turnsOf(st.snapshot()).slice(-1)[0]; return l && l.end; });
-    assert.deepStrictEqual(turnsOf(st.snapshot()).slice(-1)[0].end, { kind: 'end', text: 'interrupted' });
-    c.close();
-  });
-
-  await test('sinks: no file of the shell writes server text through an HTML sink or an inline handler', () => {
+  await test('sinks: neither nodi nor the speech transport writes server text through an HTML sink or an inline handler', () => {
     const root = path.join(__dirname, '..', 'assets');
-    const files = ['nodi/nodi.js', 'figchat/figchat.js', 'figchat/speech.js', 'figchat/boot.js'];
+    const files = ['nodi/nodi.js', 'figchat/speech.js'];
     const bad = /innerHTML|outerHTML|insertAdjacentHTML|document\.write|\beval\s*\(|new Function|setAttribute\(\s*['"](?:on|style)|\.style\.|srcdoc|createContextualFragment|DOMParser/;
     files.forEach((f) => {
       const src = fs.readFileSync(path.join(root, f), 'utf8');
       assert.ok(!bad.test(src), f + ' contains a sink: ' + (bad.exec(src) || [])[0]);
     });
-    const page = fs.readFileSync(path.join(root, 'figchat/index.html'), 'utf8');
-    assert.ok(!/<script(?![^>]*\bsrc=)/.test(page), 'inline script');
-    assert.ok(!/\sstyle=|\son[a-z]+=/.test(page), 'inline style or handler');
   });
 
   await test('sinks: nodi has exactly one function that writes text into the page', () => {
