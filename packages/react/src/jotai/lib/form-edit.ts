@@ -8,27 +8,14 @@ export function rawAt(root: unknown, path: string): unknown {
 }
 
 export function draftOf(v: unknown): string {
-  if (v === undefined) return "";
-  return typeof v === "string" ? v : JSON.stringify(v);
+  return v === undefined ? "" : JSON.stringify(v);
 }
 
-export type Parsed = { ok: true; value: unknown } | { ok: false; why: string };
-
-export function parseDraft(draft: string, was: unknown): Parsed {
-  if (typeof was === "string" || was === undefined) {
-    if (was === undefined && /^\s*[[{0-9-]|^\s*(true|false|null)\s*$/.test(draft)) {
-      try {
-        return { ok: true, value: JSON.parse(draft) };
-      } catch {
-        return { ok: true, value: draft };
-      }
-    }
-    return { ok: true, value: draft };
-  }
+export function parseDraft(draft: string): unknown {
   try {
-    return { ok: true, value: JSON.parse(draft) };
+    return JSON.parse(draft);
   } catch {
-    return { ok: false, why: "Not JSON: this key held " + (Array.isArray(was) ? "a list" : typeof was) + "." };
+    return draft;
   }
 }
 
