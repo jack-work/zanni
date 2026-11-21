@@ -12,6 +12,7 @@ export interface HubDeps {
   readonly doc: Document;
   readonly voce: VoceApi;
   readonly session: AudioSession;
+  readonly played: Map<string, number>;
   audioSrc(key: string): string;
   audioStatus(key: string): Promise<number>;
   speaking(s: SpokenNode | null): void;
@@ -200,6 +201,7 @@ export class VoiceHub {
   }
 
   private start(e: SpeechStart): void {
+    if (e.say) for (const k of [...this.deps.played.keys()]) if (k.startsWith(this.aria + ":" + e.turn + ":")) this.deps.played.delete(k);
     if (!e.say && !this.voiceOn) return;
     const old = this.feeds.get(e.turn);
     if (old && !old.ended && !old.cancelled) return;
@@ -218,8 +220,11 @@ export class VoiceHub {
   private chunk(c: SpeechChunk): void {
     const feed = this.feeds.get(c.turn);
     if (!feed) return;
+    const key = this.aria + ":" + c.turn + ":" + c.node;
     feed.then(() => {
       if (!feed.player) return;
+      if (c.offset < (this.deps.played.get(key) ?? 0)) return;
+      this.deps.played.set(key, c.offset + c.pcm.byteLength);
       this.spoken = c.turn;
       this.deps.speaking({ turn: c.turn, node: c.node, chars: c.chars });
       feed.player.push(c.pcm);

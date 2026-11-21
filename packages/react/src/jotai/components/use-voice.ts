@@ -11,6 +11,7 @@ const slotQuery = (turn: number, node: number) => document.querySelector<HTMLEle
 const firstSlot = (turn: number) => document.querySelector<HTMLElement>('.nodi-turn[data-turn="' + turn + '"] [data-voice-slot]');
 const pause = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const NOTE_MS = 4000;
+const played = new Map<string, number>();
 
 export function useVoice({ aria, store }: Attended): void {
   const transport = useAtomValue(speechTransportAtom);
@@ -35,6 +36,7 @@ export function useVoice({ aria, store }: Attended): void {
           doc: document,
           voce,
           session,
+          played,
           audioSrc: src,
           audioStatus: (key) => window.fetch(src(key), { method: "GET", credentials: "same-origin", cache: "no-store", headers: traceHeaders({ Range: "bytes=0-0" }) }).then((r) => r.status),
           speaking: (s) => setSpeaking(s ? { aria, ...s } : null),

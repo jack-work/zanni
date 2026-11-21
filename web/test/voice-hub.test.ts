@@ -6,7 +6,7 @@ import type { SpeechHandlers, SpeechTransport, VoceApi, VoceOptions, VocePlayer 
 const ARIA = "c0ffee01".repeat(4);
 const FMT = { format: "pcm", rate: 24000, bits: 16, channels: 1 };
 
-function rig(opts: { slots?: boolean; locked?: boolean } = {}) {
+function rig(opts: { slots?: boolean; locked?: boolean; played?: Map<string, number> } = {}) {
   const log: string[] = [];
   const doc = document.implementation.createHTMLDocument("t");
   const slots = new Map<string, HTMLElement>();
@@ -60,6 +60,7 @@ function rig(opts: { slots?: boolean; locked?: boolean } = {}) {
       doc,
       voce,
       session,
+      played: opts.played ?? new Map(),
       audioSrc: (k) => "audio/key/" + k,
       audioStatus: async () => 200,
       speaking: (s) => spoken.push(s),
@@ -75,7 +76,13 @@ function rig(opts: { slots?: boolean; locked?: boolean } = {}) {
   hub.voice(true);
   log.length = 0;
   const start = (turn: number, node = 1, say = false) => handlers.start!({ aria: ARIA, turn, key: "gluck/" + ARIA + ":" + turn + "/out", node, cursor: turn + ".2", ...(say ? { say: true } : {}), ...FMT });
-  const chunk = (turn: number, node = 1, chars = 5) => handlers.chunk!({ aria: ARIA, turn, node, chars, cursor: "x", offset: 0, bytes: 4, pcm: new ArrayBuffer(4) });
+  const sent = new Map<string, number>();
+  const chunk = (turn: number, node = 1, chars = 5, from?: number) => {
+    const k = turn + ":" + node;
+    const offset = from ?? sent.get(k) ?? 0;
+    sent.set(k, offset + 4);
+    handlers.chunk!({ aria: ARIA, turn, node, chars, cursor: "x", offset, bytes: 4, pcm: new ArrayBuffer(4) });
+  };
   const end = (turn: number) => handlers.end!({ aria: ARIA, turn, key: "gluck/" + ARIA + ":" + turn + "/out" });
   return { hub, session, log, spoken, notes, slots, addSlot, handlers: () => handlers, start, chunk, end, expire, created };
 }
@@ -83,6 +90,27 @@ function rig(opts: { slots?: boolean; locked?: boolean } = {}) {
 const settle = () => new Promise((r) => setTimeout(r, 20));
 
 describe("the voice hub", () => {
+  it("does not play again what an earlier hub of this page already played when the aria is rejoined", async () => {
+    const played = new Map<string, number>();
+    const first = rig({ played });
+    first.start(27);
+    first.chunk(27);
+    first.chunk(27);
+    await settle();
+    first.hub.close();
+    const again = rig({ played });
+    again.start(27);
+    again.chunk(27, 1, 5, 0);
+    again.chunk(27, 1, 5, 4);
+    again.chunk(27, 1, 5, 8);
+    await settle();
+    expect(again.log).toEqual(["p1 start", "p1 push"]);
+    again.start(27, 1, true);
+    again.chunk(27, 1, 5, 0);
+    await settle();
+    expect(again.log.filter((l) => l.endsWith("push"))).toHaveLength(2);
+  });
+
   it("speaks a reply into the prose slot of its node and marks the node while it is heard", async () => {
     const r = rig();
     r.start(27);
