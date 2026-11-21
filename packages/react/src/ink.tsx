@@ -58,7 +58,15 @@ export function inkOf(glyph: string, font: string): Ink | null {
   return ink;
 }
 
-export function Glyph({ glyph, className }: { glyph: string; className?: string }) {
+function contentBox(el: HTMLElement): { top: number; height: number } {
+  const r = el.getBoundingClientRect();
+  const cs = getComputedStyle(el);
+  const px = (v: string) => parseFloat(v) || 0;
+  const top = r.top + px(cs.borderTopWidth) + px(cs.paddingTop);
+  return { top, height: r.height - px(cs.borderTopWidth) - px(cs.paddingTop) - px(cs.borderBottomWidth) - px(cs.paddingBottom) };
+}
+
+export function Glyph({ glyph, className, tone }: { glyph: string; className?: string; tone?: string }) {
   const ref = useRef<HTMLSpanElement | null>(null);
   const base = useRef<HTMLElement | null>(null);
   const held = useRef<Animation | null>(null);
@@ -75,8 +83,9 @@ export function Glyph({ glyph, className }: { glyph: string; className?: string 
       const box = el.getBoundingClientRect();
       if (box.width === 0 && box.height === 0) return;
       const baseline = mark.getBoundingClientRect().bottom;
+      const home = el.parentElement ? contentBox(el.parentElement) : box;
       const x = box.left + (ink.left + ink.right) / 2 - (box.left + box.width / 2);
-      const y = baseline + (ink.descent - ink.ascent) / 2 - (box.top + box.height / 2);
+      const y = baseline + (ink.descent - ink.ascent) / 2 - (home.top + home.height / 2);
       if (typeof el.animate !== "function") return;
       held.current = el.animate({ translate: -x + "px " + -y + "px" }, { duration: 0, fill: "forwards" });
     };
@@ -93,7 +102,7 @@ export function Glyph({ glyph, className }: { glyph: string; className?: string 
     };
   }, [glyph]);
   return (
-    <span ref={ref} className={["zr-ink", className].filter(Boolean).join(" ")} aria-hidden="true">
+    <span ref={ref} className={["zr-ink", className].filter(Boolean).join(" ")} data-tone={tone} aria-hidden="true">
       {glyph}
       <i ref={base} className="zr-ink-base" />
     </span>

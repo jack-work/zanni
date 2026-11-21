@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { glyphs } from "./glyphs";
+import { Glyph } from "./ink";
 
 export interface TreeNodeData {
   id: string;
@@ -223,7 +224,7 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, au
               activate(r);
             }}
           >
-            <span className="zr-tree-mark">{selected ? mark : " "} </span>
+            <Glyph glyph={selected ? mark : ""} className="zr-tree-mark" />
             <span className="zr-tree-indent" aria-hidden="true" />
             <span className={r.expandable ? "zr-tree-disclosure" : "zr-tree-pad"} aria-hidden="true" />
             <span className="zr-tree-label" data-tone="body">
@@ -253,11 +254,7 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, au
                 {"  " + JSON.stringify(r.mantra)}
               </span>
             )}
-            {r.here && (
-              <span className="zr-tree-here" data-tone="label">
-                {"  " + glyphs["state.here"]}
-              </span>
-            )}
+            {r.here && <Glyph glyph={glyphs["state.here"]} className="zr-tree-here" tone="label" />}
             {selected && r.hint && <span className="zr-tree-hint">{"  " + r.hint}</span>}
           </div>
         );

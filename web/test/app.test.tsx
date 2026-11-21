@@ -38,7 +38,7 @@ describe("the list", () => {
     expect(depths).toContain("0");
     expect(depths).toContain("1");
     const rows = [...document.querySelectorAll(".zr-tree-row")].map((r) => r.textContent ?? "");
-    expect(rows[1]).toMatch(/^ {2}arias \(\d+\)/);
+    expect(rows[1]).toMatch(/^arias \(\d+\)/);
     expect(rows.some((r) => /\(\d+\)  ".+"/.test(r))).toBe(true);
     expect(rows.join("")).not.toMatch(/[│├└─]/);
     expect(document.querySelectorAll(".zr-tree th, .zr-tree button").length).toBe(0);

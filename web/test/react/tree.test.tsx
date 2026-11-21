@@ -14,7 +14,7 @@ const form: TreeNodeData[] = [
   },
 ];
 
-const text = (el: Element) => (el.textContent ?? "").replace(/^. /, "");
+const text = (el: Element) => (el.textContent ?? "").replace(/^⌖|^▸/, "");
 const lines = () => [...document.querySelectorAll(".zr-tree-row")].map(text);
 
 describe("treeRows (formNode rows)", () => {
@@ -78,7 +78,7 @@ describe("Tree", () => {
     render(<Tree roots={form} mark="⌖" label="Bound form" />);
     expect(document.querySelector("th, button")).toBeNull();
     expect(lines()).toEqual(['aria_id:  "0da9f5cd"', 'datetime: "Saturday"', "deep (2)  inner · side", 'mood:     "calm"', "system (5)  credo · cwd · model · outfit_name …"]);
-    expect(document.querySelector("[data-cursor] .zr-tree-mark")!.textContent).toBe("⌖ ");
+    expect(document.querySelector("[data-cursor] .zr-tree-mark")!.textContent).toBe("⌖");
   });
 
   it("j and k move the cursor, l opens, h closes, and h on a closed row climbs to the parent", () => {
@@ -153,11 +153,11 @@ describe("Tree", () => {
   it("starts the cursor on the current row, marks it, and shows its hint only there", () => {
     const roots: TreeNodeData[] = [{ id: "n", label: "node", count: 1, here: true, children: [{ id: "x", label: "x-handle", count: 8, peek: "", role: "@holder", mantra: "q", here: true, hint: "Enter attend" }] }];
     render(<Tree roots={roots} mark="▸" current="x" defaultOpen={() => true} />);
-    expect([...document.querySelectorAll(".zr-tree-row")].map((r) => r.textContent)).toEqual(["  node (1)  ●", '▸ x-handle (8)  @holder  "q"  ●  Enter attend']);
+    expect([...document.querySelectorAll(".zr-tree-row")].map((r) => r.textContent)).toEqual(["node (1)●", '▸x-handle (8)  @holder  "q"●  Enter attend']);
     const x = document.querySelector("[data-id='x']")!;
     expect(x.getAttribute("aria-selected")).toBe("true");
     expect(x.hasAttribute("data-here")).toBe(true);
-    expect([...x.querySelectorAll("[data-tone]")].map((n) => n.className + "=" + n.getAttribute("data-tone"))).toEqual(["zr-tree-label=body", "zr-tree-role=holder", "zr-tree-mantra=quiet", "zr-tree-here=label"]);
+    expect([...x.querySelectorAll("[data-tone]")].map((n) => n.className + "=" + n.getAttribute("data-tone"))).toEqual(["zr-tree-label=body", "zr-tree-role=holder", "zr-tree-mantra=quiet", "zr-ink zr-tree-here=label"]);
     expect(x.getAttribute("aria-level")).toBe("2");
     expect(document.querySelector("[data-id='n']")!.getAttribute("aria-level")).toBe("1");
   });

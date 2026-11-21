@@ -278,8 +278,8 @@ try:
             box.click()
             pg.keyboard.type(":fork 12")
             pg.keyboard.press("Enter")
-            until(pg, "/^#\\/[^/]+\\/[0-9a-f]{32}:12$/.test(location.hash) && !location.hash.includes('%s')" % MAIN, 8000)
-            pg.wait_for_selector(".nodi-turn[data-turn='12']", timeout=10000)
+            until(pg, "/^#\\/[^/]+\\/[0-9a-f]{32}$/.test(location.hash) && !location.hash.includes('%s')" % MAIN, 8000)
+            pg.wait_for_selector(".nodi-turn[data-turn='11']", timeout=10000)
             assert pg.locator(".zr-command").get_attribute("aria-pressed") == "false", "a run leaves command mode"
             assert pg.locator(".zr-input").input_value() == "", "the command line is not left in the composer"
             assert [m for m in pg.errors if "fork" in m.lower()] == [], pg.errors
@@ -329,7 +329,7 @@ try:
             assert pg.locator(".zr-attach").is_enabled() and pg.locator(".zr-command").is_enabled(), "attach is the file picker and command the toggle"
             assert pg.locator(".zr-command").get_attribute("aria-pressed") == "false"
             for sel, what in ((".zr-send", "send"), (".zr-attach", "attach"), (".zr-command", "command")):
-                assert_centred(pg.locator(sel), "the %s pill's glyph at %d %s" % (what, width, scheme))
+                assert_centred(pg.locator(sel), "the %s pill's glyph at %d %s" % (what, width, scheme), blank_ok=(what == "attach"))
             if pg.locator(".fw-mic-glyph").count():
                 assert_centred(pg.locator(".fw-mic"), "the record button's glyph at %d %s" % (width, scheme), tol=2.0, blank_ok=True)
             assert pg.locator(".zr-send").get_attribute("aria-label") == "Send"

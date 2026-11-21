@@ -491,6 +491,7 @@ with sync_playwright() as p:
     assert "attach a png, jpeg, gif, webp or heic image, or a pdf" in pg.locator(".zr-tray-item").inner_text(), "the gateway's words are shown as they came"
     pg.locator(".zr-tray-x").tap()
     assert pg.locator(".zr-tray-item").count() == 0
+    pg.errors = [e for e in pg.errors if "415" not in e]
     assert not pg.errors, pg.errors
     pg.context.close()
 

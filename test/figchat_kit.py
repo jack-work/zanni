@@ -133,3 +133,4 @@ def assert_centred(loc, what, tol=1.0, blank_ok=False):
         return
     assert got is not None, "%s draws no glyph" % what
     assert abs(got[0]) <= tol and abs(got[1]) <= tol, "%s: the glyph's ink centre is %.1f,%.1f px off the centre (ink %dx%d)" % (what, got[0], got[1], got[2], got[3])
+

@@ -117,7 +117,7 @@
 .zr-tree-row { display: block; min-height: 28px; line-height: 28px; white-space: pre; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
 .zr-tree-row[data-cursor] { background: color-mix(in srgb, var(--z-ink) 8%, transparent); }
 .zr-tree-row[data-cursor] [data-tone] { color: var(--z-ink); }
-.zr-tree-mark { color: var(--z-accent); }
+.zr-tree-mark { display: inline-block; width: 2ch; text-align: center; color: var(--z-accent); }
 .zr-tree-indent { display: inline-block; width: 0; height: 28px; vertical-align: top; background-image: repeating-linear-gradient(90deg, transparent 0 calc(var(--zr-tree-indent, 2ch) / 2 - 0.5px), var(--z-line) 0 calc(var(--zr-tree-indent, 2ch) / 2 + 0.5px), transparent 0 var(--zr-tree-indent, 2ch)); }
 .zr-tree-row[data-depth="1"] .zr-tree-indent { width: calc(1 * var(--zr-tree-indent, 1.5ch)); }
 .zr-tree-row[data-depth="2"] .zr-tree-indent { width: calc(2 * var(--zr-tree-indent, 1.5ch)); }
@@ -139,6 +139,7 @@
 [data-tone="holder"] { color: var(--accent-ink, var(--z-accent)); }
 .zr-tree-role { color: var(--accent-ink, var(--z-accent)); }
 .zr-tree-mantra, .zr-tree-here { color: var(--z-muted); }
+.zr-tree-here { margin-left: 2ch; }
 .zr-pit-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--z-rule, var(--z-line)); }
 .zr-pit-li { border-bottom: 1px solid var(--z-rule, var(--z-line)); }
 .zr-pit-row { display: grid; grid-template-columns: 2rem minmax(0, 1fr) auto; align-items: center; gap: var(--z-space-3, 8px); width: 100%; min-height: var(--z-control-hit, 44px); padding: 0; border: 0; background: transparent; color: var(--z-ink); font: 400 1.125rem / 1.2 var(--zr-mono, "VT323", ui-monospace, monospace); letter-spacing: 0.04em; text-align: left; cursor: pointer; }
@@ -235,10 +236,11 @@
 .zr-pill-pair > .zr-pill:only-child { border-radius: 18px; }
 .zr-pill-pair > .zr-pill + .zr-pill { margin-left: -1px; }
 .zr-send { background: var(--z-accent); border-color: var(--z-accent); color: var(--z-on-accent); }
-.zr-pill-pair > .zr-pill:first-child:not(:only-child) { padding-right: var(--z-space-2, 4px); }
 @keyframes zr-swap { from { scale: 0.7; opacity: 0; } }
 
 .zr-strip {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: var(--z-space-3, 8px);
@@ -302,5 +304,5 @@
 .zr-tray-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .zr-tray-meta { max-width: 40vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--z-muted); }
 .zr-tray-x { position: relative; width: 32px; height: 32px; padding: 0; border: 0; background: transparent; color: var(--z-muted); font: inherit; cursor: pointer; touch-action: manipulation; }
-.zr-tray-x::before { content: ""; position: absolute; inset: -6px -2px; }
+.zr-tray-x::before { content: ""; position: absolute; inset: -6px 0; }
 .zr-tray-x:hover, .zr-tray-x:focus-visible { color: var(--z-ink); }
