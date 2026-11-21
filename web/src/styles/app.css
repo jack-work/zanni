@@ -81,8 +81,6 @@ body.fw-page {
 .fw-fork-mark { color: var(--z-accent); }
 .fw-fork-banner[data-fresh] { animation: fw-fork-in var(--fw-d-slide) var(--fw-out); }
 @keyframes fw-fork-in { from { opacity: 0; translate: 0 -8px; } }
-.fw-pit-form { margin-top: var(--z-space-3, 8px); padding-top: var(--z-space-3, 8px); border-top: 1px solid var(--z-line); font-size: 1rem; }
-.fw-pit-form .fw-pit-fact dt { width: 11rem; overflow-wrap: anywhere; }
 .fw-pit-fact[data-key="system.thinking_effort"] dd { color: var(--z-accent); }
 .fw-pit-state { display: flex; flex-direction: column; gap: var(--z-space-2, 4px); margin: 0; font: 400 1.125rem / 1.2 var(--fw-mono); letter-spacing: 0.04em; }
 .fw-pit-fact { display: flex; gap: var(--z-space-4, 12px); }
@@ -106,7 +104,6 @@ body.fw-page {
 .fw-h2 { font: 400 1.75rem / 1.1 var(--fw-display); letter-spacing: 0.03em; }
 .fw-note { color: var(--z-muted); font-size: 1rem; font-style: italic; overflow-wrap: anywhere; }
 .fw-side .fw-note { padding-top: var(--z-space-4, 12px); }
-.fw-more { margin-top: var(--z-space-3, 8px); }
 
 .fw-pane { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .fw-pane-inner { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }

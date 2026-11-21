@@ -25,15 +25,17 @@ function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomVa
     return () => clearInterval(id);
   }, [running]);
   const node = tree?.nodes.get(aria);
-  const failed = turns[turns.length - 1]?.end?.kind === "error";
+  const end = turns[turns.length - 1]?.end;
+  const failed = end?.kind === "error";
+  const interrupted = end?.kind === "end" && /interrupt/i.test(end.text);
   const handle = node?.handle ?? aria.slice(0, 8);
   const mantra = facts.mantra ?? valueAt(bound?.root, "mantra") ?? node?.mantra ?? "";
   const used = node?.ctx ?? snap.metrics?.context_tokens;
   const ctx = ctxLine(used, node?.ctxLimit);
-  const glyph = stateGlyph({ link, running, failed, frame });
+  const glyph = stateGlyph({ link, running, failed, interrupted, frame });
   const open = pit && pit.snap !== "closed";
   return (
-    <header className="fw-status" data-link={link} data-fork={forked ? "" : undefined} data-state={running ? "running" : failed ? "error" : "done"} data-effort={valueAt(bound?.root, EFFORT_KEY)}>
+    <header className="fw-status" data-link={link} data-fork={forked ? "" : undefined} data-state={running ? "running" : failed ? "error" : interrupted ? "interrupted" : "done"} data-effort={valueAt(bound?.root, EFFORT_KEY)}>
       {open && (
         <span className="fw-status-pit" aria-hidden="true">
           {glyphs["pit.form"]}

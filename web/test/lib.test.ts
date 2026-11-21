@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { labelOf, refusalText } from "zanni-react/jotai";
-import { parseRoute, routeFor } from "zanni-react/jotai";
+import { ctxLine, parseRoute, routeFor, stateGlyph } from "zanni-react/jotai";
 
 describe("route", () => {
   it("round trips store, aria and an optional turn", () => {
@@ -37,5 +37,20 @@ describe("templates", () => {
       { id: "deadbeef", label: "New figaro" },
     ]);
     expect(parseTemplates(null)).toEqual([]);
+  });
+});
+
+describe("status bar", () => {
+  it("formats context like the pager's formatContextUsage", () => {
+    expect(ctxLine(31000, 936000)).toBe("31.0k/936.0k 3.3%");
+    expect(ctxLine(950, undefined)).toBe("950 (capacity unknown)");
+    expect(ctxLine(31000, undefined)).toBe("31.0k (capacity unknown)");
+    expect(ctxLine(undefined, 936000)).toBe("");
+  });
+  it("marks an interrupted turn with ! rather than done", () => {
+    const base = { link: "live", running: false, failed: false, frame: 0 };
+    expect(stateGlyph({ ...base, interrupted: true })).toBe("!");
+    expect(stateGlyph(base)).not.toBe("!");
+    expect(stateGlyph({ ...base, failed: true, interrupted: true })).not.toBe("!");
   });
 });

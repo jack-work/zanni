@@ -66,13 +66,14 @@ memoised by client: `turnsAtom` (nodi's model, turns reused while unchanged),
 `runningAtom`, `workAtom` (verb and start of the open turn), `noteAtom`;
 `linkAtom` (the attended aria's phase, else the connection); `composerAtom`
 and `draftAtom` per aria; `micAtom`; `voiceAtom`, `handsFreeAtom`,
-`speakingAtom`; `sheetAtom`. Players are imperative and live in `VoiceHub`,
+`speakingAtom`; `pitViewAtom` and the pit state atoms. Players are imperative and live in `VoiceHub`,
 not in atoms.
 
 ## What the app does
 
-- List: eight arias at a time, children indented under their parent (depth
-  capped at six), reloaded when a turn ends and when the tab becomes visible.
+- List: the topology Tree (one `Tree` with the pager's formNode semantics),
+  opened to the attended aria's chain; turn counts and mantras come from each
+  aria's own facts (`ariaFactsAtom`), not the roster page.
 - Attend: the stream reads backward from the end in byte-budget pages and
   follows live. Following lets go when the reader scrolls up and a Latest pill
   says new content landed below. Earlier turns page in above without moving
@@ -152,8 +153,8 @@ the CSSOM. The views never touch `fetch` or `WebSocket`; `lib/dictation.ts`, `li
 
 ## Checks
 
-`checks.figchat`: Vitest (routes, depths, work groups, mic machine, audio
-session, voice hub, composer, drafts, sheet, the app against
+`checks.figchat`: Vitest (routes, the Tree, work groups, mic machine, audio
+session, voice hub, composer, drafts, the pit Sheet, the app against
 `examples/aria-mock.js` in-process), the nodi and voce node tests, the mock door
 and speech tests in `test/figchat.test.js`, and `test/figchat.test.py`, which
 runs Chromium at 390 and 1280 (light and dark) against `test/figchat-server.js`:
@@ -161,7 +162,7 @@ the built bundle under the edge CSP and the mock over a real WebSocket. It
 measures the composer (idle at most 76px, running at most 120px, the strip one
 line, the last node above the composer), covers history, paging, deep links,
 hostile text, send, steer, stop, fork, drafts, voice, hands-free hold, the mic,
-the sheet, and runs once with reduced motion to assert nothing computes a
+the pits, and runs once with reduced motion to assert nothing computes a
 duration over 1ms.
 
 Left out: tables in markdown, a preview of a recording before it is sent.
