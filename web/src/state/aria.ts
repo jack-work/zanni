@@ -2,6 +2,7 @@ import { atom, type Atom } from "jotai";
 import { ariaAtom, ariaConnectionAtom, ariaPhaseAtom } from "figaro-forms/aria/jotai";
 import type { AriaClient, AriaSnapshot, Phase } from "figaro-forms/aria";
 import { nodi, type TurnModel } from "../lib/zanni";
+import { workOf, type Work_ } from "../lib/work";
 import { refusalText } from "../lib/roster";
 import { attendedAtom, clientAtom } from "./route";
 
@@ -59,6 +60,19 @@ export function runningAtom(client: AriaClient, aria: string): Atom<boolean> {
       return !!last && last.open;
     }),
   );
+}
+
+export function workAtom(client: AriaClient, aria: string): Atom<Work_> {
+  return memo(client, `work\0${aria}`, () => {
+    let last: Work_ | undefined;
+    return atom((get) => {
+      const turns = get(turnsAtom(client, aria));
+      const next = workOf(turns[turns.length - 1], Date.now());
+      if (last && last.verb === next.verb && last.startedAt === next.startedAt) return last;
+      last = next;
+      return next;
+    });
+  });
 }
 
 export function noteAtom(client: AriaClient, aria: string): Atom<string> {

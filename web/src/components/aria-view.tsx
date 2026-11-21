@@ -1,4 +1,4 @@
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { ariaAtom } from "figaro-forms/aria/jotai";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { scrollToBottom, useFollow } from "../lib/follow";
@@ -6,7 +6,10 @@ import { labelOf } from "../lib/roster";
 import { nodi } from "../lib/zanni";
 import { noteAtom, turnsAtom } from "../state/aria";
 import { rosterAtom } from "../state/roster";
+import { composerAtom, forkAtom, keyOf } from "../state/composer";
+import { linkAtom } from "../state/aria";
 import type { Attended } from "../state/route";
+import { Composer } from "./composer";
 import { TurnView } from "./items";
 import { Plain } from "./text";
 
@@ -45,6 +48,9 @@ export function AriaView({ attended }: { attended: Attended }) {
   const paging = follow.paging;
   const toBottom = follow.toBottom;
 
+  const link = useAtomValue(linkAtom);
+  const fork = useSetAtom(forkAtom);
+  const forking = useAtomValue(composerAtom(keyOf(attended.store, aria))).forking;
   const row = roster.rows.find((r) => r.id === aria);
   const heading = row ? labelOf(row) : aria.slice(0, 8);
 
@@ -143,9 +149,14 @@ export function AriaView({ attended }: { attended: Attended }) {
         <a className="fw-back" href="#/">
           Arias
         </a>
-        <h1 className="fw-h1" tabIndex={-1} ref={headRef}>
-          <Plain text={heading} />
-        </h1>
+        <div className="fw-head-row">
+          <h1 className="fw-h1" tabIndex={-1} ref={headRef}>
+            <Plain text={heading} />
+          </h1>
+          <button type="button" className="fw-fork" disabled={link !== "live" || forking} onClick={() => void fork(0)}>
+            Fork
+          </button>
+        </div>
         <div className="fw-metrics">{metrics && <p className="nodi-metrics">{metrics}</p>}</div>
         {olderAvailable && (
           <button type="button" className="fw-older" ref={olderRef} disabled={loadingOlder} onClick={() => loadOlder().catch(() => {})}>
@@ -159,6 +170,7 @@ export function AriaView({ attended }: { attended: Attended }) {
         </ol>
         {status && <p className="fw-note">{status}</p>}
       </main>
+      <Composer attended={attended} toBottom={toBottom} />
       {follow.unseen && (
         <button type="button" className="fw-latest" onClick={toBottom}>
           Latest

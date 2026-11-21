@@ -21,7 +21,7 @@ def hostile_findings(page):
       if (window.__pwned) found.push('script ran');
       const host = document.querySelector('#app');
       for (const n of host.querySelectorAll('script, img:not(.fw-head), iframe, object, embed, svg, style, link')) found.push('element ' + n.tagName);
-      for (const n of host.querySelectorAll('*')) for (const a of n.attributes) if (/^on/i.test(a.name) || a.name === 'style') found.push('attribute ' + a.name);
+      for (const n of host.querySelectorAll('*')) for (const a of n.attributes) if (/^on/i.test(a.name) || (a.name === 'style' && a.value.trim())) found.push('attribute ' + a.name + ' on ' + n.tagName + '.' + n.className);
       if (document.body.innerText.includes('\\u202e') || document.body.innerText.includes('\\u200b')) found.push('control char lives in the text');
       return found;
     }""")
@@ -212,6 +212,152 @@ try:
         assert not pg.errors, pg.errors
         pg.evaluate("document.querySelector('.fw-main').insertAdjacentHTML('beforeend', '<iframe></iframe>')")
         assert any(f.startswith("element") for f in hostile_findings(pg)), "negative control: an injected element must be reported"
+        pg.close()
+
+        def send(pg, text):
+            pg.locator(".fw-input").fill(text)
+            pg.locator(".fw-send").click()
+
+        def running(pg):
+            return pg.evaluate("document.querySelector('.fw').hasAttribute('data-running')")
+
+        for width, height, scheme in ((390, 844, "light"), (390, 844, "dark"), (1280, 800, "light"), (1280, 800, "dark")):
+            pg = fresh(width, height, scheme)
+            attend(pg, door(45), MAIN)
+            idle = pg.locator(".fw-composer").bounding_box()
+            assert idle["height"] <= 76, "an idle composer is at most 76px tall: %s" % idle
+            send(pg, "please run the tests")
+            pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='running']", timeout=10000)
+            thinking = pg.locator(".nodi-turn[data-turn='27'] .nodi-thinking")
+            assert thinking.evaluate("n => n.open") is False, "thinking is collapsed while it streams"
+            assert pg.locator(".nodi-turn[data-turn='27'][data-state='open']").count() == 1
+            strip = pg.locator(".fw-strip")
+            assert strip.is_visible(), "the strip says a turn is running"
+            assert pg.locator(".fw-input").get_attribute("placeholder") == "Steer figaro"
+            assert pg.locator(".fw-send").inner_text() == "Steer"
+            box = pg.locator(".fw-composer").bounding_box()
+            assert box["height"] <= 120, "a running composer is at most 120px tall: %s" % box
+            sbox = strip.bounding_box()
+            assert sbox["height"] <= 44, "the strip is one line high: %s" % sbox
+            tbox = pg.locator(".fw-strip-text").bounding_box()
+            assert tbox["height"] <= 24, "the strip text never wraps: %s" % tbox
+            assert box["x"] >= 0 and box["x"] + box["width"] <= width, "the composer stays inside the screen: %s" % box
+            row = pg.locator(".fw-compose-row").bounding_box()
+            assert row["width"] <= 46 * 16, "the input row sits at the transcript measure: %s" % row
+            for b in pg.locator(".fw-stop").all():
+                bb = b.bounding_box()
+                assert bb["height"] >= 44, "stop buttons are 44px targets: %s" % bb
+            assert pg.locator(".fw-strip-time").inner_text()[0].isdigit()
+            pg.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
+            pg.wait_for_timeout(100)
+            last = pg.evaluate("(() => { const n = [...document.querySelectorAll('.nodi-turn-body > *')].pop(); return n.getBoundingClientRect().bottom; })()")
+            top = pg.locator(".fw-composer").bounding_box()["y"]
+            assert last <= top + 1, "scrolled to the bottom, the last node ends above the composer: %s vs %s" % (last, top)
+            no_sideways(pg, width, "running turn")
+            snap(pg, "running-%s-%d" % (scheme, width))
+            pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='ok']", timeout=10000)
+            pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])", timeout=10000)
+            until(pg, "!document.querySelector('.fw-strip')", timeout=5000)
+            thinking.locator("summary").click()
+            assert thinking.evaluate("n => n.open") is True
+            assert "answer plainly" in thinking.locator(".nodi-thought").inner_text()
+            kinds = pg.evaluate("[...document.querySelectorAll('.nodi-turn[data-turn=\"27\"] .nodi-turn-body > *')].map(n => n.className.split(' ')[0])")
+            assert kinds == ["nodi-input", "nodi-thinking", "nodi-prose", "nodi-tool", "nodi-prose"], kinds
+            assert "please run the tests" in pg.locator(".nodi-turn[data-turn='27'] .nodi-input").inner_text()
+            assert pg.locator(".fw-input").input_value() == ""
+            assert pg.locator(".nodi-metrics").inner_text().startswith("ctx"), "metrics sit quietly above the transcript"
+            idle = pg.locator(".fw-composer").bounding_box()
+            assert idle["height"] <= 76, "the composer settles back to its idle height: %s" % idle
+            snap(pg, "live-%s-%d" % (scheme, width))
+            sans_free(pg, "live turn %s %d" % (scheme, width))
+            no_sideways(pg, width, "live turn")
+            assert hostile_findings(pg) == [], hostile_findings(pg)
+            assert not pg.errors, pg.errors
+            pg.close()
+
+        pg = fresh()
+        drop_door = door(12)
+        attend(pg, drop_door, MAIN)
+        send(pg, "run it and then [drop] the line")
+        until(pg, "document.querySelector('.fw').hasAttribute('data-running')", timeout=10000)
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool", timeout=10000)
+        drop_door.drop()
+        until(pg, "document.querySelector('.fw').dataset.link === 'offline'", timeout=5000)
+        until(pg, "document.querySelector('.fw').dataset.link === 'live'", timeout=15000)
+        until(pg, "!document.querySelector('.fw').hasAttribute('data-running')", timeout=15000)
+        for want in ("27", "28"):
+            if pg.locator(".nodi-turn[data-turn='%s']" % want).count():
+                prose = pg.locator(".nodi-turn[data-turn='%s'] .nodi-prose" % want).count()
+                assert prose <= 2, "no node drawn twice after the reconnect: %d" % prose
+        last = turns_shown(pg)[-1]
+        body = pg.evaluate("[...document.querySelectorAll('.nodi-turn[data-turn=\"%d\"] .nodi-turn-body > *')].map(n => n.className.split(' ')[0])" % last)
+        assert body == ["nodi-input", "nodi-thinking", "nodi-prose", "nodi-tool", "nodi-prose"], body
+        assert pg.locator(".nodi-turn[data-turn='%d'] .nodi-tool[data-status='ok']" % last).count() == 1
+        assert not [e for e in pg.errors if "WebSocket" not in e and "websocket" not in e and "ERR_" not in e], pg.errors
+        pg.close()
+
+        pg = fresh()
+        attend(pg, door(12), MAIN)
+        send(pg, EVIL)
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-input")
+        pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])", timeout=10000)
+        assert hostile_findings(pg) == [], hostile_findings(pg)
+        assert EVIL in pg.locator(".nodi-turn[data-turn='27'] .nodi-input").inner_text()
+        assert not pg.errors, pg.errors
+        pg.close()
+
+        pg = fresh()
+        slow = door(150)
+        attend(pg, slow, MAIN)
+        send(pg, "please run the build")
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool", timeout=15000)
+        pg.locator(".fw-stop:not(.fw-stop-clear)").click()
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-end", timeout=10000)
+        assert "interrupted" in pg.locator(".nodi-turn[data-turn='27'] .nodi-end").inner_text()
+        until(pg, "!document.querySelector('.fw').hasAttribute('data-running')")
+        assert slow.state()["interrupts"] == ["keep"], slow.state()
+        send(pg, "second run the tests")
+        pg.wait_for_selector(".nodi-turn[data-turn='28'] .nodi-thinking", timeout=15000)
+        send(pg, "queued thought")
+        until(pg, "document.querySelector('.fw').hasAttribute('data-running')")
+        pg.locator(".fw-stop-clear").click()
+        until(pg, "!document.querySelector('.fw').hasAttribute('data-running')", timeout=10000)
+        assert slow.state()["interrupts"] == ["keep", "clear"], slow.state()
+        assert pg.locator(".nodi-turn[data-turn='29']").count() == 0, "a cleared queue starts no turn"
+        pg.close()
+
+        pg = fresh()
+        attend(pg, door(150), MAIN)
+        send(pg, "start a long run please")
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='running']", timeout=20000)
+        send(pg, "also mind the dark theme")
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-steering", timeout=20000)
+        assert "also mind the dark theme" in pg.locator(".nodi-turn[data-turn='27'] .nodi-steering").inner_text()
+        assert pg.locator(".nodi-turn[data-turn='27'] .nodi-steering .nodi-who").inner_text() == "You"
+        pg.close()
+
+        pg = fresh()
+        attend(pg, door(12), MAIN)
+        pg.locator(".fw-fork").click()
+        until(pg, "location.hash.startsWith('#/gluck/') && !location.hash.includes('%s')" % MAIN, timeout=10000)
+        until(pg, "document.querySelector('.fw').dataset.link === 'live' && document.querySelectorAll('.nodi-turn').length >= 1", timeout=10000)
+        assert pg.locator(".nodi-turn").count() >= 1, "the alternative opens with the history it was cut from"
+        pg.close()
+
+        pg = fresh()
+        draft_door = door(12)
+        attend(pg, draft_door, MAIN)
+        pg.locator(".fw-input").fill("half a thought")
+        pg.wait_for_timeout(600)
+        pg.locator(".fw-back").click()
+        pg.wait_for_selector(".fw-thread")
+        pg.locator(".fw-thread[data-id='%s']" % LANE).click()
+        until(pg, "document.querySelector('.fw').dataset.link === 'live'", timeout=10000)
+        assert pg.locator(".fw-input").input_value() == "", "another aria has its own draft"
+        pg.goto("about:blank")
+        pg.goto(draft_door.url + "#/gluck/" + MAIN)
+        until(pg, "document.querySelector('.fw-input')", timeout=10000)
+        assert pg.locator(".fw-input").input_value() == "half a thought", "the draft survives a reload"
         pg.close()
 
         refused = fresh()

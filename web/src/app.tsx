@@ -1,5 +1,5 @@
 import { useAtomValue } from "jotai";
-import { linkAtom } from "./state/aria";
+import { attendedRunningAtom, linkAtom } from "./state/aria";
 import { AriaView } from "./components/aria-view";
 import { Roster } from "./components/roster";
 import { TopBar } from "./components/topbar";
@@ -31,8 +31,9 @@ export function App() {
   const kind = useAtomValue(routeKindAtom);
   const attended = useAtomValue(attendedAtom);
   const route = useAtomValue(routeAtom);
+  const running = useAtomValue(attendedRunningAtom);
   return (
-    <div className="fw" data-link={link} data-route={kind}>
+    <div className="fw" data-link={link} data-route={kind} data-running={running ? "" : undefined}>
       <TopBar />
       <div className="fw-body">
         <Roster />

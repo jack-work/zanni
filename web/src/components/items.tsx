@@ -1,6 +1,7 @@
 import { memo, useMemo, type ReactNode } from "react";
 import { nodi, type InputModel, type Item, type ProseItem, type SteeringItem, type ThinkingItem, type ToolItem, type TurnModel, type UnknownItem } from "../lib/zanni";
 import { BlockView, Plain } from "./text";
+import { TurnActions } from "./turn-actions";
 
 const CLIP = 4000;
 
@@ -185,17 +186,18 @@ function ItemView({ item, turn, speaking }: { item: Item; turn: number; speaking
 export interface TurnViewProps {
   turn: TurnModel;
   speaking: Speaking | null;
-  actions?: ReactNode;
 }
 
-export const TurnView = memo(function TurnView({ turn: m, speaking, actions }: TurnViewProps) {
+export const TurnView = memo(function TurnView({ turn: m, speaking }: TurnViewProps) {
   const state = m.end ? (m.end.kind === "error" ? "failed" : "ended") : m.open ? "open" : "done";
   const mine = speaking && speaking.turn === m.turn ? speaking : null;
   return (
     <li className="nodi-turn" data-turn={m.turn} data-state={state}>
       <div className="nodi-turn-head">
         <span className="nodi-turn-no">Turn {m.turn}</span>
-        <span className="nodi-turn-tools">{actions}</span>
+        <span className="nodi-turn-tools">
+          <TurnActions turn={m.turn} />
+        </span>
       </div>
       <div className="nodi-turn-body">
         {m.input && m.input.parts.length > 0 && <InputView input={m.input} />}
