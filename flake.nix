@@ -5,7 +5,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     figaro-forms = {
-      url = "git+ssh://git@spain/var/lib/keel/jack/figaro-forms.git?rev=cf4eb6d333b82d3a991dff3496d611f9e1c21e58";
+      url = "git+ssh://git@spain/var/lib/keel/jack/figaro-forms.git?rev=d596228d8b30587d5ed8265118a3c1f9f2a43805";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     figaro-forms-paced = {
@@ -180,7 +180,7 @@
           };
           sourceRoot = "zanni-source/web";
           nodejs = pkgs.nodejs_24;
-          npmDepsHash = "sha256-E/Z2w+2SWPcmk/tD6WDeEOrENUuPJ/GAFwANIPB8LSM=";
+          npmDepsHash = "sha256-gNca+4ZeL7PAXb+rpFs6TxbSO8ghwoHFLf+4Pzvq5N8=";
           makeCacheWritable = true;
           doCheck = true;
           checkPhase = ''

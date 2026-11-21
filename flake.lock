@@ -7,16 +7,34 @@
         ]
       },
       "locked": {
-        "lastModified": 1795281093,
-        "narHash": "sha256-Ygcf7Ikm5yv+SQmT3wNGWX0f1/suHCF7tc7m+VeRvRk=",
+        "lastModified": 1795284036,
+        "narHash": "sha256-pL0vrEzBNPHYvgf5LDkiHic6AxgJ7zmmwmdzh1hmA68=",
         "ref": "refs/heads/main",
-        "rev": "cf4eb6d333b82d3a991dff3496d611f9e1c21e58",
-        "revCount": 145,
+        "rev": "d596228d8b30587d5ed8265118a3c1f9f2a43805",
+        "revCount": 147,
         "type": "git",
         "url": "ssh://git@spain/var/lib/keel/jack/figaro-forms.git"
       },
       "original": {
-        "rev": "cf4eb6d333b82d3a991dff3496d611f9e1c21e58",
+        "rev": "d596228d8b30587d5ed8265118a3c1f9f2a43805",
+        "type": "git",
+        "url": "ssh://git@spain/var/lib/keel/jack/figaro-forms.git"
+      }
+    },
+    "figaro-forms-paced": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1795284284,
+        "narHash": "sha256-wZ9swyLiXmmWJj0Qk6ACTrFH8RbgQN+lTMta4/buImk=",
+        "ref": "lane/fake-speech-paced",
+        "rev": "e2fdb9296fbd0e81b6bca7e8f9819dd2c0e374f1",
+        "revCount": 147,
+        "type": "git",
+        "url": "ssh://git@spain/var/lib/keel/jack/figaro-forms.git"
+      },
+      "original": {
+        "ref": "lane/fake-speech-paced",
+        "rev": "e2fdb9296fbd0e81b6bca7e8f9819dd2c0e374f1",
         "type": "git",
         "url": "ssh://git@spain/var/lib/keel/jack/figaro-forms.git"
       }
@@ -58,6 +76,7 @@
     "root": {
       "inputs": {
         "figaro-forms": "figaro-forms",
+        "figaro-forms-paced": "figaro-forms-paced",
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs"
       }
