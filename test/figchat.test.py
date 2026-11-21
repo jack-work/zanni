@@ -303,8 +303,8 @@ try:
 
         for width, height in ((390, 844), (1280, 800)):
             pg = fresh(width, height)
-            attend(pg, fast, MAIN, 21)
-            pg.wait_for_selector(".nodi-turn[data-turn='21'] .nodi-turn-delta", timeout=10000)
+            attend(pg, fast, LANE, 2)
+            pg.wait_for_selector(".nodi-turn[data-turn='2'] .nodi-turn-delta", timeout=10000)
             assert pg.locator(".nodi-turn-delta").count() == 1, "only the turn whose form changed wears the delta mark"
             assert pg.locator(".nodi-deltas").count() == 0, "the table starts shut"
             pg.locator(".nodi-turn-delta").click()

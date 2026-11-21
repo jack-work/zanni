@@ -96,16 +96,6 @@
     ];
     turns[8].inquiry = 'The pass is ready for review.\n\nShip it behind the flag.\n\nAnd tell me when it is up.';
     turns[11].inquiry_segments = [{ name: 'Gluck at the terminal', sender: 'terminal', text: turns[11].inquiry }];
-    var self = aid(1);
-    var deltas = {};
-    deltas[self + '.phase'] = { form: self, kind: 'bound', event: 'set', prev: 'seed', value: 'canary' };
-    deltas[self + '.mantra'] = { form: self, kind: 'bound', event: 'set', prev: new Array(61).join('o'), value: new Array(41).join('n') };
-    deltas[self + '.credo'] = { form: self, kind: 'bound', event: 'set', value: 'one\ntwo\nthree' };
-    deltas['@f1.status'] = { form: '@f1', kind: 'studied', event: 'set', prev: 'open', value: 'merged' };
-    deltas['@f1.brief'] = { form: '@f1', kind: 'studied', event: 'removed', prev: 'ship it' };
-    deltas['@f2'] = { form: '@f2', kind: 'studied', event: 'deleted' };
-    deltas['@r1.target-aria'] = { form: '@r1', kind: 'role', event: 'set', prev: aid(2), value: aid(3) };
-    turns[count - 6].formDeltas = deltas;
     return turns;
   }
 
@@ -157,6 +147,16 @@
     } else {
     add(ids.main, { state: 'idle', mantra: 'Zanni: ship ordine & Sugiyama layered layout', roles: ['@zanni'], handle: 'zanni' }, seedMain(base - Math.max(0, history - 26) * 61000, history));
     add(ids.lane, { state: 'idle', mantra: 'Frontend Engineer / figchat web', parent: ids.main, roles: ['@lane'] }, seedSmall(4, base, 1));
+    var self = aid(2);
+    var deltas = {};
+    deltas[self + '.phase'] = { form: self, kind: 'bound', event: 'set', prev: 'seed', value: 'canary' };
+    deltas[self + '.mantra'] = { form: self, kind: 'bound', event: 'set', prev: new Array(61).join('o'), value: new Array(41).join('n') };
+    deltas[self + '.credo'] = { form: self, kind: 'bound', event: 'set', value: 'one\ntwo\nthree' };
+    deltas['@f1.status'] = { form: '@f1', kind: 'studied', event: 'set', prev: 'open', value: 'merged' };
+    deltas['@f1.brief'] = { form: '@f1', kind: 'studied', event: 'removed', prev: 'ship it' };
+    deltas['@f2'] = { form: '@f2', kind: 'studied', event: 'deleted' };
+    deltas['@r1.target-aria'] = { form: '@r1', kind: 'role', event: 'set', prev: aid(3), value: aid(4) };
+    core.arias[ids.lane].turns[1].formDeltas = deltas;
     add(ids.spain, { state: 'dormant', mantra: 'Backend: spain edge for fig.kelliher.info', parent: ids.main }, seedSmall(2, base, 2));
     add(aid(6), { state: 'idle', mantra: 'Review: livedoc settle', parent: ids.lane }, seedSmall(2, base, 3));
     add(ids.engineer, { state: 'idle', mantra: 'Engineer: aria stream and gateway', roles: ['@engineer'] }, seedSmall(5, base, 4));
