@@ -1,5 +1,6 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { Button } from "./button";
+import { useDialog } from "./dialog";
 import { useLinger } from "./motion";
 
 export interface SheetProps {
@@ -14,8 +15,6 @@ export interface SheetProps {
   children: ReactNode;
 }
 
-const FOCUSABLE = 'button:not(:disabled), [href], input:not(:disabled), textarea:not(:disabled), select:not(:disabled), [tabindex]:not([tabindex="-1"])';
-
 export function Sheet(props: SheetProps) {
   const last = useRef<ReactNode>(null);
   if (props.open) last.current = props.children;
@@ -26,41 +25,7 @@ export function Sheet(props: SheetProps) {
 
 function SheetPanel({ onClose, title, label, closeLabel = "Close", className, scrimClassName, data, leaving, children }: SheetProps & { leaving: boolean }) {
   const dialog = useRef<HTMLDivElement | null>(null);
-  const close = useRef(onClose);
-  close.current = onClose;
-
-  useEffect(() => {
-    const before = document.activeElement as HTMLElement | null;
-    const root = dialog.current;
-    const target = root?.querySelector<HTMLElement>("[data-autofocus]") ?? root?.querySelector<HTMLElement>(".zr-sheet-body " + FOCUSABLE) ?? root?.querySelector<HTMLElement>(FOCUSABLE);
-    target?.focus();
-    const onKey = (ev: KeyboardEvent) => {
-      if (ev.key === "Escape") {
-        close.current();
-        return;
-      }
-      if (ev.key !== "Tab" || !root) return;
-      const items = [...root.querySelectorAll<HTMLElement>(FOCUSABLE)];
-      const first = items[0];
-      const end = items[items.length - 1];
-      if (!first || !end) return;
-      if (!root.contains(document.activeElement)) {
-        ev.preventDefault();
-        first.focus();
-      } else if (ev.shiftKey && document.activeElement === first) {
-        ev.preventDefault();
-        end.focus();
-      } else if (!ev.shiftKey && document.activeElement === end) {
-        ev.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      before?.focus?.({ preventScroll: true });
-    };
-  }, []);
+  useDialog(dialog, onClose);
 
   const leave = leaving ? { "data-leaving": "" } : {};
   return (
