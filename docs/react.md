@@ -17,6 +17,7 @@ dependency react only. `zanni-react/jotai` binds them to figaro-forms and Jotai:
 | `Tree` | the pager's formView in a browser: one row per `formNode` (`key: value` leaves aligned per parent, `name (N)  child · labels` closed, `name (N)` open, guides, no header, no arrow), a cursor row with j/k/u/d/gg/G, `l` open, `h` close or climb, Enter toggles or calls `onActivate`; `treeRows` is the pure walk |
 | `PitProvider`, `PitGrip`, `Pit`, `PitList`, `PitRow` | the drawer dragged from the composer edge (closed, half, full), its rows |
 | `TurnView`, `ProseView`, `ToolView`, `ThinkingView`, `WorkGroup`, `TranscriptContext` | the nodi transcript as React; the context carries two app hooks: open the message sheet, per-turn actions |
+| `Fit`, `fitText`, `firstLine`, `FIT_ELLIPSIS` | a question's first line fitted to the box it is in: `Fit` measures with a hidden probe of the same font, refits on resize and font load, and ends a cut with the dimmed ` ..`; `fitText` is the pure binary search over a `fits(candidate)` predicate |
 | `useFollow`, `LatestPill`, `PlayerIsland` | follow the bottom with a Latest pill and prepend anchor; a voce player the component owns |
 | `nodi`, `speech`, `voce`, work helpers | the framework-free zanni modules and the pure grouping and timing functions |
 | `Pill`, `PillPair` | a small round glyph button named by `aria-label` (optional `pressed`, `disabled`, `title`), and a joined pair of them; `Composer` takes `attach`, `command` and `sendGlyph` and lays them out |

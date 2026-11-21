@@ -263,3 +263,6 @@
   animation: zr-swap var(--zr-d-pop) var(--zr-pop) both;
 }
 .zr-player:empty { display: none; }
+.zr-fit { position: relative; display: block; min-width: 0; overflow: hidden; white-space: nowrap; }
+.zr-fit-more { color: var(--z-muted); }
+.zr-fit-probe { position: absolute; top: 0; left: 0; visibility: hidden; white-space: pre; pointer-events: none; }
