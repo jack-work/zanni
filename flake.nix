@@ -5,7 +5,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     figaro-forms = {
-      url = "git+ssh://git@spain/var/lib/keel/jack/figaro-forms.git?rev=e67338e7285add1b6daa1f3f1ffa507eea4853a4";
+      url = "git+ssh://git@spain/var/lib/keel/jack/figaro-forms.git?ref=lane/lapse-crash&rev=4e857fde35b5c01b47d288562fea5be290633902";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };

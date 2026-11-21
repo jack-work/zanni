@@ -279,7 +279,7 @@ def execute(browser, bundle, campaign, profile, actions, gateway=None, check_eve
         run.stop()
 
 
-def shrink(browser, bundle, campaign, profile, actions, invariant, gateway, budget_s=240, log=print):
+def shrink(browser, bundle, campaign, profile, actions, invariant, gateway, budget_s=240, log=print, strict=()):
     end = time.time() + budget_s
     runs = [0]
 
@@ -287,7 +287,7 @@ def shrink(browser, bundle, campaign, profile, actions, invariant, gateway, budg
         if time.time() > end or not candidate:
             return False
         runs[0] += 1
-        f = execute(browser, bundle, campaign, profile, candidate, gateway)
+        f = execute(browser, bundle, campaign, profile, candidate, gateway, strict=strict)
         return f is not None and f.invariant == invariant
 
     cur = list(actions)

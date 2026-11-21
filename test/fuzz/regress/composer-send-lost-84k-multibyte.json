@@ -4,8 +4,8 @@
  "profile": "phone",
  "invariant": "send-lost",
  "message": "an 84000 byte prompt of e-acute, emoji and spaces is cleared from the composer and never reaches the door, while 100000 ASCII bytes do; no error is shown",
- "owner": "Frontend (client send path); Backend if the gateway caps it",
- "status": "xfail",
+ "owner": "fixed by the mock door reassembling fragments",
+ "status": "pass",
  "strict": [],
  "actions": [
   {

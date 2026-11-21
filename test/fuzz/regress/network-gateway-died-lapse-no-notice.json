@@ -5,7 +5,7 @@
  "invariant": "gateway-died",
  "message": "one door.lapse without notice, with a page attached, crashes figaro-gateway: an uncaught 'socket closed' thrown from a Promise executor in handover.js (faults.js:126)",
  "owner": "Backend (figaro-forms packages/bridge handover.ts)",
- "status": "xfail",
+ "status": "pass",
  "strict": [
   "lapse-no-notice"
  ],

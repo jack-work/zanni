@@ -68,6 +68,14 @@ class Network(Campaign):
                 except Exception:
                     page.locator(".zr-input").fill("")
             page.wait_for_timeout(120)
+        elif k == "bigsend":
+            page.locator(".zr-input").fill("a" * a["chars"])
+            if run.profile == "desktop":
+                page.keyboard.press("Enter")
+            else:
+                page.locator(".zr-send").click(timeout=1500)
+            run.state["big"] = a["chars"]
+            page.wait_for_timeout(1500)
         elif k == "wait":
             page.wait_for_timeout(a["ms"])
         elif k == "fault":
@@ -111,6 +119,14 @@ class Network(Campaign):
             run.page.wait_for_timeout(250)
 
     def extra_quiescent(self, run):
+        big = run.state.get("big")
+        if big:
+            shown = run.page.evaluate("document.body.innerText")
+            if "1048576" not in shown:
+                raise Failure("limit-unnamed", "a %d character prompt went over the gateway limit and the page never says what the limit is" % big)
+            sent_big = [x for x in run.stack.state()["sent"] if len(x["text"]) >= big]
+            if sent_big:
+                raise Failure("limit-passed", "a prompt over the gateway limit reached the door")
         sent = [s["text"] for s in run.stack.state()["sent"]]
         here = run.composer_text() or ""
         for text in run.state["sends"]:
