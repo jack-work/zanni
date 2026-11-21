@@ -1,10 +1,10 @@
-import { Button, LatestPill, nodi, scrollRoot, scrollToBottom, useFollow, Plain, TranscriptContext, TurnView } from "../../index";
+import { Button, LatestPill, scrollRoot, scrollToBottom, useFollow, Plain, TranscriptContext, TurnView } from "../../index";
 import { useAtomValue, useSetAtom } from "jotai";
 import { ariaAtom } from "figaro-forms/aria/jotai";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useFirstFrame } from "../lib/first-frame";
 import { labelOf } from "../lib/roster";
-import { noteAtom, turnsAtom } from "../state/aria";
+import { metricsLineAtom, noteAtom, turnsAtom } from "../state/aria";
 import { treeStateAtom } from "../state/pit";
 import { rosterAtom } from "../state/roster";
 import { composerAtom, forkAtom, keyOf } from "../state/composer";
@@ -170,7 +170,7 @@ export function AriaView({ attended }: { attended: Attended }) {
   );
   const gone = link === "gone" || link === "refused";
   const status = note || pageError;
-  const metrics = snap.metrics ? nodi.metricsLine(snap.metrics) : "";
+  const metrics = useAtomValue(metricsLineAtom(client, aria));
 
   return (
     <section className="fw-pane-inner">
