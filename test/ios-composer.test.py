@@ -410,5 +410,25 @@ with sync_playwright() as p:
     near(moved, anchor[1], "a reader mid-transcript sees nothing move while the box grows over the bottom")
     pg.context.close()
 
+    pg = fresh()
+    attend(pg, fast)
+    pg.evaluate("window.__kb.open(%d, 0)" % KB)
+    pg.wait_for_timeout(150)
+    pg.locator(".zr-composer .zr-grip").focus()
+    pg.keyboard.press("Enter")
+    pg.wait_for_selector(".zr-pit[data-snap='half']")
+    pg.evaluate("Promise.all(document.getAnimations().map(a => a.finished.catch(() => null)))")
+    pit = pg.evaluate("(() => { const b = document.querySelector('.zr-pit').getBoundingClientRect(); return [b.bottom, b.height]; })()")
+    near(pit[0], 844 - KB, "the pit sits on the keyboard's edge, not behind it")
+    near(pit[1], (844 - KB) / 2, "half is half of what the keyboard leaves", 2)
+    pg.keyboard.press("ArrowUp")
+    pg.wait_for_timeout(100)
+    pg.evaluate("Promise.all(document.getAnimations().map(a => a.finished.catch(() => null)))")
+    pit = pg.evaluate("(() => { const b = document.querySelector('.zr-pit').getBoundingClientRect(); return [b.top, b.bottom, b.height]; })()")
+    near(pit[1], 844 - KB, "the full pit ends at the keyboard")
+    assert pit[0] >= -1 and pit[2] <= 844 - KB + 1, "the full pit fits above the keyboard: %s" % pit
+    assert not pg.errors, pg.errors
+    pg.context.close()
+
     browser.close()
 print("ios composer: ok")
