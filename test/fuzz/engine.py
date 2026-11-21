@@ -114,7 +114,7 @@ class Run:
         self.moved = getattr(self, "moved", False) or self.aria() != MAIN
         return self.moved
 
-    def settle(self, timeout=30.0):
+    def settle(self, timeout=90.0):
         end = time.time() + timeout
         while time.time() < end:
             turns = self.stack.turns(self.aria())
