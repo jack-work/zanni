@@ -19,18 +19,20 @@ function rig(opts: { slots?: boolean } = {}) {
     addSlot(27, 1);
     addSlot(28, 1);
   }
-  const changes = new Map<number, VoceOptions["change"]>();
+  const expire: Record<number, () => void> = {};
+  const created: VoceOptions[] = [];
   let n = 0;
   const voce = {
     create(_d: Document, o: VoceOptions): VocePlayer {
       const id = ++n;
       const el = doc.createElement("div");
-      changes.set(id, o.change);
-      let state = "none";
+      created.push(o);
+      let state = o.audioId ? "idle" : "none";
       const set = (s: string) => {
         state = s;
         o.change?.(s, "x");
       };
+      expire[id] = () => set("expired");
       return {
         el,
         start: () => (log.push("p" + id + " start"), set("live"), true),
@@ -40,7 +42,7 @@ function rig(opts: { slots?: boolean } = {}) {
         stop: () => (log.push("p" + id + " stop"), set("idle")),
         play: () => (log.push("p" + id + " play"), set("playing")),
         pause: () => {},
-        destroy: () => log.push("p" + id + " destroy"),
+        destroy: () => (log.push("p" + id + " destroy"), el.remove()),
         speaking: () => state === "live",
         state: () => state,
       };
@@ -48,10 +50,11 @@ function rig(opts: { slots?: boolean } = {}) {
     unlock: () => null,
   } as unknown as VoceApi;
   let handlers!: SpeechHandlers;
-  const conn = { voice: (on: boolean) => log.push("voice " + on), cancel: () => log.push("cancel"), close: () => log.push("close") };
+  const conn = { voice: (on: boolean) => log.push("voice " + on), say: (t: number) => log.push("say " + t), cancel: () => log.push("cancel"), close: () => log.push("close") };
   const transport: SpeechTransport = { open: (_c, h) => ((handlers = h), conn) };
   const session = new AudioSession({ setType: () => {}, ping: () => log.push("ping") });
   const spoken: (SpokenNode | null)[] = [];
+  const notes: string[] = [];
   const hub = new VoiceHub(
     {
       doc,
@@ -63,15 +66,18 @@ function rig(opts: { slots?: boolean } = {}) {
       slot: (t, nd) => slots.get(t + ":" + nd) ?? null,
       firstSlot: (t) => [...slots.entries()].find(([k]) => k.startsWith(t + ":"))?.[1] ?? null,
       wait: (ms) => new Promise((r) => setTimeout(r, Math.min(ms, 2))),
+      note: (t) => notes.push(t),
     },
     ARIA,
     "gluck",
     transport,
   );
-  const start = (turn: number, node = 1) => handlers.start!({ aria: ARIA, turn, key: "gluck/" + ARIA + ":" + turn + "/out", node, cursor: turn + ".2", ...FMT });
+  hub.voice(true);
+  log.length = 0;
+  const start = (turn: number, node = 1, say = false) => handlers.start!({ aria: ARIA, turn, key: "gluck/" + ARIA + ":" + turn + "/out", node, cursor: turn + ".2", ...(say ? { say: true } : {}), ...FMT });
   const chunk = (turn: number, node = 1, chars = 5) => handlers.chunk!({ aria: ARIA, turn, node, chars, cursor: "x", offset: 0, bytes: 4, pcm: new ArrayBuffer(4) });
   const end = (turn: number) => handlers.end!({ aria: ARIA, turn, key: "gluck/" + ARIA + ":" + turn + "/out" });
-  return { hub, session, log, spoken, slots, addSlot, handlers: () => handlers, start, chunk, end, changes };
+  return { hub, session, log, spoken, notes, slots, addSlot, handlers: () => handlers, start, chunk, end, expire, created };
 }
 
 const settle = () => new Promise((r) => setTimeout(r, 20));
@@ -198,15 +204,74 @@ describe("the voice hub", () => {
     expect(r.session.phase()).toBe("idle");
   });
 
-  it("replays a turn by its key, and plays the live player again when it is there", async () => {
+  it("plays a turn by its key, and plays the live player again when it is there", async () => {
     const r = rig();
     r.hub.replay(28);
-    expect(r.log).toEqual(["p1 end gluck/" + ARIA + ":28/out", "p1 play"]);
+    expect(r.created[0]!.audioId).toBe("gluck/" + ARIA + ":28/out");
+    expect(r.log).toEqual(["p1 play"]);
     r.hub.replay(28);
+    expect(r.created).toHaveLength(1);
     expect(r.log.at(-1)).toBe("p1 play");
-    expect(r.log.filter((l) => l.includes("end")).length).toBe(1);
     r.hub.replay(99);
-    expect(r.log.length).toBe(3);
+    expect(r.notes).toEqual(["That turn has nothing to say."]);
+  });
+
+  it("asks the gateway to speak a turn whose stored audio is gone, once, and plays what it speaks", async () => {
+    const r = rig();
+    r.session.setHandsFree(true);
+    r.hub.replay(28);
+    r.expire[1]!();
+    expect(r.log).toEqual(["p1 play", "p1 destroy", "say 28"]);
+    expect(r.slots.get("28:1")!.querySelector("[data-for='28']")).toBeNull();
+    r.start(28, 1, true);
+    r.chunk(28);
+    r.end(28);
+    await settle();
+    expect(r.log.filter((l) => l === "ping")).toHaveLength(0);
+    expect(r.log.slice(3)).toEqual(["p2 start", "p2 push", "p2 end gluck/" + ARIA + ":28/out"]);
+  });
+
+  it("plays the stored copy when the gateway says it has one, and does not ask twice", async () => {
+    const r = rig();
+    r.hub.replay(28);
+    r.expire[1]!();
+    r.handlers().stored!({ aria: ARIA, turn: 28, key: "k" });
+    expect(r.created).toHaveLength(2);
+    expect(r.log.slice(-1)).toEqual(["p2 play"]);
+    r.expire[2]!();
+    expect(r.log.filter((l) => l.startsWith("say"))).toEqual(["say 28"]);
+    expect(r.notes).toEqual(["No audio for this turn."]);
+    r.hub.replay(28);
+    r.expire[3]!();
+    expect(r.log.filter((l) => l.startsWith("say"))).toEqual(["say 28", "say 28"]);
+  });
+
+  it("puts the gateway's reason for refusing in a note", async () => {
+    const r = rig();
+    r.hub.replay(28);
+    r.expire[1]!();
+    r.handlers().error!({ aria: ARIA, turn: 28, code: "open", text: "turn is open" });
+    r.hub.replay(27);
+    r.expire[2]!();
+    r.handlers().error!({ aria: ARIA, turn: 27, code: "silent", text: "no prose" });
+    r.addSlot(26, 1);
+    r.hub.replay(26);
+    r.expire[3]!();
+    r.handlers().error!({ aria: ARIA, turn: 26, code: "busy", text: "x" });
+    expect(r.notes).toEqual(["That turn is still running.", "That turn has nothing to say.", "Speech is busy. Try again."]);
+  });
+
+  it("ignores a live reply the gateway speaks while the voice is off, but plays one it was asked for", async () => {
+    const r = rig();
+    r.hub.voice(false);
+    r.log.length = 0;
+    r.start(27);
+    r.chunk(27);
+    await settle();
+    expect(r.log).toEqual([]);
+    r.start(28, 1, true);
+    await settle();
+    expect(r.log).toEqual(["p1 start"]);
   });
 
   it("cancel goes to the gateway and close lets everything go", async () => {

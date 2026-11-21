@@ -383,7 +383,7 @@ try:
         sans_free(pg, "voice player")
         assert door_v.state()["audio"] >= 1, "the gateway audio socket was opened by the voice toggle"
         pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])", timeout=10000)
-        pg.locator(".nodi-turn[data-turn='26'] .fw-replay").click()
+        pg.locator(".nodi-turn[data-turn='26'] .fw-play").click()
         pg.wait_for_selector(".nodi-turn[data-turn='26'] .voce[data-for='26']", timeout=5000)
         until(pg, "['loading','playing','idle'].includes(document.querySelector(\".nodi-turn[data-turn='26'] .voce\").dataset.state)", 10000)
         assert pg.evaluate("window.localStorage.length + window.sessionStorage.length") == 0 or not pg.evaluate("Object.keys(window.localStorage).concat(Object.keys(window.sessionStorage)).some(k => /voice|hands/i.test(k))"), "voice and hands-free are never stored"
@@ -441,6 +441,32 @@ try:
         assert pg.evaluate(SANS), "negative control: a button set to Arial must be caught"
         assert not pg.errors, pg.errors
         ctx.close()
+
+        pg = fresh()
+        say_door = door(12)
+        attend(pg, say_door, MAIN, 5)
+        pg.wait_for_selector(".nodi-turn[data-turn='5']")
+        assert pg.locator(".fw-voice").get_attribute("aria-pressed") == "false", "voice is off while Play asks the gateway to speak"
+        pg.locator(".nodi-turn[data-turn='5'] .fw-play").click()
+        for _ in range(100):
+            if say_door.state()["says"] == [5]:
+                break
+            pg.wait_for_timeout(100)
+        assert say_door.state()["says"] == [5], "a turn whose stored audio expired is asked of the gateway: %s" % say_door.state()["says"]
+        until(pg, "(() => { const v = document.querySelector(\".nodi-turn[data-turn='5'] .voce\"); return !!v && ['live','draining','idle','playing'].includes(v.dataset.state); })()", 10000)
+        assert pg.locator(".voce[data-state='expired']").count() == 0
+        assert say_door.state()["audio"] >= 1, "the gateway socket opened for the ask"
+        pg.locator(".nodi-turn[data-turn='6'] .fw-play").click()
+        for _ in range(100):
+            if say_door.state()["says"] == [5, 6]:
+                break
+            pg.wait_for_timeout(100)
+        assert say_door.state()["says"] == [5, 6], say_door.state()["says"]
+        until(pg, "(() => { const v = document.querySelector(\".nodi-turn[data-turn='6'] .voce\"); return !!v && ['loading','playing','idle'].includes(v.dataset.state); })()", 10000)
+        pg.wait_for_timeout(500)
+        assert pg.locator(".nodi-turn[data-turn='6'] .voce[data-state='expired']").count() == 0, "the gateway said it had the audio, and Play found it"
+        assert hostile_findings(pg) == [], hostile_findings(pg)
+        pg.close()
 
         for width, height in ((390, 844), (1280, 800)):
             sheet_door = door(12)

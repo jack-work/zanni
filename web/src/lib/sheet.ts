@@ -14,6 +14,7 @@ export interface SheetContext {
   readonly target: SheetTarget;
   clipKey(direction: "in" | "out"): string;
   play(key: string): void;
+  playTurn(turn: number): void;
   say(note: string): void;
   show(text: string): void;
   transcribe(key: string): Promise<SttReply>;
@@ -30,6 +31,12 @@ const play = (direction: "in" | "out"): SheetAction => ({
   label: "Play",
   run: (ctx) => ctx.play(ctx.clipKey(direction)),
 });
+
+const playTurn: SheetAction = {
+  id: "play",
+  label: "Play",
+  run: (ctx) => ctx.playTurn(ctx.target.turn),
+};
 
 const retranscribe: SheetAction = {
   id: "retranscribe",
@@ -53,7 +60,7 @@ const retranscribe: SheetAction = {
 
 export const sheetActions: Readonly<Record<SheetKind, readonly SheetAction[]>> = {
   input: [play("in"), retranscribe],
-  prose: [play("out")],
+  prose: [playTurn],
 };
 
 export function clipKey(target: SheetTarget, direction: "in" | "out"): string {

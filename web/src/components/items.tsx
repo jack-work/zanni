@@ -243,7 +243,7 @@ export const TurnView = memo(
       <div className="nodi-turn-head">
         <span className="nodi-turn-no">Turn {m.turn}</span>
         <span className="nodi-turn-tools">
-          <TurnActions turn={m.turn} speakable={m.items.some((i) => i.kind === "prose")} />
+          <TurnActions turn={m.turn} />
         </span>
       </div>
       <div className="nodi-turn-body">

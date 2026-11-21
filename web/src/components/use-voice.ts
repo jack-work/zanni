@@ -4,11 +4,13 @@ import { VoiceHub } from "../lib/voice-hub";
 import { voce } from "../lib/zanni";
 import { audioSessionAtom, cancelSpeechAtom, speakingAtom, speechTransportAtom, voiceAtom, voiceControlAtom } from "../state/audio";
 import { bootAtom } from "../state/boot";
+import { composerNoteAtom, keyOf } from "../state/composer";
 import type { Attended } from "../state/route";
 
 const slotQuery = (turn: number, node: number) => document.querySelector<HTMLElement>('[data-voice-slot="' + turn + ":" + node + '"]');
 const firstSlot = (turn: number) => document.querySelector<HTMLElement>('.nodi-turn[data-turn="' + turn + '"] [data-voice-slot]');
 const pause = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+const NOTE_MS = 4000;
 
 export function useVoice({ aria, store }: Attended): void {
   const transport = useAtomValue(speechTransportAtom);
@@ -18,6 +20,7 @@ export function useVoice({ aria, store }: Attended): void {
   const audioUrl = useAtomValue(bootAtom).audioUrl;
   const setSpeaking = useSetAtom(speakingAtom);
   const setControl = useSetAtom(voiceControlAtom);
+  const setNote = useSetAtom(composerNoteAtom);
   const hub = useRef<VoiceHub | null>(null);
   const voice = useRef(voiceOn);
   voice.current = voiceOn;
@@ -35,6 +38,11 @@ export function useVoice({ aria, store }: Attended): void {
         slot: slotQuery,
         firstSlot,
         wait: pause,
+        note: (text) => {
+          const key = keyOf(store, aria);
+          setNote({ key, note: text });
+          setTimeout(() => setNote({ key, note: "" }), NOTE_MS);
+        },
       },
       aria,
       store,
@@ -49,7 +57,7 @@ export function useVoice({ aria, store }: Attended): void {
       setControl(null);
       setSpeaking(null);
     };
-  }, [aria, store, transport, session, audioUrl, setSpeaking, setControl]);
+  }, [aria, store, transport, session, audioUrl, setSpeaking, setControl, setNote]);
 
   useEffect(() => {
     hub.current?.voice(voiceOn);

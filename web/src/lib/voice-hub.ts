@@ -1,5 +1,5 @@
 import type { AudioSession } from "./audio-session";
-import type { SpeechChunk, SpeechSession, SpeechStart, SpeechTransport, VocePlayer, VoceApi } from "./nodi-types";
+import type { SpeechChunk, SpeechFault, SpeechSession, SpeechStart, SpeechTransport, VocePlayer, VoceApi } from "./nodi-types";
 
 export interface SpokenNode {
   readonly turn: number;
@@ -17,6 +17,22 @@ export interface HubDeps {
   slot(turn: number, node: number): HTMLElement | null;
   firstSlot(turn: number): HTMLElement | null;
   wait(ms: number): Promise<void>;
+  note(text: string): void;
+}
+
+export function faultWords(code: SpeechFault): string {
+  switch (code) {
+    case "bad-turn":
+      return "No such turn to play.";
+    case "open":
+      return "That turn is still running.";
+    case "silent":
+      return "That turn has nothing to say.";
+    case "busy":
+      return "Speech is busy. Try again.";
+    default:
+      return "Speech is unavailable.";
+  }
 }
 
 const SLOT_WAIT_MS = 3000;
@@ -45,8 +61,10 @@ class Feed {
 export class VoiceHub {
   private readonly feeds = new Map<number, Feed>();
   private readonly conn: SpeechSession;
+  private readonly said = new Set<number>();
   private spoken: number | null = null;
   private closed = false;
+  private voiceOn = false;
 
   constructor(
     private readonly deps: HubDeps,
@@ -60,15 +78,22 @@ export class VoiceHub {
         start: (e) => this.start(e),
         chunk: (c) => this.chunk(c),
         end: (e) => this.finish(e.turn, (f) => f.player?.end(e.key || "")),
+        stored: (e) => {
+          if (!this.feeds.get(e.turn)?.player) this.play(e.turn);
+        },
         cancel: (e) => this.cancelTurn(e.turn),
         error: (e) => {
-          if (e.turn !== undefined) this.failTurn(e.turn);
+          if (e.turn === undefined) return;
+          const asked = this.said.delete(e.turn);
+          this.failTurn(e.turn);
+          if (asked || e.code !== "speech") this.deps.note(faultWords(e.code));
         },
       },
     );
   }
 
   voice(on: boolean): void {
+    this.voiceOn = on;
     this.conn.voice(on);
     if (on) return;
     for (const feed of this.feeds.values()) {
@@ -94,19 +119,41 @@ export class VoiceHub {
   }
 
   replay(turn: number): void {
-    const key = this.key(turn);
-    let feed = this.feeds.get(turn);
+    this.said.delete(turn);
+    this.play(turn);
+  }
+
+  private play(turn: number): void {
+    const feed = this.feeds.get(turn);
     let player = feed?.player ?? null;
+    if (player && ACTIVE.has(player.state())) return;
     if (!player) {
       const slot = this.deps.firstSlot(turn);
-      if (!slot) return;
-      feed = feed ?? new Feed(turn);
-      feed.open();
-      player = this.mount(feed, slot);
-      player.end(key);
-      this.feeds.set(turn, feed);
+      if (!slot) {
+        this.deps.note(faultWords("silent"));
+        return;
+      }
+      const made = feed ?? new Feed(turn);
+      made.open();
+      player = this.mount(made, slot, this.key(turn));
+      this.feeds.set(turn, made);
     }
     player.play();
+  }
+
+  private expired(feed: Feed): void {
+    if (this.closed || this.feeds.get(feed.turn) !== feed) return;
+    const dead = feed.player;
+    feed.player = null;
+    this.feeds.delete(feed.turn);
+    dead?.destroy();
+    if (this.said.has(feed.turn)) {
+      this.said.delete(feed.turn);
+      this.deps.note("No audio for this turn.");
+      return;
+    }
+    this.said.add(feed.turn);
+    this.conn.say(feed.turn);
   }
 
   private key(turn: number): string {
@@ -117,13 +164,16 @@ export class VoiceHub {
     return this.aria + ":" + turn;
   }
 
-  private mount(feed: Feed, slot: HTMLElement): VocePlayer {
+  private mount(feed: Feed, slot: HTMLElement, audioId = ""): VocePlayer {
     const player = this.deps.voce.create(this.deps.doc, {
-      audioId: "",
+      audioId,
       src: this.deps.audioSrc,
       status: this.deps.audioStatus,
       label: "Spoken reply",
-      change: (state) => this.deps.session.clip(this.active(feed.turn), ACTIVE.has(state)),
+      change: (state) => {
+        this.deps.session.clip(this.active(feed.turn), ACTIVE.has(state));
+        if (state === "expired") this.expired(feed);
+      },
     });
     player.el.setAttribute("data-for", String(feed.turn));
     slot.appendChild(player.el);
@@ -143,12 +193,14 @@ export class VoiceHub {
   }
 
   private start(e: SpeechStart): void {
+    if (!e.say && !this.voiceOn) return;
     const old = this.feeds.get(e.turn);
     if (old && !old.ended && !old.cancelled) return;
     old?.player?.destroy();
     const feed = new Feed(e.turn);
     this.feeds.set(e.turn, feed);
-    this.deps.session.arrive({ key: this.active(e.turn), release: () => feed.open() });
+    if (e.say) feed.open();
+    else this.deps.session.arrive({ key: this.active(e.turn), release: () => feed.open() });
     feed.then(async () => {
       const player = await this.playerFor(feed, e.node);
       if (!player || feed.cancelled) return;

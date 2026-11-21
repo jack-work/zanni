@@ -5,6 +5,7 @@ import { useLinger } from "../lib/motion";
 import { clipKey, sheetActions, type SheetContext, type SheetTarget } from "../lib/sheet";
 import { retranscribe } from "../lib/stt";
 import { voce, type VocePlayer } from "../lib/zanni";
+import { replayAtom } from "../state/audio";
 import { bootAtom } from "../state/boot";
 import { draftAtom, keyOf } from "../state/composer";
 import { closeSheetAtom, sheetAtom } from "../state/sheet";
@@ -23,6 +24,7 @@ export function Sheet() {
 
 function SheetBody({ target, leaving }: { target: SheetTarget; leaving: boolean }) {
   const close = useSetAtom(closeSheetAtom);
+  const playInPlace = useSetAtom(replayAtom);
   const setDraft = useSetAtom(draftAtom(keyOf(target.store, target.aria)));
   const { audioUrl, sttUrl } = useAtomValue(bootAtom);
   const [note, setNote] = useState("");
@@ -64,6 +66,10 @@ function SheetBody({ target, leaving }: { target: SheetTarget; leaving: boolean 
       made.end(key);
       made.play();
       player.current = made;
+    },
+    playTurn: (turn) => {
+      playInPlace(turn);
+      close();
     },
     say: setNote,
     show: setResult,

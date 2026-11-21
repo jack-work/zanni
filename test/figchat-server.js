@@ -9,7 +9,8 @@ const speech = require('../assets/figchat/speech.js');
 const dir = process.argv[2];
 const step = process.argv[3] ? Number(process.argv[3]) : 15;
 const core = mock.create({ step, pageBytes: 3000 });
-const seen = { upgrades: 0, refused: 0, audio: 0, stt: [], retranscribed: [] };
+const seen = { upgrades: 0, refused: 0, audio: 0, stt: [], retranscribed: [], says: [] };
+const expired = new Set([5, 6]);
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.woff2': 'font/woff2', '.json': 'application/json' };
 const csp = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; media-src 'self' blob:; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
@@ -29,7 +30,7 @@ const server = http.createServer((req, res) => {
   if (url.pathname.startsWith('/chat/assets/')) { file(res, url.pathname.slice('/chat/assets/'.length), { 'Cache-Control': 'private, no-cache' }); return; }
   if (url.pathname === '/__state') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ ids: core.ids, sent: core.sent || [], interrupts: core.interrupts || [], dropped: core.dropped, upgrades: seen.upgrades, audio: seen.audio, stt: seen.stt, retranscribed: seen.retranscribed, calls: core.calls.map((c) => c.method) }));
+    res.end(JSON.stringify({ ids: core.ids, sent: core.sent || [], interrupts: core.interrupts || [], dropped: core.dropped, upgrades: seen.upgrades, audio: seen.audio, stt: seen.stt, retranscribed: seen.retranscribed, says: seen.says, calls: core.calls.map((c) => c.method) }));
     return;
   }
   if (url.pathname === '/__drop') {
@@ -60,6 +61,8 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (url.pathname.startsWith('/audio/key/')) {
+    const gone = /:(\d+)\/out$/.exec(decodeURIComponent(url.pathname));
+    if (gone && expired.has(Number(gone[1]))) { res.writeHead(404, { 'Cache-Control': 'private, no-store' }); res.end('gone'); return; }
     const pcm = Buffer.concat(speech.chunks('replay').map((b) => Buffer.from(b)));
     const wav = Buffer.alloc(44 + pcm.length);
     wav.write('RIFF', 0); wav.writeUInt32LE(36 + pcm.length, 4); wav.write('WAVEfmt ', 8); wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22);
@@ -148,7 +151,26 @@ function audioSocket(req, socket, aria) {
   };
   core.taps.push(tap);
   const done = () => { sockets.delete(socket); const i = core.taps.indexOf(tap); if (i >= 0) core.taps.splice(i, 1); };
-  reader(socket, (text) => { try { if (JSON.parse(text).type === 'cancel') Object.keys(turns).forEach((k) => { send({ type: 'audio.cancel', turn: Number(k), key: 'gluck/' + aria + ':' + k + '/out', why: 'client' }); delete turns[k]; }); } catch (e) {} });
+  const say = (turn) => {
+    seen.says.push(turn);
+    const key = 'gluck/' + aria + ':' + turn + '/out';
+    const t = core.arias[aria] && core.arias[aria].turns.find((x) => x.id === turn);
+    if (!t) { send({ type: 'error', turn: turn, code: 'bad-turn', text: 'no such turn' }); return; }
+    if (!t.sealed) { send({ type: 'error', turn: turn, code: 'open', text: 'the turn is still running' }); return; }
+    const node = t.nodes.findIndex((n) => n.type === 'prose' && n.markdown);
+    if (node < 0) { send({ type: 'error', turn: turn, code: 'silent', text: 'the turn has no prose' }); return; }
+    if (turn === 6) { expired.delete(6); send({ type: 'audio.stored', turn: turn, key: key }); return; }
+    const text = t.nodes[node].markdown.split(/(?<=[.!?])\s/)[0];
+    let offset = 0;
+    send({ type: 'audio.start', turn: turn, key: key, format: 'pcm', rate: 24000, bits: 16, channels: 1, node: node, cursor: turn + '.' + (node + 1), say: true });
+    speech.chunks(text).forEach((pcm) => {
+      send({ type: 'audio.chunk', turn: turn, node: node, cursor: turn + '.' + (node + 1), offset: offset, bytes: pcm.byteLength });
+      socket.write(frame(2, Buffer.from(pcm)));
+      offset += pcm.byteLength;
+    });
+    send({ type: 'audio.end', turn: turn, key: key });
+  };
+  reader(socket, (text) => { try { const msg = JSON.parse(text); if (msg.type === 'say') say(Number(msg.turn)); else if (msg.type === 'cancel') Object.keys(turns).forEach((k) => { send({ type: 'audio.cancel', turn: Number(k), key: 'gluck/' + aria + ':' + k + '/out', why: 'client' }); delete turns[k]; }); } catch (e) {} });
   socket.on('close', done);
   socket.on('error', done);
 }

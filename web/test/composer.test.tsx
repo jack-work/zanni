@@ -216,11 +216,18 @@ describe("the message sheet", () => {
     expect(document.querySelector(".fw-sheet-text")).toBeNull();
   });
 
-  it("plays the stored reply into the sheet", async () => {
-    const calls = stubFetch(() => new Response("", { status: 206 }));
+  it("plays a reply where it is drawn, by the turn's own Play, and closes", async () => {
+    stubFetch(() => new Response("", { status: 206 }));
     await tapped('.nodi-turn[data-turn="26"] .nodi-prose');
-    act(() => screen.getByText("Play").click());
-    expect(document.querySelector(".fw-sheet-player .voce")).toBeTruthy();
-    void calls;
+    act(() => (document.querySelector(".fw-sheet-act[data-action='play']") as HTMLElement).click());
+    expect(document.querySelector(".fw-sheet")).toBeNull();
+    expect(document.querySelector('.nodi-turn[data-turn="26"] .voce[data-for="26"]')).toBeTruthy();
+  });
+
+  it("plays your own clip inside the sheet", async () => {
+    stubFetch(() => new Response("", { status: 206 }));
+    await tapped('.nodi-turn[data-turn="26"] .nodi-said');
+    act(() => (document.querySelector(".fw-sheet-act[data-action='play']") as HTMLElement).click());
+    expect(document.querySelector(".fw-sheet .fw-sheet-player .voce")).toBeTruthy();
   });
 });

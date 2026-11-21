@@ -82,14 +82,14 @@ not in atoms.
   one 40px line (glyph, what is running, elapsed time, Stop, Stop all) and Send
   reads Steer. Errors and the mic's notes take that same line. A draft is kept
   per aria in localStorage, saved 400ms after typing, cleared on send.
-- Fork sits in the aria header; Fork here and Replay in each turn's action bar
+- Fork sits in the aria header; Fork here and Play in each turn's action bar
   (on hover or focus with a fine pointer, always on the last turn and on touch).
 - Adjacent thinking and tool nodes fold into one work group titled by what
   happened in it ("Explored 3 files, ran 1 command").
 - Tapping a message opens one bottom sheet. Actions are registered per message
-  kind (`lib/sheet.ts`): your message has Play (its clip, key `.../in`) and
-  Re-transcribe (`POST stt/key/<key>`, then Use text puts the result in the
-  composer); a reply has Play (`.../out`).
+  kind (`lib/sheet.ts`): your message has Play (its clip, key `.../in`, in the
+  sheet) and Re-transcribe (`POST stt/key/<key>`, then Use text puts the result
+  in the composer); a reply has Play, the same as the turn's own Play below.
 
 ## Audio
 
@@ -98,6 +98,15 @@ playing, recording, recording-with-pending. It owns `navigator.audioSession`:
 `play-and-record` while hands-free or the mic is on, `playback` otherwise.
 voce no longer touches the session.
 
+- Play on a turn replays its stored copy by key (`audio/key/<store>/<aria>:<turn>/out`).
+  When that answers 404 or 410 the player is dropped and the page asks the
+  gateway to speak the turn: `{type:"say", turn}` on `/audio/<aria>`, which opens
+  the socket for the ask. The gateway answers `audio.start` with `say: true`
+  (played like a live reply, with no ping and no hold), or `audio.stored` (play
+  the stored copy again), or `error` with `bad-turn`, `open`, `silent`, `busy` or
+  `speech`, shown on the strip for four seconds. A turn is asked once per press.
+  Live audio the gateway speaks while the voice is off is ignored; audio asked
+  for with Play is not.
 - Voice speaks replies from the gateway's `/audio/<aria>` into the prose node
   that owns them, one voce player per turn (`lib/voice-hub.ts`). voce queues:
   a reply arriving while another speaks waits its turn.
