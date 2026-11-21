@@ -29,8 +29,11 @@ export function attachmentsAtom(key: string): PrimitiveAtom<readonly Attachment[
   return a;
 }
 
-export const quaWithAttachments = (client: AriaClient, aria: string, text: string, attachments: readonly string[]): Promise<QuaResponse> =>
-  client.connection.call<QuaResponse>(ariaMethod.qua, { figaro_id: aria, text, attachments });
+export const quaWithAttachments = (client: AriaClient, aria: string, text: string, attachments: readonly string[], dictation?: string): Promise<QuaResponse> =>
+  client.connection.call<QuaResponse>(ariaMethod.qua, { figaro_id: aria, text, attachments, ...(dictation ? { dictation } : {}) });
+
+export const quaDictated = (client: AriaClient, aria: string, text: string, dictation: string): Promise<QuaResponse> =>
+  client.connection.call<QuaResponse>(ariaMethod.qua, { figaro_id: aria, text, dictation });
 
 const reason = (err: unknown): string => (err instanceof Error && err.message ? err.message : "network");
 

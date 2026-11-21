@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { clock, formatWorkedTime, groupWork, liveVerb, stepsTitle, toolKind, workOf, type Work } from "zanni-react";
 import type { Item, ToolItem, TurnModel } from "zanni-react";
 
-const tool = (node: number, name: string, extra: Partial<ToolItem> = {}): ToolItem => ({ key: "n" + node, kind: "tool", node, settled: true, name, status: "ok", summary: "", args: "", input: "", output: "", outputBase: 0, ms: 0, ...extra });
+const tool = (node: number, name: string, extra: Partial<ToolItem> = {}): ToolItem => ({ key: "n" + node, kind: "tool", node, settled: true, name, status: "ok", summary: "", label: "", head: "", body: undefined, diff: false, args: "", input: "", output: "", outputBase: 0, ms: 0, ...extra });
 const think = (node: number): Item => ({ key: "n" + node, kind: "thinking", node, settled: true, text: "hmm" });
 const prose = (node: number): Item => ({ key: "n" + node, kind: "prose", node, settled: true, text: "words" });
 

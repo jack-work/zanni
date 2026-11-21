@@ -68,6 +68,14 @@ class Network(Campaign):
                 except Exception:
                     page.locator(".zr-input").fill("")
             page.wait_for_timeout(120)
+        elif k == "bigsend":
+            page.locator(".zr-input").fill("a" * a["chars"])
+            if run.profile == "desktop":
+                page.keyboard.press("Enter")
+            else:
+                page.locator(".zr-send").click(timeout=1500)
+            run.state["big"] = a["chars"]
+            page.wait_for_timeout(1500)
         elif k == "wait":
             page.wait_for_timeout(a["ms"])
         elif k == "fault":
@@ -98,7 +106,7 @@ class Network(Campaign):
         truth = run.stack.turns()
         if not truth:
             return True
-        drawn = {t["no"] for t in run.dom_turns()}
+        drawn = {t["no"] for t in run.dom_turns(peek=True)}
         want = [t["id"] for t in truth if t["id"] > run.base]
         if all(i in drawn for i in want):
             return True
@@ -119,6 +127,14 @@ class Network(Campaign):
             run.page.wait_for_timeout(250)
 
     def extra_quiescent(self, run):
+        big = run.state.get("big")
+        if big:
+            shown = run.page.evaluate("document.body.innerText")
+            if "1048576" not in shown:
+                raise Failure("limit-unnamed", "a %d character prompt went over the gateway limit and the page never says what the limit is" % big)
+            sent_big = [x for x in run.stack.state()["sent"] if len(x["text"]) >= big]
+            if sent_big:
+                raise Failure("limit-passed", "a prompt over the gateway limit reached the door")
         sent = [s["text"] for s in run.stack.state()["sent"]]
         here = run.composer_text() or ""
         for text in run.state["sends"]:
@@ -128,7 +144,7 @@ class Network(Campaign):
             if n == 0 and text != here and text not in run.state["retained"]:
                 raise Failure("lost-send", "%s was sent from the page and never reached the door, and is not in the composer" % clip(text))
         truth = run.stack.turns()
-        drawn = {t["no"]: t for t in run.dom_turns(full=True) if t["no"] is not None}
+        drawn = {t["no"]: t for t in run.dom_turns() if t["no"] is not None}
         for t in [t for t in truth if t["id"] > run.base]:
             d = drawn.get(t["id"])
             if d is None:

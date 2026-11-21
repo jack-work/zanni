@@ -33,6 +33,8 @@ export { InputView, ProseView, SteeringView, ThinkingView, ToolView, TurnView, U
 export type { ProseProps, Speaking, TapKind, TranscriptHooks, TurnViewProps } from "./transcript";
 export { clock, formatWorkedTime, groupWork, liveVerb, stepsTitle, toolKind, workOf } from "./work";
 export type { Row, ToolKind, Work, Work_ } from "./work";
+export { DELTA_KEY_CAP, DELTA_VALUE_FLOOR, FORKED_FROM_KEYS, cellFull, cellLine, deltaRowsOf, flatten, headLine, isForkKey, keyColumns, rowFull, sanitize, valueLines } from "./deltas";
+export type { WireDelta } from "./deltas";
 export { nodi, speech, voce } from "./zanni";
 export type * from "./nodi-types";
 export { NEAR_BOTTOM, distanceFromBottom, scrollRoot, scrollToBottom, useFollow } from "./follow";

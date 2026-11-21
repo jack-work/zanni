@@ -277,6 +277,26 @@ async function test(name, fn) {
     assert.ok(quiet.length >= 24 && quiet.every((l) => l === 0), 'silence reads as level zero');
   });
 
+  await test('pcm worklet: tones above 8 kHz are filtered out before 48 kHz drops to 16 kHz, not folded into the band', () => {
+    const { Framer } = require('../assets/figchat/pcm-worklet.js');
+    const rms = (rate, hz) => {
+      const frames = [];
+      const f = new Framer(rate, (buf) => frames.push(new Int16Array(buf)));
+      let t = 0;
+      for (let k = 0; k < Math.floor(rate / 128); k++) {
+        const blk = new Float32Array(128);
+        for (let i = 0; i < 128; i++) blk[i] = 0.5 * Math.sin(2 * Math.PI * hz * (t++) / rate);
+        f.push(blk);
+      }
+      const all = frames.slice(2).flatMap((x) => [...x]);
+      return Math.sqrt(all.reduce((a, v) => a + (v / 32768) * (v / 32768), 0) / all.length);
+    };
+    const pass = rms(48000, 1000);
+    assert.ok(pass > 0.3, 'a 1 kHz tone passes at about its level: ' + pass);
+    for (const hz of [10000, 15000, 20000]) assert.ok(rms(48000, hz) < pass * 0.05, hz + ' Hz folds back at ' + rms(48000, hz) + ' against ' + pass);
+    assert.ok(rms(48000, 6000) > pass * 0.7, '6 kHz stays in the band');
+  });
+
   await test('vendored client: SOURCE.json names the figaro-forms revision and hash of the tarball, and the lockfile points at it with no integrity on any file: entry, which prefetch-npm-deps would look up in an npm cache', () => {
     const web = path.join(__dirname, '..', 'web');
     const src = JSON.parse(fs.readFileSync(path.join(web, 'vendor', 'SOURCE.json'), 'utf8'));
@@ -287,6 +307,11 @@ async function test(name, fn) {
     assert.strictEqual(lock.packages['node_modules/figaro-forms'].resolved, 'file:vendor/' + src.file);
     const pinned = Object.entries(lock.packages).filter(([, e]) => typeof e.resolved === 'string' && e.resolved.startsWith('file:') && 'integrity' in e).map(([k]) => k);
     assert.deepStrictEqual(pinned, []);
+  });
+
+  await test('vendor script: bin/figchat-vendor-forms parses and prints its usage', () => {
+    const out = require('child_process').execFileSync(process.execPath, [path.join(__dirname, '..', 'bin', 'figchat-vendor-forms'), '--help'], { encoding: 'utf8' });
+    assert.ok(out.startsWith('usage: figchat-vendor-forms REF'));
   });
 
   process.stdout.write(failed ? failed + ' failed\n' : 'figchat: all passed\n');

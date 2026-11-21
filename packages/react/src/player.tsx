@@ -11,13 +11,16 @@ export interface PlayerIslandProps {
   src: (key: string) => string;
   label?: string;
   className?: string;
+  done?: () => void;
 }
 
-export function PlayerIsland({ request, src, label = "Message audio", className }: PlayerIslandProps) {
+export function PlayerIsland({ request, src, label = "Message audio", className, done }: PlayerIslandProps) {
   const slot = useRef<HTMLDivElement | null>(null);
   const player = useRef<VocePlayer | null>(null);
   const srcRef = useRef(src);
   srcRef.current = src;
+  const doneRef = useRef(done);
+  doneRef.current = done;
 
   useEffect(() => {
     if (!request) return;
@@ -28,7 +31,10 @@ export function PlayerIsland({ request, src, label = "Message audio", className 
       src: (k: string) => srcRef.current(k),
       status: (k: string) => window.fetch(srcRef.current(k), { method: "GET", credentials: "same-origin", cache: "no-store", headers: traceHeaders({ Range: "bytes=0-0" }) }).then((r) => r.status),
       label,
-      change: settleSpeakFor,
+      change: (state: string, event: string) => {
+        settleSpeakFor(state);
+        if (event === "ended" || state === "error" || state === "expired") doneRef.current?.();
+      },
     });
     slot.current?.replaceChildren(made.el);
     made.end(request.key);

@@ -21,20 +21,36 @@ class Stack:
     dials the mock door; fault ops go to the gateway's --fault-socket.
     """
 
-    def __init__(self, bundle, step=15, gateway=None, fixture=None):
+    def __init__(self, bundle, step=15, gateway=None, fixture=None, speech=False, door_flags=()):
         self.tmp = tempfile.mkdtemp(prefix="figfuzz-")
         env = dict(os.environ, FIGCHAT_BARE_ORIGIN="1")
         if fixture:
             env["FIGCHAT_FIXTURE"] = fixture
-        self.door = subprocess.Popen(["node", os.path.join(TEST, "figchat-server.js"), bundle, str(step)], stdout=subprocess.PIPE, text=True, env=env)
+        self.door = subprocess.Popen(["node", os.path.join(TEST, "figchat-server.js"), bundle, str(step), *map(str, door_flags)], stdout=subprocess.PIPE, text=True, env=env)
         self.door_port = int(self.door.stdout.readline())
         self.base = "http://127.0.0.1:%d" % self.door_port
         self.gateway = None
         self.edge = None
         self.faults = None
+        self.speech = None
+        self.speech_socket = os.path.join(self.tmp, "no-speech.sock")
+        if speech:
+            self._speech()
         self.url = self.base + "/chat/"
         if gateway:
             self._gateway(bundle, gateway)
+
+    def _speech(self):
+        kit = os.environ.get("FIGFUZZ_SPEECH_KIT")
+        if not kit:
+            raise RuntimeError("FIGFUZZ_SPEECH_KIT must name a directory holding figaro-forms packages/bridge/test/fake-speech.ts and a node_modules with ws")
+        self.speech = subprocess.Popen(["node", os.path.join(HERE, "speech.mjs"), kit, ""], stdout=subprocess.PIPE, text=True)
+        self.speech_socket, port = self.speech.stdout.readline().split()
+        self.speech_port = int(port)
+
+    def speech_call(self, path="/state", body=None):
+        req = urllib.request.Request("http://127.0.0.1:%d%s" % (self.speech_port, path), data=json.dumps(body).encode() if body is not None else None, method="POST" if body is not None else "GET")
+        return json.load(urllib.request.urlopen(req, timeout=5))
 
     def _gateway(self, bundle, binary):
         secret_file = os.path.join(self.tmp, "edge")
@@ -48,7 +64,7 @@ class Stack:
         self.faults = os.path.join(self.tmp, "faults.sock")
         self.gateway_log = open(os.path.join(self.tmp, "gateway.log"), "w")
         self.gateway = subprocess.Popen(
-            [binary, "--door-url", "ws://127.0.0.1:%d/door" % self.door_port, "--speech-socket", os.path.join(self.tmp, "no-speech.sock"),
+            [binary, "--door-url", "ws://127.0.0.1:%d/door" % self.door_port, "--speech-socket", self.speech_socket,
              "--admin", ADMIN, "--store", "gluck", "--port", str(port), "--peer", "127.0.0.1", "--edge-secret-file", secret_file,
              "--fault-socket", self.faults, "--no-attach"],
             stdout=self.gateway_log, stderr=subprocess.STDOUT, env=dict(os.environ, CREDENTIALS_DIRECTORY=self.tmp))
@@ -96,10 +112,10 @@ class Stack:
         return open(self.gateway_log.name).read()
 
     def stop(self):
-        for p in (self.edge, self.gateway, self.door):
+        for p in (self.edge, self.gateway, self.speech, self.door):
             if p:
                 p.terminate()
-        for p in (self.edge, self.gateway, self.door):
+        for p in (self.edge, self.gateway, self.speech, self.door):
             if p:
                 try:
                     p.wait(5)

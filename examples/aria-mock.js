@@ -147,12 +147,27 @@
     } else {
     add(ids.main, { state: 'idle', mantra: 'Zanni: ship ordine & Sugiyama layered layout', roles: ['@zanni'], handle: 'zanni' }, seedMain(base - Math.max(0, history - 26) * 61000, history));
     add(ids.lane, { state: 'idle', mantra: 'Frontend Engineer / figchat web', parent: ids.main, roles: ['@lane'] }, seedSmall(4, base, 1));
+    var self = aid(2);
+    var deltas = {};
+    deltas[self + '.phase'] = { form: self, kind: 'bound', event: 'set', prev: 'seed', value: 'canary' };
+    deltas[self + '.mantra'] = { form: self, kind: 'bound', event: 'set', prev: new Array(61).join('o'), value: new Array(41).join('n') };
+    deltas[self + '.credo'] = { form: self, kind: 'bound', event: 'set', value: 'one\ntwo\nthree' };
+    deltas['@f1.status'] = { form: '@f1', kind: 'studied', event: 'set', prev: 'open', value: 'merged' };
+    deltas['@f1.brief'] = { form: '@f1', kind: 'studied', event: 'removed', prev: 'ship it' };
+    deltas['@f2'] = { form: '@f2', kind: 'studied', event: 'deleted' };
+    deltas['@r1.target-aria'] = { form: '@r1', kind: 'role', event: 'set', prev: aid(3), value: aid(4) };
+    core.arias[ids.lane].turns[1].formDeltas = deltas;
     add(ids.spain, { state: 'dormant', mantra: 'Backend: spain edge for fig.kelliher.info', parent: ids.main }, seedSmall(2, base, 2));
     add(aid(6), { state: 'idle', mantra: 'Review: livedoc settle', parent: ids.lane }, seedSmall(2, base, 3));
     add(ids.engineer, { state: 'idle', mantra: 'Engineer: aria stream and gateway', roles: ['@engineer'] }, seedSmall(5, base, 4));
     add(ids.forms, { state: 'idle', mantra: 'forms-aria lane', parent: ids.engineer }, seedSmall(3, base, 5));
     for (var k = 7; k <= 13; k++) add(aid(k), { state: 'idle', mantra: 'Scratch ' + (k - 6), parent: k % 2 ? ids.engineer : undefined }, seedSmall(1 + (k % 3), base, k));
     core.arias[aid(13)].row.mantra = EVIL;
+    for (var c = 0; c < (o.figaros || 0); c++) {
+      var h = (0xfa000000 + c).toString(16);
+      var parent = c % 5 === 0 ? undefined : core.order[core.order.length - 1 - (c % 3)];
+      add(h + h + h + h, { state: c % 7 === 0 ? 'dormant' : 'idle', mantra: 'Crowd ' + c, parent: parent }, seedSmall(1 + (c % 3), base, c));
+    }
     }
 
     var held = {}, heldSeq = 0, ATTACH_TTL = 15 * 60 * 1000;
@@ -213,6 +228,7 @@
       var part = { turn: t.id, inquiry: t.inquiry, sealed: t.sealed, from: from || 0, at: t.at };
       if (t.inquiry_segments) part.inquiry_segments = clone(t.inquiry_segments);
       if (t.formDeltas) part.formDeltas = clone(t.formDeltas);
+      if (t.forked_from) part.forked_from = t.forked_from;
       var nodes = t.nodes.slice(from || 0).map(function (n, i) { return Object.assign({ id: t.id + '.' + ((from || 0) + i) }, clone(n)); });
       if (nodes.length) part.nodes = nodes;
       if (!t.sealed && nodes.length) part.live = { from: 0, v: t.lastV };
@@ -397,6 +413,7 @@
       if (a.forkFresh) {
         t.formDeltas = {};
         t.formDeltas[a.row.id + '.system.forked_from'] = { form: a.row.id, kind: 'bound', event: 'set', value: a.forkedFrom };
+        t.forked_from = a.forkedFrom;
         a.forkFresh = false;
       }
       a.turns.push(t);
@@ -404,6 +421,7 @@
       var run = a.run = { turn: t, script: [], timer: null, failure: '' };
       var opened = { turn: t.id, inquiry: text, sealed: false, from: 0, at: t.at };
       if (t.formDeltas) opened.formDeltas = clone(t.formDeltas);
+      if (t.forked_from) opened.forked_from = t.forked_from;
       pushPage(a.row.id, opened);
       tell({ type: 'begin', aria: a.row.id, turn: t.id });
       run.script = plan(a, t, text, attached || []);

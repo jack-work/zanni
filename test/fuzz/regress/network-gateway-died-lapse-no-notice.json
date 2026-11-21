@@ -3,8 +3,7 @@
  "seed": 1532935500,
  "profile": "desktop",
  "invariant": "gateway-died",
- "message": "one door.lapse without notice, with a page attached, crashes figaro-gateway: an uncaught 'socket closed' thrown from a Promise executor in handover.js (faults.js:126)",
- "owner": "Backend (figaro-forms packages/bridge handover.ts)",
+ "message": "one door.lapse without notice, with a page attached, used to crash figaro-gateway (uncaught 'socket closed' in handover.js); fixed in figaro-forms v0.17.1",
  "status": "pass",
  "strict": [
   "lapse-no-notice"

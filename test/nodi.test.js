@@ -26,6 +26,14 @@ async function test(name, fn) {
     assert.ok(m[0].items.every((i) => i.settled));
   });
 
+  await test('model: a labelled tool whose head argument is absent heads with its first argument by name, as the pager picks it', () => {
+    const head = (node) => nodi.model({ closed: [msg(1, [Object.assign({ type: 'tool', name: 'process', status: 'ok', summary: 'action=list' }, node)], { inquiry: 'q' })] }, {})[0].items[0].head;
+    assert.strictEqual(head({ label: '$', head_arg: 'command', args: { action: 'list' } }), 'list');
+    assert.strictEqual(head({ label: '$', head_arg: 'command', args: { command: 'ls', action: 'x' } }), 'ls');
+    assert.strictEqual(head({ label: '$', head_arg: 'command', args: { zeta: 'z', beta: 'b' } }), 'b');
+    assert.strictEqual(head({ args: { action: 'list' } }), '');
+  });
+
   await test('model: error and interrupted ends are kept, a plain stop is not', () => {
     const one = (done) => nodi.model({ closed: [msg(1, [{ type: 'prose', markdown: 'x' }], { inquiry: 'q' })] }, { 1: done })[0].end;
     assert.deepStrictEqual(one({ reason: 'error: gateway: HTTP 400' }), { kind: 'error', text: 'gateway: HTTP 400' });

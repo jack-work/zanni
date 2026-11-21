@@ -81,6 +81,10 @@ details[open] > .nodi-sum > .nodi-caret { rotate: 90deg; }
 .nodi-tool-body { display: grid; gap: var(--z-space-2, 4px); padding: var(--z-space-2, 4px) 0 var(--z-space-3, 8px); min-width: 0; }
 .nodi-label, .nodi-clipped { font: 400 1.0625rem / 1.1 var(--nodi-mono); letter-spacing: 0.04em; color: var(--z-muted); }
 .nodi-tool-args, .nodi-tool-out { max-height: 20rem; overflow: auto; }
+.nodi-diff-line[data-side="add"] { color: var(--z-ok, inherit); }
+.nodi-diff-line[data-side="del"] { color: var(--z-fail, inherit); }
+.nodi-diff-line[data-side="hunk"] { color: var(--z-accent, inherit); }
+.nodi-diff-line[data-side="file"] { color: var(--z-ink); font-weight: 600; }
 .nodi-unknown { padding: var(--z-space-3, 8px); border: 1px dashed var(--z-line); min-width: 0; display: grid; gap: var(--z-space-2, 4px); }
 .nodi-unknown .nodi-pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 

@@ -41,7 +41,7 @@ class Run:
     def __init__(self, browser, bundle, campaign, profile, gateway=None):
         self.campaign = campaign
         self.profile = profile
-        self.stack = Stack(bundle, step=campaign.step, gateway=gateway if campaign.needs_gateway else None)
+        self.stack = Stack(bundle, step=campaign.step, gateway=gateway if campaign.needs_gateway else None, speech=campaign.needs_speech, door_flags=campaign.door_flags)
         opts = dict(PROFILES[profile])
         if profile == "phone":
             opts["reduced_motion"] = "no-preference"
@@ -51,6 +51,8 @@ class Run:
         except Exception:
             pass
         self.ctx.add_init_script(INIT)
+        if campaign.init_script:
+            self.ctx.add_init_script(campaign.init_script)
         self.page = self.ctx.new_page()
         self.console = []
         self.page.on("console", lambda m: self.console.append(m.text) if m.type == "error" else None)
@@ -82,13 +84,13 @@ class Run:
     def composer_text(self):
         return self.page.evaluate("document.querySelector('.zr-input') ? document.querySelector('.zr-input').value : null")
 
-    def dom_turns(self, full=False):
-        return self.page.evaluate("""async (full) => {
+    def dom_turns(self, peek=False):
+        return self.page.evaluate("""async (peek) => {
           const out = [];
           for (const n of [...document.querySelectorAll('.nodi-turn')].map((t) => t.dataset.turn)) {
             let t = document.querySelector('.nodi-turn[data-turn="' + n + '"]');
             if (!t) continue;
-            for (let tries = 0; full && t.hasAttribute('data-parked') && tries < 15; tries++) {
+            for (let tries = 0; !peek && t.hasAttribute('data-parked') && tries < 15; tries++) {
               t.scrollIntoView({ block: 'center' });
               await new Promise((r) => setTimeout(r, 200));
               t = document.querySelector('.nodi-turn[data-turn="' + n + '"]');
@@ -98,7 +100,7 @@ class Run:
                        prose: t.querySelectorAll('.nodi-prose').length, thinking: t.querySelectorAll('.nodi-thinking').length });
           }
           return out;
-        }""", full)
+        }""", peek)
 
     def pit_facts(self):
         return self.page.evaluate("""() => {
@@ -178,7 +180,7 @@ def check_always(run):
     run.navigated()
     if run.campaign.extra_always:
         run.campaign.extra_always(run)
-    turns = run.dom_turns()
+    turns = run.dom_turns(peek=True)
     nos = [t["no"] for t in turns if t["no"] is not None]
     if len(nos) != len(set(nos)):
         dup = sorted(n for n in set(nos) if nos.count(n) > 1)
@@ -204,7 +206,7 @@ def check_quiescent(run):
         run.campaign.extra_quiescent(run)
         return
     truth = run.stack.turns(run.aria())
-    drawn = {t["no"]: t for t in run.dom_turns(full=True) if t["no"] is not None}
+    drawn = {t["no"]: t for t in run.dom_turns() if t["no"] is not None}
     sent = run.stack.state()["sent"]
     mine = [t for t in truth if t["id"] > run.base]
     have = sorted([norm(t["inquiry"]) for t in mine] + [norm(n["markdown"]) for t in mine for n in t["nodes"] if n["type"] == "steering"])
@@ -235,6 +237,9 @@ class Campaign:
     step = 15
     profiles = ("phone", "desktop")
     needs_gateway = False
+    needs_speech = False
+    door_flags = ()
+    init_script = None
     extra_quiescent = None
     extra_always = None
     tracks_composer = True
@@ -284,7 +289,7 @@ def execute(browser, bundle, campaign, profile, actions, gateway=None, check_eve
         run.stop()
 
 
-def shrink(browser, bundle, campaign, profile, actions, invariant, gateway, budget_s=240, log=print):
+def shrink(browser, bundle, campaign, profile, actions, invariant, gateway, budget_s=240, log=print, strict=()):
     end = time.time() + budget_s
     runs = [0]
 
@@ -292,7 +297,7 @@ def shrink(browser, bundle, campaign, profile, actions, invariant, gateway, budg
         if time.time() > end or not candidate:
             return False
         runs[0] += 1
-        f = execute(browser, bundle, campaign, profile, candidate, gateway)
+        f = execute(browser, bundle, campaign, profile, candidate, gateway, strict=strict)
         return f is not None and f.invariant == invariant
 
     cur = list(actions)

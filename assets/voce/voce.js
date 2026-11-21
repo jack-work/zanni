@@ -150,7 +150,7 @@
   function engine(win) {
     var e = engines.get(win);
     if (e) return e;
-    e = { ctx: null, out: null, current: null };
+    e = { ctx: null, out: null, current: null, held: false };
     e.unlock = function () {
       var AC = win.AudioContext || win.webkitAudioContext;
       if (!AC) return null;
@@ -174,7 +174,15 @@
       if (old && old !== player) old.yield();
     };
     e.busy = function (player) {
-      return !!e.current && e.current !== player && e.current.busy();
+      return e.held || (!!e.current && e.current !== player && e.current.busy());
+    };
+    e.hold = function (on) {
+      e.held = !!on;
+      if (e.held) {
+        if (e.current) e.current.yield();
+        return;
+      }
+      while (!e.current && !e.held && e.waiting.length) e.waiting.shift().resume();
     };
     e.wait = function (player) {
       if (e.waiting.indexOf(player) < 0) e.waiting.push(player);
@@ -186,7 +194,7 @@
     e.release = function (player) {
       if (e.current === player) e.current = null;
       e.drop(player);
-      while (!e.current && e.waiting.length) e.waiting.shift().resume();
+      while (!e.current && !e.held && e.waiting.length) e.waiting.shift().resume();
     };
     engines.set(win, e);
     return e;
@@ -194,6 +202,10 @@
 
   function unlock(win) {
     return engine(win || self).unlock();
+  }
+
+  function record(win, on) {
+    engine(win || self).hold(on);
   }
 
   var NOTES = { live: 'speaking', draining: 'speaking', expired: 'audio expired', error: 'audio unavailable', lost: 'audio unavailable' };
@@ -494,6 +506,7 @@
     queue: queue,
     engine: engine,
     unlock: unlock,
+    record: record,
     create: create
   };
 }));

@@ -1,0 +1,33 @@
+{
+ "campaign": "network",
+ "seed": 1532935504,
+ "profile": "phone",
+ "invariant": "lost-turn",
+ "message": "turn 27 (\"net4 [plain] short\") is on the door and not on the page",
+ "status": "pass",
+ "strict": [
+  "lapse-no-notice"
+ ],
+ "actions": [
+  {
+   "k": "send",
+   "n": 15,
+   "kind": "[plain]"
+  },
+  {
+   "k": "send",
+   "n": 16,
+   "kind": "[long]"
+  },
+  {
+   "k": "send",
+   "n": 17,
+   "kind": "[plain] short"
+  },
+  {
+   "k": "send",
+   "n": 18,
+   "kind": "[tool]"
+  }
+ ]
+}

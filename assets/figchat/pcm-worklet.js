@@ -9,34 +9,53 @@
   var FRAME_MS = 40;
   var FRAME_SAMPLES = TARGET_RATE * FRAME_MS / 1000;
   var LEVEL_GAIN = 6;
+  var CUTOFF = 0.9;
+  var LOBES = 4;
 
   function Framer(sourceRate, emit) {
     this.step = sourceRate / TARGET_RATE;
     this.emit = emit;
+    this.cut = this.step > 1 ? CUTOFF / this.step : 1;
+    this.reach = this.step > 1 ? Math.ceil(LOBES / this.cut) : 1;
+    this.buf = new Float32Array(0);
     this.pos = 0;
-    this.last = 0;
-    this.has = false;
     this.frame = new Int16Array(FRAME_SAMPLES);
     this.n = 0;
     this.energy = 0;
   }
 
-  Framer.prototype.push = function (block) {
-    var buf = block;
-    if (this.has) {
-      buf = new Float32Array(block.length + 1);
-      buf[0] = this.last;
-      buf.set(block, 1);
+  Framer.prototype.sample = function (pos) {
+    var buf = this.buf;
+    var i0 = Math.floor(pos);
+    var frac = pos - i0;
+    if (this.step <= 1) return buf[i0] + (buf[i0 + 1] - buf[i0]) * frac;
+    var sum = 0;
+    var norm = 0;
+    for (var k = -this.reach + 1; k <= this.reach; k++) {
+      var t = k - frac;
+      var x = t * this.cut;
+      var w = x === 0 ? 1 : Math.sin(Math.PI * x) / (Math.PI * x);
+      w *= 0.5 + 0.5 * Math.cos(Math.PI * t / this.reach);
+      norm += w;
+      var at = i0 + k;
+      if (at >= 0) sum += w * buf[at];
     }
+    return sum / norm;
+  };
+
+  Framer.prototype.push = function (block) {
+    var buf = new Float32Array(this.buf.length + block.length);
+    buf.set(this.buf, 0);
+    buf.set(block, this.buf.length);
+    this.buf = buf;
     var pos = this.pos;
-    while (pos + 1 < buf.length) {
-      var i0 = Math.floor(pos);
-      this.put(buf[i0] + (buf[i0 + 1] - buf[i0]) * (pos - i0));
+    while (pos + this.reach < buf.length - 1) {
+      this.put(this.sample(pos));
       pos += this.step;
     }
-    this.pos = pos - (buf.length - 1);
-    this.last = buf[buf.length - 1];
-    this.has = true;
+    var drop = Math.max(0, Math.floor(pos) - this.reach);
+    this.buf = buf.slice(drop);
+    this.pos = pos - drop;
   };
 
   Framer.prototype.put = function (v) {
