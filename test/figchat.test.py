@@ -524,33 +524,34 @@ try:
 
         def finger(pg, cdp, phone):
             class Finger:
-                clock = time.time()
-
-                def send(self, kind, y, down=True):
-                    if phone:
-                        cdp.send("Input.dispatchTouchEvent", {"type": kind, "touchPoints": [{"x": self.x, "y": y}] if down else [], "timestamp": self.clock})
-                    else:
-                        cdp.send("Input.dispatchMouseEvent", {"type": kind, "x": self.x, "y": y, "button": "left" if kind != "mouseMoved" else "none", "buttons": 1 if kind != "mouseReleased" else 0, "clickCount": 1 if kind != "mouseMoved" else 0, "timestamp": self.clock})
-
                 def down(self, x, y):
                     self.x, self.y = x, y
-                    self.clock += 1
-                    self.send("touchStart" if phone else "mousePressed", y)
+                    if phone:
+                        cdp.send("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": [{"x": x, "y": y}]})
+                    else:
+                        pg.mouse.move(x, y)
+                        pg.mouse.down()
 
                 def move(self, y, steps=8, gap=30):
                     y0 = self.y
                     for i in range(1, steps + 1):
-                        self.clock += gap / 1000.0
-                        self.send("touchMove" if phone else "mouseMoved", y0 + (y - y0) * i / steps)
-                        pg.wait_for_timeout(20)
+                        yy = y0 + (y - y0) * i / steps
+                        if phone:
+                            cdp.send("Input.dispatchTouchEvent", {"type": "touchMove", "touchPoints": [{"x": self.x, "y": yy}]})
+                        else:
+                            pg.mouse.move(self.x, yy)
+                        if gap:
+                            pg.wait_for_timeout(gap)
                     self.y = y
 
                 def hold(self, ms=160):
-                    self.clock += ms / 1000.0
+                    pg.wait_for_timeout(ms)
 
                 def up(self):
-                    self.clock += 0.001
-                    self.send("touchEnd" if phone else "mouseReleased", self.y, down=False)
+                    if phone:
+                        cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
+                    else:
+                        pg.mouse.up()
             return Finger()
 
         PIT = "() => { const p = document.querySelector('.zr-pit'); if (!p) return null; const b = p.getBoundingClientRect(); return { snap: p.dataset.snap, dragging: p.hasAttribute('data-dragging'), top: b.top, height: b.height, bottom: b.bottom, left: b.left, width: b.width }; }"
@@ -591,7 +592,7 @@ try:
             gx, gy = centre(grip)
             f.down(gx, gy)
             f.move(height * 0.5)
-            assert pg.evaluate(PIT)["dragging"], "the pit follows the finger"
+            assert pg.evaluate(PIT) and pg.evaluate(PIT)["dragging"], "the pit follows the finger at %d" % width
             mid = pg.evaluate(PIT)
             assert abs(mid["top"] - height * 0.5) <= 2, "the pit's top edge is under the finger: %s" % mid
             f.hold()
@@ -641,22 +642,22 @@ try:
 
             gx, gy = centre(grip)
             f.down(gx, gy)
-            f.move(gy - 150, steps=5, gap=10)
+            f.move(gy - 150, steps=5, gap=0)
             f.up()
             pit_at(pg, "half", half, "a flick up from the composer edge lands on half")
             hx, hy = centre(pg.locator(".zr-pit-handle"))
             f.down(hx, hy)
-            f.move(hy - 60, steps=4, gap=10)
+            f.move(hy - 150, steps=4, gap=0)
             f.up()
             pit_at(pg, "full", full, "a flick up from half lands on full")
             hx, hy = centre(pg.locator(".zr-pit-handle"))
             f.down(hx, hy)
-            f.move(hy + 120, steps=4, gap=10)
+            f.move(hy + 200, steps=4, gap=0)
             f.up()
             pit_at(pg, "half", half, "a flick down from full lands on half")
             hx, hy = centre(pg.locator(".zr-pit-handle"))
             f.down(hx, hy)
-            f.move(hy + 120, steps=4, gap=10)
+            f.move(hy + 200, steps=4, gap=0)
             f.up()
             pit_gone(pg, "a flick down from half closes")
 
