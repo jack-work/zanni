@@ -317,6 +317,7 @@ try:
 
         def send(pg, text):
             pg.locator(".zr-input").fill(text)
+            pg.wait_for_timeout(450)
             pg.locator(".zr-send").click()
 
         def running(pg):
