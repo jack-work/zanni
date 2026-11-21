@@ -1,7 +1,7 @@
 import { atom, type PrimitiveAtom } from "jotai";
 import { boundFormWriterOf } from "figaro-forms/aria";
 import { boundFormAtom } from "figaro-forms/aria/jotai";
-import { pagerCommand, webCommands } from "figaro-forms/commands";
+import { pagerWebCommand, webCommands, type WebCommandChoice } from "figaro-forms/catalog";
 import { forkSpecOf, keysOf, pathOf, planOf, refusalOf, shown, type Plan, type Sources } from "../lib/command";
 import { parseDraft, pathProblem, refusalLine } from "../lib/form-edit";
 import type { PitView } from "../lib/pit-rows";
@@ -132,7 +132,7 @@ export const runCommandAtom = atom(null, async (get, set, line: string): Promise
   switch (doc.name) {
     case "help": {
       if (!args[0]) return ok("", "help");
-      const word = pagerCommand(args[0]);
+      const word = pagerWebCommand(args[0]);
       if (!word) return fail(args[0] + ": no such command.");
       const why = refusalOf(word);
       return ok((word.usage ?? word.name) + "  " + word.help + (why ? "  Not here: " + why : ""));
@@ -245,7 +245,7 @@ export const runCommandAtom = atom(null, async (get, set, line: string): Promise
         if (sub === "set" ? rest.length !== 2 : rest.length === 0) return fail("usage: " + (doc.usage ?? "state"));
         return write(sub === "set" ? "set" : "unset", rest);
       }
-      const named = doc.args?.[0]?.choices?.find((c) => c.name === sub);
+      const named = doc.choices?.find((c: WebCommandChoice) => c.name === sub);
       return fail("state " + sub + ": " + (named ? "not available in figaro web" : "no such subcommand") + (route.on === "door" && route.limits ? " (" + route.limits + ")" : "") + ".");
     }
     default:

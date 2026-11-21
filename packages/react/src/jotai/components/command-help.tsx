@@ -1,11 +1,11 @@
 import { Sheet } from "../../index";
 import { useAtom } from "jotai";
-import { commandDocs } from "figaro-forms/commands";
+import { webCommandDocs } from "figaro-forms/catalog";
 import { Plain } from "../../index";
 import { refusalOf } from "../lib/command";
 import { helpOpenAtom } from "../state/command";
 
-const GROUPS = commandDocs
+const GROUPS = webCommandDocs
   .filter((c) => !c.hidden)
   .map((c) => ({ doc: c, off: refusalOf(c) }))
   .sort((a, b) => Number(!!a.off) - Number(!!b.off));

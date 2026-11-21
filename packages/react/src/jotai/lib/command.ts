@@ -1,4 +1,4 @@
-import { commandBounds, commandDocs, pagerCommand, webCommands, type CommandDoc } from "figaro-forms/commands";
+import { pagerWebCommand, webCommandDocs, webCommands, type WebCommandDoc } from "figaro-forms/catalog";
 
 export interface Token {
   readonly text: string;
@@ -46,25 +46,25 @@ export interface Flags {
 export type Plan =
   | { kind: "none" }
   | { kind: "refused"; word: string; why: string }
-  | { kind: "run"; doc: CommandDoc; args: string[]; flags: Flags; prompt: string | undefined };
+  | { kind: "run"; doc: WebCommandDoc; args: string[]; flags: Flags; prompt: string | undefined };
 
-const UNBUILT: Partial<Record<CommandDoc["name"], string>> = {
+const UNBUILT: Partial<Record<WebCommandDoc["name"], string>> = {
   reaped: "figaro web has no view of reaped arias yet",
   models: "figaro web has no models view yet",
   comment: "figaro web does not write comments yet",
   notifications: "figaro web keeps no notification log yet",
 };
 
-const IDS = new Set<CommandDoc["name"]>(["set", "unset", "toggle", "get", "pwd", "hup", "send", "status", "name", "show", "state"]);
+const IDS = new Set<WebCommandDoc["name"]>(["set", "unset", "toggle", "get", "pwd", "hup", "send", "status", "name", "show", "state"]);
 
-function flagWord(doc: CommandDoc, token: string): "id" | "outfit" | "stay" | "" {
+function flagWord(doc: WebCommandDoc, token: string): "id" | "outfit" | "stay" | "" {
   if (token === "--id" && (IDS.has(doc.name) || doc.name === "fork")) return "id";
   if ((token === "-O" || token === "--outfit") && doc.name === "new") return "outfit";
   if (token === "--stay" && doc.name === "fork") return "stay";
   return "";
 }
 
-export function refusalOf(doc: CommandDoc): string {
+export function refusalOf(doc: WebCommandDoc): string {
   const route = webCommands[doc.name];
   const unbuilt = UNBUILT[doc.name];
   if (unbuilt) return doc.name + ": " + unbuilt;
@@ -77,7 +77,7 @@ export function planOf(line: string): Plan {
   const toks = tokenize(line);
   if (toks.length === 0) return { kind: "none" };
   const word = toks[0]!.text;
-  const doc = pagerCommand(word);
+  const doc = pagerWebCommand(word);
   if (!doc) return { kind: "refused", word, why: word + ": no such command. :help lists them." };
   const refused = refusalOf(doc);
   if (refused) return { kind: "refused", word, why: refused };
@@ -109,7 +109,7 @@ export function planOf(line: string): Plan {
   if (doc.name === "fork" && args.length > 1) return { kind: "refused", word, why: "fork: one spec, then -- and a prompt. " + (doc.usage ?? "") };
   if (doc.name === "send" && args.length > 1) return { kind: "refused", word, why: "send: one aria, then -- and the text. " + (doc.usage ?? "") };
   if (doc.name !== "new" && doc.name !== "fork" && doc.name !== "send") {
-    const { min, max } = commandBounds(doc);
+    const { min, max } = doc;
     if (args.length < min || (max > 0 && args.length > max)) return { kind: "refused", word, why: "usage: " + (doc.usage ?? doc.name) };
   }
   return { kind: "run", doc, args, flags, prompt };
@@ -199,7 +199,7 @@ function matching(items: readonly Candidate[], typed: string): Candidate[] {
 
 function verbCandidates(): Candidate[] {
   const out: Candidate[] = [];
-  for (const doc of commandDocs) {
+  for (const doc of webCommandDocs) {
     if (doc.hidden) continue;
     const off = refusalOf(doc);
     out.push({ text: doc.name, label: doc.name, help: doc.help, off });
@@ -217,7 +217,7 @@ export function suggest(line: string, src: Sources): Suggestions {
   if (toks.length === 0 || (toks.length === 1 && open)) {
     return { items: matching(verbCandidates(), typed), hint: null };
   }
-  const doc = pagerCommand(word);
+  const doc = pagerWebCommand(word);
   if (!doc) return { items: [], hint: { usage: "", help: "", refusal: word + ": no such command" } };
   const refusal = refusalOf(doc);
   const hint: Hint = { usage: doc.usage ?? doc.name, help: doc.help, refusal };
@@ -244,7 +244,7 @@ export function suggest(line: string, src: Sources): Suggestions {
     case "set":
       return { items: positional === 0 ? keys(true) : [], hint };
     case "state": {
-      const verbs = doc.args?.[0]?.choices ?? [];
+      const verbs = doc.choices ?? [];
       return { items: positional === 0 ? matching(verbs.map((c) => ({ text: c.name, label: c.name, help: c.help, off: "" })), typed) : [], hint };
     }
     default:
