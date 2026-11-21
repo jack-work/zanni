@@ -57,8 +57,9 @@ Only one player sounds at a time: starting one pauses or stops the other.
   samples are loud noise) and the stored copy is still offered after `end`.
 - The context is asked for at 24 kHz so frames are not resampled one by one;
   a browser that refuses gets its default rate and resamples.
-- `navigator.audioSession.type = 'playback'` is set where it exists, so the
-  ringer switch of an iPhone does not silence WebAudio.
+- voce does not touch `navigator.audioSession`. The page owns it (figaro web's
+  audio session machine sets `playback`, or `play-and-record` while hands-free or
+  the mic is on), so the ringer switch of an iPhone does not silence WebAudio.
 
 ## States
 
