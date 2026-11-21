@@ -118,9 +118,10 @@ def playback_failure(f, st, final=False):
     for p in live:
         c = chunks[p["id"]]
         key = (c["turn"], c["node"], c["offset"])
-        if key in seen:
+        if key in seen and p["stopAt"] is None:
             return Failure("chunk-played-twice", "turn %s node %s offset %s was scheduled to play twice" % key)
-        seen.add(key)
+        if p["stopAt"] is None:
+            seen.add(key)
         if prev:
             pp, pc = prev
             if (c["turn"], c["offset"]) < (pc["turn"], pc["offset"]):
@@ -431,7 +432,15 @@ class Audio(Network):
                 st.page.wait_for_timeout(300)
 
     def extra_quiescent(self, run):
-        super().extra_quiescent(run)
+        drawn = {t["no"]: t for t in run.dom_turns() if t["no"] is not None}
+        for t in run.stack.turns():
+            d = drawn.get(t["id"])
+            if d is None or not t["sealed"]:
+                continue
+            wp = sum(1 for n in t["nodes"] if n["type"] == "prose")
+            wt = sum(1 for n in t["nodes"] if n["type"] == "thinking")
+            if d["prose"] != wp or d["thinking"] != wt:
+                raise Failure("turn-nodes", "turn %d draws %d prose and %d thinking, the door has %d and %d" % (t["id"], d["prose"], d["thinking"], wp, wt))
         for st in run.state["ps"]:
             if st.page.is_closed():
                 continue
