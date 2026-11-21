@@ -28,7 +28,7 @@ def hostile_findings(page):
 
 
 def press_ms(pg):
-    return pg.evaluate("(() => { const v = getComputedStyle(document.querySelector('.fw-send')).transitionDuration.split(',')[0].trim(); return v.endsWith('ms') ? parseFloat(v) : parseFloat(v) * 1000; })()")
+    return pg.evaluate("(() => { const v = getComputedStyle(document.querySelector('.zr-send')).transitionDuration.split(',')[0].trim(); return v.endsWith('ms') ? parseFloat(v) : parseFloat(v) * 1000; })()")
 
 
 def settle_motion(pg):
@@ -236,8 +236,8 @@ try:
         pg.close()
 
         def send(pg, text):
-            pg.locator(".fw-input").fill(text)
-            pg.locator(".fw-send").click()
+            pg.locator(".zr-input").fill(text)
+            pg.locator(".zr-send").click()
 
         def running(pg):
             return pg.evaluate("document.querySelector('.fw').hasAttribute('data-running')")
@@ -245,48 +245,48 @@ try:
         for width, height, scheme in ((390, 844, "light"), (390, 844, "dark"), (1280, 800, "light"), (1280, 800, "dark")):
             pg = fresh(width, height, scheme)
             attend(pg, door(45), MAIN)
-            idle = pg.locator(".fw-composer").bounding_box()
+            idle = pg.locator(".zr-composer").bounding_box()
             assert idle["height"] <= 76, "an idle composer is at most 76px tall: %s" % idle
             send(pg, "please run the tests")
             pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='running']", timeout=10000)
             thinking = pg.locator(".nodi-turn[data-turn='27'] .nodi-thinking")
             assert thinking.evaluate("n => n.open") is False, "thinking is collapsed while it streams"
             assert pg.locator(".nodi-turn[data-turn='27'][data-state='open']").count() == 1
-            strip = pg.locator(".fw-strip")
+            strip = pg.locator(".zr-strip")
             assert strip.is_visible(), "the strip says a turn is running"
-            assert pg.locator(".fw-input").get_attribute("placeholder") == "Steer figaro"
-            assert pg.locator(".fw-send").inner_text() == "Steer"
-            box = pg.locator(".fw-composer").bounding_box()
+            assert pg.locator(".zr-input").get_attribute("placeholder") == "Steer figaro"
+            assert pg.locator(".zr-send").inner_text() == "Steer"
+            box = pg.locator(".zr-composer").bounding_box()
             assert box["height"] <= 120, "a running composer is at most 120px tall: %s" % box
             sbox = strip.bounding_box()
             assert sbox["height"] <= 44, "the strip is one line high: %s" % sbox
-            tbox = pg.locator(".fw-strip-text").bounding_box()
+            tbox = pg.locator(".zr-strip-text").bounding_box()
             assert tbox["height"] <= 24, "the strip text never wraps: %s" % tbox
             assert box["x"] >= 0 and box["x"] + box["width"] <= width, "the composer stays inside the screen: %s" % box
-            row = pg.locator(".fw-compose-row").bounding_box()
+            row = pg.locator(".zr-compose-row").bounding_box()
             assert row["width"] <= 46 * 16, "the input row sits at the transcript measure: %s" % row
             for b in pg.locator(".fw-stop").all():
                 hit_area(pg, b, "stop buttons")
-            assert pg.locator(".fw-strip-time").inner_text()[0].isdigit()
+            assert pg.locator(".zr-strip-time").inner_text()[0].isdigit()
             pg.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
             pg.wait_for_timeout(100)
             last = pg.evaluate("(() => { const n = [...document.querySelectorAll('.nodi-turn-body > *')].pop(); return n.getBoundingClientRect().bottom; })()")
-            top = pg.locator(".fw-composer").bounding_box()["y"]
+            top = pg.locator(".zr-composer").bounding_box()["y"]
             assert last <= top + 1, "scrolled to the bottom, the last node ends above the composer: %s vs %s" % (last, top)
             no_sideways(pg, width, "running turn")
             snap(pg, "running-%s-%d" % (scheme, width))
             pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='ok']", timeout=10000)
             pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])", timeout=10000)
-            until(pg, "!document.querySelector('.fw-strip')", timeout=5000)
+            until(pg, "!document.querySelector('.zr-strip')", timeout=5000)
             thinking.locator("summary").click()
             assert thinking.evaluate("n => n.open") is True
             until(pg, "document.querySelector(\".nodi-turn[data-turn='27'] .nodi-thought\").innerText.includes('answer plainly')", 5000)
             kinds = pg.evaluate("[...document.querySelectorAll('.nodi-turn[data-turn=\"27\"] .nodi-turn-body > *')].map(n => n.className.split(' ')[0])")
             assert kinds == ["nodi-input", "nodi-thinking", "nodi-prose", "nodi-tool", "nodi-prose"], kinds
             assert "please run the tests" in pg.locator(".nodi-turn[data-turn='27'] .nodi-input").inner_text()
-            assert pg.locator(".fw-input").input_value() == ""
+            assert pg.locator(".zr-input").input_value() == ""
             assert pg.locator(".nodi-metrics").inner_text().startswith("ctx"), "metrics sit quietly above the transcript"
-            idle = pg.locator(".fw-composer").bounding_box()
+            idle = pg.locator(".zr-composer").bounding_box()
             assert idle["height"] <= 76, "the composer settles back to its idle height: %s" % idle
             snap(pg, "live-%s-%d" % (scheme, width))
             sans_free(pg, "live turn %s %d" % (scheme, width))
@@ -367,17 +367,17 @@ try:
         pg = fresh()
         draft_door = door(12)
         attend(pg, draft_door, MAIN)
-        pg.locator(".fw-input").fill("half a thought")
+        pg.locator(".zr-input").fill("half a thought")
         pg.wait_for_timeout(600)
         pg.locator(".fw-back").click()
         pg.wait_for_selector(".fw-thread")
         pg.locator(".fw-thread[data-id='%s']" % LANE).click()
         until(pg, "document.querySelector('.fw').dataset.link === 'live'", timeout=10000)
-        assert pg.locator(".fw-input").input_value() == "", "another aria has its own draft"
+        assert pg.locator(".zr-input").input_value() == "", "another aria has its own draft"
         pg.goto("about:blank")
         pg.goto(draft_door.url + "#/gluck/" + MAIN)
-        until(pg, "document.querySelector('.fw-input')", timeout=10000)
-        assert pg.locator(".fw-input").input_value() == "half a thought", "the draft survives a reload"
+        until(pg, "document.querySelector('.zr-input')", timeout=10000)
+        assert pg.locator(".zr-input").input_value() == "half a thought", "the draft survives a reload"
         pg.close()
 
         pg = fresh()
@@ -432,24 +432,24 @@ try:
         pg.on("pageerror", lambda e: pg.errors.append(str(e)))
         attend(pg, mic_door, MAIN)
         assert pg.locator(".fw-mic").is_enabled()
-        pg.locator(".fw-input").fill("typed first")
+        pg.locator(".zr-input").fill("typed first")
         pg.locator(".fw-mic").tap()
         until(pg, "document.querySelector('.fw').dataset.mic === 'recording'", 10000)
         pg.wait_for_timeout(600)
         pg.locator(".fw-mic").tap()
-        until(pg, "document.querySelector('.fw-input').value.includes('crossing count')", 10000)
-        assert pg.locator(".fw-input").input_value() == "typed first what is the crossing count", pg.locator(".fw-input").input_value()
+        until(pg, "document.querySelector('.zr-input').value.includes('crossing count')", 10000)
+        assert pg.locator(".zr-input").input_value() == "typed first what is the crossing count", pg.locator(".zr-input").input_value()
         posts = mic_door.state()["stt"]
         assert len(posts) == 1 and posts[0]["type"].startswith("audio/") and posts[0]["size"] > 0, posts
         assert posts[0]["aria"] == "gluck/" + MAIN, posts
         assert mic_door.state()["sent"] == [], "the transcript is not sent until Gluck sends it"
-        assert pg.evaluate("document.activeElement.className") == "fw-input", "the transcript lands with the cursor in the composer"
-        pg.locator(".fw-input").fill("edited words")
-        pg.locator(".fw-send").tap()
+        assert pg.evaluate("document.activeElement.className") == "zr-input", "the transcript lands with the cursor in the composer"
+        pg.locator(".zr-input").fill("edited words")
+        pg.locator(".zr-send").tap()
         until(pg, "document.querySelector(\"[data-turn='27']\")", 10000)
         assert mic_door.state()["sent"][0]["text"] == "edited words"
         sans_free(pg, "composer after the mic")
-        pg.evaluate("document.querySelector('.fw-send').style.fontFamily = 'Arial'")
+        pg.evaluate("document.querySelector('.zr-send').style.fontFamily = 'Arial'")
         assert pg.evaluate(SANS), "negative control: a button set to Arial must be caught"
         assert not pg.errors, pg.errors
         ctx.close()
@@ -489,7 +489,7 @@ try:
             pg.on("pageerror", lambda e: pg.errors.append(str(e)))
             pg.on("console", lambda m: pg.errors.append(m.text) if m.type == "error" else None)
             attend(pg, sheet_door, MAIN)
-            pg.locator(".fw-input").fill("typed")
+            pg.locator(".zr-input").fill("typed")
             said = pg.locator(".nodi-turn[data-turn='26'] .nodi-said").first
             said.scroll_into_view_if_needed()
             said.tap() if phone else said.click()
@@ -512,7 +512,7 @@ try:
             assert sheet_door.state()["retranscribed"] == ["gluck/" + MAIN + ":26/in"], sheet_door.state()["retranscribed"]
             pg.locator(".fw-sheet-act[data-action='use']").click()
             pg.wait_for_selector(".fw-sheet", state="detached", timeout=3000)
-            assert pg.locator(".fw-input").input_value() == "typed re-heard words"
+            assert pg.locator(".zr-input").input_value() == "typed re-heard words"
             prose = pg.locator(".nodi-turn[data-turn='26'] .nodi-prose").first
             prose.tap() if phone else prose.click()
             pg.wait_for_selector(".fw-sheet[data-kind='prose']")
@@ -524,7 +524,7 @@ try:
 
         MOTION = """() => {
           const over = [];
-          for (const n of document.querySelectorAll('.fw-composer, .fw-composer *, .fw-top *, .fw-main button')) {
+          for (const n of document.querySelectorAll('.zr-composer, .zr-composer *, .fw-top *, .fw-main button')) {
             const cs = getComputedStyle(n);
             const ms = (v) => v.split(',').map(x => x.trim()).map(x => x.endsWith('ms') ? parseFloat(x) : parseFloat(x) * 1000);
             if (cs.animationName !== 'none' && Math.max(...ms(cs.animationDuration)) > 1) over.push(n.className + ' animation ' + cs.animationName + ' ' + cs.animationDuration);
@@ -542,12 +542,12 @@ try:
         attend(pg, door(150), MAIN)
         assert press_ms(pg) <= 1, "reduced motion sets the press release to 1ms: %s" % press_ms(pg)
         send(pg, "please run the build")
-        pg.wait_for_selector(".fw-strip[data-kind='running']", timeout=15000)
+        pg.wait_for_selector(".zr-strip[data-kind='running']", timeout=15000)
         pg.wait_for_timeout(300)
-        assert pg.locator(".fw-glyph i").first.evaluate("n => getComputedStyle(n).animationName") == "none", "the glyph is still under reduced motion"
+        assert pg.locator(".zr-glyph i").first.evaluate("n => getComputedStyle(n).animationName") == "none", "the glyph is still under reduced motion"
         assert pg.evaluate(MOTION) == [], pg.evaluate(MOTION)
         pg.locator(".fw-stop-clear").click()
-        pg.wait_for_selector(".fw-strip", state="detached", timeout=5000)
+        pg.wait_for_selector(".zr-strip", state="detached", timeout=5000)
         ctx.close()
 
         pg = fresh()
@@ -555,12 +555,12 @@ try:
         assert press_ms(pg) == 320, "the press releases on the pop token: %s" % press_ms(pg)
         assert pg.locator(".nodi-turn[data-fresh]").count() == 0, "history does not animate in"
         send(pg, "please run the build")
-        pg.wait_for_selector(".fw-strip[data-kind='running']", timeout=15000)
+        pg.wait_for_selector(".zr-strip[data-kind='running']", timeout=15000)
         assert pg.locator(".nodi-turn[data-turn='27'][data-fresh]").count() == 1, "the new turn is the one that arrives with motion"
-        assert pg.locator(".fw-glyph i").first.evaluate("n => getComputedStyle(n).animationName") == "fw-glyph"
-        assert pg.evaluate("[...document.querySelectorAll('.fw-glyph i')].every(n => getComputedStyle(n).animationTimingFunction.startsWith('steps'))"), "the glyph steps, it does not glide"
+        assert pg.locator(".zr-glyph i").first.evaluate("n => getComputedStyle(n).animationName") == "zr-glyph"
+        assert pg.evaluate("[...document.querySelectorAll('.zr-glyph i')].every(n => getComputedStyle(n).animationTimingFunction.startsWith('steps'))"), "the glyph steps, it does not glide"
         pg.locator(".fw-stop-clear").click()
-        pg.wait_for_selector(".fw-strip", state="detached", timeout=5000)
+        pg.wait_for_selector(".zr-strip", state="detached", timeout=5000)
         pg.close()
 
         refused = fresh()

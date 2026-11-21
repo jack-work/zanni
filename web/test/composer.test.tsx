@@ -69,21 +69,21 @@ describe("the composer", () => {
   it("shows the strip while a turn runs, steers, and stops with or without the queue", async () => {
     attend(150);
     await live();
-    expect(document.querySelector(".fw-strip")).toBeNull();
+    expect(document.querySelector(".zr-strip")).toBeNull();
     fireEvent.change(input(), { target: { value: "please run the build" } });
     act(() => screen.getByText("Send").click());
-    await waitFor(() => expect(document.querySelector(".fw-strip[data-kind='running']")).toBeTruthy(), { timeout: 5000 });
+    await waitFor(() => expect(document.querySelector(".zr-strip[data-kind='running']")).toBeTruthy(), { timeout: 5000 });
     expect(document.querySelector(".fw")!.hasAttribute("data-running")).toBe(true);
     expect(screen.getByText("Steer")).toBeTruthy();
     expect(input().placeholder).toBe("Steer figaro");
-    expect(document.querySelector(".fw-strip-text")!.textContent).not.toBe("");
-    expect(document.querySelector(".fw-strip-time")!.textContent).toMatch(/^\d+:\d\d$/);
+    expect(document.querySelector(".zr-strip-text")!.textContent).not.toBe("");
+    expect(document.querySelector(".zr-strip-time")!.textContent).toMatch(/^\d+:\d\d$/);
     act(() => (document.querySelector(".fw-stop:not(.fw-stop-clear)") as HTMLElement).click());
     await waitFor(() => expect(core.interrupts).toEqual(["keep"]));
-    await waitFor(() => expect(document.querySelector(".fw-strip")).toBeNull(), { timeout: 5000 });
+    await waitFor(() => expect(document.querySelector(".zr-strip")).toBeNull(), { timeout: 5000 });
     fireEvent.change(input(), { target: { value: "again" } });
     act(() => screen.getByText("Send").click());
-    await waitFor(() => expect(document.querySelector(".fw-strip[data-kind='running']")).toBeTruthy(), { timeout: 5000 });
+    await waitFor(() => expect(document.querySelector(".zr-strip[data-kind='running']")).toBeTruthy(), { timeout: 5000 });
     const all = document.querySelector<HTMLElement>(".fw-stop-clear")!;
     expect(all.getAttribute("aria-label")).toBe("Stop and clear the queue");
     act(() => all.click());
