@@ -1,0 +1,40 @@
+> input                                                                                                    1 Δ
+  first question
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+< figaro
+
+  Ecco fatto.
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+> input                                                                                                    2
+  second question
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+< figaro
+
+  Ecco fatto.
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+> input                                                                                                    3
+  third question
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+< figaro
+
+  Ecco fatto.
+
+
+
+═════════════════════════════════════════════════════════════════════════════════════════════════════════ live
+  08dd4fd2-594b-40e7-841b-4029fc8402e3 (2)  ●
+  └─ arias (2)
+     ├─ cotton-koala (8)  @wave1role  "hello holder"
+     └─ agnostic-kayak (8)  "root of the tree"  ●
+        ├─ settler-siamese (8)  "root of the tree"
+        ├─ hubcap-kayak (9)  "root of the tree"
+        ├─ doorstep-asocial (8)  "fork at turn 2"
+▸       └─ computer-railroad (9)  "tail fork a"  Enter attend · x kill
+           └─ deranged-cinnamon (8)  "root of the tree"
+
+no search yet · press x again to kill agnostic-kayak · 𝄞 1 · ✓ · agnostic-kayak · root of the t…  32/1.0m 0.0%

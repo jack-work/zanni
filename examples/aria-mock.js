@@ -125,6 +125,22 @@
     }
 
     var ids = core.ids;
+    if (o.fixture) {
+      var walk = function (level, parent) {
+        Object.keys(level).forEach(function (handle, i) {
+          var n = level[handle];
+          var row = { state: n.state === 'active' ? 'idle' : n.state, mantra: n.mantra, handle: handle };
+          if (parent) row.parent = parent;
+          if (n.role) row.roles = [n.role];
+          add(n.id, row, seedSmall(3, base, i + 1));
+          core.arias[n.id].fixture = n;
+          walk(n.forks || {}, n.id);
+        });
+      };
+      walk(o.fixture.arias.arias, '');
+      core.ids = ids = Object.assign({ main: o.fixture.attend }, o.fixture.ids || {});
+      core.fixture = o.fixture;
+    } else {
     add(ids.main, { state: 'idle', mantra: 'Zanni: ship ordine & Sugiyama layered layout', roles: ['@zanni'], handle: 'zanni' }, seedMain(base));
     add(ids.lane, { state: 'idle', mantra: 'Frontend Engineer / figchat web', parent: ids.main, roles: ['@lane'] }, seedSmall(4, base, 1));
     add(ids.spain, { state: 'dormant', mantra: 'Backend: spain edge for fig.kelliher.info', parent: ids.main }, seedSmall(2, base, 2));
@@ -133,6 +149,7 @@
     add(ids.forms, { state: 'idle', mantra: 'forms-aria lane', parent: ids.engineer }, seedSmall(3, base, 5));
     for (var k = 7; k <= 13; k++) add(aid(k), { state: 'idle', mantra: 'Scratch ' + (k - 6), parent: k % 2 ? ids.engineer : undefined }, seedSmall(1 + (k % 3), base, k));
     core.arias[aid(13)].row.mantra = EVIL;
+    }
 
     function reply(conn, id, result) { conn.sink.text(JSON.stringify({ jsonrpc: '2.0', id: id, result: result })); }
     function fail(conn, id, code, message) { conn.sink.text(JSON.stringify({ jsonrpc: '2.0', id: id, error: { code: code, message: message } })); }
@@ -151,6 +168,7 @@
     function partOf(t, from) {
       var part = { turn: t.id, inquiry: t.inquiry, sealed: t.sealed, from: from || 0, at: t.at };
       if (t.inquiry_segments) part.inquiry_segments = clone(t.inquiry_segments);
+      if (t.formDeltas) part.formDeltas = clone(t.formDeltas);
       var nodes = t.nodes.slice(from || 0).map(function (n, i) { return Object.assign({ id: t.id + '.' + ((from || 0) + i) }, clone(n)); });
       if (nodes.length) part.nodes = nodes;
       if (!t.sealed && nodes.length) part.live = { from: 0, v: t.lastV };
@@ -300,10 +318,17 @@
 
     function begin(a, text) {
       var t = { id: a.turns.length + 1, inquiry: text, nodes: [], sealed: false, at: clock(), lastV: 0, open: null };
+      if (a.forkFresh) {
+        t.formDeltas = {};
+        t.formDeltas[a.row.id + '.system.forked_from'] = { form: a.row.id, kind: 'bound', event: 'set', value: a.forkedFrom };
+        a.forkFresh = false;
+      }
       a.turns.push(t);
       a.row.state = 'active';
       var run = a.run = { turn: t, script: [], timer: null, failure: '' };
-      pushPage(a.row.id, { turn: t.id, inquiry: text, sealed: false, from: 0, at: t.at });
+      var opened = { turn: t.id, inquiry: text, sealed: false, from: 0, at: t.at };
+      if (t.formDeltas) opened.formDeltas = clone(t.formDeltas);
+      pushPage(a.row.id, opened);
       tell({ type: 'begin', aria: a.row.id, turn: t.id });
       run.script = plan(a, t, text);
       var next = function () {
@@ -330,21 +355,21 @@
 
     function fork(id, req) {
       var a = core.arias[id];
-      var upto = req.at_turn || a.turns.length;
       var nid = aid(40 + core.order.length);
-      var turns = clone(a.turns.filter(function (t) { return t.id <= upto && t.sealed; }));
+      var turns = clone(a.turns.filter(function (t) { return t.sealed && (!req.at_turn || t.id < req.at_turn); }));
       core.arias[nid] = { row: {}, turns: turns, run: null, queue: [], dormant: false };
-      core.arias[nid].row = { id: nid, short: nid.slice(0, 8), kind: 'figaro', state: 'idle', mantra: 'Fork of ' + (a.row.mantra || id.slice(0, 8)), parent: id, created_at: clock() };
+      core.arias[nid].row = { id: nid, short: nid.slice(0, 8), kind: 'figaro', state: 'idle', mantra: a.row.mantra, handle: 'fork-' + nid.slice(-4), parent: id, created_at: clock() };
       metricsOf[nid] = Object.assign({}, metricsOf[id]);
       core.arias[nid].forkedFrom = id;
+      core.arias[nid].forkFresh = true;
       core.order.splice(core.order.indexOf(id) + 1, 0, nid);
       timers.set(function () { pushForm('@arias'); pushForm('@recent'); }, 0);
-      return { parent: id, continuation: id, alternative: nid };
+      return { parent: id, continuation: id, alternative: nid, at: req.at_turn ? 'turn ' + req.at_turn : 'the head' };
     }
 
     var methods = {
       'angelus.hello': function (c, id) {
-        reply(c, id, { version: 1, capabilities: ['qua.images', 'unfollow', 'follow.channels'], node: 'mock-node', principal: { kind: 'user', id: 'gluck@edge.test' } });
+        reply(c, id, { version: 1, capabilities: ['qua.images', 'unfollow', 'follow.channels'], node: core.fixture ? Object.keys(core.fixture.troupe)[0] : 'mock-node', principal: { kind: 'user', id: 'gluck@edge.test' } });
       },
       'figaro.form': function (c, id, p) {
         var root = formRoot(p.figaro_id);
@@ -437,7 +462,8 @@
       return out;
     }
     function formRoot(id) {
-      if (id === '@troupe') return { 'mock-node': { self: true, form: '@arias' } };
+      if (id === '@troupe') return core.fixture ? clone(core.fixture.troupe) : { 'mock-node': { self: true, form: '@arias' } };
+      if (id === '@arias' && core.fixture) return clone(core.fixture.arias);
       if (id === '@arias') { var root = ariasRoot(); root.roles = {}; return root; }
       if (id === '@recent') return recentRoot();
       var a = core.arias[id];

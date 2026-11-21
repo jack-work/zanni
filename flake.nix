@@ -372,6 +372,21 @@
           env LD_LIBRARY_PATH=${pkgs.mesa}/lib:${pkgs.libglvnd}/lib __EGL_VENDOR_LIBRARY_FILENAMES=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless python3 test/ios-composer.test.py ${self.packages.${system}.figchat-shell} 2>&1 | tee -a $out
         '';
 
+        checks.figchat-wave1 = pkgs.runCommand "zanni-figchat-wave1-test" {
+          nativeBuildInputs = [ pkgs.nodejs (pkgs.python3.withPackages (ps: [ ps.playwright ])) ];
+          PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
+          PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+          FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
+        } ''
+          set -o pipefail
+          export HOME=$TMPDIR
+          cp -r ${./assets} assets
+          cp -r ${./examples} examples
+          cp -r ${./test} test
+          chmod -R u+w assets examples test
+          env LD_LIBRARY_PATH=${pkgs.mesa}/lib:${pkgs.libglvnd}/lib __EGL_VENDOR_LIBRARY_FILENAMES=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless bash test/wave1/run.sh ${self.packages.${system}.figchat-shell} 2>&1 | tee $out
+        '';
+
         checks.rotolo = pkgs.runCommand "zanni-rotolo-test" {
           nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.playwright ps.pillow ])) ];
           PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;

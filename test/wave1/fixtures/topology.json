@@ -1,0 +1,97 @@
+{
+ "attend": "0721c22bfa86d935d17748d782523ba3",
+ "ids": {
+  "root": "0721c22bfa86d935d17748d782523ba3",
+  "tailA": "306f9a3ffe688196f550cdd8b82c0588",
+  "tailB": "ce34188080700df18f6d9ac6a43e2c05",
+  "atN": "4405905e50efcae8023ab70513a06cb4",
+  "nested": "3e4b4d9179243e5240d634005b8144c5",
+  "retired": "7621c96b72d153657678732c11176126",
+  "holder": "31a2c87ece95b56673d9e2e7035d6c0c",
+  "dead": "7369f35f35c9415f64e045e2c53f5df6"
+ },
+ "troupe": {
+  "08dd4fd2-594b-40e7-841b-4029fc8402e3": {
+   "form": "@arias",
+   "self": true
+  }
+ },
+ "arias": {
+  "arias": {
+   "agnostic-kayak": {
+    "active_at": 1795248133164,
+    "ctx": 32,
+    "ctx_limit": 1000000,
+    "cwd": "/var/tmp/wave1-capture",
+    "forks": {
+     "computer-railroad": {
+      "active_at": 1795248133285,
+      "ctx": 32,
+      "ctx_limit": 1000000,
+      "cwd": "/var/tmp/wave1-capture",
+      "forks": {
+       "deranged-cinnamon": {
+        "active_at": 1795248133440,
+        "ctx": 32,
+        "ctx_limit": 1000000,
+        "cwd": "/var/tmp/wave1-capture",
+        "id": "3e4b4d9179243e5240d634005b8144c5",
+        "mantra": "root of the tree",
+        "parent": "306f9a3ffe688196f550cdd8b82c0588",
+        "state": "idle"
+       }
+      },
+      "id": "306f9a3ffe688196f550cdd8b82c0588",
+      "mantra": "tail fork a",
+      "parent": "0721c22bfa86d935d17748d782523ba3",
+      "state": "idle"
+     },
+     "doorstep-asocial": {
+      "active_at": 1795248133389,
+      "ctx": 32,
+      "ctx_limit": 1000000,
+      "cwd": "/var/tmp/wave1-capture",
+      "id": "4405905e50efcae8023ab70513a06cb4",
+      "mantra": "fork at turn 2",
+      "parent": "0721c22bfa86d935d17748d782523ba3",
+      "state": "idle"
+     },
+     "hubcap-kayak": {
+      "active_at": 1795248133480,
+      "ctx": 32,
+      "ctx_limit": 1000000,
+      "cwd": "/var/tmp/wave1-capture",
+      "id": "7621c96b72d153657678732c11176126",
+      "mantra": "root of the tree",
+      "parent": "0721c22bfa86d935d17748d782523ba3",
+      "retired_at": 1795248135721,
+      "state": "idle"
+     },
+     "settler-siamese": {
+      "active_at": 1795248136010,
+      "ctx": 35,
+      "ctx_limit": 1000000,
+      "cwd": "/var/tmp/wave1-capture",
+      "id": "ce34188080700df18f6d9ac6a43e2c05",
+      "mantra": "root of the tree",
+      "parent": "0721c22bfa86d935d17748d782523ba3",
+      "state": "active"
+     }
+    },
+    "id": "0721c22bfa86d935d17748d782523ba3",
+    "mantra": "root of the tree",
+    "state": "idle"
+   },
+   "cotton-koala": {
+    "active_at": 1795248135651,
+    "ctx": 32,
+    "ctx_limit": 1000000,
+    "cwd": "/var/tmp/wave1-capture",
+    "id": "31a2c87ece95b56673d9e2e7035d6c0c",
+    "mantra": "hello holder",
+    "role": "@wave1role",
+    "state": "idle"
+   }
+  }
+ }
+}

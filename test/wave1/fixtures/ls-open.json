@@ -1,0 +1,113 @@
+{
+ "rows": [
+  {
+   "depth": 0,
+   "label": "08dd4fd2-594b-40e7-841b-4029fc8402e3",
+   "count": 2,
+   "cursor": false,
+   "here": true,
+   "kind": "node",
+   "tones": {
+    "label": "body",
+    "here": "label"
+   }
+  },
+  {
+   "depth": 1,
+   "label": "arias",
+   "count": 2,
+   "cursor": false,
+   "here": false,
+   "kind": "group",
+   "tones": {
+    "label": "body"
+   }
+  },
+  {
+   "depth": 2,
+   "label": "cotton-koala",
+   "count": 8,
+   "cursor": false,
+   "here": false,
+   "role": "@wave1role",
+   "mantra": "hello holder",
+   "id": "31a2c87ece95b56673d9e2e7035d6c0c",
+   "kind": "aria",
+   "tones": {
+    "label": "body",
+    "role": "holder",
+    "mantra": "quiet"
+   }
+  },
+  {
+   "depth": 2,
+   "label": "agnostic-kayak",
+   "count": 8,
+   "cursor": true,
+   "hint": "Enter attend · x kill",
+   "here": true,
+   "mantra": "root of the tree",
+   "id": "0721c22bfa86d935d17748d782523ba3",
+   "kind": "aria",
+   "tones": {
+    "row": "cursor"
+   }
+  },
+  {
+   "depth": 3,
+   "label": "settler-siamese",
+   "count": 8,
+   "cursor": false,
+   "here": false,
+   "mantra": "root of the tree",
+   "id": "ce34188080700df18f6d9ac6a43e2c05",
+   "kind": "aria",
+   "tones": {
+    "label": "body",
+    "mantra": "quiet"
+   }
+  },
+  {
+   "depth": 3,
+   "label": "hubcap-kayak",
+   "count": 9,
+   "cursor": false,
+   "here": false,
+   "mantra": "root of the tree",
+   "id": "7621c96b72d153657678732c11176126",
+   "kind": "aria",
+   "tones": {
+    "label": "body",
+    "mantra": "quiet"
+   }
+  },
+  {
+   "depth": 3,
+   "label": "doorstep-asocial",
+   "count": 8,
+   "cursor": false,
+   "here": false,
+   "mantra": "fork at turn 2",
+   "id": "4405905e50efcae8023ab70513a06cb4",
+   "kind": "aria",
+   "tones": {
+    "label": "body",
+    "mantra": "quiet"
+   }
+  },
+  {
+   "depth": 3,
+   "label": "computer-railroad",
+   "count": 9,
+   "cursor": false,
+   "here": false,
+   "mantra": "tail fork a",
+   "id": "306f9a3ffe688196f550cdd8b82c0588",
+   "kind": "aria",
+   "tones": {
+    "label": "body",
+    "mantra": "quiet"
+   }
+  }
+ ]
+}
