@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/app";
 import { bootAtom } from "zanni-react/jotai";
 import { dictatedAtom, draftAtom, SAVE_DELAY_MS } from "zanni-react/jotai";
-import { glyphs } from "zanni-react";
 import { mockDoor, type MockCore } from "./mock";
 import type { AriaClient } from "figaro-forms/aria";
 import { glyphs } from "figaro-forms/glyphs";
