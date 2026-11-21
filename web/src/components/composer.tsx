@@ -66,10 +66,10 @@ function Strip({ attended, note, running, leaving }: { attended: Attended; note:
           <span className="fw-strip-time" aria-hidden="true">
             {clock(now - (work.startedAt ?? seen.current))}
           </span>
-          <button type="button" className="fw-stop" disabled={!live} onClick={() => void interrupt("keep")}>
+          <button type="button" className="z2-control fw-stop" data-size="compact" disabled={!live} onClick={() => void interrupt("keep")}>
             Stop
           </button>
-          <button type="button" className="fw-stop fw-stop-clear" aria-label="Stop and clear the queue" disabled={!live} onClick={() => void interrupt("clear")}>
+          <button type="button" className="z2-control fw-stop fw-stop-clear" data-size="compact" aria-label="Stop and clear the queue" disabled={!live} onClick={() => void interrupt("clear")}>
             Stop all
           </button>
         </>
@@ -155,7 +155,7 @@ export function Composer({ attended, toBottom }: { attended: Attended; toBottom:
         />
         <button
           type="button"
-          className="fw-mic"
+          className="z2-control fw-mic"
           aria-pressed={mic.state === "recording"}
           disabled={mic.state === "unsupported" || mic.state === "asking" || mic.state === "transcribing"}
           title={mic.state === "unsupported" ? "This browser cannot record audio." : undefined}
@@ -163,7 +163,7 @@ export function Composer({ attended, toBottom }: { attended: Attended; toBottom:
         >
           {micLabel}
         </button>
-        <button type="submit" className="fw-send" disabled={comp.sending || !live}>
+        <button type="submit" className="z2-control fw-send" disabled={comp.sending || !live}>
           <span className={labelled.current.swapped ? "fw-swap" : undefined} key={label}>
             {label}
           </span>

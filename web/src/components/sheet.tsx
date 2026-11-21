@@ -89,13 +89,13 @@ function SheetBody({ target, leaving }: { target: SheetTarget; leaving: boolean 
           <span className="fw-sheet-title">
             {SPOKEN[target.kind]} · Turn {target.turn}
           </span>
-          <button type="button" className="fw-sheet-close" onClick={() => close()}>
+          <button type="button" className="z2-control fw-sheet-close" data-size="compact" onClick={() => close()}>
             Close
           </button>
         </div>
         <div className="fw-sheet-actions">
           {sheetActions[target.kind].map((a, i) => (
-            <button key={a.id} type="button" className="fw-sheet-act" data-action={a.id} ref={i === 0 ? first : undefined} onClick={() => void a.run(context)}>
+            <button key={a.id} type="button" className="z2-control fw-sheet-act" data-action={a.id} ref={i === 0 ? first : undefined} onClick={() => void a.run(context)}>
               {a.label}
             </button>
           ))}
@@ -111,7 +111,7 @@ function SheetBody({ target, leaving }: { target: SheetTarget; leaving: boolean 
             <p className="fw-sheet-text">
               <Plain text={result} />
             </p>
-            <button type="button" className="fw-sheet-act" data-action="use" onClick={adopt}>
+            <button type="button" className="z2-control fw-sheet-act" data-action="use" onClick={adopt}>
               Use text
             </button>
           </div>

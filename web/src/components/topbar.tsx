@@ -22,7 +22,7 @@ export function TopBar() {
             {word}
           </span>
         )}
-        <button type="button" className="fw-voice" aria-pressed={voice} onClick={() => toggleVoice()}>
+        <button type="button" className="z2-control fw-voice" aria-pressed={voice} onClick={() => toggleVoice()}>
           {voice ? "Voice on" : "Voice off"}
         </button>
       </div>

@@ -72,6 +72,19 @@ def no_sideways(pg, width, what):
     assert max(got) <= width, "%s scrolls sideways at %d: %s" % (what, width, got)
 
 
+def hit_area(pg, loc, what):
+    got = loc.evaluate("""n => {
+      const b = n.getBoundingClientRect();
+      const coarse = matchMedia('(pointer: coarse)').matches;
+      const cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+      const reach = [[cx, cy - 21], [cx, cy + 21]].map(([x, y]) => { const t = document.elementFromPoint(x, y); return !!t && (t === n || n.contains(t)); });
+      return { coarse, height: b.height, reach };
+    }""")
+    assert got["height"] <= 36, "%s is a compact control, not a 44px box: %s" % (what, got)
+    if got["coarse"]:
+        assert all(got["reach"]), "%s keeps a 44px hit area on a coarse pointer: %s" % (what, got)
+
+
 class Door:
     def __init__(self, bundle, step):
         self.proc = subprocess.Popen(["node", os.path.join(root, "test", "figchat-server.js"), bundle, str(step)], stdout=subprocess.PIPE, text=True)
@@ -253,8 +266,7 @@ try:
             row = pg.locator(".fw-compose-row").bounding_box()
             assert row["width"] <= 46 * 16, "the input row sits at the transcript measure: %s" % row
             for b in pg.locator(".fw-stop").all():
-                bb = b.bounding_box()
-                assert bb["height"] >= 44, "stop buttons are 44px targets: %s" % bb
+                hit_area(pg, b, "stop buttons")
             assert pg.locator(".fw-strip-time").inner_text()[0].isdigit()
             pg.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
             pg.wait_for_timeout(100)
@@ -488,7 +500,7 @@ try:
             assert box["x"] >= 0 and box["x"] + box["width"] <= width, box
             assert pg.locator(".fw-sheet-act").all_inner_texts() == ["Play", "Re-transcribe"]
             for b in pg.locator(".fw-sheet-act").all():
-                assert b.bounding_box()["height"] >= 44, "sheet actions are 44px targets"
+                hit_area(pg, b, "sheet actions")
             snap(pg, "sheet-%d" % width)
             sans_free(pg, "the sheet at %d" % width)
             pg.locator(".fw-sheet-act[data-action='play']").click()

@@ -29,7 +29,7 @@ export function Roster() {
     <nav className="fw-side" aria-label="Arias">
       <div className="fw-side-head">
         <h2 className="fw-h2">Arias</h2>
-        <button type="button" className="fw-new" onClick={() => void act("refresh")}>
+        <button type="button" className="z2-control fw-new" onClick={() => void act("refresh")}>
           Refresh
         </button>
       </div>
@@ -48,7 +48,7 @@ export function Roster() {
         ))}
       </ul>
       {roster.next && (
-        <button type="button" className="fw-older fw-more" onClick={() => void act("more")}>
+        <button type="button" className="z2-control fw-older fw-more" data-size="compact" onClick={() => void act("more")}>
           More arias
         </button>
       )}

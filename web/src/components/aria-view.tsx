@@ -163,10 +163,10 @@ export function AriaView({ attended }: { attended: Attended }) {
             Arias
           </a>
           <div className="fw-subtools">
-            <button type="button" className="fw-hands" aria-pressed={handsFree} onClick={() => toggleHandsFree()}>
+            <button type="button" className="z2-control fw-hands" data-size="compact" aria-pressed={handsFree} onClick={() => toggleHandsFree()}>
               Hands-free
             </button>
-            <button type="button" className="fw-fork" disabled={link !== "live" || forking} onClick={() => void fork(0)}>
+            <button type="button" className="z2-control fw-fork" data-size="compact" disabled={link !== "live" || forking} onClick={() => void fork(0)}>
               Fork
             </button>
           </div>
@@ -176,7 +176,7 @@ export function AriaView({ attended }: { attended: Attended }) {
         </h1>
         <div className="fw-metrics">{metrics && <p className="nodi-metrics">{metrics}</p>}</div>
         {olderAvailable && (
-          <button type="button" className="fw-older" ref={olderRef} disabled={loadingOlder} onClick={() => loadOlder().catch(() => {})}>
+          <button type="button" className="z2-control fw-older" data-size="compact" ref={olderRef} disabled={loadingOlder} onClick={() => loadOlder().catch(() => {})}>
             Earlier turns
           </button>
         )}
@@ -189,7 +189,7 @@ export function AriaView({ attended }: { attended: Attended }) {
       </main>
       <Composer attended={attended} toBottom={toBottom} />
       {follow.unseen && (
-        <button type="button" className="fw-latest" onClick={toBottom}>
+        <button type="button" className="z2-control fw-latest" onClick={toBottom}>
           Latest
         </button>
       )}
