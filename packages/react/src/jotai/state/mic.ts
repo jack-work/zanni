@@ -6,7 +6,7 @@ import type { Dictation, SocketLike } from "../lib/dictation";
 import { canRecord, joinDictation, type MicSnapshot } from "../lib/mic";
 import { audioSessionAtom, unlockAudio } from "./audio";
 import { bootAtom } from "./boot";
-import { draftAtom, keyOf } from "./composer";
+import { dictatedAtom, draftAtom, keyOf } from "./composer";
 import { attendedAtom } from "./route";
 
 export const MIC_LEVEL_VAR = "--fw-mic-level";
@@ -59,8 +59,10 @@ export const micToggleAtom = atom(null, async (get, set) => {
   const key = keyOf(at.store, at.aria);
   const base = get(draftAtom(key));
   if (get(micAtom).state === "idle") dictation = beginAction("dictate", { "figaro.aria": at.aria });
-  mic.toggle(key, (text) => {
-    set(draftAtom(key), joinDictation(base, text));
+  mic.toggle(key, (text, final, audioId) => {
+    const joined = joinDictation(base, text);
+    set(draftAtom(key), joined);
+    if (final && audioId) set(dictatedAtom(key), { id: audioId, text: joined });
     set(dictationFocusAtom, (n) => n + 1);
   });
 });

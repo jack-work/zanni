@@ -3,18 +3,20 @@ import { createStore, Provider } from "jotai";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/app";
 import { bootAtom } from "zanni-react/jotai";
-import { draftAtom, SAVE_DELAY_MS } from "zanni-react/jotai";
+import { dictatedAtom, draftAtom, SAVE_DELAY_MS } from "zanni-react/jotai";
 import { mockDoor, type MockCore } from "./mock";
 import type { AriaClient } from "figaro-forms/aria";
 
 const MAIN = "c0ffee01".repeat(4);
 let core: MockCore;
 let client: AriaClient;
+let held: ReturnType<typeof createStore>;
 
 function attend(step: number) {
   ({ core, client } = mockDoor(step));
   window.location.hash = "#/gluck/" + MAIN;
   const store = createStore();
+  held = store;
   store.set(bootAtom, { stores: { gluck: client }, store: "gluck", audioUrl: "audio", sttUrl: "stt", mark: "" });
   return render(
     <Provider store={store}>
@@ -44,6 +46,22 @@ describe("the composer", () => {
     await waitFor(() => expect(input().value).toBe(""));
     await waitFor(() => expect(document.querySelector('.nodi-turn[data-turn="27"]')).toBeTruthy(), { timeout: 5000 });
     expect(document.querySelector('.nodi-turn[data-turn="27"] .nodi-input')!.textContent).toContain("please run the tests");
+  });
+
+  it("names the dictation clip when the sent text is the dictated text, and only then", async () => {
+    attend(1);
+    await live();
+    held.set(dictatedAtom("gluck/" + MAIN), { id: "202611-0123456789abcdef", text: "say this" });
+    fireEvent.change(input(), { target: { value: "say this " } });
+    fireEvent.keyDown(input(), { key: "Enter" });
+    await waitFor(() => expect(core.calls.filter((c) => c.method === "figaro.qua")).toHaveLength(1));
+    expect(core.calls.find((c) => c.method === "figaro.qua")!.params.dictation).toBe("202611-0123456789abcdef");
+    await waitFor(() => expect(held.get(dictatedAtom("gluck/" + MAIN))).toBeNull());
+    held.set(dictatedAtom("gluck/" + MAIN), { id: "202611-0123456789abcdef", text: "say this" });
+    fireEvent.change(input(), { target: { value: "say this, edited" } });
+    fireEvent.keyDown(input(), { key: "Enter" });
+    await waitFor(() => expect(core.calls.filter((c) => c.method === "figaro.qua")).toHaveLength(2));
+    expect(core.calls.filter((c) => c.method === "figaro.qua")[1]!.params.dictation).toBeUndefined();
   });
 
   it("sends on Enter, breaks the line on Shift+Enter", async () => {
