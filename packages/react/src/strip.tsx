@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 export interface StripProps {
   kind: "running" | "note";
   text: string;
-  time?: string;
+  time?: ReactNode;
   leaving?: boolean;
   className?: string;
   children?: ReactNode;

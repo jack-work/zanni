@@ -9,7 +9,7 @@ import { linkAtom, runningAtom, workAtom } from "../state/aria";
 import { composerAtom, composerNoteAtom, draftAtom, interruptAtom, keyOf, sendAtom } from "../state/composer";
 import { COMMAND_OFF, commandAtom, commandSourcesAtom, helpOpenAtom, loadOutfitsAtom, runCommandAtom } from "../state/command";
 import { pitViewAtom } from "../state/pit";
-import { applyCandidate, suggest } from "../lib/command";
+import { applyCandidate, suggest, type Candidate } from "../lib/command";
 import { CommandHelp } from "./command-help";
 import type { Attended } from "../state/route";
 
@@ -24,6 +24,11 @@ function useNow(period: number | null): number {
   return now;
 }
 
+function Elapsed({ since }: { since: number }) {
+  const now = useNow(1000);
+  return <>{clock(now - since)}</>;
+}
+
 function useWorkLine(attended: Attended, note: string, running: boolean) {
   const { client, aria } = attended;
   const work = useAtomValue(workAtom(client, aria));
@@ -31,8 +36,33 @@ function useWorkLine(attended: Attended, note: string, running: boolean) {
   const wasRunning = useRef(false);
   if (running && !wasRunning.current) seen.current = Date.now();
   wasRunning.current = running;
-  const now = useNow(running ? 1000 : null);
-  return { text: note || work.verb, time: running ? clock(now - (work.startedAt ?? seen.current)) : undefined };
+  return { text: note || work.verb, time: running ? <Elapsed since={work.startedAt ?? seen.current} /> : undefined };
+}
+
+function CommandHints({ line, why, onPick, tab }: { line: string; why: string; onPick: (item: Candidate) => void; tab: { current: (() => void) | undefined } }) {
+  const sources = useAtomValue(commandSourcesAtom);
+  const loadOutfits = useSetAtom(loadOutfitsAtom);
+  const suggestions = useMemo(() => suggest(line, sources), [line, sources]);
+  const first = suggestions.items.find((c) => !c.off);
+  useEffect(() => {
+    void loadOutfits();
+  }, [loadOutfits]);
+  useEffect(() => {
+    tab.current = first ? () => onPick(first) : undefined;
+    return () => {
+      tab.current = undefined;
+    };
+  }, [first, onPick, tab]);
+  return (
+    <Hints
+      chips={suggestions.items.map((c) => ({ key: c.text, label: c.label, help: c.help, off: c.off }))}
+      onPick={(key) => {
+        const item = suggestions.items.find((c) => c.text === key);
+        if (item) onPick(item);
+      }}
+      {...(why ? { refusal: why } : suggestions.hint?.refusal ? { refusal: suggestions.hint.refusal } : suggestions.hint ? { usage: suggestions.hint.usage, help: suggestions.hint.help } : {})}
+    />
+  );
 }
 
 export const Composer = memo(function Composer({ attended, toBottom }: { attended: Attended; toBottom: () => void }) {
@@ -52,8 +82,6 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
   const input = useRef<HTMLTextAreaElement | null>(null);
   const [cmd, setCmd] = useAtom(commandAtom(key));
   const runCommand = useSetAtom(runCommandAtom);
-  const sources = useAtomValue(commandSourcesAtom);
-  const loadOutfits = useSetAtom(loadOutfitsAtom);
   const setView = useSetAtom(pitViewAtom);
   const setHelp = useSetAtom(helpOpenAtom);
   const pit = usePit();
@@ -61,22 +89,15 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
   const attached = useAtomValue(attachingAtom);
   const addFiles = useSetAtom(addFilesAtom);
   const removeFile = useSetAtom(removeAttachmentAtom);
-  const suggestions = useMemo(() => (cmd.on ? suggest(cmd.line, sources) : null), [cmd.on, cmd.line, sources]);
-
-  const firstOpen = suggestions?.items.find((c) => !c.off);
-
-  useEffect(() => {
-    if (cmd.on) void loadOutfits();
-  }, [cmd.on, loadOutfits]);
+  const tab = useRef<(() => void) | undefined>(undefined);
 
   const leave = () => setCmd(COMMAND_OFF);
   const typeDraft = (next: string) => {
     if (draft === "" && next.startsWith(":")) setCmd({ on: true, line: next.slice(1), why: "" });
     else setDraft(next);
   };
-  const pick = (text: string) => {
-    const item = suggestions?.items.find((c) => c.text === text);
-    if (item) setCmd((c) => ({ ...c, line: applyCandidate(c.line, item), why: "" }));
+  const pick = (item: Candidate) => {
+    setCmd((c) => ({ ...c, line: applyCandidate(c.line, item), why: "" }));
     input.current?.focus({ preventScroll: true });
   };
   const run = async () => {
@@ -118,16 +139,8 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
       sendLabel={cmd.on ? "Run" : running ? "Steer" : "Send"}
       sendGlyph={cmd.on || !running ? glyphs.send : glyphs.steering}
       mode={cmd.on ? "command" : undefined}
-      {...(cmd.on ? { prompt: ":", enterRuns: true, onEscape: leave, onTab: () => firstOpen && pick(firstOpen.text) } : {})}
-      hints={
-        cmd.on && suggestions ? (
-          <Hints
-            chips={suggestions.items.map((c) => ({ key: c.text, label: c.label, help: c.help, off: c.off }))}
-            onPick={pick}
-            {...(cmd.why ? { refusal: cmd.why } : suggestions.hint?.refusal ? { refusal: suggestions.hint.refusal } : suggestions.hint ? { usage: suggestions.hint.usage, help: suggestions.hint.help } : {})}
-          />
-        ) : undefined
-      }
+      {...(cmd.on ? { prompt: ":", enterRuns: true, onEscape: leave, onTab: () => tab.current?.() } : {})}
+      hints={cmd.on ? <CommandHints line={cmd.line} why={cmd.why} onPick={pick} tab={tab} /> : undefined}
       attach={cmd.on ? undefined : { glyph: attachGlyph, label: "Attach", title: attached.items.length >= MAX_FILES ? "At most " + MAX_FILES + " attachments." : "Attach photos or a PDF", disabled: !live || attached.items.length >= MAX_FILES, onClick: () => picker.current?.click() }}
       tray={
         cmd.on ? undefined : (

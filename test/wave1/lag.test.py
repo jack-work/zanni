@@ -44,8 +44,6 @@ PROBE = """
     new PerformanceObserver((l) => { for (const e of l.getEntries()) if (e.name === 'keydown' || e.name === 'keypress' || e.name === 'input') events.push({ name: e.name, ms: e.duration, at: e.startTime }); }).observe({ type: 'event', durationThreshold: 16, buffered: true });
   } catch (e) {}
   const renders = { commits: 0, composer: 0, last: null, why: {}, lastProps: null, lastOuter: null };
-  const fiberKey = (el) => Object.keys(el).find((k) => k.startsWith('__reactFiber$'));
-  const top = (f) => { while (f.return) f = f.return; return f; };
   const owner = (f) => { for (let x = f.return; x; x = x.return) if (x.tag === 0 || x.tag === 11 || x.tag === 15) return x; return null; };
   window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = {
     supportsFiber: true,
@@ -54,11 +52,16 @@ PROBE = """
     onCommitFiberRoot(id, root) {
       renders.commits++;
       const form = document.querySelector('form.zr-composer');
-      const k = form && fiberKey(form);
-      if (!k) return;
-      let f = form[k];
-      if (f.alternate && top(f) !== root.current) f = f.alternate;
-      if (top(f) !== root.current) return;
+      if (!form) return;
+      let f = null;
+      const stack = [root.current];
+      while (stack.length) {
+        const x = stack.pop();
+        if (x.stateNode === form && x.tag === 5) { f = x; break; }
+        if (x.sibling) stack.push(x.sibling);
+        if (x.child) stack.push(x.child);
+      }
+      if (!f) return;
       const comp = owner(f);
       if (!comp) return;
       const outer = owner(comp);
