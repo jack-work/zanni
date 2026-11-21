@@ -76,7 +76,7 @@ export function TopologyTree({ onVisit, autoFocus, className }: { onVisit?: () =
   );
 }
 
-export function FormTree({ root, autoFocus, className }: { root: unknown; autoFocus?: boolean; className?: string }) {
+export function FormTree({ root, autoFocus, className, onEdit }: { root: unknown; autoFocus?: boolean; className?: string; onEdit?: (path: string) => void }) {
   const nodes: TreeNodeData[] = useMemo(() => formNodes(root), [root]);
-  return <Tree className={["fw-formtree", className].filter(Boolean).join(" ")} label="Bound form" testid="form" roots={nodes} mark={glyphs["pit.form.mark"]} autoFocus={autoFocus} />;
+  return <Tree className={["fw-formtree", className].filter(Boolean).join(" ")} label="Bound form" testid="form" roots={nodes} mark={glyphs["pit.form.mark"]} autoFocus={autoFocus} onEdit={onEdit} />;
 }
