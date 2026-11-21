@@ -84,13 +84,13 @@ class Run:
     def composer_text(self):
         return self.page.evaluate("document.querySelector('.zr-input') ? document.querySelector('.zr-input').value : null")
 
-    def dom_turns(self, full=False):
-        return self.page.evaluate("""async (full) => {
+    def dom_turns(self, peek=False):
+        return self.page.evaluate("""async (peek) => {
           const out = [];
           for (const n of [...document.querySelectorAll('.nodi-turn')].map((t) => t.dataset.turn)) {
             let t = document.querySelector('.nodi-turn[data-turn="' + n + '"]');
             if (!t) continue;
-            for (let tries = 0; full && t.hasAttribute('data-parked') && tries < 15; tries++) {
+            for (let tries = 0; !peek && t.hasAttribute('data-parked') && tries < 15; tries++) {
               t.scrollIntoView({ block: 'center' });
               await new Promise((r) => setTimeout(r, 200));
               t = document.querySelector('.nodi-turn[data-turn="' + n + '"]');
@@ -100,7 +100,7 @@ class Run:
                        prose: t.querySelectorAll('.nodi-prose').length, thinking: t.querySelectorAll('.nodi-thinking').length });
           }
           return out;
-        }""", full)
+        }""", peek)
 
     def pit_facts(self):
         return self.page.evaluate("""() => {
@@ -180,7 +180,7 @@ def check_always(run):
     run.navigated()
     if run.campaign.extra_always:
         run.campaign.extra_always(run)
-    turns = run.dom_turns()
+    turns = run.dom_turns(peek=True)
     nos = [t["no"] for t in turns if t["no"] is not None]
     if len(nos) != len(set(nos)):
         dup = sorted(n for n in set(nos) if nos.count(n) > 1)
@@ -206,7 +206,7 @@ def check_quiescent(run):
         run.campaign.extra_quiescent(run)
         return
     truth = run.stack.turns(run.aria())
-    drawn = {t["no"]: t for t in run.dom_turns(full=True) if t["no"] is not None}
+    drawn = {t["no"]: t for t in run.dom_turns() if t["no"] is not None}
     sent = run.stack.state()["sent"]
     mine = [t for t in truth if t["id"] > run.base]
     have = sorted([norm(t["inquiry"]) for t in mine] + [norm(n["markdown"]) for t in mine for n in t["nodes"] if n["type"] == "steering"])

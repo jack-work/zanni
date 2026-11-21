@@ -106,7 +106,7 @@ class Network(Campaign):
         truth = run.stack.turns()
         if not truth:
             return True
-        drawn = {t["no"] for t in run.dom_turns()}
+        drawn = {t["no"] for t in run.dom_turns(peek=True)}
         want = [t["id"] for t in truth if t["id"] > run.base]
         if all(i in drawn for i in want):
             return True
@@ -144,7 +144,7 @@ class Network(Campaign):
             if n == 0 and text != here and text not in run.state["retained"]:
                 raise Failure("lost-send", "%s was sent from the page and never reached the door, and is not in the composer" % clip(text))
         truth = run.stack.turns()
-        drawn = {t["no"]: t for t in run.dom_turns(full=True) if t["no"] is not None}
+        drawn = {t["no"]: t for t in run.dom_turns() if t["no"] is not None}
         for t in [t for t in truth if t["id"] > run.base]:
             d = drawn.get(t["id"])
             if d is None:
