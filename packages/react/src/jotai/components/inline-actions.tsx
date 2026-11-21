@@ -36,7 +36,7 @@ export function InlineActions({ kind, turn }: { kind: "input" | "prose"; turn: n
   return (
     <div className="fw-inline" data-kind={kind}>
       <div className="fw-inline-bar">
-        <Button variant="ghost" size="compact" className="fw-inline-btn fw-play" data-action="play" aria-label="Play" title="Play" onClick={play}>
+        <Button variant="ghost" size="compact" className="fw-inline-btn fw-play" data-action="play" aria-label="Play your message" title="Play your message" onClick={play}>
           <Glyph glyph={glyphs["state.running"]} />
         </Button>
         <Button variant="ghost" size="compact" className="fw-inline-btn" data-action="retranscribe" aria-label="Re-transcribe" title="Re-transcribe" onClick={() => void transcribe()}>

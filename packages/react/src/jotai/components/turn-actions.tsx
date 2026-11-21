@@ -15,7 +15,7 @@ export function TurnActions({ turn, playable }: { turn: number; playable: boolea
   return (
     <ActionBar>
       {playable && (
-        <Button variant="ghost" size="compact" className={handsFree ? "fw-play fw-play-icon fw-play-big" : "fw-play fw-play-icon"} aria-label="Play" title="Play" data-action="play" onClick={() => replay(turn)}>
+        <Button variant="ghost" size="compact" className={handsFree ? "fw-play fw-play-icon fw-play-big" : "fw-play fw-play-icon"} aria-label="Play reply" title="Play reply" data-action="play" onClick={() => replay(turn)}>
           <Glyph glyph={glyphs["state.running"]} />
         </Button>
       )}

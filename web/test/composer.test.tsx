@@ -193,7 +193,7 @@ describe("the buttons under a message", () => {
     const mine = [...document.querySelectorAll(under + '.fw-inline[data-kind="input"] .fw-inline-btn')].map((b) => b.getAttribute("data-action"));
     expect(mine).toEqual(["play", "retranscribe"]);
     expect(document.querySelector('.fw-inline[data-kind="prose"]')).toBeNull();
-    expect(document.querySelector(under + ".nodi-turn-head .fw-play-icon")!.getAttribute("aria-label")).toBe("Play");
+    expect(document.querySelector(under + ".nodi-turn-head .fw-play-icon")!.getAttribute("aria-label")).toBe("Play reply");
     expect(document.querySelector(".zr-scrim")).toBeNull();
     expect(document.querySelector(".fw-sheet")).toBeNull();
     expect(document.querySelector(under + '.fw-inline [data-action="play"]')!.textContent).toBe("▸");
