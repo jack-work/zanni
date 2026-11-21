@@ -299,12 +299,15 @@
 
 .zr-latest {
   position: fixed;
-  right: var(--zr-edge-r, 16px);
+  left: 0;
+  right: 0;
+  margin-inline: auto;
+  width: max-content;
   bottom: calc(var(--zr-composer-h, 0px) + 12px);
   z-index: 2;
   animation: zr-swap var(--zr-d-pop) var(--zr-pop) both;
 }
-.zr-btn.zr-latest[data-variant="accent"] { background: color-mix(in srgb, var(--z-accent) 72%, transparent); }
+.zr-btn.zr-latest[data-variant="accent"] { background: color-mix(in srgb, var(--z-accent) 55%, transparent); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
 .fw .zr-btn.zr-latest:active:not(:disabled) { scale: 1; }
 .zr-btn.zr-latest::after { content: ""; position: absolute; inset: auto; left: 50%; top: 50%; width: max(100%, 48px); height: max(100%, 48px); translate: -50% -50%; }
 .zr-player:empty { display: none; }
