@@ -125,11 +125,9 @@ async function test(name, fn) {
     });
   });
 
-  await test('sinks: nodi has exactly one function that writes text into the page', () => {
+  await test('sinks: nodi is pure, it touches no document and writes no text into the page', () => {
     const src = fs.readFileSync(path.join(__dirname, '..', 'assets/nodi/nodi.js'), 'utf8');
-    const writes = src.match(/createTextNode|\.textContent\s*=|\.appendData|\.innerText/g) || [];
-    assert.strictEqual(writes.filter((w) => w === 'createTextNode').length, 1);
-    assert.strictEqual(writes.filter((w) => /textContent/.test(w)).length, 1, 'one control-mark label');
+    assert.deepStrictEqual(src.match(/createTextNode|\.textContent\s*=|\.appendData|\.innerText|createElement|appendChild|document\b/g) || [], []);
   });
 
   process.stdout.write(failed ? failed + ' failed\n' : 'nodi: all passed\n');
