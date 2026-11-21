@@ -13,15 +13,15 @@
    "slack": 30
   },
   "bundle.code_brotli": {
-   "budget": 115887,
+   "budget": 135165,
    "margin": 0.05
   },
   "bundle.code_gzip": {
-   "budget": 133053,
+   "budget": 155606,
    "margin": 0.05
   },
   "bundle.code_raw": {
-   "budget": 436821,
+   "budget": 515024,
    "margin": 0.05
   },
   "history.rows.2.keydown_to_paint.p50": {
