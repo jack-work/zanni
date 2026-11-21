@@ -107,15 +107,15 @@ async function test(name, fn) {
     const dist = path.join(root, 'dist');
     fs.mkdirSync(path.join(dist, 'assets'), { recursive: true });
     fs.writeFileSync(path.join(root, 'THIRD-PARTY.txt'), 'notices\n');
-    fs.writeFileSync(path.join(dist, 'assets', 'index-abc.js'), 'export {};\n');
-    fs.writeFileSync(path.join(dist, 'assets', 'style-abc.css'), 'body{}\n');
-    const page = (extra) => '<!doctype html><script type="module" src="./assets/index-abc.js"></script><link rel="stylesheet" href="./assets/style-abc.css">' + extra;
+    fs.writeFileSync(path.join(dist, 'assets', 'index-AbCd1234.js'), 'export {};\n');
+    fs.writeFileSync(path.join(dist, 'assets', 'style-WxYz5678.css'), 'body{}\n');
+    const page = (extra) => '<!doctype html><script type="module" src="./assets/index-AbCd1234.js"></script><link rel="stylesheet" href="./assets/style-WxYz5678.css">' + extra;
     fs.writeFileSync(path.join(dist, 'index.html'), page(''));
     const out = path.join(root, 'out');
     const bundle = (target) => cp.execFileSync('node', [path.join(__dirname, '..', 'bin', 'figchat-bundle'), target, dist], { stdio: 'pipe' });
     bundle(out);
     const files = fs.readdirSync(out).sort();
-    assert.deepStrictEqual(files, ['SHA256SUMS', 'THIRD-PARTY.txt', 'index-abc.js', 'index.html', 'style-abc.css']);
+    assert.deepStrictEqual(files, ['SHA256SUMS', 'STATS.json', 'THIRD-PARTY.txt', 'index-AbCd1234.js', 'index.html', 'style-WxYz5678.css']);
     const index = fs.readFileSync(path.join(out, 'index.html'), 'utf8');
     (index.match(/(?:src|href)="\.\/assets\/[^"]+"/g) || []).forEach((m) => assert.ok(files.includes(m.replace(/^[^"]+"\.\/assets\//, '').slice(0, -1)), m));
     fs.readFileSync(path.join(out, 'SHA256SUMS'), 'utf8').trim().split('\n').forEach((line) => {
@@ -127,6 +127,128 @@ async function test(name, fn) {
       assert.throws(() => bundle(path.join(root, 'bad')), /inline script or style/, bad);
     });
     fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  await test('bundle: STATS.json lists every file with raw and gzip bytes, flags content-hashed names, and an unhashed asset fails the build', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'figchat-stats-'));
+    const dist = path.join(root, 'dist');
+    fs.mkdirSync(path.join(dist, 'assets'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'THIRD-PARTY.txt'), 'notices\n');
+    const body = 'export const a = ' + JSON.stringify('x'.repeat(4000)) + ';\n';
+    fs.writeFileSync(path.join(dist, 'assets', 'index-AbCd1234.js'), body);
+    fs.writeFileSync(path.join(dist, 'assets', 'face-q_-9Zk0a.woff2'), 'font');
+    fs.writeFileSync(path.join(dist, 'index.html'), '<!doctype html><script type="module" src="./assets/index-AbCd1234.js"></script>');
+    const bundle = (target) => cp.execFileSync('node', [path.join(__dirname, '..', 'bin', 'figchat-bundle'), target, dist], { stdio: 'pipe' });
+    const out = path.join(root, 'out');
+    bundle(out);
+    const stats = JSON.parse(fs.readFileSync(path.join(out, 'STATS.json'), 'utf8'));
+    assert.deepStrictEqual(Object.keys(stats.files).sort(), ['THIRD-PARTY.txt', 'face-q_-9Zk0a.woff2', 'index-AbCd1234.js', 'index.html']);
+    const js = stats.files['index-AbCd1234.js'];
+    assert.strictEqual(js.raw, Buffer.byteLength(body));
+    assert.strictEqual(js.gzip, require('zlib').gzipSync(body, { level: 9 }).length);
+    assert.ok(js.gzip < js.raw / 4, 'repetitive text compresses');
+    assert.deepStrictEqual(Object.entries(stats.files).filter(([, f]) => f.hashed).map(([n]) => n).sort(), ['face-q_-9Zk0a.woff2', 'index-AbCd1234.js']);
+    assert.strictEqual(stats.total.raw, Object.values(stats.files).reduce((n, f) => n + f.raw, 0));
+    assert.strictEqual(stats.total.gzip, Object.values(stats.files).reduce((n, f) => n + f.gzip, 0));
+    fs.writeFileSync(path.join(dist, 'assets', 'plain.js'), 'x');
+    assert.throws(() => bundle(path.join(root, 'bad')), /no content hash/);
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  const rpc = (conn, out) => {
+    let n = 0;
+    return (method, params) => {
+      const id = ++n;
+      conn.receive(JSON.stringify({ jsonrpc: '2.0', id, method, params }));
+      return out.find((m) => m.id === id).result;
+    };
+  };
+
+  await test('mock bench mode: 10000 turns of history page backward in order, and a reply streams at the set frame rate and size', async () => {
+    const fresh = mock.create({ step: 1 });
+    assert.strictEqual(fresh.arias[fresh.ids.main].turns.length, 26, 'the default history is today\'s fixture');
+    const core = mock.create({ history: 10000, pageBytes: 24000, stream: { fps: 50, bytes: 1000, chunk: 50 } });
+    const out = [];
+    const conn = core.attach({ text: (s) => out.push(JSON.parse(s)), close() {} });
+    const call = rpc(conn, out);
+    const main = core.ids.main;
+    assert.strictEqual(core.arias[main].turns.length, 10000);
+    let page = call('figaro.read', { figaro_id: main, backward: true, limit: 24000 });
+    assert.strictEqual(page.parts[page.parts.length - 1].turn, 10000);
+    assert.ok(page.more.before && JSON.stringify(page).length <= 24000 + 2000);
+    for (let i = 0; i < 3; i++) {
+      const top = page.parts[0].turn;
+      page = call('figaro.read', { figaro_id: main, backward: true, limit: 24000, at: page.prev });
+      assert.strictEqual(page.parts[page.parts.length - 1].turn, top - 1, 'the next page ends where the last began');
+      page.parts.forEach((p, k) => k && assert.strictEqual(p.turn, page.parts[k - 1].turn + 1));
+    }
+    const deep = call('figaro.read', { figaro_id: main, backward: true, limit: 24000, at: { turn: 5000, node: 0 } });
+    assert.strictEqual(deep.parts[deep.parts.length - 1].turn, 4999);
+    call('figaro.follow', { figaro_id: main });
+    out.length = 0;
+    const stamps = [];
+    const live = core.attach({ text: (s) => { const m = JSON.parse(s); if (m.method === 'figaro.aria' && m.params.parts[0].live && m.params.parts[0].live.nodes) stamps.push({ at: Date.now(), delta: m.params.parts[0].live.nodes[0] }); }, close() {} });
+    live.receive(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'figaro.qua', params: { figaro_id: main, text: 'go' } }));
+    await new Promise((r) => setTimeout(r, 900));
+    assert.strictEqual(stamps.length, 20, 'one frame per chunk');
+    assert.strictEqual(stamps[0].delta.set.markdown.length, 50);
+    stamps.slice(1).forEach((f, k) => assert.strictEqual(f.delta.patch.markdown.at, (k + 1) * 50));
+    const mean = (stamps[19].at - stamps[0].at) / 19;
+    assert.ok(mean > 12 && mean < 40, 'mean frame gap ' + mean + ' ms for 50 fps');
+    const turn = core.arias[main].turns[10000];
+    assert.strictEqual(turn.nodes[0].markdown.length, 1000);
+    assert.ok(turn.sealed);
+  });
+
+  await test('door server: --history, --fps, --bytes and --chunk reach the mock over a real WebSocket', async () => {
+    const net = require('net');
+    const crypto = require('crypto');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'figchat-bench-'));
+    const proc = cp.spawn('node', [path.join(__dirname, 'figchat-server.js'), dir, '5', '--history', '300', '--page', '24000', '--fps', '50', '--bytes', '500', '--chunk', '50'], { stdio: ['ignore', 'pipe', 'inherit'] });
+    const port = await new Promise((r) => proc.stdout.once('data', (d) => r(Number(String(d).trim()))));
+    const sock = net.connect(port, '127.0.0.1');
+    await new Promise((r) => sock.once('connect', r));
+    sock.write('GET /chat/door HTTP/1.1\r\nHost: 127.0.0.1:' + port + '\r\nOrigin: http://127.0.0.1:' + port + '\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: ' + crypto.randomBytes(16).toString('base64') + '\r\n\r\n');
+    const msgs = [];
+    let buf = Buffer.alloc(0), upgraded = false;
+    sock.on('data', (d) => {
+      buf = Buffer.concat([buf, d]);
+      if (!upgraded) { const at = buf.indexOf('\r\n\r\n'); if (at < 0) return; upgraded = true; buf = buf.subarray(at + 4); }
+      for (;;) {
+        if (buf.length < 2) return;
+        let len = buf[1] & 127, at = 2;
+        if (len === 126) { if (buf.length < 4) return; len = buf.readUInt16BE(2); at = 4; }
+        else if (len === 127) { if (buf.length < 10) return; len = Number(buf.readBigUInt64BE(2)); at = 10; }
+        if (buf.length < at + len) return;
+        msgs.push({ at: Date.now(), msg: JSON.parse(buf.subarray(at, at + len).toString('utf8')) });
+        buf = buf.subarray(at + len);
+      }
+    });
+    const send = (o) => {
+      const body = Buffer.from(JSON.stringify(o));
+      const mask = crypto.randomBytes(4);
+      const head = body.length < 126 ? Buffer.from([0x81, 0x80 | body.length]) : Buffer.from([0x81, 0x80 | 126, body.length >> 8, body.length & 255]);
+      sock.write(Buffer.concat([head, mask, Buffer.from(body.map((b, i) => b ^ mask[i % 4]))]));
+    };
+    const until = async (fn) => { for (let i = 0; i < 200 && !fn(); i++) await new Promise((r) => setTimeout(r, 25)); assert.ok(fn(), 'timed out'); };
+    try {
+      await until(() => upgraded);
+      const main = mock.aid(1);
+      send({ jsonrpc: '2.0', id: 1, method: 'figaro.read', params: { figaro_id: main, backward: true, limit: 24000 } });
+      await until(() => msgs.some((m) => m.msg.id === 1));
+      const parts = msgs.find((m) => m.msg.id === 1).msg.result.parts;
+      assert.strictEqual(parts[parts.length - 1].turn, 300);
+      send({ jsonrpc: '2.0', id: 2, method: 'figaro.qua', params: { figaro_id: main, text: 'go' } });
+      await until(() => msgs.some((m) => m.msg.method === 'figaro.aria' && m.msg.params.parts[0].sealed === true && m.msg.params.parts[0].turn === 301));
+      const frames = msgs.filter((m) => m.msg.method === 'figaro.aria' && m.msg.params.parts[0].live && m.msg.params.parts[0].live.nodes);
+      assert.strictEqual(frames.length, 10);
+      const sealed = msgs.find((m) => m.msg.method === 'figaro.aria' && m.msg.params.parts[0].sealed === true && m.msg.params.parts[0].turn === 301).msg.params.parts[0];
+      assert.strictEqual(sealed.nodes[0].markdown.length, 500);
+    } finally {
+      sock.destroy();
+      proc.kill();
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   await test('pcm worklet: any input rate becomes 40 ms frames of 16 kHz s16le with a level, and the tone survives', () => {

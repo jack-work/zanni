@@ -1,8 +1,9 @@
 import { atom, type PrimitiveAtom } from "jotai";
 import { ariaMethod, type AriaClient, type QuaResponse } from "figaro-forms/aria";
+import { traced } from "../../trace";
 import { MAX_IMAGES, attachUrlOf, imagesIn, problemWith, stale, uploadFile, type Slot } from "../lib/attach";
 import { bootAtom } from "./boot";
-import { composerNoteAtom, keyOf } from "./composer";
+import { ariaOf, composerNoteAtom, keyOf } from "./composer";
 import { attendedAtom } from "./route";
 
 export interface Attachment extends Slot {
@@ -41,7 +42,7 @@ export const uploadAtom = atom(null, async (get, set, req: { key: string; item: 
   const patch = (next: Partial<Attachment>) => set(list, (all) => all.map((a) => (a.key === req.item ? { ...a, ...next } : a)));
   patch({ status: "uploading", error: "" });
   try {
-    const got = await uploadFile(attachUrlOf(base), item.file);
+    const got = await traced("attach", { "figaro.aria": ariaOf(req.key) }, () => uploadFile(attachUrlOf(base), item.file));
     if (!get(list).some((a) => a.key === req.item)) return;
     const others = get(list).filter((a) => a.key !== req.item);
     if (imagesIn(others) + got.images > MAX_IMAGES) {

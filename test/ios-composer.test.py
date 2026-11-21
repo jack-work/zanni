@@ -1,12 +1,11 @@
 import os
 import statistics
-import time
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from playwright.sync_api import sync_playwright
 
-from figchat_kit import FAKE_VISUAL_VIEWPORT, MAIN, Door, assert_centred, until
+from figchat_kit import FAKE_VISUAL_VIEWPORT, MAIN, Door, assert_centred, keystrokes, quantile, until
 
 bundle = os.path.abspath(sys.argv[1])
 shots = os.environ.get("FIGCHAT_SHOTS", "")
@@ -298,20 +297,6 @@ with sync_playwright() as p:
     pg.wait_for_timeout(300)
     assert geometry(pg)["docScroll"] == [0, 0, 0], "an overscroll at the top does not chain to the page"
     ctx.close()
-
-    def keystrokes(pg, count, gap=25):
-        marks = []
-        for i in range(count):
-            t0 = time.perf_counter()
-            pg.keyboard.type("abcdefghij"[i % 10])
-            pg.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => r(0))))")
-            marks.append((time.perf_counter() - t0) * 1000)
-            pg.wait_for_timeout(gap)
-        return marks
-
-    def quantile(xs, q):
-        xs = sorted(xs)
-        return xs[min(len(xs) - 1, int(q * len(xs)))]
 
     pg = fresh()
     lagdoor = door(40)

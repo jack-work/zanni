@@ -54,6 +54,7 @@ export function TopologyTree({ onVisit, autoFocus, className }: { onVisit?: () =
       <Tree
         className={["fw-topology", className].filter(Boolean).join(" ")}
         label="Topology"
+        testid="topology"
         roots={roots}
         mark={glyphs.select}
         current={here}
@@ -77,5 +78,5 @@ export function TopologyTree({ onVisit, autoFocus, className }: { onVisit?: () =
 
 export function FormTree({ root, autoFocus, className }: { root: unknown; autoFocus?: boolean; className?: string }) {
   const nodes: TreeNodeData[] = useMemo(() => formNodes(root), [root]);
-  return <Tree className={["fw-formtree", className].filter(Boolean).join(" ")} label="Bound form" roots={nodes} mark={glyphs["pit.form.mark"]} autoFocus={autoFocus} />;
+  return <Tree className={["fw-formtree", className].filter(Boolean).join(" ")} label="Bound form" testid="form" roots={nodes} mark={glyphs["pit.form.mark"]} autoFocus={autoFocus} />;
 }

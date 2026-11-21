@@ -1,18 +1,18 @@
 import { glyphs, usePit } from "../../index";
-import { ariaAtom, ariaFactsAtom } from "figaro-forms/aria/jotai";
+import { ariaFactsAtom } from "figaro-forms/aria/jotai";
 import { useAtomValue } from "jotai";
 import { useEffect, useState } from "react";
 import { EFFORT_KEY, valueAt } from "../lib/pit-rows";
 import { STATUS_SPINNER, ctxLine, stateGlyph } from "../lib/status";
-import { linkAtom, runningAtom, turnsAtom } from "../state/aria";
+import { contextTokensAtom, endStateAtom, linkAtom, runningAtom } from "../state/aria";
 import { boundStateAtom, treeStateAtom } from "../state/pit";
 import { attendedAtom } from "../state/route";
 
 function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomValue<typeof attendedAtom>>>["client"]; aria: string }) {
   const link = useAtomValue(linkAtom);
   const running = useAtomValue(runningAtom(client, aria));
-  const turns = useAtomValue(turnsAtom(client, aria));
-  const snap = useAtomValue(ariaAtom(client, aria));
+  const endState = useAtomValue(endStateAtom(client, aria));
+  const context = useAtomValue(contextTokensAtom(client, aria));
   const tree = useAtomValue(treeStateAtom);
   const facts = useAtomValue(ariaFactsAtom(client, aria));
   const bound = useAtomValue(boundStateAtom);
@@ -24,12 +24,11 @@ function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomVa
     return () => clearInterval(id);
   }, [running]);
   const node = tree?.nodes.get(aria);
-  const end = turns[turns.length - 1]?.end;
-  const failed = end?.kind === "error";
-  const interrupted = end?.kind === "end" && /interrupt/i.test(end.text);
+  const failed = endState === "failed";
+  const interrupted = endState === "interrupted";
   const mantra = facts.mantra ?? valueAt(bound?.root, "mantra") ?? node?.mantra ?? "";
   const handle = node?.handle && node.handle !== mantra ? node.handle : aria.slice(0, 8);
-  const used = node?.ctx ?? snap.metrics?.context_tokens;
+  const used = node?.ctx ?? context;
   const ctx = ctxLine(used, node?.ctxLimit);
   const glyph = stateGlyph({ link, running, failed, interrupted, frame });
   const open = pit && pit.snap !== "closed";

@@ -145,3 +145,21 @@ describe("attending an aria", () => {
     expect(document.querySelector(".fw-main")!.textContent).toContain("No such store: nowhere");
   });
 });
+
+describe("bench hooks", () => {
+  it("marks the attach start and the first painted frame, and carries the stable test ids", async () => {
+    performance.clearMarks();
+    open("#/gluck/" + "c0ffee01".repeat(4));
+    expect(performance.getEntriesByName("figchat:attach").length).toBe(1);
+    expect(window.__figchat).toEqual({});
+    await waitFor(() => expect(window.__figchat?.firstFrame).toBeGreaterThan(0));
+    const attach = performance.getEntriesByName("figchat:attach")[0]!;
+    const frame = performance.getEntriesByName("figchat:first-frame");
+    expect(frame.length).toBe(1);
+    expect(frame[0]!.startTime).toBeGreaterThanOrEqual(attach.startTime);
+    expect(Object.keys(window).filter((k) => k.startsWith("__figchat"))).toEqual(["__figchat"]);
+    for (const id of ["composer-input", "send", "transcript-scroller", "pit-grip"]) expect(document.querySelectorAll('[data-testid="' + id + '"]').length, id).toBe(1);
+    expect(document.querySelectorAll('[data-testid="topology-row"]').length).toBeGreaterThan(5);
+    expect(document.querySelector('[data-testid="composer-input"]')!.tagName).toBe("TEXTAREA");
+  });
+});

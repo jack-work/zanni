@@ -427,6 +427,46 @@
           '');
         };
 
+
+        packages.figchat-bench = pkgs.writeShellApplication {
+          name = "figchat-bench";
+          runtimeInputs = [ pkgs.nodejs (pkgs.python3.withPackages (ps: [ ps.playwright ps.brotli ])) ];
+          runtimeEnv = {
+            PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
+            PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+            LD_LIBRARY_PATH = "${pkgs.mesa}/lib:${pkgs.libglvnd}/lib";
+            __EGL_VENDOR_LIBRARY_FILENAMES = "${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json";
+            LIBGL_ALWAYS_SOFTWARE = "1";
+            EGL_PLATFORM = "surfaceless";
+          };
+          text = ''
+            here=''${ZANNI_ROOT:-$PWD}
+            case "''${1:-}" in
+              check) shift; exec python3 "$here/bench/check.py" "$@" ;;
+              chart) shift; exec python3 "$here/bench/chart.py" "$@" ;;
+              *) exec python3 "$here/bench/figchat_bench.py" "$@" ;;
+            esac
+          '';
+        };
+
+        checks.figchat-perf = pkgs.runCommand "zanni-figchat-perf" {
+          nativeBuildInputs = [ pkgs.nodejs (pkgs.python3.withPackages (ps: [ ps.playwright ps.brotli ])) ];
+          PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
+          PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+          FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
+        } ''
+          set -o pipefail
+          export HOME=$TMPDIR
+          cp -r ${./assets} assets
+          cp -r ${./examples} examples
+          cp -r ${./test} test
+          cp -r ${./bench} bench
+          chmod -R u+w assets examples test bench
+          mkdir -p $out
+          env LD_LIBRARY_PATH=${pkgs.mesa}/lib:${pkgs.libglvnd}/lib __EGL_VENDOR_LIBRARY_FILENAMES=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless python3 bench/figchat_bench.py ${self.packages.${system}.figchat-shell} --sha ${self.shortRev or self.dirtyShortRev or "dirty"} --out $out/result.json
+          python3 bench/check.py $out/result.json bench/budgets.json 2>&1 | tee $out/check.txt
+        '';
+
         checks.rotolo = pkgs.runCommand "zanni-rotolo-test" {
           nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.playwright ps.pillow ])) ];
           PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;

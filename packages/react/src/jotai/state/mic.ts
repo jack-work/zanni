@@ -1,7 +1,8 @@
 import { atom } from "jotai";
 import { sessionUrl } from "../../index";
+import { beginAction, type Action } from "../../trace";
 import { captureFrames, browserMedia } from "../lib/capture";
-import { Dictation, dictationSocketUrl, type SocketLike } from "../lib/dictation";
+import type { Dictation, SocketLike } from "../lib/dictation";
 import { canRecord, joinDictation, type MicSnapshot } from "../lib/mic";
 import { audioSessionAtom, unlockAudio } from "./audio";
 import { bootAtom } from "./boot";
@@ -12,6 +13,7 @@ export const MIC_LEVEL_VAR = "--fw-mic-level";
 
 export const micAtom = atom<MicSnapshot>({ state: canRecord(browserMedia()) ? "idle" : "unsupported", began: 0, note: "" });
 const controller = atom<Dictation | null>(null);
+let dictation: Action | null = null;
 
 export const dictationFocusAtom = atom(0);
 
@@ -21,7 +23,7 @@ function writeLevel(value: number): void {
   else root.removeProperty(MIC_LEVEL_VAR);
 }
 
-export const micToggleAtom = atom(null, (get, set) => {
+export const micToggleAtom = atom(null, async (get, set) => {
   const at = get(attendedAtom);
   if (!at) return;
   const session = get(audioSessionAtom);
@@ -29,7 +31,8 @@ export const micToggleAtom = atom(null, (get, set) => {
   let mic = get(controller);
   if (!mic) {
     const stt = get(bootAtom).sttUrl;
-    mic = new Dictation({
+    const { Dictation, dictationSocketUrl } = await import("../lib/dictation");
+    mic = get(controller) ?? new Dictation({
       media: browserMedia(),
       now: () => Date.now(),
       open: (target) => new WebSocket(sessionUrl(dictationSocketUrl(stt, target, navigator.language || "en-US")).href) as unknown as SocketLike,
@@ -39,11 +42,20 @@ export const micToggleAtom = atom(null, (get, set) => {
       setTimeout: (fn, ms) => window.setTimeout(fn, ms),
       clearTimeout: (id) => window.clearTimeout(id as number),
     });
-    mic.subscribe((snap) => set(micAtom, snap));
-    set(controller, mic);
+    if (get(controller) !== mic) {
+      mic.subscribe((snap) => {
+        set(micAtom, snap);
+        if (snap.state === "idle" && dictation) {
+          dictation.end();
+          dictation = null;
+        }
+      });
+      set(controller, mic);
+    }
   }
   const key = keyOf(at.store, at.aria);
   const base = get(draftAtom(key));
+  if (get(micAtom).state === "idle") dictation = beginAction("dictate", { "figaro.aria": at.aria });
   mic.toggle(key, (text) => {
     set(draftAtom(key), joinDictation(base, text));
     set(dictationFocusAtom, (n) => n + 1);

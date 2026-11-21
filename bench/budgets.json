@@ -1,0 +1,156 @@
+{
+ "from": "2026-11-21-bf617a2.json, bundle sizes and session.* and attach.1.app_mark from the finish run",
+ "margin": 0.5,
+ "metrics": {
+  "attach.1.app_mark.p50": {
+   "budget": 39.9,
+   "margin": 1.0,
+   "slack": 30
+  },
+  "attach.1.first_frame.p50": {
+   "budget": 49.5,
+   "margin": 1.0,
+   "slack": 30
+  },
+  "bundle.code_brotli": {
+   "budget": 135165,
+   "margin": 0.05
+  },
+  "bundle.code_gzip": {
+   "budget": 155606,
+   "margin": 0.05
+  },
+  "bundle.code_raw": {
+   "budget": 515024,
+   "margin": 0.05
+  },
+  "history.rows.2.keydown_to_paint.p50": {
+   "budget": 56.5,
+   "goal": 25,
+   "margin": 1.0
+  },
+  "history.rows.2.script_ms_per_frame": {
+   "budget": 8.8,
+   "margin": 1.0,
+   "slack": 2
+  },
+  "history.rows.2.task_ms_per_frame": {
+   "budget": 39.8,
+   "margin": 1.0
+  },
+  "history.rows.3.script_ms_per_frame": {
+   "budget": 15.9,
+   "margin": 1.0,
+   "slack": 2
+  },
+  "input.0.streaming.keydown_to_paint.p95": {
+   "budget": 7.9,
+   "margin": 1.0,
+   "slack": 10
+  },
+  "input.0.streaming_long.keydown_to_paint_p95_last": {
+   "budget": 9.5,
+   "goal": 50,
+   "margin": 1.0,
+   "slack": 10
+  },
+  "input.1.idle.keydown_to_paint.p95": {
+   "budget": 8.1,
+   "margin": 1.0,
+   "slack": 10
+  },
+  "input.1.stream_frame.components_rendered_per_frame.other": {
+   "budget": 6.4,
+   "margin": 0.2,
+   "slack": 2
+  },
+  "input.1.stream_frame.components_rendered_per_frame.settled": {
+   "budget": 0.0,
+   "margin": 0,
+   "slack": 1
+  },
+  "input.1.stream_frame.task_ms_per_frame": {
+   "budget": 3.8,
+   "margin": 1.0,
+   "slack": 2
+  },
+  "input.1.streaming.keydown_to_paint.p50": {
+   "budget": 7.9,
+   "margin": 1.0,
+   "slack": 10
+  },
+  "input_webkit.streaming_long.keydown_to_paint.p95": {
+   "budget": 13,
+   "goal": 50,
+   "margin": 1.0,
+   "slack": 10
+  },
+  "load.cold.fcp": {
+   "budget": 56,
+   "margin": 1.0,
+   "slack": 30
+  },
+  "load.cold.tti": {
+   "budget": 114.7,
+   "margin": 1.0,
+   "slack": 50
+  },
+  "load.warm.wire": {
+   "budget": 1297,
+   "margin": 0.2
+  },
+  "memory.after_detach.retained_per_turn": {
+   "budget": 13722.4,
+   "margin": 0.5,
+   "slack": 1000
+  },
+  "memory.dom_per_turn": {
+   "budget": 45.0,
+   "margin": 0.1,
+   "slack": 1
+  },
+  "memory.heap_per_turn": {
+   "budget": 51769.9,
+   "margin": 0.3
+  },
+  "memory.listeners_per_turn": {
+   "budget": 6.0,
+   "margin": 0,
+   "slack": 1
+  },
+  "scroll.frame_ms.p95": {
+   "budget": 16.8,
+   "margin": 1.0
+  },
+  "scroll_dom.frame_ms.p95": {
+   "budget": 16.7,
+   "margin": 1.0
+  },
+  "session.dom_per_turn": {
+   "budget": 124.0,
+   "margin": 0.1,
+   "slack": 1
+  },
+  "session.door_in_bytes_per_turn": {
+   "budget": 30867,
+   "margin": 0.1
+  },
+  "session.heap_end": {
+   "budget": 94237804,
+   "margin": 0.3
+  },
+  "session.heap_per_turn": {
+   "budget": 173259,
+   "margin": 0.3
+  },
+  "session.listeners_per_turn": {
+   "budget": 4.0,
+   "margin": 0,
+   "slack": 1
+  },
+  "wire.door_in_bytes_per_turn": {
+   "budget": 23895,
+   "margin": 0.1
+  }
+ }
+}

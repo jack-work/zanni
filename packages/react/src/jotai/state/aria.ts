@@ -49,6 +49,29 @@ export function runningAtom(client: AriaClient, aria: string): Atom<boolean> {
   );
 }
 
+export function endStateAtom(client: AriaClient, aria: string): Atom<"" | "failed" | "interrupted"> {
+  return memo(client, `end\0${aria}`, () =>
+    atom((get) => {
+      const t = get(turnsAtom(client, aria));
+      const end = t[t.length - 1]?.end;
+      return end?.kind === "error" ? "failed" : end?.kind === "end" && /interrupt/i.test(end.text) ? "interrupted" : "";
+    }),
+  );
+}
+
+export function contextTokensAtom(client: AriaClient, aria: string): Atom<number | undefined> {
+  return memo(client, `ctx\0${aria}`, () => atom((get) => get(ariaAtom(client, aria)).metrics?.context_tokens));
+}
+
+export function metricsLineAtom(client: AriaClient, aria: string): Atom<string> {
+  return memo(client, `metrics\0${aria}`, () =>
+    atom((get) => {
+      const m = get(ariaAtom(client, aria)).metrics;
+      return m ? nodi.metricsLine(m) : "";
+    }),
+  );
+}
+
 export function workAtom(client: AriaClient, aria: string): Atom<Work_> {
   return memo(client, `work\0${aria}`, () => {
     let last: Work_ | undefined;
