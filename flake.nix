@@ -159,7 +159,7 @@
                 top = builtins.elemAt (pkgs.lib.splitString "/" rel) 1;
                 base = baseNameOf path;
               in
-              rel == "" || (builtins.elem top [ "web" "assets" "bin" ] && !(builtins.elem base [ "node_modules" "dist" ]));
+              rel == "" || (builtins.elem top [ "web" "assets" "bin" "examples" ] && !(builtins.elem base [ "node_modules" "dist" ]));
           };
           sourceRoot = "zanni-source/web";
           nodejs = pkgs.nodejs_24;
