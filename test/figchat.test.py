@@ -76,7 +76,7 @@ def until(pg, js, timeout=10000):
 
 
 SANS = """() => {
-  const house = new Set(['EB Garamond','Jacquard 24','VT323','Symbols Nerd Font Subset']);
+  const house = new Set(['EB Garamond','Jacquard 24','VT323','Nerd Icons']);
   const generic = new Set(['serif','monospace','Georgia','Times New Roman','Courier New','ui-monospace','SF Mono','Menlo','Consolas']);
   const bad = [];
   for (const n of document.querySelectorAll('body, body *')) {
