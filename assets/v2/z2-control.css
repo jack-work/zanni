@@ -1,0 +1,27 @@
+.z2-control {
+  position: relative;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--z-control-h-default, 32px);
+  padding: 0 var(--z-control-px-default, 12px);
+  font-size: var(--z-control-fs-default, 18px);
+  line-height: 1;
+  white-space: nowrap;
+  touch-action: manipulation;
+}
+.z2-control[data-size="compact"] {
+  min-height: var(--z-control-h-compact, 26px);
+  padding: 0 var(--z-control-px-compact, 8px);
+  font-size: var(--z-control-fs-compact, 16px);
+}
+@media (pointer: coarse) {
+  .z2-control::after {
+    content: "";
+    position: absolute;
+    inset-block: min(0px, calc((100% - var(--z-control-hit, 44px)) / 2));
+    inset-inline: min(0px, calc((100% - var(--z-control-hit, 44px)) / 2));
+  }
+}

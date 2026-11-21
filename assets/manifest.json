@@ -423,6 +423,7 @@
         "v2/tokens.json",
         "v2/z2-tokens.css",
         "v2/z2-vega-theme.json",
+        "v2/z2-control.css",
         "v2/z2.css",
         "v2/z2-registro.css",
         "v2/z2.js",
@@ -430,6 +431,7 @@
         "v2/z2-scope.js"
       ],
       "classes": [
+        "z2-control",
         "z2-shell",
         "z2-main",
         "z2-panel",

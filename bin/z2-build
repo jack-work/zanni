@@ -76,7 +76,10 @@ def css(t):
     out.append(f"  --z-tint: {ld(sh['tint'])};")
     out.append(f"  --z-shadow: {ld(sh['shadow'])};")
     out.append(f"  --z-measure: {sh['measure']};")
-    out.append(f"  --z-control-hit: {sh['control_hit']}px;")
+    for size in ("compact", "default"):
+        for k, v in sh["control"][size].items():
+            out.append(f"  --z-control-{k}-{size}: {v}px;")
+    out.append(f"  --z-control-hit: {sh['control']['hit']}px;")
     for k, v in sh["leading"].items():
         out.append(f"  --z-leading-{k}: {v};")
     for i, v in enumerate(sh["radius"], 1):
@@ -130,6 +133,10 @@ def audit(t):
         cols = [p[i] for p in sh["series"]]
         d = min(math.dist(oklab(a), oklab(b)) for j, a in enumerate(cols) for b in cols[j + 1:])
         rows.append(("all", sc, "series min OKLab distance", "", d, 0.07))
+    c = sh["control"]
+    rows.append(("all", "-", "control hit", "", c["hit"], 44))
+    rows.append(("all", "-", "control default h under hit", "", c["hit"] - c["default"]["h"], 0))
+    rows.append(("all", "-", "control compact under default", "", c["default"]["h"] - c["compact"]["h"], 1))
     for r in rows:
         if r[4] < r[5]:
             fails.append(r)

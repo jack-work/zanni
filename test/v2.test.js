@@ -29,4 +29,13 @@ fs.copyFileSync(path.join(__dirname, "..", "bin/z2-build"), path.join(tmp, "bin/
 let failed = false;
 try { execFileSync("python3", [path.join(tmp, "bin/z2-build")], { stdio: "pipe" }); } catch (e) { failed = /CONTRAST FAIL band light --z-muted/.test(String(e.stderr)); }
 assert.ok(failed, "z2-build must refuse a token under AA, naming it");
+tok.themes.band.colors["--z-muted"] = ["#694B3F", "#A5887B"];
+tok.shared.control.hit = 40;
+fs.writeFileSync(path.join(tmp, "assets/v2/tokens.json"), JSON.stringify(tok));
+let smallHit = false;
+try { execFileSync("python3", [path.join(tmp, "bin/z2-build")], { stdio: "pipe" }); } catch (e) { smallHit = /control hit/.test(String(e.stderr)); }
+assert.ok(smallHit, "z2-build must refuse a touch target under 44px, naming it");
+const control = fs.readFileSync(path.join(__dirname, "..", "assets/v2/z2-control.css"), "utf8");
+assert.match(control, /@media \(pointer: coarse\)\s*\{\s*\.z2-control::after/, "the hit area is a coarse-pointer pseudo-element");
+assert.doesNotMatch(control, /min-height:\s*44px/, "the visual size never carries the 44px");
 console.log("v2.test: ok");
