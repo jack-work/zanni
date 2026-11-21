@@ -1,5 +1,5 @@
 import { atom } from "jotai";
-import { sessionUrl } from "../../index";
+import { sessionUrl, voce } from "../../index";
 import { beginAction, type Action } from "../../trace";
 import { captureFrames, browserMedia } from "../lib/capture";
 import type { Dictation, SocketLike } from "../lib/dictation";
@@ -37,7 +37,10 @@ export const micToggleAtom = atom(null, async (get, set) => {
       now: () => Date.now(),
       open: (target) => new WebSocket(sessionUrl(dictationSocketUrl(stt, target, navigator.language || "en-US")).href) as unknown as SocketLike,
       capture: captureFrames,
-      recording: (on) => session.setRecording(on),
+      recording: (on) => {
+        session.setRecording(on);
+        voce.record(window, on);
+      },
       level: writeLevel,
       setTimeout: (fn, ms) => window.setTimeout(fn, ms),
       clearTimeout: (id) => window.clearTimeout(id as number),
