@@ -1,7 +1,7 @@
 {
   "repo": "figaro-forms",
-  "ref": "refs/heads/lane/ir-gaps",
-  "rev": "1c7a9a456fc4d13800e79c5405984a70efd13ba3",
-  "file": "figaro-forms-0.16.0-1c7a9a4.tgz",
-  "integrity": "sha512-wRqqJWNPjTnHM4EpClZsFtF4q98RvcNH45RGtuRIswT1NEUaxtVy3TmM7RSc1iP9JMpOuDJYRgeR2GYm3N1mww=="
+  "ref": "refs/tags/v0.17.1",
+  "rev": "74ac1faa9581949bf967f3d04bc583c4017eeff9",
+  "file": "figaro-forms-0.17.1.tgz",
+  "integrity": "sha512-mguI6oyxNIaIAr1NsMr4KZvv8AgZ3vIyvCih8wnlMmnVzIhrRN39XgncjLNpJW0amI+pTJTocRozkFhQ+cu/zw=="
 }
