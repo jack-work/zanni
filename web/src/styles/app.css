@@ -212,7 +212,6 @@ body.fw-page {
   .fw-new-actions .zr-btn { min-height: 44px; }
 }
 .nodi-turn-fork { color: var(--z-muted); }
-.nodi-turn-head .nodi-turn-no { margin-right: 1ch; }
 
 .fw-help { display: flex; flex-direction: column; gap: var(--z-space-2, 4px); margin: 0; }
 .fw-help-row { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: var(--z-space-3, 8px); font-size: 1.0625rem; }
