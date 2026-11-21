@@ -138,6 +138,14 @@ async function test(name, fn) {
     assert.deepStrictEqual(src.match(/createTextNode|\.textContent\s*=|\.appendData|\.innerText|createElement|appendChild|document\b/g) || [], []);
   });
 
+  await test('reveal keeps the joiners and escapes the other invisible controls', () => {
+    const family = '\ud83d\udc68\u200d\ud83d\udc69\u200d\ud83d\udc67';
+    assert.deepEqual(nodi.reveal(family), [{ plain: family }], 'a ZWJ sequence stays one piece of text');
+    const persian = '\u0645\u06cc\u200c\u062e\u0648\u0627\u0647\u0645';
+    assert.deepEqual(nodi.reveal(persian), [{ plain: persian }], 'a ZWNJ stays in the word');
+    assert.deepEqual(nodi.reveal('a\u200bb\u200ec\u200fd\u202ee').map((p) => p.mark || p.plain), ['a', 'U+200B', 'b', 'U+200E', 'c', 'U+200F', 'd', 'U+202E', 'e'], 'the zero width space and direction marks are still shown');
+  });
+
   process.stdout.write(failed ? failed + ' failed\n' : 'nodi: all passed\n');
   process.exit(failed ? 1 : 0);
 })();

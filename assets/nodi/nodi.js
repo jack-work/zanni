@@ -9,7 +9,7 @@
 }(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var CONTROL = /[\u0000-\u0008\u000b-\u001f\u007f-\u009f\u00ad\u061c\u180e\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff\ufff9-\ufffb]/g;
+  var CONTROL = /[\u0000-\u0008\u000b-\u001f\u007f-\u009f\u00ad\u061c\u180e\u200b\u200e\u200f\u2028-\u202e\u2060-\u206f\ufeff\ufff9-\ufffb]/g;
   var KNOWN = { prose: 1, thinking: 1, steering: 1, tool: 1 };
   var ARIA_ID = /^[0-9a-f]{8,32}$/i;
 
