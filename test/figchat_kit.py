@@ -50,6 +50,22 @@ def until(pg, js, timeout=10000):
     raise AssertionError("timed out waiting for: %s (last %r)" % (js, last))
 
 
+def keystrokes(pg, count, gap=25):
+    marks = []
+    for i in range(count):
+        t0 = time.perf_counter()
+        pg.keyboard.type("abcdefghij"[i % 10])
+        pg.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => r(0))))")
+        marks.append((time.perf_counter() - t0) * 1000)
+        pg.wait_for_timeout(gap)
+    return marks
+
+
+def quantile(xs, q):
+    xs = sorted(xs)
+    return xs[min(len(xs) - 1, int(q * len(xs)))]
+
+
 class Door:
     def __init__(self, bundle, step, **bench):
         flags = [x for k, v in bench.items() for x in ("--" + k, str(v))]
