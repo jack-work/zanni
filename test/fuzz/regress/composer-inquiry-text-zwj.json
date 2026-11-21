@@ -1,0 +1,14 @@
+{
+ "campaign": "composer",
+ "seed": 1,
+ "profile": "desktop",
+ "invariant": "inquiry-text",
+ "message": "a ZWJ emoji sequence sent from the composer is drawn in the transcript with each U+200D shown as the text U+200D (nodi.js CONTROL covers \\u200b-\\u200f), so the family emoji falls apart; U+200C breaks Persian the same way",
+ "owner": "Frontend (assets/nodi/nodi.js reveal)",
+ "status": "xfail",
+ "strict": ["reveal"],
+ "actions": [
+  {"k": "emoji", "text": "\ud83d\udc68\u200d\ud83d\udc69\u200d\ud83d\udc67\u200d\ud83d\udc66"},
+  {"k": "send"}
+ ]
+}

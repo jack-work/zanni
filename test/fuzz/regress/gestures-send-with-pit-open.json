@@ -1,0 +1,44 @@
+{
+ "campaign": "gestures",
+ "seed": 318237908,
+ "profile": "phone",
+ "invariant": "composer-text",
+ "message": "on a phone with the pit open at a larger snap, Send is tappable but the composer keeps the prompt that was sent",
+ "owner": "Frontend (composer, pit)",
+ "status": "xfail",
+ "strict": [],
+ "actions": [
+  {
+   "k": "tap",
+   "t": "older",
+   "x": 0.997,
+   "y": 0.487
+  },
+  {
+   "k": "tap",
+   "t": "scrim",
+   "x": 0.844,
+   "y": 0.972
+  },
+  {
+   "k": "dbltap",
+   "t": "pit-handle",
+   "x": 0.155,
+   "y": 0.678
+  },
+  {
+   "k": "pit",
+   "how": "handle-up"
+  },
+  {
+   "k": "send",
+   "text": "run the tests"
+  },
+  {
+   "k": "fling",
+   "t": "scroll",
+   "dy": -1500,
+   "speed": 1200
+  }
+ ]
+}

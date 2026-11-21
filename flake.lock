@@ -1,5 +1,26 @@
 {
   "nodes": {
+    "figaro-forms": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1795261276,
+        "narHash": "sha256-tKRldjWcOohcPI/PuOodWDxjKQ6kF7+oyfGiZ/dHZ1s=",
+        "ref": "refs/heads/main",
+        "rev": "e67338e7285add1b6daa1f3f1ffa507eea4853a4",
+        "revCount": 130,
+        "type": "git",
+        "url": "ssh://git@spain/var/lib/keel/jack/figaro-forms.git"
+      },
+      "original": {
+        "rev": "e67338e7285add1b6daa1f3f1ffa507eea4853a4",
+        "type": "git",
+        "url": "ssh://git@spain/var/lib/keel/jack/figaro-forms.git"
+      }
+    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -36,6 +57,7 @@
     },
     "root": {
       "inputs": {
+        "figaro-forms": "figaro-forms",
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs"
       }
