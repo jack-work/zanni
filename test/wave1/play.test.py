@@ -62,6 +62,22 @@ def main():
                     rep.check(pg.locator(t + " [data-action='play']").count() == 3, "%d: three play buttons on a turn with an inquiry and output (got %d)" % (width, pg.locator(t + " [data-action='play']").count()))
                     labels = pg.evaluate("[...document.querySelectorAll(\"%s [data-action='play']\")].map((b) => [b.getAttribute('aria-label'), b.textContent.trim()])" % t)
                     rep.check(labels == [["Play inquiry and reply", "▸"], ["Play your message", "▸"], ["Play reply", "▸"]], "%d: top, under the inquiry, under the output, unlabelled but for aria: %s" % (width, labels))
+                    sizes = pg.evaluate("""(() => {
+                      const out = [];
+                      for (const b of document.querySelectorAll("%s [data-action='play']")) {
+                        const r = b.getBoundingClientRect();
+                        let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+                        for (let y = Math.floor(r.y) - 20; y <= r.bottom + 20; y++) for (let x = Math.floor(r.x) - 20; x <= r.right + 20; x++) {
+                          const e = document.elementFromPoint(x + 0.5, y + 0.5);
+                          if (e && (e === b || b.contains(e))) { x0 = Math.min(x0, x); x1 = Math.max(x1, x + 1); y0 = Math.min(y0, y); y1 = Math.max(y1, y + 1); }
+                        }
+                        out.push({ w: r.width, h: r.height, hitW: x1 - x0, hitH: y1 - y0 });
+                      }
+                      return out;
+                    })()""" % t)
+                    for z in sizes:
+                        rep.check(z["w"] <= 40 and z["h"] <= 36, "%d: a play button is compact, %sx%s" % (width, z["w"], z["h"]))
+                        rep.check(z["hitW"] >= 38 and z["hitH"] >= 42, "%d: its tap area is generous, %sx%s" % (width, z["hitW"], z["hitH"]))
                     pg.locator(t + " .nodi-turn-head [data-action='play']").click()
                     pg.wait_for_timeout(4000)
                     plays = pg.evaluate("window.__plays")

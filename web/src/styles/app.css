@@ -151,8 +151,8 @@ body.fw-page {
 .fw-mic[aria-pressed="true"] { background: var(--z-fail); border-color: var(--z-fail); color: var(--z-ground); }
 
 .fw-inline { display: flex; flex-direction: column; align-items: flex-start; gap: var(--z-space-2, 4px); }
-.fw-inline-bar { display: flex; gap: var(--z-space-2, 4px); }
-.fw .fw-inline-btn { min-width: 44px; min-height: 44px; padding: 0; display: inline-flex; align-items: center; justify-content: center; gap: 0; font-size: 2.25rem; line-height: 1; opacity: 0.85; }
+.fw-inline-bar { display: flex; gap: 12px; }
+.fw .fw-inline-btn { min-width: 32px; min-height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; gap: 0; font-size: 1.5rem; line-height: 1; opacity: 0.85; }
 .fw .fw-inline-btn:hover, .fw .fw-inline-btn:focus-visible { opacity: 1; }
 .fw .fw-inline-bar { margin-left: calc(var(--z-space-3, 8px) * -1); }
 .fw .fw-inline[data-kind="input"] { align-items: flex-end; }
@@ -243,15 +243,17 @@ body.fw-page {
 .fw-help-why { font-style: italic; }
 .fw-picker { font-size: 1rem; }
 
-.fw .fw-play .zr-ink { font-size: 3rem; }
+.fw .fw-play .zr-ink { font-size: 1.5rem; }
 .fw-inline-heard { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--z-space-2, 4px) var(--z-space-3, 8px); width: 100%; padding: var(--z-space-3, 8px); border: 1px solid var(--z-line); border-radius: var(--z-radius-1, 2px); background: color-mix(in srgb, var(--z-ink) 5%, transparent); }
 .fw-inline-heard-label { grid-column: 1 / -1; font: 400 1.0625rem / 1 var(--fw-mono); letter-spacing: 0.04em; color: var(--z-muted); }
 .fw-inline-heard-text { margin: 0; font-size: 1.1875rem; overflow-wrap: anywhere; }
 .fw .fw-use { min-height: 44px; }
 .nodi-tool-args { white-space: pre-wrap; overflow-wrap: anywhere; }
-.nodi-turn-tools .fw-play-icon { min-width: 44px; min-height: 36px; padding: 0; font-size: 2rem; }
-.fw-output-play { display: flex; justify-content: flex-start; }
-.fw-output-play .fw-output-btn { min-width: 44px; min-height: 36px; padding: 0; font-size: 2rem; }
-.nodi-turn-tools .fw-play-big { min-width: 56px; min-height: 44px; }
+.nodi-turn-tools .fw-play-icon { min-width: 32px; min-height: 28px; padding: 0; font-size: 1.5rem; }
+.fw-output-play { display: flex; justify-content: flex-start; padding-block: 8px; }
+.fw-output-play .fw-output-btn { min-width: 32px; min-height: 28px; padding: 0; font-size: 1.5rem; }
+.nodi-turn-tools .fw-play-big { min-width: 40px; min-height: 32px; }
+.fw .zr-btn.fw-play::after, .fw .zr-btn.fw-inline-btn::after { content: ""; position: absolute; inset: auto; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 48px); translate: -50% -50%; }
+.fw .zr-btn.fw-play:active:not(:disabled), .fw .zr-btn.fw-inline-btn:active:not(:disabled) { scale: 1; }
 .nodi-turn-tools .fw-fork-here { min-height: 36px; font-size: 1.1875rem; }
 @media (pointer: coarse) { .fw .fw-stop { min-height: 36px; } }
