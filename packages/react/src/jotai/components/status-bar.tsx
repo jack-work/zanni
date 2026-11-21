@@ -1,12 +1,11 @@
 import { glyphs, usePit } from "../../index";
-import { ariaAtom } from "figaro-forms/aria/jotai";
+import { ariaAtom, ariaFactsAtom } from "figaro-forms/aria/jotai";
 import { useAtomValue } from "jotai";
 import { useEffect, useState } from "react";
 import { EFFORT_KEY, valueAt } from "../lib/pit-rows";
 import { STATUS_SPINNER, ctxLine, stateGlyph } from "../lib/status";
 import { linkAtom, runningAtom, turnsAtom } from "../state/aria";
 import { boundStateAtom, forkedFromAtom, treeStateAtom } from "../state/pit";
-import { attendedRowAtom } from "../state/roster";
 import { attendedAtom } from "../state/route";
 
 function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomValue<typeof attendedAtom>>>["client"]; aria: string }) {
@@ -15,7 +14,7 @@ function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomVa
   const turns = useAtomValue(turnsAtom(client, aria));
   const snap = useAtomValue(ariaAtom(client, aria));
   const tree = useAtomValue(treeStateAtom);
-  const row = useAtomValue(attendedRowAtom);
+  const facts = useAtomValue(ariaFactsAtom(client, aria));
   const bound = useAtomValue(boundStateAtom);
   const forked = useAtomValue(forkedFromAtom);
   const pit = usePit();
@@ -27,8 +26,8 @@ function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomVa
   }, [running]);
   const node = tree?.nodes.get(aria);
   const failed = turns[turns.length - 1]?.end?.kind === "error";
-  const handle = node?.handle ?? row?.handle ?? row?.short ?? aria.slice(0, 8);
-  const mantra = valueAt(bound?.root, "mantra") ?? node?.mantra ?? row?.mantra ?? "";
+  const handle = node?.handle ?? aria.slice(0, 8);
+  const mantra = facts.mantra ?? valueAt(bound?.root, "mantra") ?? node?.mantra ?? "";
   const used = node?.ctx ?? snap.metrics?.context_tokens;
   const ctx = ctxLine(used, node?.ctxLimit);
   const glyph = stateGlyph({ link, running, failed, frame });

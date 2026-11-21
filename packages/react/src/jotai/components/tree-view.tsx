@@ -1,14 +1,15 @@
 import { Tree, glyphs, type TreeNodeData } from "../../index";
 import { useAtomValue, useSetAtom } from "jotai";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ancestorsOf, formNodes, topologyNodes } from "../lib/topology";
-import { nodeFormAtom, treeStateAtom } from "../state/pit";
-import { rosterAtom } from "../state/roster";
+import { factsOfAtom, nodeFormAtom, treeStateAtom } from "../state/pit";
 import { attendedAtom, goAtom, storeNameAtom } from "../state/route";
 
 export function TopologyTree({ onVisit, autoFocus, className }: { onVisit?: () => void; autoFocus?: boolean; className?: string }) {
   const tree = useAtomValue(treeStateAtom);
-  const rows = useAtomValue(rosterAtom).rows;
+  const [shown, setShown] = useState<readonly string[]>([]);
+  const factsAtom = useMemo(() => factsOfAtom(shown), [shown]);
+  const facts = useAtomValue(factsAtom);
   const attended = useAtomValue(attendedAtom);
   const store = useAtomValue(storeNameAtom);
   const go = useSetAtom(goAtom);
@@ -18,9 +19,12 @@ export function TopologyTree({ onVisit, autoFocus, className }: { onVisit?: () =
   const roots = useMemo(() => {
     if (!tree) return [];
     const counts: Record<string, number> = {};
-    for (const r of rows) if (r.message_count != null) counts[r.id] = r.message_count;
+    for (const id of Object.keys(facts)) {
+      const turns = facts[id]?.turns;
+      if (turns !== undefined) counts[id] = turns;
+    }
     return topologyNodes(tree, here, store, counts, nodeChildren);
-  }, [tree, rows, here, store, nodeChildren]);
+  }, [tree, facts, here, store, nodeChildren]);
   const open = useMemo(() => {
     const chain = tree ? ancestorsOf(tree, here) : new Set<string>();
     if (here) chain.add(here);
@@ -39,6 +43,7 @@ export function TopologyTree({ onVisit, autoFocus, className }: { onVisit?: () =
         current={here}
         defaultOpen={defaultOpen}
         autoFocus={autoFocus}
+        onRows={setShown}
         onActivate={(id) => {
           if (id.startsWith("@")) return;
           onVisit?.();

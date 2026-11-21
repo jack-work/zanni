@@ -9,7 +9,7 @@ import { toggleVoiceAtom, voiceAtom } from "../state/audio";
 import { bootAtom } from "../state/boot";
 import { composerAtom, forkAtom, keyOf } from "../state/composer";
 import { openNewFigaroAtom } from "../state/new-figaro";
-import { boundStateAtom, markPitUsedAtom, pitUsedAtom, pitViewAtom, recentStateAtom, treeStateAtom } from "../state/pit";
+import { attendedFactsAtom, boundStateAtom, markPitUsedAtom, pitUsedAtom, pitViewAtom, recentStateAtom, treeStateAtom } from "../state/pit";
 import { attendedRowAtom, rosterAtom } from "../state/roster";
 import { attendedAtom, clientAtom, goAtom, storeNameAtom } from "../state/route";
 
@@ -36,12 +36,12 @@ export function Pit() {
   const [view, setView] = useAtom(pitViewAtom);
   const { mark } = useAtomValue(bootAtom);
   const attended = useAtomValue(attendedAtom);
-  const row = useAtomValue(attendedRowAtom);
+  const own = useAtomValue(attendedFactsAtom);
   const closed = pit?.snap === "closed";
   useEffect(() => {
     if (closed) setView("list");
   }, [closed, setView]);
-  const name = attended ? labelOf(row) || attended.aria.slice(0, 8) : "figaro web";
+  const name = attended ? own?.mantra || attended.aria.slice(0, 8) : "figaro web";
   return (
     <ZPit className="fw-pit" label="Controls" title={view === "list" ? name : TITLES[view]} glyph={FACE[view]} icon={mark ? <img className="fw-head" alt="" src={mark} /> : undefined}>
       {view !== "list" && (
@@ -128,12 +128,12 @@ function StateView() {
   const link = useAtomValue(linkAtom);
   const store = useAtomValue(storeNameAtom);
   const attended = useAtomValue(attendedAtom);
-  const row = useAtomValue(attendedRowAtom);
+  const own = useAtomValue(attendedFactsAtom);
   const bound = useAtomValue(boundStateAtom);
   const word = PHASE_WORDS[link] ?? "";
   const effort = valueAt(bound?.root, EFFORT_KEY);
   const from = valueAt(bound?.root, FORKED_FROM_KEY);
-  const mantra = valueAt(bound?.root, "mantra") ?? row?.mantra;
+  const mantra = own?.mantra ?? valueAt(bound?.root, "mantra");
   const facts: [string, string, string?][] = [["Link", word], ["Store", store]];
   if (attended) facts.push(["Aria", attended.aria]);
   if (mantra) facts.push(["Mantra", mantra]);

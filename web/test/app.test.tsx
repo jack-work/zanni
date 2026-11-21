@@ -62,14 +62,25 @@ describe("the list", () => {
     expect(ids()).not.toContain(forms);
   });
 
-  it("shows a fork in the tree live: the @arias delta is applied, the form is re-read, and nothing reloads the page", async () => {
+  it("shows a fork in the tree live: the @arias delta is applied and the form is re-read", async () => {
     open("#/gluck/" + "c0ffee02".repeat(4));
     await waitFor(() => expect(document.querySelectorAll(".zr-tree-row").length).toBeGreaterThan(5));
     const reads = core.calls.filter((c) => c.method === "figaro.form" && c.params.figaro_id === "@arias").length;
     const forked = await client.peek("c0ffee02".repeat(4)).fork({ atTurn: 1 });
     await waitFor(() => expect(core.calls.filter((c) => c.method === "figaro.form" && c.params.figaro_id === "@arias").length).toBeGreaterThan(reads));
     await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id='" + forked.alternative + "']")).toBeTruthy());
-    expect(core.calls.some((c) => c.method === "figaro.read" && c.params.figaro_id === forked.alternative)).toBe(false);
+  });
+
+  it("takes each row's turn count and the bar's mantra from the aria's own facts, not the roster's first page", async () => {
+    open("#/");
+    await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id='" + "c0ffee08".repeat(4) + "']")).toBeTruthy());
+    await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id='" + "c0ffee08".repeat(4) + "']")!.textContent).toMatch(/Scratch 2.*\(3\)|\(3\).*Scratch 2/));
+    const mains = document.querySelector(".zr-tree-row[data-id='" + "c0ffee01".repeat(4) + "']")!.textContent ?? "";
+    expect(mains).toContain("(26)");
+    act(() => {
+      window.location.hash = "#/gluck/" + "c0ffee08".repeat(4);
+    });
+    await waitFor(() => expect(document.querySelector(".fw-status-mantra")?.textContent).toBe("Scratch 2"));
   });
 
   it("counts the node's own children, not a fixed one", async () => {
