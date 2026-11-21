@@ -379,7 +379,7 @@ try:
             until(pg, "document.querySelector(\".nodi-turn[data-turn='27'] .nodi-thought\").innerText.includes('answer plainly')", 5000)
             thinking.locator("summary").click()
             assert thinking.evaluate("n => n.open") is False, "a fold stays collapsible"
-            kinds = pg.evaluate("[...document.querySelectorAll('.nodi-turn[data-turn=\"27\"] .nodi-turn-body > *')].map(n => n.className.split(' ')[0]).filter(c => c !== 'fw-inline')")
+            kinds = pg.evaluate("[...document.querySelectorAll('.nodi-turn[data-turn=\"27\"] .nodi-turn-body > *')].map(n => n.className.split(' ')[0]).filter(c => c !== 'fw-inline' && c !== 'fw-output-play')")
             assert kinds == ["nodi-input", "nodi-thinking", "nodi-prose", "nodi-tool", "nodi-prose"], kinds
             assert "please run the tests" in pg.locator(".nodi-turn[data-turn='27'] .nodi-input").inner_text()
             assert pg.locator(".zr-input").input_value() == ""
@@ -408,7 +408,7 @@ try:
                 prose = pg.locator(".nodi-turn[data-turn='%s'] .nodi-prose" % want).count()
                 assert prose <= 2, "no node drawn twice after the reconnect: %d" % prose
         last = turns_shown(pg)[-1]
-        body = pg.evaluate("[...document.querySelectorAll('.nodi-turn[data-turn=\"%d\"] .nodi-turn-body > *')].map(n => n.className.split(' ')[0]).filter(c => c !== 'fw-inline')" % last)
+        body = pg.evaluate("[...document.querySelectorAll('.nodi-turn[data-turn=\"%d\"] .nodi-turn-body > *')].map(n => n.className.split(' ')[0]).filter(c => c !== 'fw-inline' && c !== 'fw-output-play')" % last)
         assert body == ["nodi-input", "nodi-thinking", "nodi-prose", "nodi-tool", "nodi-prose"], body
         assert pg.locator(".nodi-turn[data-turn='%d'] .nodi-tool[data-status='ok']" % last).count() == 1
         assert not [e for e in pg.errors if "WebSocket" not in e and "websocket" not in e and "ERR_" not in e], pg.errors
