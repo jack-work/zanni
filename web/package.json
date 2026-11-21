@@ -10,7 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "figaro-forms": "file:vendor/figaro-forms-0.11.1.tgz",
+    "figaro-forms": "file:vendor/figaro-forms-0.14.0.tgz",
     "jotai": "^3.0.2",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
