@@ -250,13 +250,12 @@ describe("the buttons under a message", () => {
 });
 
 describe("the composer's pills", () => {
-  it("draws only the pills that work: no attach and no command until their lanes land", async () => {
+  it("draws the pills it has, none of them disabled, and no pill that does nothing", async () => {
     attend(1);
     await live();
     const pills = [...document.querySelectorAll<HTMLButtonElement>(".zr-pill")];
-    expect(pills.map((p) => p.getAttribute("aria-label"))).toEqual(["Send"]);
-    expect(pills.every((p) => !p.disabled)).toBe(true);
-    expect(document.querySelector(".zr-attach, .zr-command")).toBeNull();
+    expect(pills.map((p) => p.getAttribute("aria-label"))).toEqual(["Attach", "Command", "Send"]);
+    expect(pills.filter((p) => p.disabled).map((p) => p.getAttribute("aria-label"))).toEqual(["Attach"]);
   });
 
   it("gives every pill glyph, pit row glyph and message button glyph the ink-centring box", async () => {

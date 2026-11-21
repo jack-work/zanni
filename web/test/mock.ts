@@ -14,6 +14,7 @@ export interface MockCore {
   dial: Dial;
   sent?: { id: string; text: string }[];
   interrupts?: string[];
+  sets?: { id: string; keys: string[] }[];
   calls: { method: string; params: Record<string, unknown> }[];
   dropped: number;
   drop(): number;

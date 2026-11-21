@@ -249,6 +249,50 @@ try:
         assert "Gluck at the terminal" in deep.locator(".nodi-turn[data-turn='12']").inner_text(), "a terminal caller keeps its name"
         deep.close()
 
+        for width, height in ((390, 844), (1280, 800)):
+            tag = "%d" % width
+            pg = fresh(width, height)
+            attend(pg, fast, MAIN)
+            box = pg.locator(".zr-input")
+            box.click()
+            pg.keyboard.type(":")
+            until(pg, "document.querySelector('.zr-prompt') && document.querySelector('.zr-command').getAttribute('aria-pressed') === 'true'", 3000)
+            assert box.input_value() == "", "the colon enters command mode and is not part of the line"
+            assert pg.locator(".zr-attach").count() == 0 and pg.locator(".fw-mic").count() == 0, "command mode shows the line, not attach or the mic"
+            until(pg, "document.querySelectorAll('.zr-chip').length > 3", 3000)
+            snap(pg, "command-verbs-" + tag)
+            pg.keyboard.type("kill ")
+            until(pg, "!!document.querySelector('.zr-hint[data-refused]')", 3000)
+            assert "delegated door refuses" in pg.locator(".zr-hint[data-refused]").inner_text(), "a refused verb says why while it is typed"
+            got = pg.evaluate("(() => { const c = document.querySelector('.zr-composer').getBoundingClientRect(); return { height: c.height, top: c.top }; })()")
+            assert got["height"] <= 200, "the hints keep the composer short: %s" % got
+            no_sideways(pg, width, "command mode")
+            snap(pg, "command-refused-" + tag)
+            pg.keyboard.press("Enter")
+            pg.wait_for_timeout(300)
+            assert pg.locator(".zr-command").get_attribute("aria-pressed") == "true", "a refused verb stays in command mode"
+            pg.keyboard.press("Escape")
+            until(pg, "!document.querySelector('.zr-prompt')", 3000)
+            assert pg.locator(".zr-attach").count() == 1, "Escape brings the composer back"
+
+            box.click()
+            pg.keyboard.type(":fork 12")
+            pg.keyboard.press("Enter")
+            until(pg, "/^#\\/[^/]+\\/[0-9a-f]{32}:12$/.test(location.hash) && !location.hash.includes('%s')" % MAIN, 8000)
+            pg.wait_for_selector(".nodi-turn[data-turn='12']", timeout=10000)
+            assert pg.locator(".zr-command").get_attribute("aria-pressed") == "false", "a run leaves command mode"
+            assert pg.locator(".zr-input").input_value() == "", "the command line is not left in the composer"
+            assert [m for m in pg.errors if "fork" in m.lower()] == [], pg.errors
+
+            pg.locator(".zr-input").click()
+            pg.keyboard.type(":ls")
+            pg.keyboard.press("Enter")
+            pg.wait_for_selector(".zr-pit[data-snap='half']", timeout=5000)
+            assert "Tree" in pg.locator(".zr-pit").inner_text(), "ls opens the tree"
+            sans_free(pg, "command mode at %d" % width)
+            assert not pg.errors, pg.errors
+            pg.close()
+
         pg = fresh()
         attend(pg, door(12), MAIN, 3)
         pg.wait_for_selector(".nodi-turn[data-turn='3']")
@@ -275,12 +319,16 @@ try:
             attend(pg, door(45), MAIN)
             idle = pg.locator(".zr-composer").bounding_box()
             assert idle["height"] <= 76, "an idle composer is at most 76px tall: %s" % idle
-            sendp, field = (pg.locator(s).bounding_box() for s in (".zr-send", ".zr-input"))
-            assert pg.locator(".zr-attach, .zr-command").count() == 0, "a pill that does nothing is not drawn"
-            assert sendp["x"] >= field["x"] + field["width"] - 1, "send sits right of the input: %s %s" % (sendp, field)
-            assert 30 <= sendp["height"] <= 40 and sendp["width"] <= 64, "a small pill: %s" % sendp
-            assert pg.locator(".zr-send").inner_text() == "✎", "the pager glyph on the send pill"
-            assert_centred(pg.locator(".zr-send"), "the send pill's glyph at %d %s" % (width, scheme))
+            sendp, field, attach, command = (pg.locator(s).bounding_box() for s in (".zr-send", ".zr-input", ".zr-attach", ".zr-command"))
+            assert pg.locator(".zr-pill:disabled").count() == 0, "no pill is drawn disabled"
+            assert attach["x"] + attach["width"] <= field["x"] + 1, "attach sits left of the input: %s %s" % (attach, field)
+            assert command["x"] >= field["x"] + field["width"] - 1 and sendp["x"] >= command["x"] + command["width"] - 2, "command and send sit right of the input, send last: %s" % [command, sendp]
+            for b in (attach, command, sendp):
+                assert 30 <= b["height"] <= 40 and b["width"] <= 64, "a small pill: %s" % b
+            assert [pg.locator(s).inner_text() for s in (".zr-command", ".zr-send")] == ["∴", "✎"], "pager glyphs on the right pills"
+            assert pg.locator(".zr-command").get_attribute("aria-pressed") == "false"
+            for sel, what in ((".zr-send", "send"), (".zr-attach", "attach"), (".zr-command", "command")):
+                assert_centred(pg.locator(sel), "the %s pill's glyph at %d %s" % (what, width, scheme))
             if pg.locator(".fw-mic-glyph").count():
                 assert_centred(pg.locator(".fw-mic"), "the record button's glyph at %d %s" % (width, scheme), tol=2.0, blank_ok=True)
             assert pg.locator(".zr-send").get_attribute("aria-label") == "Send"

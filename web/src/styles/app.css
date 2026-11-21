@@ -214,3 +214,10 @@ body.fw-page {
 }
 .nodi-turn-fork { margin-right: auto; color: var(--z-muted); }
 .nodi-turn-head .nodi-turn-no { margin-right: 1ch; }
+
+.fw-help { display: flex; flex-direction: column; gap: var(--z-space-2, 4px); margin: 0; }
+.fw-help-row { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: var(--z-space-3, 8px); font-size: 1.0625rem; }
+.fw-help-row dt { font: 400 1.125rem / 1.2 var(--fw-mono); letter-spacing: 0.04em; color: var(--z-ink); }
+.fw-help-row dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.fw-help-row[data-off] dt, .fw-help-row[data-off] dd { color: var(--z-muted); }
+.fw-help-why { font-style: italic; }

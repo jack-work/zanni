@@ -97,8 +97,7 @@ not in atoms.
   one 40px line (glyph, what is running, elapsed time, Stop, Stop all) and the
   send pill steers. The row holds the input, the record button and the send
   pill (✎, ↳ while running), both round and 36px, glyphs from figaro-forms by
-  name. No pill is drawn that does nothing: attach and command come back with
-  their lanes. The record glyph is `voice` (🎙︎ until the table carries it) and
+  name. Every pill acts: attach opens the file picker, command toggles command mode, send sends. The record glyph is `voice` (🎙︎ until the table carries it) and
   the attach glyph will be `attach` (📎︎), keyed by name, not by character.
   Every glyph in a pill, a pit row or a message button is centred by its ink,
   not its advance box (`Glyph`, `ink.tsx`): VT323 and the fallback faces sit on
@@ -185,6 +184,7 @@ runs Chromium at 390 and 1280 (light and dark) against `test/figchat-server.js`:
 the built bundle under the edge CSP and the mock over a real WebSocket. It
 measures the composer (idle at most 76px, running at most 120px, the strip one
 line, the last node above the composer), covers history, paging, deep links,
+command mode (the colon, the verbs, a refused verb's reason, `:fork 12`, `:ls`, Esc),
 hostile text, send, steer, stop, fork, drafts, voice, hands-free hold, the mic,
 the pits, and runs once with reduced motion to assert nothing computes a
 duration over 1ms.

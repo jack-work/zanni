@@ -374,7 +374,23 @@
       'figaro.form': function (c, id, p) {
         var root = formRoot(p.figaro_id);
         if (!root) { fail(c, id, -32000, 'figaro: form ' + p.figaro_id + ' not found'); return; }
-        reply(c, id, { snapshot: root, version: 1, incarnation: formInc[p.figaro_id] || 1, origin: '' });
+        reply(c, id, { snapshot: root, version: formVer[p.figaro_id] || 1, incarnation: formInc[p.figaro_id] || 1, origin: p.client || '' });
+      },
+      'figaro.set': function (c, id, p) {
+        var a = core.arias[p.figaro_id];
+        if (!a) { fail(c, id, -32000, 'figaro: aria ' + p.figaro_id + ' not found'); return; }
+        var keys = patchKeys(p.patch || {}, '');
+        var reserved = keys.filter(function (k) { return /^(system|runtime)(\.|$)/.test(k) || k === 'name' || k === 'role-name'; });
+        if (reserved.length) { fail(c, id, -32020, reserved[0] + ' is reserved: the gateway may not write it'); return; }
+        var next = applyPatch(p.patch || {}, formRoot(p.figaro_id));
+        a.edited = next;
+        if (typeof next.mantra === 'string') a.row.mantra = next.mantra;
+        var v = (formVer[p.figaro_id] || 1) + 1;
+        formVer[p.figaro_id] = v;
+        core.sets = (core.sets || []).concat([{ id: p.figaro_id, keys: keys }]);
+        reply(c, id, { ok: true, outcome: 'applied', version: v, set: keys });
+        var text = JSON.stringify({ jsonrpc: '2.0', method: 'form.delta', params: { schema: 2, figaro_id: p.figaro_id, version: v, incarnation: formInc[p.figaro_id] || 1, patch: p.patch, origin: p.client || '', seq: p.seq } });
+        core.conns.slice().forEach(function (k) { if (k.open && k.follows[p.figaro_id]) k.sink.text(text); });
       },
       'figaro.follow': function (c, id, p) {
         if (formRoot(p.figaro_id) && !core.arias[p.figaro_id]) { c.follows[p.figaro_id] = true; reply(c, id, { ok: true, figaro_id: p.figaro_id }); return; }
@@ -431,6 +447,27 @@
     };
 
     var formInc = {};
+    var formVer = {};
+    function patchKeys(pt, at) {
+      var o = pt.object;
+      if (!o) return at ? [at] : [];
+      var out = [];
+      var join = function (k) { return at ? at + '.' + k : k; };
+      Object.keys(o.Set || {}).forEach(function (k) { out.push(join(k)); });
+      Object.keys(o.Delete || {}).forEach(function (k) { out.push(join(k)); });
+      Object.keys(o.Update || {}).forEach(function (k) { out = out.concat(patchKeys(o.Update[k], join(k))); });
+      return out;
+    }
+    function applyPatch(pt, v) {
+      if (pt.scalar) return pt.scalar.After;
+      if (!pt.object) return v;
+      var o = pt.object;
+      var base = v && typeof v === 'object' && !Array.isArray(v) ? clone(v) : {};
+      Object.keys(o.Delete || {}).forEach(function (k) { delete base[k]; });
+      Object.keys(o.Set || {}).forEach(function (k) { base[k] = clone(o.Set[k]); });
+      Object.keys(o.Update || {}).forEach(function (k) { base[k] = applyPatch(o.Update[k], base[k]); });
+      return base;
+    }
     var formLabel = function (row) { return row.handle || row.mantra || row.short; };
     function ariasRoot() {
       var rows = core.order.map(function (id) { return core.arias[id].row; });
@@ -468,6 +505,7 @@
       if (id === '@recent') return recentRoot();
       var a = core.arias[id];
       if (!a) return null;
+      if (a.edited) return clone(a.edited);
       var sys = { model: 'claude-sonnet-5', provider: 'anthropic', thinking_effort: id === core.ids.main ? 'high' : 'medium', cwd: '/home/gluck/dev/zanni' };
       if (a.forkedFrom) sys.forked_from = a.forkedFrom;
       return { mantra: a.row.mantra, system: sys };
