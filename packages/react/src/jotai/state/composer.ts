@@ -117,6 +117,8 @@ export const interruptAtom = atom(null, async (get, set, queue: "keep" | "clear"
 export interface ForkRequest {
   readonly turn: number;
   readonly text?: string;
+  readonly aria?: string;
+  readonly stay?: boolean;
 }
 
 export interface ForkMark {
@@ -125,32 +127,45 @@ export interface ForkMark {
   readonly turn: number;
 }
 
+export type Done = { readonly ok: true; readonly done: string } | { readonly ok: false; readonly why: string };
+
 export const forkMarkAtom = atom<ForkMark | null>(null);
 
-export const forkAtom = atom(null, async (get, set, req: number | ForkRequest) => {
+export const forkAtom = atom(null, async (get, set, req: number | ForkRequest): Promise<Done> => {
   const at = get(attendedAtom);
-  if (!at) return;
-  const { turn, text } = typeof req === "number" ? { turn: req, text: undefined } : req;
+  if (!at) return { ok: false, why: "Fork: no aria is open." };
+  const { turn, text, aria = at.aria, stay = false } = typeof req === "number" ? { turn: req, text: undefined, aria: undefined, stay: false } : req;
   const comp = composerAtom(keyOf(at.store, at.aria));
-  if (get(comp).forking) return;
+  if (get(comp).forking) return { ok: false, why: "Fork: one is already running." };
   set(comp, (s) => ({ ...s, forking: true, note: "" }));
   let alternative = "";
   let note = "";
   try {
-    if (turn) alternative = (await at.client.forkAt(at.aria, turn, text)).id;
-    else alternative = (await at.client.tailFork(at.aria)).alternative;
+    if (turn) alternative = (await at.client.forkAt(aria, turn, text)).id;
+    else {
+      alternative = (await at.client.tailFork(aria)).alternative;
+      if (text) {
+        await at.client.peek(alternative).qua(text).catch((err: unknown) => {
+          note = "Forked, but the first message was not sent: " + reason(err);
+        });
+      }
+    }
   } catch (err) {
     if (err instanceof ForkedButUnsent) {
       alternative = err.fork.alternative;
       note = "Forked, but the first message was not sent: " + reason(err.cause);
     } else {
-      set(comp, (s) => ({ ...s, forking: false, note: "Not forked: " + reason(err) }));
-      return;
+      const why = "Not forked: " + reason(err);
+      set(comp, (s) => ({ ...s, forking: false, note: why }));
+      return { ok: false, why };
     }
   }
   set(comp, (s) => ({ ...s, forking: false }));
-  set(forkMarkAtom, { aria: alternative, parent: at.aria, turn });
   void set(rosterActionAtom, "refresh");
-  set(goAtom, { store: at.store, aria: alternative, ...(turn ? { turn } : {}) });
-  if (note) set(composerAtom(keyOf(at.store, alternative)), (s) => ({ ...s, note }));
+  if (!stay) {
+    set(forkMarkAtom, { aria: alternative, parent: aria, turn });
+    set(goAtom, { store: at.store, aria: alternative, ...(turn ? { turn } : {}) });
+    if (note) set(composerAtom(keyOf(at.store, alternative)), (s) => ({ ...s, note }));
+  } else if (note) set(comp, (s) => ({ ...s, note }));
+  return { ok: true, done: "Forked into " + alternative.slice(0, 8) + "." };
 });

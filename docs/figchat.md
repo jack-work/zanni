@@ -87,9 +87,9 @@ not in atoms.
   one 40px line (glyph, what is running, elapsed time, Stop, Stop all) and the
   send pill steers. Three glyph pills sit in the row: attach on the left;
   command (∴) and send (✎, ↳ while running) on the right as one joined pair,
-  named by `aria-label`, glyphs from figaro-forms. Attach and command are
-  disabled until their lanes land. The record button is glyph-only until voice
-  is on, then widens. Errors and the mic's notes take that same line. A draft is kept
+  named by `aria-label`, glyphs from figaro-forms. Attach is disabled until its
+  lane lands. The record button is glyph-only until voice is on, then widens.
+  Errors and the mic's notes take that same line. A draft is kept
   per aria in localStorage, saved 400ms after typing, cleared on send.
 - Each turn opens with one bar (∨, "Turn N", its Fork here and Play) that sticks
   to the top of the transcript's one scroller while the turn is on screen, and
@@ -180,6 +180,7 @@ runs Chromium at 390 and 1280 (light and dark) against `test/figchat-server.js`:
 the built bundle under the edge CSP and the mock over a real WebSocket. It
 measures the composer (idle at most 76px, running at most 120px, the strip one
 line, the last node above the composer), covers history, paging, deep links,
+command mode (the colon, the verbs, a refused verb's reason, `:fork 12`, `:ls`, Esc),
 the sticky bar (rests single, pins double with the question fitted, tap and
 double tap open it, Esc shuts it), hostile text, send, steer, stop, fork, drafts, voice, hands-free hold, the mic,
 the pits, and runs once with reduced motion to assert nothing computes a

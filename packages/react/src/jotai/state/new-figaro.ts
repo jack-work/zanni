@@ -3,6 +3,7 @@ import { goAtom, clientAtom, storeNameAtom, attendedAtom } from "./route";
 import { rosterActionAtom, rosterAtom } from "./roster";
 import { labelOf } from "../lib/roster";
 import { bootAtom } from "./boot";
+import type { Done } from "./composer";
 
 export interface NewFigaroState {
   readonly open: boolean;
@@ -50,20 +51,26 @@ export function splitOutfits(text: string): string[] {
     .filter(Boolean);
 }
 
-export const createFigaroAtom = atom(null, async (get, set, req: { root: string; outfits: string; text: string }) => {
+export const mintFigaroAtom = atom(null, async (get, set, req: { root: string; outfits: string; text: string }): Promise<Done> => {
   const client = get(clientAtom);
   const store = get(storeNameAtom);
-  if (!client || !req.root || get(newFigaroAtom).creating) return;
-  set(newFigaroAtom, { open: true, creating: true, note: "" });
+  if (!client || !req.root) return { ok: false, why: "Not created: no aria to mint from." };
   try {
     const outfits = splitOutfits(req.outfits);
     const res = await client.peek(req.root).fork({ atTurn: 1, ...(outfits.length ? { outfits } : {}) });
     const text = req.text.trim();
     if (text) await client.peek(res.alternative).qua(text);
-    set(newFigaroAtom, { open: false, creating: false, note: "" });
     void set(rosterActionAtom, "refresh");
     set(goAtom, { store, aria: res.alternative });
+    return { ok: true, done: "Created " + res.alternative.slice(0, 8) + "." };
   } catch (err) {
-    set(newFigaroAtom, { open: true, creating: false, note: "Not created: " + (err instanceof Error ? err.message : String(err)) });
+    return { ok: false, why: "Not created: " + (err instanceof Error ? err.message : String(err)) };
   }
+});
+
+export const createFigaroAtom = atom(null, async (get, set, req: { root: string; outfits: string; text: string }) => {
+  if (get(newFigaroAtom).creating) return;
+  set(newFigaroAtom, { open: true, creating: true, note: "" });
+  const made = await set(mintFigaroAtom, req);
+  set(newFigaroAtom, made.ok ? { open: false, creating: false, note: "" } : { open: true, creating: false, note: made.why });
 });

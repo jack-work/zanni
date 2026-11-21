@@ -39,3 +39,10 @@ nix build cover both.
 and figaro-forms 0.10 (both peer dependencies of this entry only). figaro web is `app.tsx`, `main.tsx` and `styles/`: it mounts
 these under `.fw` and styles the `fw-*` hooks. `web/test/react/boundary.test.ts` fails if the root entry imports jotai or
 figaro-forms values, or if shipped code carries a comment.
+
+Command mode is the pager's `:` line. `lib/command.ts` is pure: `tokenize` (quotes, backslash, `--`), `planOf` (the catalog's
+`pagerCommand`, `webCommands` and `commandBounds` turn a line into a run, a refusal with its reason, or nothing), `suggest`
+(verbs, arias from the tree, keys of the bound form, outfits from `angelus.outfits`, `state` subcommands, usage for the rest) and
+`applyCandidate`. `state/command.ts` holds `commandAtom(key)` (on, line, why) per aria and `runCommandAtom`, which runs a plan
+through the existing atoms: `forkAtom`, `mintFigaroAtom`, `interruptAtom`, `boundFormWriterOf` for set, unset and toggle,
+`goAtom`. It returns the outcome the composer shows: a note, a pit view to open, or the help sheet.

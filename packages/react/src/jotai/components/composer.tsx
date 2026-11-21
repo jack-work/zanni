@@ -1,10 +1,14 @@
-import { Button, Composer as ZComposer, PitGrip, attachGlyph, glyphs, voiceGlyph } from "../../index";
+import { Button, Composer as ZComposer, Hints, PitGrip, attachGlyph, glyphs, usePit, voiceGlyph } from "../../index";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { clock } from "../../index";
 import { micAtom, micToggleAtom, dictationFocusAtom } from "../state/mic";
 import { linkAtom, runningAtom, workAtom } from "../state/aria";
 import { composerAtom, composerNoteAtom, draftAtom, interruptAtom, keyOf, sendAtom } from "../state/composer";
+import { COMMAND_OFF, commandAtom, commandSourcesAtom, helpOpenAtom, loadOutfitsAtom, runCommandAtom } from "../state/command";
+import { pitViewAtom } from "../state/pit";
+import { applyCandidate, suggest } from "../lib/command";
+import { CommandHelp } from "./command-help";
 import type { Attended } from "../state/route";
 
 function useNow(period: number | null): number {
@@ -44,6 +48,45 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
   const focusTick = useAtomValue(dictationFocusAtom);
   const live = link === "live";
   const input = useRef<HTMLTextAreaElement | null>(null);
+  const [cmd, setCmd] = useAtom(commandAtom(key));
+  const runCommand = useSetAtom(runCommandAtom);
+  const sources = useAtomValue(commandSourcesAtom);
+  const loadOutfits = useSetAtom(loadOutfitsAtom);
+  const setView = useSetAtom(pitViewAtom);
+  const setHelp = useSetAtom(helpOpenAtom);
+  const pit = usePit();
+  const suggestions = useMemo(() => (cmd.on ? suggest(cmd.line, sources) : null), [cmd.on, cmd.line, sources]);
+
+  const firstOpen = suggestions?.items.find((c) => !c.off);
+
+  useEffect(() => {
+    if (cmd.on) void loadOutfits();
+  }, [cmd.on, loadOutfits]);
+
+  const leave = () => setCmd(COMMAND_OFF);
+  const typeDraft = (next: string) => {
+    if (draft === "" && next.startsWith(":")) setCmd({ on: true, line: next.slice(1), why: "" });
+    else setDraft(next);
+  };
+  const pick = (text: string) => {
+    const item = suggestions?.items.find((c) => c.text === text);
+    if (item) setCmd((c) => ({ ...c, line: applyCandidate(c.line, item), why: "" }));
+    input.current?.focus({ preventScroll: true });
+  };
+  const run = async () => {
+    const outcome = await runCommand(cmd.line);
+    if (!outcome.ok) {
+      setCmd((c) => ({ ...c, why: outcome.why }));
+      return;
+    }
+    leave();
+    if (outcome.done) clearNote({ key, note: outcome.done });
+    if (outcome.open === "help") setHelp(true);
+    else if (outcome.open) {
+      setView(outcome.open);
+      pit?.setSnap("half");
+    }
+  };
 
   useEffect(() => {
     clearNote({ key, note: "" });
@@ -56,19 +99,31 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
   const line = useWorkLine(attended, note, running);
 
   return (
+    <>
     <ZComposer
       className="fw-composer"
-      value={draft}
-      onChange={setDraft}
+      value={cmd.on ? cmd.line : draft}
+      onChange={cmd.on ? (line) => setCmd((c) => ({ ...c, line, why: "" })) : typeDraft}
       onSubmit={async () => {
-        if (await send()) toBottom();
+        if (cmd.on) await run();
+        else if (await send()) toBottom();
       }}
-      placeholder={running ? "Steer figaro" : "Message"}
-      sendLabel={running ? "Steer" : "Send"}
-      sendGlyph={running ? glyphs.steering : glyphs.send}
-      attach={{ glyph: attachGlyph, label: "Attach", title: "Attachments are not available yet.", disabled: true }}
-      command={{ glyph: glyphs["pit.command"], label: "Command", title: "Commands are not available yet.", disabled: true }}
-      sendDisabled={comp.sending || !live}
+      placeholder={cmd.on ? "fork 12, new, set mantra x, ls, help" : running ? "Steer figaro" : "Message"}
+      sendLabel={cmd.on ? "Run" : running ? "Steer" : "Send"}
+      sendGlyph={cmd.on || !running ? glyphs.send : glyphs.steering}
+      {...(cmd.on ? { prompt: ":", enterRuns: true, onEscape: leave, onTab: () => firstOpen && pick(firstOpen.text) } : {})}
+      hints={
+        cmd.on && suggestions ? (
+          <Hints
+            chips={suggestions.items.map((c) => ({ key: c.text, label: c.label, help: c.help, off: c.off }))}
+            onPick={pick}
+            {...(cmd.why ? { refusal: cmd.why } : suggestions.hint?.refusal ? { refusal: suggestions.hint.refusal } : suggestions.hint ? { usage: suggestions.hint.usage, help: suggestions.hint.help } : {})}
+          />
+        ) : undefined
+      }
+      attach={cmd.on ? undefined : { glyph: attachGlyph, label: "Attach", title: "Attachments are not available yet.", disabled: true }}
+      command={{ glyph: glyphs["pit.command"], label: "Command", title: "Command mode", pressed: cmd.on, onClick: () => (cmd.on ? leave() : setCmd({ on: true, line: "", why: "" })) }}
+      sendDisabled={cmd.on ? !cmd.line.trim() : comp.sending || !live}
       running={running}
       focusTick={focusTick}
       inputRef={input}
@@ -85,6 +140,7 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
         </>
       }
       accessory={
+        cmd.on ? undefined : (
         <Button
           variant="outline"
           className="fw-mic"
@@ -105,7 +161,10 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
           <span className="fw-mic-label">{micLabel}</span>
           {mic.state === "recording" && <span className="fw-mic-meter" aria-hidden="true" />}
         </Button>
+        )
       }
     />
+    <CommandHelp />
+    </>
   );
 });
