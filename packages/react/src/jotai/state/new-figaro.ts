@@ -1,4 +1,5 @@
 import { atom } from "jotai";
+import { beginAction } from "../../trace";
 import { goAtom, clientAtom, storeNameAtom, attendedAtom } from "./route";
 import { rosterActionAtom, rosterAtom } from "./roster";
 import { labelOf } from "../lib/roster";
@@ -55,15 +56,18 @@ export const mintFigaroAtom = atom(null, async (get, set, req: { root: string; o
   const client = get(clientAtom);
   const store = get(storeNameAtom);
   if (!client || !req.root) return { ok: false, why: "Not created: no aria to mint from." };
+  const span = beginAction("fork", { "figaro.aria": req.root });
   try {
     const outfits = splitOutfits(req.outfits);
     const res = await client.peek(req.root).fork({ atTurn: 1, ...(outfits.length ? { outfits } : {}) });
     const text = req.text.trim();
     if (text) await client.peek(res.alternative).qua(text);
+    span.end();
     void set(rosterActionAtom, "refresh");
     set(goAtom, { store, aria: res.alternative });
     return { ok: true, done: "Created " + res.alternative.slice(0, 8) + "." };
   } catch (err) {
+    span.end(err);
     return { ok: false, why: "Not created: " + (err instanceof Error ? err.message : String(err)) };
   }
 });

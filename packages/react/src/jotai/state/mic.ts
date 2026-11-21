@@ -1,5 +1,6 @@
 import { atom } from "jotai";
 import { sessionUrl } from "../../index";
+import { beginAction, type Action } from "../../trace";
 import { captureFrames, browserMedia } from "../lib/capture";
 import type { Dictation, SocketLike } from "../lib/dictation";
 import { canRecord, joinDictation, type MicSnapshot } from "../lib/mic";
@@ -12,6 +13,7 @@ export const MIC_LEVEL_VAR = "--fw-mic-level";
 
 export const micAtom = atom<MicSnapshot>({ state: canRecord(browserMedia()) ? "idle" : "unsupported", began: 0, note: "" });
 const controller = atom<Dictation | null>(null);
+let dictation: Action | null = null;
 
 export const dictationFocusAtom = atom(0);
 
@@ -41,12 +43,19 @@ export const micToggleAtom = atom(null, async (get, set) => {
       clearTimeout: (id) => window.clearTimeout(id as number),
     });
     if (get(controller) !== mic) {
-      mic.subscribe((snap) => set(micAtom, snap));
+      mic.subscribe((snap) => {
+        set(micAtom, snap);
+        if (snap.state === "idle" && dictation) {
+          dictation.end();
+          dictation = null;
+        }
+      });
       set(controller, mic);
     }
   }
   const key = keyOf(at.store, at.aria);
   const base = get(draftAtom(key));
+  if (get(micAtom).state === "idle") dictation = beginAction("dictate", { "figaro.aria": at.aria });
   mic.toggle(key, (text) => {
     set(draftAtom(key), joinDictation(base, text));
     set(dictationFocusAtom, (n) => n + 1);

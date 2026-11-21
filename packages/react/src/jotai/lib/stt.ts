@@ -1,4 +1,4 @@
-import { sessionHeaders } from "../../session";
+import { traceHeaders } from "../../trace";
 export interface SttReply {
   text?: string;
   duration_ms?: number;
@@ -28,5 +28,5 @@ async function reply(res: Response): Promise<SttReply> {
 
 export function retranscribe(url: string, key: string, f: typeof fetch = (...a) => window.fetch(...a)): Promise<SttReply> {
   const path = key.split("/").map(encodeURIComponent).join("/");
-  return f(url.replace(/\/$/, "") + "/key/" + path, { method: "POST", credentials: "same-origin", cache: "no-store", headers: sessionHeaders({ Accept: "application/json" }) }).then(reply);
+  return f(url.replace(/\/$/, "") + "/key/" + path, { method: "POST", credentials: "same-origin", cache: "no-store", headers: traceHeaders({ Accept: "application/json" }) }).then(reply);
 }

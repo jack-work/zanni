@@ -4,6 +4,7 @@ import { useState } from "react";
 import { clipKey, transcribeClip } from "../lib/clips";
 import { joinDictation } from "../lib/mic";
 import { retranscribe } from "../lib/stt";
+import { beginAction, traced } from "../../trace";
 import { handsFreeAtom, replayAtom } from "../state/audio";
 import { bootAtom } from "../state/boot";
 import { draftAtom, keyOf } from "../state/composer";
@@ -20,11 +21,15 @@ export function InlineActions({ kind, turn }: { kind: "input" | "prose"; turn: n
   const [heard, setHeard] = useState("");
   if (!at || handsFree || kind === "prose") return null;
   const key = clipKey(at.store, at.aria, turn, "in");
-  const play = () => (kind === "input" ? setRequest({ key }) : replay(turn));
+  const play = () => {
+    if (kind !== "input") return replay(turn);
+    beginAction("speak", { "figaro.aria": at.aria });
+    setRequest({ key });
+  };
   const transcribe = async () => {
     setNote("Transcribing.");
     setHeard("");
-    const got = await transcribeClip(() => retranscribe(sttUrl, key));
+    const got = await transcribeClip(() => traced("dictate", { "figaro.aria": at.aria }, () => retranscribe(sttUrl, key)));
     setNote(got.note ?? "");
     setHeard(got.text ?? "");
   };
