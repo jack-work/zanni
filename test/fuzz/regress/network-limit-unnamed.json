@@ -4,8 +4,8 @@
  "profile": "desktop",
  "invariant": "limit-unnamed",
  "message": "a prompt over the gateway's 1 MiB limit gets a JSON-RPC error naming the limit (forms 4e857fd); the page should show it",
- "owner": "Frontend (show the error text)",
- "status": "xfail",
+ "owner": "fixed: the page names the limit",
+ "status": "pass",
  "strict": [],
  "actions": [
   {
