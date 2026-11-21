@@ -16,6 +16,7 @@
     "noEmit": true,
     "paths": {
       "zanni-react": ["../packages/react/src/index.ts"],
+      "figaro-forms": ["./node_modules/figaro-forms/dist/index.d.ts"],
       "figaro-forms/commands": ["./node_modules/figaro-forms/dist/commands.d.ts"],
       "figaro-forms/glyphs": ["./node_modules/figaro-forms/dist/glyphs.d.ts"],
       "figaro-forms/aria": ["./node_modules/figaro-forms/dist/aria/index.d.ts"],

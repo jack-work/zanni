@@ -7,6 +7,7 @@ import { parseDraft, pathProblem, refusalLine } from "../lib/form-edit";
 import type { PitView } from "../lib/pit-rows";
 import { forkAtom, interruptAtom, type Done } from "./composer";
 import { mintFigaroAtom, rootsAtom } from "./new-figaro";
+import { traced } from "../../trace";
 import { attendedFactsAtom, treeStateAtom } from "./pit";
 import { attendedAtom, clientAtom, goAtom, storeNameAtom } from "./route";
 import type { TreeNode } from "figaro-forms/aria";
@@ -164,7 +165,7 @@ export const runCommandAtom = atom(null, async (get, set, line: string): Promise
       const id = needTarget(args[0]);
       if (typeof id !== "string") return id;
       try {
-        await client.peek(id).qua(prompt);
+        await traced("send", { "figaro.aria": id }, () => client.peek(id).qua(prompt));
         return ok("Sent.");
       } catch (err) {
         return fail("Not sent: " + (err instanceof Error ? err.message : "network"));

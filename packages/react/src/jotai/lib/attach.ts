@@ -1,4 +1,4 @@
-import { sessionHeaders } from "../../session";
+import { traceHeaders } from "../../trace";
 
 export const MAX_FILES = 8;
 export const MAX_IMAGES = 4;
@@ -44,7 +44,7 @@ export function uploadFile(url: string, file: File, f: typeof fetch = (...a) => 
     method: "POST",
     credentials: "same-origin",
     cache: "no-store",
-    headers: sessionHeaders({ Accept: "application/json", "Content-Type": file.type || "application/octet-stream", "X-Attach-Name": encodeURIComponent(file.name || "attachment") }),
+    headers: traceHeaders({ Accept: "application/json", "Content-Type": file.type || "application/octet-stream", "X-Attach-Name": encodeURIComponent(file.name || "attachment") }),
     body: file,
   }).then(replyOf, () => {
     throw new AttachError("network", 0);

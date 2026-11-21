@@ -1,7 +1,9 @@
 import { atom } from "jotai";
 import { AudioSession, pingPcm, type SessionType } from "../lib/audio-session";
+import { beginAction } from "../../trace";
 import { sessionId, speech, voce, type PcmFormat } from "../../index";
 import { bootAtom } from "./boot";
+import { attendedAtom } from "./route";
 
 const PING_FORMAT: PcmFormat = { format: "pcm", rate: 24000, bits: 16, channels: 1 };
 
@@ -73,6 +75,8 @@ export interface VoiceControl {
 export const voiceControlAtom = atom<VoiceControl | null>(null);
 
 export const replayAtom = atom(null, (get, _set, turn: number) => {
+  const at = get(attendedAtom);
+  beginAction("speak", at ? { "figaro.aria": at.aria } : {});
   get(voiceControlAtom)?.replay(turn);
 });
 

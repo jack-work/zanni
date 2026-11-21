@@ -52,3 +52,11 @@ through the existing atoms: `forkAtom`, `mintFigaroAtom`, `interruptAtom`, `boun
 Attachments: `lib/attach.ts` (limits, `uploadFile`, the size and kind words) is pure; `state/attach.ts` keeps a list per aria
 (`attachmentsAtom`), uploads one file at a time (`addFilesAtom`), and gives `sendAtom` the ids (`readyIdsAtom`, which uploads
 again what the gateway is about to forget). `bootAtom` carries `attachUrl` (`data-attach`, default `attach`).
+
+Browser spans: `trace.ts` makes one root span per user action (`beginAction` or `traced`: send, speak, dictate, fork, attach), service
+`figaro-web`, attributes `figchat.session`, `figchat.action` and `figaro.aria`, never text, params or URLs. `traceDial` wraps the
+door's dial and stamps the latest action's W3C `traceparent` into `figaro.qua` params; `traceHeaders` does the same for the stt, audio
+key and attach fetches, next to `X-Figchat-Session`. Failures become an error span and a log record carrying only `error.type` and the
+status. `configureTraces(base)` (`data-otel`, default `otel`, resolved against the page, so `/chat/otel/v1/traces` and `/v1/logs`)
+batches every 10 s, on `pagehide` and when the page hides (sendBeacon, else keepalive fetch), keeps at most 512 of each, and gives up
+for the page after a 401, 403, 404 or 405. Set `data-otel=""` to turn it off.
