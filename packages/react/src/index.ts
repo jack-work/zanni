@@ -19,7 +19,9 @@ export { clock, formatWorkedTime, groupWork, liveVerb, stepsTitle, toolKind, wor
 export type { Row, ToolKind, Work, Work_ } from "./work";
 export { nodi, speech, voce } from "./zanni";
 export type * from "./nodi-types";
-export { NEAR_BOTTOM, distanceFromBottom, scrollToBottom, useFollow } from "./follow";
+export { NEAR_BOTTOM, distanceFromBottom, scrollRoot, scrollToBottom, useFollow } from "./follow";
+export { KEYBOARD_MIN, frameOf, onKeyboard, trackViewport, useViewport } from "./viewport";
+export type { ViewportFrame } from "./viewport";
 export type { Follow } from "./follow";
 export { LatestPill } from "./latest";
 export { PlayerIsland } from "./player";

@@ -1,5 +1,6 @@
 import { useAtomValue } from "jotai";
 import { useSyncExternalStore } from "react";
+import { useViewport } from "zanni-react";
 import { AriaView, NewFigaro, attendedAtom, attendedRunningAtom, audioSessionAtom, BoundSheet as Sheet, linkAtom, micAtom, Roster, routeAtom, routeKindAtom, TopBar } from "zanni-react/jotai";
 
 function ListHint() {
@@ -31,12 +32,13 @@ export function App() {
   const running = useAtomValue(attendedRunningAtom);
   const mic = useAtomValue(micAtom);
   const session = useAtomValue(audioSessionAtom);
+  useViewport();
   const phase = useSyncExternalStore(
     (fn) => session.subscribe(fn),
     () => session.phase(),
   );
   return (
-    <div className="fw" data-link={link} data-route={kind} data-running={running ? "" : undefined} data-mic={mic.state} data-audio={phase}>
+    <div className="fw zr-shell" data-link={link} data-route={kind} data-running={running ? "" : undefined} data-mic={mic.state} data-audio={phase}>
       <TopBar />
       <div className="fw-body">
         <Roster />

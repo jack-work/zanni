@@ -180,7 +180,7 @@ try:
             for _ in range(40):
                 if pg.locator(".nodi-turn[data-turn='4']").count():
                     break
-                pg.evaluate("window.scrollTo(0, 0)")
+                pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop = 0")
                 pg.wait_for_timeout(120)
             assert pg.locator(".nodi-turn[data-turn='4']").count() == 1, "scrolling up pages older turns in: %s" % turns_shown(pg)
             got = turns_shown(pg)
@@ -204,10 +204,10 @@ try:
 
         pg = fresh()
         attend(pg, fast, MAIN)
-        pg.evaluate("window.scrollTo(0, 0)")
+        pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop = 0")
         until(pg, "document.querySelector('.nodi-turn') && Number(document.querySelector('.nodi-turn').dataset.turn) < 20", timeout=10000)
         pg.wait_for_timeout(400)
-        anchor = pg.evaluate("window.scrollY")
+        anchor = pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop")
         assert anchor > 0, "paging in older turns keeps the reader where they were, not at the top: %s" % anchor
         pg.close()
 
@@ -266,7 +266,7 @@ try:
             for b in pg.locator(".fw-stop").all():
                 hit_area(pg, b, "stop buttons")
             assert pg.locator(".zr-strip-time").inner_text()[0].isdigit()
-            pg.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
+            pg.evaluate("(() => { const s = document.querySelector('[data-zr-scroll]'); s.scrollTop = s.scrollHeight; })()")
             pg.wait_for_timeout(100)
             last = pg.evaluate("(() => { const n = [...document.querySelectorAll('.nodi-turn-body > *')].pop(); return n.getBoundingClientRect().bottom; })()")
             top = pg.locator(".zr-composer").bounding_box()["y"]
