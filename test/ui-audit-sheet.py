@@ -15,7 +15,7 @@ base = os.path.abspath(sys.argv[1])
 sheet = os.path.join(base, "sheet")
 os.makedirs(sheet, exist_ok=True)
 findings = json.load(open(os.path.join(base, "findings.json")))
-before = sorted(f for f in os.listdir(os.path.join(base, "before")) if f.endswith(".png"))
+before = sorted(json.load(open(os.path.join(base, "before", "metrics.json"))))
 after_dir = os.path.join(base, "after")
 after = set(f for f in os.listdir(after_dir) if f in before) if os.path.isdir(after_dir) else set()
 
