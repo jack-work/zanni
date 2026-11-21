@@ -68,7 +68,15 @@ with sync_playwright() as p:
         pg.goto(d.url + "#/gluck/" + aria)
         until(pg, "!!document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'", timeout=20000)
         until(pg, "document.querySelectorAll('.nodi-turn').length > 3 && document.querySelector('[data-zr-scroll]').scrollTop > 0", timeout=10000)
-        pg.wait_for_timeout(300)
+        steady = 0
+        last = None
+        for _ in range(80):
+            now = pg.evaluate("(() => { const sc = document.querySelector('[data-zr-scroll]'); const n = [...document.querySelectorAll('.nodi-turn-body > *')].pop(); return [sc.scrollHeight, sc.scrollTop, n ? Math.round(n.getBoundingClientRect().bottom) : 0]; })()")
+            steady = steady + 1 if now == last else 0
+            last = now
+            if steady >= 5:
+                break
+            pg.wait_for_timeout(100)
 
     fast = door(12)
 
