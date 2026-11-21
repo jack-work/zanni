@@ -174,6 +174,7 @@ export interface SpeechStart extends PcmFormat {
   node: number;
   cursor: string;
   say?: boolean;
+  partial?: boolean;
 }
 
 export type SpeechFault = "bad-turn" | "open" | "silent" | "busy" | "speech" | (string & {});
@@ -182,7 +183,7 @@ export interface SpeechHandlers {
   ready?(e: { aria: string; store: string }): void;
   start?(e: SpeechStart): void;
   chunk?(c: SpeechChunk): void;
-  end?(e: { aria: string; turn: number; key: string }): void;
+  end?(e: { aria: string; turn: number; key: string; partial?: boolean }): void;
   stored?(e: { aria: string; turn: number; key?: string }): void;
   cancel?(e: { aria: string; turn: number; key: string; why: string }): void;
   error?(e: { aria: string; turn?: number; code: SpeechFault; text: string }): void;

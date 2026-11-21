@@ -12,7 +12,7 @@ export interface HubDeps {
   readonly doc: Document;
   readonly voce: VoceApi;
   readonly session: AudioSession;
-  readonly played: Map<string, number>;
+  readonly played: Map<string, Played>;
   audioSrc(key: string): string;
   audioStatus(key: string): Promise<number>;
   speaking(s: SpokenNode | null): void;
@@ -41,7 +41,22 @@ const SLOT_WAIT_MS = 3000;
 const SLOT_POLL_MS = 40;
 const ACTIVE = new Set(["live", "draining", "playing", "loading"]);
 
+export interface Played {
+  readonly chars: number;
+  readonly next: number;
+  readonly epoch: number;
+}
+
+let epochs = 0;
+
+function heardAlready(c: SpeechChunk, was: Played | undefined, epoch: number): boolean {
+  if (!was) return false;
+  if (c.chars !== undefined && c.chars < was.chars) return true;
+  return epoch === was.epoch && (c.chars === undefined || c.chars === was.chars) && c.offset < was.next;
+}
+
 class Feed {
+  readonly epoch = ++epochs;
   player: VocePlayer | null = null;
   cancelled = false;
   ended = false;
@@ -65,6 +80,7 @@ export class VoiceHub {
   private readonly feeds = new Map<number, Feed>();
   private readonly conn: SpeechSession;
   private readonly said = new Set<number>();
+  private readonly partial = new Set<number>();
   private spoken: number | null = null;
   private closed = false;
   private voiceOn = false;
@@ -80,11 +96,13 @@ export class VoiceHub {
       {
         start: (e) => this.start(e),
         chunk: (c) => this.chunk(c),
-        end: (e) =>
+        end: (e) => {
+          if (e.partial) this.partial.add(e.turn);
           this.finish(e.turn, (f) => {
             f.player?.end(e.key || "");
             if (f.unheard) f.player?.play();
-          }),
+          });
+        },
         stored: (e) => {
           if (!this.feeds.get(e.turn)?.player) this.play(e.turn);
         },
@@ -127,6 +145,13 @@ export class VoiceHub {
 
   replay(turn: number): void {
     this.said.delete(turn);
+    const heard = this.feeds.get(turn)?.player;
+    if (this.partial.has(turn) && !(heard && ACTIVE.has(heard.state()))) {
+      this.partial.delete(turn);
+      this.said.add(turn);
+      this.conn.say(turn);
+      return;
+    }
     this.play(turn);
   }
 
@@ -202,6 +227,7 @@ export class VoiceHub {
 
   private start(e: SpeechStart): void {
     if (e.say) for (const k of [...this.deps.played.keys()]) if (k.startsWith(this.aria + ":" + e.turn + ":")) this.deps.played.delete(k);
+    if (e.partial) this.partial.add(e.turn);
     if (!e.say && !this.voiceOn) return;
     const old = this.feeds.get(e.turn);
     if (old && !old.ended && !old.cancelled) return;
@@ -223,8 +249,8 @@ export class VoiceHub {
     const key = this.aria + ":" + c.turn + ":" + c.node;
     feed.then(() => {
       if (!feed.player) return;
-      if (c.offset < (this.deps.played.get(key) ?? 0)) return;
-      this.deps.played.set(key, c.offset + c.pcm.byteLength);
+      if (heardAlready(c, this.deps.played.get(key), feed.epoch)) return;
+      this.deps.played.set(key, { chars: c.chars ?? this.deps.played.get(key)?.chars ?? 0, next: c.offset + c.pcm.byteLength, epoch: feed.epoch });
       this.spoken = c.turn;
       this.deps.speaking({ turn: c.turn, node: c.node, chars: c.chars });
       feed.player.push(c.pcm);
