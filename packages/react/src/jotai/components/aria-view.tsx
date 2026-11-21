@@ -18,9 +18,12 @@ import { InlineActions } from "./inline-actions";
 import { TurnActions } from "./turn-actions";
 
 const DEEP_LIMIT = 60;
+const PINNED = 3;
+const EAGER = 8;
 const FLASH_MS = 1800;
 
 const turnEl = (turn: number): HTMLElement | null => document.querySelector<HTMLElement>('.nodi-turn[data-turn="' + turn + '"]');
+const frames = (n: number) => new Promise<void>((r) => (n > 0 ? requestAnimationFrame(() => frames(n - 1).then(r)) : r()));
 const pause = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 async function appears(turn: number): Promise<HTMLElement | null> {
@@ -111,6 +114,8 @@ export function AriaView({ attended }: { attended: Attended }) {
         const el = await appears(turn);
         if (el) {
           el.scrollIntoView();
+          await frames(3);
+          el.scrollIntoView();
           el.setAttribute("data-flash", "");
           setTimeout(() => el.removeAttribute("data-flash"), FLASH_MS);
           return;
@@ -197,8 +202,8 @@ export function AriaView({ attended }: { attended: Attended }) {
           )}
           <TranscriptContext value={transcript}>
             <ol className="nodi-turns" aria-label="Transcript">
-              {turns.map((t) => (
-                <TurnView key={t.key} turn={t} speaking={speakingHere} fresh={baseline !== null && t.turn > baseline} />
+              {turns.map((t, i) => (
+                <TurnView key={t.key} turn={t} speaking={speakingHere} fresh={baseline !== null && t.turn > baseline} pinned={i >= turns.length - PINNED} eager={i >= turns.length - EAGER} />
               ))}
             </ol>
           </TranscriptContext>

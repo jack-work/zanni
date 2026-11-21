@@ -216,8 +216,14 @@ try:
             got = turns_shown(pg)
             assert len(got) - before >= 10, "read back ten turns or more: %d -> %d" % (before, len(got))
             assert got == sorted(got) and len(set(got)) == len(got), "older pages land in order without repeats: %s" % got
+            def hydrated(n):
+                pg.evaluate("document.querySelector(\".nodi-turn[data-turn='%d']\").scrollIntoView()" % n)
+                until(pg, "!document.querySelector(\".nodi-turn[data-turn='%d']\").hasAttribute('data-parked')" % n)
+
+            hydrated(6)
             assert pg.locator(".nodi-unknown").count() == 1, pg.locator(".nodi-unknown").count()
             assert "Unknown node: sparkle" in pg.locator(".nodi-unknown").inner_text()
+            hydrated(9)
             assert pg.locator(".nodi-said[data-from='aria'] .nodi-who").first.inner_text() == "Il Zanni"
             assert pg.locator(".nodi-said[data-from='caller'] .nodi-who").first.inner_text() == "the King"
             assert pg.locator(".nodi-said[data-from='you']").count() > 3
