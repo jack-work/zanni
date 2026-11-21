@@ -415,7 +415,7 @@
           var label = formLabel(r);
           if (used[label]) label = label + ' ' + r.short;
           used[label] = true;
-          var node = { id: r.id, state: r.state, mantra: r.mantra, active_at: r.last_active || r.created_at };
+          var node = { id: r.id, state: r.state, mantra: r.mantra, active_at: r.last_active || r.created_at, ctx: (metricsOf[r.id] || {}).context_tokens || 0, ctx_limit: 1000000 };
           if (r.roles && r.roles.length) node.role = r.roles.join(' ');
           var kids = level(r.id);
           if (Object.keys(kids).length) node.forks = kids;

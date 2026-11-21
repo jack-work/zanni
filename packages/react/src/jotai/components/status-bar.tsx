@@ -1,32 +1,70 @@
-import { glyphs } from "../../index";
+import { glyphs, usePit } from "../../index";
+import { ariaAtom } from "figaro-forms/aria/jotai";
 import { useAtomValue } from "jotai";
+import { useEffect, useState } from "react";
 import { EFFORT_KEY, valueAt } from "../lib/pit-rows";
-import { PHASE_WORDS } from "../lib/roster";
-import { linkAtom } from "../state/aria";
-import { boundStateAtom, forkedFromAtom } from "../state/pit";
+import { STATUS_SPINNER, ctxLine, stateGlyph } from "../lib/status";
+import { linkAtom, runningAtom, turnsAtom } from "../state/aria";
+import { boundStateAtom, forkedFromAtom, treeStateAtom } from "../state/pit";
 import { attendedRowAtom } from "../state/roster";
 import { attendedAtom } from "../state/route";
 
-export function StatusBar() {
+function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomValue<typeof attendedAtom>>>["client"]; aria: string }) {
   const link = useAtomValue(linkAtom);
-  const attended = useAtomValue(attendedAtom);
+  const running = useAtomValue(runningAtom(client, aria));
+  const turns = useAtomValue(turnsAtom(client, aria));
+  const snap = useAtomValue(ariaAtom(client, aria));
+  const tree = useAtomValue(treeStateAtom);
   const row = useAtomValue(attendedRowAtom);
   const bound = useAtomValue(boundStateAtom);
   const forked = useAtomValue(forkedFromAtom);
-  const word = PHASE_WORDS[link] ?? "";
-  const mantra = valueAt(bound?.root, "mantra") ?? row?.mantra ?? "";
+  const pit = usePit();
+  const [frame, setFrame] = useState(0);
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => setFrame((f) => (f + 1) % STATUS_SPINNER.length), 80);
+    return () => clearInterval(id);
+  }, [running]);
+  const node = tree?.nodes.get(aria);
+  const failed = turns[turns.length - 1]?.end?.kind === "error";
+  const handle = node?.handle ?? row?.handle ?? row?.short ?? aria.slice(0, 8);
+  const mantra = valueAt(bound?.root, "mantra") ?? node?.mantra ?? row?.mantra ?? "";
+  const used = node?.ctx ?? snap.metrics?.context_tokens;
+  const ctx = ctxLine(used, node?.ctxLimit);
+  const glyph = stateGlyph({ link, running, failed, frame });
+  const open = pit && pit.snap !== "closed";
   return (
-    <header className="fw-status" data-link={link} data-fork={forked ? "" : undefined} data-effort={valueAt(bound?.root, EFFORT_KEY)}>
-      <span className="fw-status-link" role="status">
-        {word}
+    <header className="fw-status" data-link={link} data-fork={forked ? "" : undefined} data-state={running ? "running" : failed ? "error" : "done"} data-effort={valueAt(bound?.root, EFFORT_KEY)}>
+      {open && (
+        <span className="fw-status-pit" aria-hidden="true">
+          {glyphs["pit.form"]}
+        </span>
+      )}
+      <span className="fw-status-glyph" role="status" aria-label={link === "live" ? (running ? "running" : "idle") : link}>
+        {glyph}
       </span>
-      {attended && <span className="fw-status-id">{row?.short || attended.aria.slice(0, 8)}</span>}
+      <span className="fw-status-handle">{handle}</span>
       {forked && (
         <span className="fw-status-fork" title="A fork">
           {glyphs.fork}
         </span>
       )}
-      {attended && mantra && <span className="fw-status-mantra">{mantra}</span>}
+      {mantra && <span className="fw-status-mantra">{mantra}</span>}
+      {ctx && <span className="fw-status-ctx">{ctx}</span>}
     </header>
   );
+}
+
+export function StatusBar() {
+  const attended = useAtomValue(attendedAtom);
+  const link = useAtomValue(linkAtom);
+  if (!attended)
+    return (
+      <header className="fw-status" data-link={link}>
+        <span className="fw-status-glyph" role="status" aria-label={link}>
+          {stateGlyph({ link, running: false, failed: false, frame: 0 })}
+        </span>
+      </header>
+    );
+  return <Bar client={attended.client} aria={attended.aria} />;
 }

@@ -758,8 +758,9 @@ try:
                 until(pg, "document.querySelector('.fw-status-mantra') && document.querySelector('.fw-status-mantra').textContent.length > 0", 8000)
                 box = bar.bounding_box()
                 assert box["y"] == 0 and box["height"] <= 32, "slim bar at the top: %s" % box
-                assert pg.locator(".fw-status-link").inner_text() == "Live"
-                assert len(pg.locator(".fw-status-id").inner_text()) == 8
+                assert pg.locator(".fw-status-glyph").inner_text() == "✓", "an idle live aria wears the pager's done glyph"
+                assert pg.locator(".fw-status-handle").inner_text() == "zanni", "the bar names the handle, not a short id"
+                until(pg, "/\\d+(\\.\\d)?k?\\/[\\d.]+[km]? \\d+\\.\\d%/.test(document.querySelector('.fw-status-ctx') ? document.querySelector('.fw-status-ctx').textContent : '')", 8000)
                 pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop = 400")
                 pg.wait_for_timeout(100)
                 assert abs(bar.bounding_box()["y"]) <= 1, "the status bar stays while the transcript scrolls"
