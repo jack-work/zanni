@@ -8,6 +8,9 @@ import urllib.request
 
 from playwright.sync_api import sync_playwright
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from figchat_kit import assert_centred
+
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 shots = os.environ.get("FIGCHAT_SHOTS", "")
 bundle = os.path.abspath(sys.argv[1])
@@ -272,14 +275,14 @@ try:
             attend(pg, door(45), MAIN)
             idle = pg.locator(".zr-composer").bounding_box()
             assert idle["height"] <= 76, "an idle composer is at most 76px tall: %s" % idle
-            attach, command, sendp, field = (pg.locator(s).bounding_box() for s in (".zr-attach", ".zr-command", ".zr-send", ".zr-input"))
-            assert attach["x"] + attach["width"] <= field["x"] + 1, "attach sits left of the input: %s %s" % (attach, field)
-            assert command["x"] >= field["x"] + field["width"] - 1 and sendp["x"] >= command["x"] + command["width"] - 2, "command and send sit right of the input, send last: %s" % [command, sendp]
-            assert abs((command["x"] + command["width"]) - sendp["x"]) <= 2, "command and send are one joined pair"
-            for b in (attach, command, sendp):
-                assert 30 <= b["height"] <= 40 and b["width"] <= 64, "a small pill: %s" % b
-            assert [pg.locator(s).inner_text() for s in (".zr-command", ".zr-send")] == ["∴", "✎"], "pager glyphs on the right pills"
-            assert pg.locator(".zr-attach").is_disabled() and pg.locator(".zr-command").is_disabled(), "attach and command say they are not available yet"
+            sendp, field = (pg.locator(s).bounding_box() for s in (".zr-send", ".zr-input"))
+            assert pg.locator(".zr-attach, .zr-command").count() == 0, "a pill that does nothing is not drawn"
+            assert sendp["x"] >= field["x"] + field["width"] - 1, "send sits right of the input: %s %s" % (sendp, field)
+            assert 30 <= sendp["height"] <= 40 and sendp["width"] <= 64, "a small pill: %s" % sendp
+            assert pg.locator(".zr-send").inner_text() == "✎", "the pager glyph on the send pill"
+            assert_centred(pg.locator(".zr-send"), "the send pill's glyph at %d %s" % (width, scheme))
+            if pg.locator(".fw-mic-glyph").count():
+                assert_centred(pg.locator(".fw-mic"), "the record button's glyph at %d %s" % (width, scheme), tol=2.0, blank_ok=True)
             assert pg.locator(".zr-send").get_attribute("aria-label") == "Send"
             send(pg, "please run the tests")
             pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='running']", timeout=10000)
@@ -575,7 +578,10 @@ try:
             bar_box = mine.bounding_box()
             assert bar_box["y"] >= said_box["y"] + said_box["height"] - 1 and bar_box["y"] - (said_box["y"] + said_box["height"]) < 40, "the buttons sit right under the message: %s %s" % (said_box, bar_box)
             for b in mine.locator(".fw-inline-btn").all():
-                assert b.bounding_box()["height"] <= 40, "small buttons"
+                box = b.bounding_box()
+                assert box["height"] >= 44 and box["width"] >= 44, "thumb size: %s" % box
+                assert_centred(b, "a message button's glyph at %d" % width)
+                assert b.locator(".zr-ink").evaluate("n => parseFloat(getComputedStyle(n).fontSize)") >= 24, "a visibly larger glyph"
             assert pg.locator(".zr-scrim, .zr-sheet").count() == 0
             snap(pg, "inline-%d" % width)
             sans_free(pg, "the inline buttons at %d" % width)

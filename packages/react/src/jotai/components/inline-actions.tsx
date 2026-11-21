@@ -1,4 +1,4 @@
-import { Button, PlayerIsland, Plain, audioKeyUrl, glyphs, withSession, type PlayRequest } from "../../index";
+import { Button, Glyph, PlayerIsland, Plain, audioKeyUrl, glyphs, withSession, type PlayRequest } from "../../index";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useState } from "react";
 import { clipKey, transcribeClip } from "../lib/clips";
@@ -32,11 +32,11 @@ export function InlineActions({ kind, turn }: { kind: "input" | "prose"; turn: n
     <div className="fw-inline" data-kind={kind}>
       <div className="fw-inline-bar">
         <Button variant="ghost" size="compact" className="fw-inline-btn fw-play" data-action="play" aria-label="Play" title="Play" onClick={play}>
-          {glyphs["state.running"]}
+          <Glyph glyph={glyphs["state.running"]} />
         </Button>
         {kind === "input" && (
           <Button variant="ghost" size="compact" className="fw-inline-btn" data-action="retranscribe" aria-label="Re-transcribe" title="Re-transcribe" onClick={() => void transcribe()}>
-            {glyphs.composer}
+            <Glyph glyph={glyphs.composer} />
           </Button>
         )}
       </div>
@@ -61,7 +61,7 @@ export function InlineActions({ kind, turn }: { kind: "input" | "prose"; turn: n
               setHeard("");
             }}
           >
-            {glyphs.send}
+            <Glyph glyph={glyphs.send} />
           </Button>
         </p>
       )}

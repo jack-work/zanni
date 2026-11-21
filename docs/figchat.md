@@ -81,10 +81,16 @@ not in atoms.
 - Composer: Enter sends, Shift+Enter breaks the line, never during IME
   composition, never on a coarse pointer. While a turn runs the composer gains
   one 40px line (glyph, what is running, elapsed time, Stop, Stop all) and the
-  send pill steers. Three glyph pills sit in the row: attach on the left;
-  command (∴) and send (✎, ↳ while running) on the right as one joined pair,
-  named by `aria-label`, glyphs from figaro-forms. Attach and command are
-  disabled until their lanes land. The record button is glyph-only until voice
+  send pill steers. The row holds the input, the record button and the send
+  pill (✎, ↳ while running), both round and 36px, glyphs from figaro-forms by
+  name. No pill is drawn that does nothing: attach and command come back with
+  their lanes. The record glyph is `voice` (🎙︎ until the table carries it) and
+  the attach glyph will be `attach` (📎︎), keyed by name, not by character.
+  Every glyph in a pill, a pit row or a message button is centred by its ink,
+  not its advance box (`Glyph`, `ink.tsx`): VT323 and the fallback faces sit on
+  different baselines, so the glyph is drawn once on a canvas, its ink box read
+  back, and the offset held as a zero-length animation of `translate`, which the CSP
+  allows where a style attribute or an inserted rule is refused. The buttons under a message are 44px with a 36px glyph. The record button is glyph-only until voice
   is on, then widens. Errors and the mic's notes take that same line. A draft is kept
   per aria in localStorage, saved 400ms after typing, cleared on send.
 - Fork sits in the aria header; Fork here and Play in each turn's action bar

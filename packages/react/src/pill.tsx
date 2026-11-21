@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Glyph } from "./ink";
 
 export interface PillSpec {
   glyph: string;
@@ -12,9 +13,7 @@ export interface PillSpec {
 export function Pill({ glyph, label, title, disabled, pressed, onClick, className, type = "button", children, ...rest }: PillSpec & { className?: string; type?: "button" | "submit"; children?: ReactNode } & Record<`data-${string}`, string | undefined>) {
   return (
     <button type={type} className={["zr-pill", className].filter(Boolean).join(" ")} aria-label={label} title={title ?? label} disabled={disabled} aria-pressed={pressed} onClick={onClick} onMouseDown={(ev) => ev.preventDefault()} {...rest}>
-      <span className="zr-pill-glyph" aria-hidden="true">
-        {glyph}
-      </span>
+      <Glyph glyph={glyph} className="zr-pill-glyph" />
       {children}
     </button>
   );

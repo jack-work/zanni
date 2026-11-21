@@ -19,6 +19,7 @@ export type { StripProps } from "./strip";
 export { KEYBOARD_CLOSE_SETTLE_MS, Composer, useCoarsePointer, useSizeVar } from "./composer";
 export type { ComposerProps } from "./composer";
 export { ActionBar } from "./actions";
+export { Glyph, inkOf } from "./ink";
 export { Fold } from "./fold";
 export type { FoldProps } from "./fold";
 export { BlockView, Plain } from "./text";

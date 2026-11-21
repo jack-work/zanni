@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Glyph } from "./ink";
 
 export interface PitRowProps {
   glyph?: string;
@@ -28,9 +29,7 @@ export function PitRow({ glyph, label, meta, depth = 0, current, pressed, disabl
         disabled={disabled}
         onClick={onClick}
       >
-        <span className="zr-pit-row-glyph" aria-hidden="true">
-          {current ? "▸" : glyph}
-        </span>
+        <Glyph glyph={current ? "▸" : (glyph ?? "")} className="zr-pit-row-glyph" />
         <span className="zr-pit-row-label">{label}</span>
         {meta !== undefined && meta !== "" && <span className="zr-pit-row-meta">{meta}</span>}
       </button>

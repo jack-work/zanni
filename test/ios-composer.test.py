@@ -6,7 +6,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from playwright.sync_api import sync_playwright
 
-from figchat_kit import FAKE_VISUAL_VIEWPORT, MAIN, Door, until
+from figchat_kit import FAKE_VISUAL_VIEWPORT, MAIN, Door, assert_centred, until
 
 bundle = os.path.abspath(sys.argv[1])
 shots = os.environ.get("FIGCHAT_SHOTS", "")
@@ -427,6 +427,33 @@ with sync_playwright() as p:
     pit = pg.evaluate("(() => { const b = document.querySelector('.zr-pit').getBoundingClientRect(); return [b.top, b.bottom, b.height]; })()")
     near(pit[1], 844 - KB, "the full pit ends at the keyboard")
     assert pit[0] >= -1 and pit[2] <= 844 - KB + 1, "the full pit fits above the keyboard: %s" % pit
+    assert not pg.errors, pg.errors
+    pg.context.close()
+
+    pg = fresh()
+    pills_door = door(40)
+    attend(pg, pills_door)
+    pills = pg.evaluate("[...document.querySelectorAll('.zr-pill')].map(n => [n.getAttribute('aria-label'), n.disabled])")
+    assert pills == [["Send", False]], "no pill is drawn that does nothing: %s" % pills
+    assert_centred(pg.locator(".zr-send"), "the send pill's glyph on an iPhone")
+    assert_centred(pg.locator(".fw-mic"), "the record button's glyph on an iPhone", tol=2.0, blank_ok=True)
+    pg.locator(".zr-input").tap()
+    pg.keyboard.type("first")
+    pg.locator(".zr-send").tap()
+    until(pg, "document.querySelector('.zr-input').value === ''", 5000)
+    pg.wait_for_selector(".nodi-turn[data-turn='27']", timeout=10000)
+    pg.locator(".zr-input").tap()
+    pg.keyboard.type("second")
+    pg.locator(".zr-send").tap()
+    until(pg, "document.querySelector('.zr-input').value === ''", 5000)
+    assert [m["text"] for m in pills_door.state()["sent"]][:2] == ["first", "second"], "a tap on send sends, every time: %s" % pills_door.state()["sent"]
+    pg.locator(".nodi-turn[data-turn='26'] .fw-inline-btn").first.scroll_into_view_if_needed()
+    for b in pg.locator(".nodi-turn[data-turn='26'] .fw-inline-btn").all():
+        box = b.bounding_box()
+        assert box["width"] >= 44 and box["height"] >= 44, "a message button is thumb size: %s" % box
+        assert_centred(b, "a message button's glyph on an iPhone")
+    shot_sheet = "Refused to apply a stylesheet"
+    pg.errors = [e for e in pg.errors if shot_sheet not in e]
     assert not pg.errors, pg.errors
     pg.context.close()
 

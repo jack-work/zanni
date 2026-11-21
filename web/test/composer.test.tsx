@@ -248,3 +248,25 @@ describe("the buttons under a message", () => {
     expect(document.querySelectorAll(".fw-play-big").length).toBeGreaterThan(0);
   });
 });
+
+describe("the composer's pills", () => {
+  it("draws only the pills that work: no attach and no command until their lanes land", async () => {
+    attend(1);
+    await live();
+    const pills = [...document.querySelectorAll<HTMLButtonElement>(".zr-pill")];
+    expect(pills.map((p) => p.getAttribute("aria-label"))).toEqual(["Send"]);
+    expect(pills.every((p) => !p.disabled)).toBe(true);
+    expect(document.querySelector(".zr-attach, .zr-command")).toBeNull();
+  });
+
+  it("gives every pill glyph, pit row glyph and message button glyph the ink-centring box", async () => {
+    attend(1);
+    await live();
+    const g = document.querySelector<HTMLElement>(".zr-send .zr-ink")!;
+    expect(g.textContent).toBe("✎");
+    expect(g.getAttribute("aria-hidden")).toBe("true");
+    expect(g.hasAttribute("style")).toBe(false);
+    expect(g.hasAttribute("data-ink")).toBe(false);
+    expect(document.querySelector(".fw-mic .zr-ink")!.textContent).toBe("🎙︎");
+  });
+});
