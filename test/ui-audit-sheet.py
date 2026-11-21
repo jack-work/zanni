@@ -17,7 +17,7 @@ os.makedirs(sheet, exist_ok=True)
 findings = json.load(open(os.path.join(base, "findings.json")))
 before = sorted(f for f in os.listdir(os.path.join(base, "before")) if f.endswith(".png"))
 after_dir = os.path.join(base, "after")
-after = set(f for f in os.listdir(after_dir) if f.endswith(".png")) if os.path.isdir(after_dir) else set()
+after = set(f for f in os.listdir(after_dir) if f in before) if os.path.isdir(after_dir) else set()
 
 for kind, names in (("before", before), ("after", sorted(after))):
     os.makedirs(os.path.join(sheet, kind), exist_ok=True)
@@ -65,7 +65,7 @@ page = """<!doctype html><meta charset=utf-8><meta name=viewport content='width=
 body{font:15px/1.4 system-ui,sans-serif;margin:16px;background:#faf7f2;color:#222}
 table{border-collapse:collapse;width:100%%;margin-bottom:24px}td{border-top:1px solid #ccc;padding:6px;vertical-align:top}
 .w{font:12px ui-monospace,monospace;color:#555}
-.card{border:1px solid #ccc;background:#fff;margin:12px 0;padding:8px}
+.card{border:1px solid #ccc;background:#fff;margin:12px 0;padding:8px;display:grid;grid-template-columns:auto minmax(16rem,1fr);gap:12px}.card h3{grid-column:1/-1;margin:0}.card ul{margin:0}
 .imgs{display:flex;gap:8px;flex-wrap:wrap}figure{margin:0}figcaption{font-size:12px;color:#666}
 img{max-height:640px;max-width:100%%;border:1px solid #ddd}
 .p{font-weight:700}.P0{color:#b00}.P1{color:#a60}.P2{color:#666}
