@@ -348,6 +348,7 @@
     thinking: {
       create: function (d) {
         var n = d.el('details', 'nodi-thinking');
+        n.open = true;
         var label = d.el('span', 'nodi-sum-label', 'Thinking');
         n.append(caretSummary(d, label));
         var body = d.el('div', 'nodi-thought');
@@ -383,6 +384,7 @@
     tool: {
       create: function (d) {
         var n = d.el('details', 'nodi-tool');
+        n.open = true;
         var name = d.el('span', 'nodi-tool-name');
         var sum = d.el('span', 'nodi-tool-summary');
         var status = d.el('span', 'nodi-tool-status');

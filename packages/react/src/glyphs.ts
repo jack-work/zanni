@@ -39,3 +39,9 @@ export const marks = {
 export function selectionGlyph(id: PitFaceId): string {
   return pitFaces[id].selection || SELECTION;
 }
+
+export const nodeMarks = {
+  ok: "✓",
+  fail: "✗",
+  spinner: [..."⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"],
+} as const;

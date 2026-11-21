@@ -193,9 +193,7 @@ try:
             assert pg.locator(".nodi-said[data-from='you']").count() > 3
             assert pg.locator(".nodi-steering .nodi-who").first.inner_text() == "Il Zanni"
             tool = pg.locator(".nodi-turn[data-turn='7'] .nodi-tool")
-            assert tool.evaluate("n => n.open") is False, "tool blocks are collapsed"
-            tool.locator("summary").click()
-            assert tool.evaluate("n => n.open") is True
+            assert tool.evaluate("n => n.open") is True, "tool blocks are open by default"
             until(pg, "document.querySelector(\".nodi-turn[data-turn='7'] .nodi-tool-args\").innerText.includes('go test')", 5000)
             tool.locator(".nodi-tool-out").wait_for(state="visible", timeout=5000)
             assert "clipped" in tool.locator(".nodi-clipped").inner_text(), "a clipped result says so"
@@ -250,7 +248,7 @@ try:
             send(pg, "please run the tests")
             pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='running']", timeout=10000)
             thinking = pg.locator(".nodi-turn[data-turn='27'] .nodi-thinking")
-            assert thinking.evaluate("n => n.open") is False, "thinking is collapsed while it streams"
+            assert thinking.evaluate("n => n.open") is True, "thinking is open while it streams"
             assert pg.locator(".nodi-turn[data-turn='27'][data-state='open']").count() == 1
             strip = pg.locator(".zr-strip")
             assert strip.is_visible(), "the strip says a turn is running"
@@ -278,9 +276,10 @@ try:
             pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='ok']", timeout=10000)
             pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])", timeout=10000)
             until(pg, "!document.querySelector('.zr-strip')", timeout=5000)
-            thinking.locator("summary").click()
-            assert thinking.evaluate("n => n.open") is True
+            assert thinking.evaluate("n => n.open") is True, "thinking is still open once the turn settles"
             until(pg, "document.querySelector(\".nodi-turn[data-turn='27'] .nodi-thought\").innerText.includes('answer plainly')", 5000)
+            thinking.locator("summary").click()
+            assert thinking.evaluate("n => n.open") is False, "a fold stays collapsible"
             kinds = pg.evaluate("[...document.querySelectorAll('.nodi-turn[data-turn=\"27\"] .nodi-turn-body > *')].map(n => n.className.split(' ')[0])")
             assert kinds == ["nodi-input", "nodi-thinking", "nodi-prose", "nodi-tool", "nodi-prose"], kinds
             assert "please run the tests" in pg.locator(".nodi-turn[data-turn='27'] .nodi-input").inner_text()
