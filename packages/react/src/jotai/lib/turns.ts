@@ -1,6 +1,6 @@
 import type { Message } from "figaro-forms/aria";
 import type { TurnModel } from "../../index";
-import { nodi } from "../../index";
+import { deltaRowsOf, nodi, FORKED_FROM_KEYS } from "../../index";
 
 type Msg = Message;
 
@@ -28,15 +28,18 @@ function sameMsgs(a: readonly Msg[], b: readonly Msg[]): boolean {
   return a.length === b.length && a.every((m, i) => m === b[i]);
 }
 
-const FORKED_FROM = ".system.forked_from";
-
 function forkedFromOf(msgs: readonly Msg[]): string | undefined {
   for (const m of msgs) {
     for (const [key, d] of Object.entries(m.formDeltas ?? {})) {
-      if (key.endsWith(FORKED_FROM) && d.event !== "removed" && d.event !== "deleted" && typeof d.value === "string") return d.value;
+      const bare = key.startsWith(d.form + ".") ? key.slice(d.form.length + 1) : key;
+      if (d.kind === "bound" && FORKED_FROM_KEYS.includes(bare) && d.event !== "removed" && d.event !== "deleted" && typeof d.value === "string") return d.value;
     }
   }
   return undefined;
+}
+
+function deltasOf(msgs: readonly Msg[], forked: boolean) {
+  return msgs.flatMap((m) => [...deltaRowsOf(m.formDeltas, forked), ...m.nodes.flatMap((n) => deltaRowsOf(n.formDeltas, false))]);
 }
 
 export function turnsOf(view: View, ends: Ends, cache: TurnCache): TurnModel[] {
@@ -60,8 +63,11 @@ export function turnsOf(view: View, ends: Ends, cache: TurnCache): TurnModel[] {
     }
     const live = open && open.turn === turn ? open : undefined;
     const model = nodi.model({ closed, open: live } as Parameters<typeof nodi.model>[0], ends)[0]!;
-    const from = forkedFromOf(live ? [...closed, live] : closed);
+    const all = live ? [...closed, live] : closed;
+    const from = forkedFromOf(all);
     if (from) model.forkedFrom = from;
+    const deltas = deltasOf(all, !!from);
+    if (deltas.length) model.deltas = deltas;
     const same = hit && JSON.stringify(hit.turn) === JSON.stringify(model);
     const next = same ? hit.turn : model;
     held.set(turn, { msgs: closed, reason, turn: next });

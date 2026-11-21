@@ -301,6 +301,40 @@ try:
             assert not pg.errors, pg.errors
             pg.close()
 
+        for width, height in ((390, 844), (1280, 800)):
+            pg = fresh(width, height)
+            attend(pg, fast, MAIN, 21)
+            pg.wait_for_selector(".nodi-turn[data-turn='21'] .nodi-turn-delta", timeout=10000)
+            assert pg.locator(".nodi-turn-delta").count() == 1, "only the turn whose form changed wears the delta mark"
+            assert pg.locator(".nodi-deltas").count() == 0, "the table starts shut"
+            pg.locator(".nodi-turn-delta").click()
+            pg.wait_for_selector(".nodi-deltas .nodi-delta")
+            texts = pg.locator(".nodi-deltas .nodi-delta").all_inner_texts()
+            assert len(texts) == 7, "bound form first, the others by id, a deleted form one banner: %s" % texts
+            assert texts[0].replace("\n", " ").split()[:2] == ["\u0394", "credo"], texts
+            assert "\u2205" in texts[3] and "\u2205" in pg.locator(".nodi-delta-row").nth(3).locator(".nodi-delta-to").inner_text(), "a removed key ends in the absent mark: %s" % texts
+            assert texts[5].startswith("\u2298"), "a deleted form is a banner row: %s" % texts
+            no_sideways(pg, width, "the delta table")
+            wide = pg.evaluate("[...document.querySelectorAll('.nodi-delta-row')].filter(r => r.scrollWidth > r.clientWidth + 1).length")
+            assert wide == 0, "no delta row is wider than its box: %d" % wide
+            mantra = pg.locator(".nodi-delta-row", has_text="mantra")
+            got = mantra.evaluate("r => { const f = r.querySelector('.nodi-delta-from'), t = r.querySelector('.nodi-delta-to'); const p = document.createElement('span'); p.style.width = '6ch'; p.style.display = 'inline-block'; r.appendChild(p); const floor = p.getBoundingClientRect().width; p.remove(); return { fromFits: f.scrollWidth <= f.clientWidth, from: f.clientWidth, to: t.clientWidth, row: r.clientWidth, floor: floor }; }")
+            assert got["to"] >= got["floor"] - 1 and got["from"] >= got["floor"] - 1, "each side keeps its floor: %s" % got
+            if width < 600:
+                assert not got["fromFits"], "at phone width a long value is elided, not wrapped: %s" % got
+                assert mantra.bounding_box()["height"] >= 40, "a touch row is a touch target"
+            keyw = pg.evaluate("Math.max(...[...document.querySelectorAll('.nodi-delta-key')].map(k => k.getBoundingClientRect().width))")
+            assert keyw <= 28 * 14, "the key column stops at 28 characters: %s" % keyw
+            mantra.click()
+            pg.wait_for_selector(".nodi-delta-side")
+            assert pg.locator(".nodi-delta-side[data-side='+']").inner_text().startswith("+ " + "n" * 40), "a row opens to the whole new value"
+            no_sideways(pg, width, "an open delta row")
+            snap(pg, "deltas-%d" % width)
+            pg.locator(".nodi-turn-delta").click()
+            assert pg.locator(".nodi-deltas").count() == 0, "the mark shuts it"
+            assert not pg.errors, pg.errors
+            pg.close()
+
         pg = fresh()
         attend(pg, door(12), MAIN, 3)
         pg.wait_for_selector(".nodi-turn[data-turn='3']")

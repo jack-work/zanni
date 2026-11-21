@@ -119,3 +119,35 @@ describe("turnsOf and the fork mark", () => {
     expect(turnsOf({ closed } as never, {}, newTurnCache())[0]!.forkedFrom).toBeUndefined();
   });
 });
+
+describe("turnsOf and the form deltas", () => {
+  const set = (form: string, key: string, prev: unknown, value: unknown) => ({ [form + "." + key]: { form, kind: "bound", event: "set", ...(prev === undefined ? {} : { prev }), value } });
+
+  it("carries a turn's own deltas, and its nodes', as rows on the turn", () => {
+    const closed = [
+      { turn: 1, from: 0, role: "input", nodes: [], inquiry: "q", at: 1, formDeltas: set("a1", "phase", "seed", "canary") },
+      { turn: 1, from: 0, role: "output", nodes: [{ type: "prose", role: "output", markdown: "x", at: 1, formDeltas: set("a1", "mood", undefined, "calm") }], at: 1 },
+    ];
+    const got = turnsOf({ closed } as never, {}, newTurnCache())[0]!;
+    expect(got.deltas!.map((r) => r.key)).toEqual(["phase", "mood"]);
+  });
+
+  it("drops a fork's birth keys from the turn that carries forked_from, and leaves no deltas when nothing else changed", () => {
+    const birth = { ...set("alt", "system.forked_from", undefined, "parent-id"), ...set("alt", "aria_id", undefined, "alt") };
+    const closed = [{ turn: 3, from: 0, role: "input", nodes: [], inquiry: "mine", at: 3, formDeltas: birth }];
+    const got = turnsOf({ closed } as never, {}, newTurnCache())[0]!;
+    expect(got.forkedFrom).toBe("parent-id");
+    expect(got.deltas).toBeUndefined();
+  });
+
+  it("reads the runtime-rooted forked_from as well as the legacy one", () => {
+    const closed = [{ turn: 3, from: 0, role: "input", nodes: [], inquiry: "mine", at: 3, formDeltas: set("alt", "runtime.forked_from", undefined, "parent-id") }];
+    const got = turnsOf({ closed } as never, {}, newTurnCache())[0]!;
+    expect(got.forkedFrom).toBe("parent-id");
+    expect(got.deltas).toBeUndefined();
+  });
+
+  it("a turn with nothing to show has no deltas key at all", () => {
+    expect(turnsOf({ closed: settled(1) } as never, {}, newTurnCache())[0]).not.toHaveProperty("deltas");
+  });
+});

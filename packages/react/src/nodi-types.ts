@@ -83,6 +83,18 @@ export interface TurnEnd {
   text: string;
 }
 
+export interface DeltaCell {
+  present: boolean;
+  text: string;
+}
+
+export interface DeltaRow {
+  banner: boolean;
+  key: string;
+  from: DeltaCell;
+  to: DeltaCell;
+}
+
 export interface TurnModel {
   key: string;
   turn: number;
@@ -92,6 +104,7 @@ export interface TurnModel {
   open: boolean;
   sealed: boolean;
   forkedFrom?: string;
+  deltas?: DeltaRow[];
 }
 
 export interface NodiApi {

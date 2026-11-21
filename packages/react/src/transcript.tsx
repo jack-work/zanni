@@ -1,5 +1,5 @@
 import { formatWorkedTime, groupWork, stepsTitle, type Work } from "./work";
-import { createContext, memo, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, memo, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { scrollRoot } from "./follow";
 import { PARK_HEIGHT, parkHeight, watchNear } from "./park";
 import { Fold } from "./fold";
@@ -7,6 +7,8 @@ import { reducedMotion } from "./motion";
 import { glyphs } from "./glyphs";
 import { nodi, type InputModel, type Item, type ProseItem, type SteeringItem, type ThinkingItem, type ToolItem, type TurnModel, type UnknownItem } from "./zanni";
 import { BlockView, Plain } from "./text";
+import { cellLine, keyColumns, rowFull, valueLines } from "./deltas";
+import type { DeltaCell, DeltaRow } from "./nodi-types";
 
 export type TapKind = "input" | "prose";
 
@@ -263,17 +265,91 @@ export interface TurnViewProps {
 
 const spokenIn = (s: Speaking | null, turn: number): string => (s && s.turn === turn ? s.node + ":" + s.chars : "");
 
+const HEX_NAME = /^@?[0-9a-f]{8,}$/;
+
+function Named({ cell, nameOf }: { cell: DeltaCell; nameOf: TranscriptHooks["nameOf"] }) {
+  const text = cell.present && nameOf && HEX_NAME.test(cell.text) ? nameOf(cell.text) : cell.text;
+  return <Plain text={cellLine({ present: cell.present, text })} />;
+}
+
+function DeltaEntry({ row, nameOf }: { row: DeltaRow; nameOf: TranscriptHooks["nameOf"] }) {
+  const [open, setOpen] = useState(false);
+  if (row.banner) {
+    return (
+      <li className="nodi-delta" data-banner="" title={rowFull(row)}>
+        <span className="nodi-delta-glyph">{glyphs.dead}</span>
+        <span className="nodi-delta-key">
+          <Plain text={row.key} />
+        </span>
+      </li>
+    );
+  }
+  return (
+    <li className="nodi-delta" data-open={open ? "" : undefined}>
+      <button type="button" className="nodi-delta-row" aria-expanded={open} title={rowFull(row)} onClick={() => setOpen(!open)}>
+        <span className="nodi-delta-glyph">{glyphs.delta}</span>
+        <span className="nodi-delta-key">
+          <Plain text={row.key} />
+        </span>
+        <span className="nodi-delta-change">
+          <span className="nodi-delta-from">
+            <Named cell={row.from} nameOf={nameOf} />
+          </span>
+          <span className="nodi-delta-arrow"> {"->"} </span>
+          <span className="nodi-delta-to">
+            <Named cell={row.to} nameOf={nameOf} />
+          </span>
+        </span>
+      </button>
+      {open && (
+        <div className="nodi-delta-full">
+          {[
+            { sign: "-", cell: row.from },
+            { sign: "+", cell: row.to },
+          ].map((side) => (
+            <pre key={side.sign} className="nodi-delta-side" data-side={side.sign}>
+              <Plain text={side.sign + " " + valueLines(side.cell).join("\n  ")} />
+            </pre>
+          ))}
+        </div>
+      )}
+    </li>
+  );
+}
+
+function DeltaTable({ rows }: { rows: readonly DeltaRow[] }) {
+  const hooks = useContext(TranscriptContext);
+  const keyw = Math.max(keyColumns(rows), 1);
+  return (
+    <ul className="nodi-deltas" aria-label="Form changes" style={{ "--nodi-delta-key": keyw + "ch" } as CSSProperties}>
+      {rows.map((r, i) => (
+        <DeltaEntry key={i + r.key} row={r} nameOf={hooks.nameOf} />
+      ))}
+    </ul>
+  );
+}
+
 function TurnContent({ turn: m, speaking }: { turn: TurnModel; speaking: Speaking | null }) {
   const mine = speaking && speaking.turn === m.turn ? speaking : null;
   const rows = useMemo(() => groupWork(m.items), [m.items]);
   const hooks = useContext(TranscriptContext);
+  const [deltasOpen, setDeltasOpen] = useState(false);
+  const deltas = m.deltas ?? [];
   return (
     <>
       <div className="nodi-turn-head">
         <span className="nodi-turn-no">Turn {m.turn}</span>
-        {m.forkedFrom && <span className="nodi-turn-fork">{glyphs.fork + " " + (hooks.nameOf?.(m.forkedFrom) ?? m.forkedFrom.slice(0, 8))}</span>}
+        <span className="nodi-turn-marks">
+          {m.forkedFrom && <span className="nodi-turn-fork">{glyphs.fork + " " + (hooks.nameOf?.(m.forkedFrom) ?? m.forkedFrom.slice(0, 8))}</span>}
+          {deltas.length > 0 && (
+            <button type="button" className="nodi-turn-delta" aria-expanded={deltasOpen} aria-label={"Form changes: " + deltas.length} onClick={() => setDeltasOpen(!deltasOpen)}>
+              {glyphs.delta}
+            </button>
+          )}
+        </span>
         <span className="nodi-turn-tools">{hooks.actions?.(m.turn)}</span>
       </div>
+      {deltasOpen && deltas.length > 0 && <DeltaTable rows={deltas} />}
       <div className="nodi-turn-body">
         {m.input && m.input.parts.length > 0 && <InputView input={m.input} turn={m.turn} />}
         {m.input && m.input.parts.length > 0 && hooks.below?.("input", m.turn)}
