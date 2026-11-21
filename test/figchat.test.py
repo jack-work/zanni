@@ -284,7 +284,7 @@ try:
             assert pg.locator(".zr-attach").count() == 1, "Escape brings the composer back"
 
             box.click()
-            pg.keyboard.type(":fork 12")
+            pg.keyboard.type(":fork :12")
             pg.keyboard.press("Enter")
             until(pg, "/^#\\/[^/]+\\/[0-9a-f]{32}$/.test(location.hash) && !location.hash.includes('%s')" % MAIN, 8000)
             pg.wait_for_selector(".nodi-turn[data-turn='11']", timeout=10000)

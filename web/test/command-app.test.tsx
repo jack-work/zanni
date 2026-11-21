@@ -96,9 +96,9 @@ describe("command mode in the composer", () => {
     expect(box().value).toBe("set system.model x");
   });
 
-  it(":fork 12 forks the open aria at turn 12 and attends the fork at its end", async () => {
+  it(":fork :12 forks the open aria at turn 12 and attends the fork at its end", async () => {
     await attend();
-    await run("fork 12");
+    await run("fork :12");
     await waitFor(() => expect(core.calls.some((c) => c.method === "figaro.fork")).toBe(true));
     const call = core.calls.find((c) => c.method === "figaro.fork")!;
     expect(call.params).toMatchObject({ figaro_id: MAIN });
@@ -107,9 +107,57 @@ describe("command mode in the composer", () => {
     expect(pill().getAttribute("aria-pressed")).toBe("false");
   });
 
-  it(":fork --stay 12 forks and stays where it is", async () => {
+  it(":fork 12 reads 12 as an aria id prefix, as the pager does, and forks nothing when none matches", async () => {
     await attend();
-    await run("fork --stay 12");
+    await run("fork 12");
+    await waitFor(() => expect(reason()).toBe("fork: no aria matches 12."));
+    expect(pill().getAttribute("aria-pressed")).toBe("true");
+    expect(core.calls.filter((c) => c.method === "figaro.fork")).toEqual([]);
+  });
+
+  it(":fork c0ffee02 reads c0ffee02 as an aria id prefix and forks that aria", async () => {
+    await attend();
+    await run("ls");
+    await waitFor(() => expect(document.querySelector(".zr-pit")!.textContent).toContain("Tree"));
+    await run("fork c0ffee02");
+    await waitFor(() => expect(core.calls.some((c) => c.method === "figaro.fork")).toBe(true));
+    expect(core.calls.find((c) => c.method === "figaro.fork")!.params).toMatchObject({ figaro_id: "c0ffee02".repeat(4) });
+  });
+
+  it("Enter on an empty command line leaves command mode and runs nothing", async () => {
+    await attend();
+    typed(":");
+    await act(async () => {
+      fireEvent.keyDown(box(), { key: "Enter" });
+    });
+    expect(pill().getAttribute("aria-pressed")).toBe("false");
+    expect(document.querySelector(".zr-prompt")).toBeNull();
+    expect(core.calls.filter((c) => c.method === "figaro.fork")).toEqual([]);
+  });
+
+  it("the first Escape closes the completion chips and keeps the line, the second leaves; typing or Tab brings the chips back", async () => {
+    await attend();
+    typed(":fo");
+    expect(screen.getByRole("group", { name: "Completions" }).querySelector(".zr-chip")).toBeTruthy();
+    fireEvent.keyDown(box(), { key: "Escape" });
+    expect(pill().getAttribute("aria-pressed")).toBe("true");
+    expect(box().value).toBe("fo");
+    expect(document.querySelector(".zr-chip")).toBeNull();
+    fireEvent.keyDown(box(), { key: "Tab" });
+    expect(document.querySelector(".zr-chip")).toBeTruthy();
+    fireEvent.keyDown(box(), { key: "Escape" });
+    expect(document.querySelector(".zr-chip")).toBeNull();
+    typed("for");
+    expect(document.querySelector(".zr-chip")).toBeTruthy();
+    fireEvent.keyDown(box(), { key: "Escape" });
+    fireEvent.keyDown(box(), { key: "Escape" });
+    expect(pill().getAttribute("aria-pressed")).toBe("false");
+    expect(document.querySelector(".zr-prompt")).toBeNull();
+  });
+
+  it(":fork --stay :12 forks and stays where it is", async () => {
+    await attend();
+    await run("fork --stay :12");
     await waitFor(() => expect(core.calls.some((c) => c.method === "figaro.fork")).toBe(true));
     await waitFor(() => expect(pill().getAttribute("aria-pressed")).toBe("false"));
     expect(window.location.hash).toBe("#/gluck/" + MAIN);
