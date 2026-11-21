@@ -1,0 +1,47 @@
+{
+ "campaign": "paced",
+ "seed": 8007,
+ "profile": "phone",
+ "invariant": "chunk-played-twice",
+ "message": "turn 29 node 0 offset 0 was scheduled to play twice (page socket 3 at 2369 ms, then socket 4 at 4078 ms, 1709 ms apart)",
+ "owner": "unassigned",
+ "status": "open",
+ "strict": [],
+ "actions": [
+  {
+   "k": "send",
+   "n": 4,
+   "kind": "[long] again"
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "door.bearer",
+    "ms": 1500
+   }
+  },
+  {
+   "k": "voice",
+   "to": "on"
+  },
+  {
+   "k": "wait",
+   "ms": 800
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "door.bearer",
+    "ms": 1500
+   }
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "page.close",
+    "code": 1001,
+    "audio": true
+   }
+  }
+ ]
+}

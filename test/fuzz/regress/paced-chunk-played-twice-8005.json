@@ -1,0 +1,63 @@
+{
+ "campaign": "paced",
+ "seed": 8005,
+ "profile": "desktop",
+ "invariant": "chunk-played-twice",
+ "message": "turn 28 node 0 offset 0 was scheduled to play twice (page socket 1 at 1574 ms, then socket 3 at 3000 ms, 1426 ms apart)",
+ "owner": "same as 6003",
+ "status": "pass",
+ "strict": [],
+ "actions": [
+  {
+   "k": "mic"
+  },
+  {
+   "k": "send",
+   "n": 28,
+   "kind": "[long] again"
+  },
+  {
+   "k": "voice",
+   "to": "on"
+  },
+  {
+   "k": "mic"
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "speech.fail",
+    "count": 1
+   }
+  },
+  {
+   "k": "mic"
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "page.close",
+    "code": 1006,
+    "audio": true
+   }
+  },
+  {
+   "k": "voice",
+   "to": "on"
+  },
+  {
+   "k": "send",
+   "n": 37,
+   "kind": "[plain]"
+  },
+  {
+   "k": "wait",
+   "ms": 300
+  },
+  {
+   "k": "send",
+   "n": 39,
+   "kind": "[long] again"
+  }
+ ]
+}

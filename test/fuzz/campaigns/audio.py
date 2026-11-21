@@ -6,7 +6,7 @@ from engine import STRICT, Failure, clip
 
 INSTRUMENT = r"""
 (() => {
-  const A = window.__au = { sockets: [], frames: [], starts: [], overlaps: [], streams: [], stt: [], gum: 0, errors: [], chunks: {}, played: [] };
+  const A = window.__au = { sockets: [], frames: [], starts: [], overlaps: [], streams: [], stt: [], gum: 0, errors: [], chunks: {}, played: [], startBy: {} };
   let seq = 0, pendingMeta = null;
   const wall = () => Math.round(performance.now());
   const NativeWS = window.WebSocket;
@@ -27,6 +27,7 @@ INSTRUMENT = r"""
           let f = null;
           try { f = JSON.parse(e.data); } catch (x) { return; }
           if (f && f.type === 'audio.chunk') pendingMeta = f;
+          if (f && f.type === 'audio.start') A.startBy[sid + ':' + f.turn] = { chars: f.chars, node: f.node };
           if (f && typeof f.type === 'string') A.frames.push({ t: wall(), sid, type: f.type, turn: f.turn, key: f.key, node: f.node, offset: f.offset, bytes: f.bytes, why: f.why });
         } else {
           A.frames.push({ t: wall(), sid, type: 'binary', bytes: e.data.byteLength !== undefined ? e.data.byteLength : e.data.size });
@@ -35,7 +36,8 @@ INSTRUMENT = r"""
             const v = new Int16Array(e.data);
             v[0] = (id % 1000) + 1;
             v[1] = Math.floor(id / 1000) + 1;
-            A.chunks[id] = { id, t: wall(), sid, turn: pendingMeta.turn, node: pendingMeta.node, offset: pendingMeta.offset, bytes: pendingMeta.bytes };
+            const sb = A.startBy[sid + ':' + pendingMeta.turn];
+            A.chunks[id] = { id, t: wall(), e: Date.now(), sid, turn: pendingMeta.turn, node: pendingMeta.node, chars: pendingMeta.chars, startChars: sb ? sb.chars : -1, offset: pendingMeta.offset, bytes: pendingMeta.bytes };
           }
           pendingMeta = null;
         }
@@ -50,7 +52,7 @@ INSTRUMENT = r"""
     const ctx = this.context;
     const dur = this.buffer ? this.buffer.duration : 0;
     const at = Math.max(when || 0, ctx.currentTime);
-    const rec = { t: wall(), at, end: at + dur, dur, stopped: false, stopAt: null };
+    const rec = { t: wall(), e: Date.now(), at, end: at + dur, dur, stopped: false, stopAt: null };
     const clash = sources.filter((s) => !s.stopped && s.end > ctx.currentTime + 0.02 && s.end > at + 0.08 && s.at < at + dur - 0.08);
     if (clash.length) A.overlaps.push({ t: rec.t, at, dur, other: clash.length });
     sources.push(rec);
@@ -115,20 +117,32 @@ def playback_failure(f, st, final=False):
     live.sort(key=lambda p: p["at"])
     seen = {}
     prev = None
+    heard = {}
     for p in live:
         c = chunks[p["id"]]
-        key = (c["turn"], c["node"], c["offset"])
+        start = (c["sid"], c["startChars"])
+        key = (c["turn"], c["node"], c["startChars"], c["offset"])
+        done = p["stopAt"] is None or p["stopAt"] >= p["at"] + p["dur"] - 0.02
         if key in seen and p["stopAt"] is None:
             o = seen[key]
-            return Failure("chunk-played-twice", "turn %s node %s offset %s was scheduled to play twice (page socket %s at %s ms, then socket %s at %s ms, %d ms apart)" % (key + (o[0]["sid"], o[0]["t"], c["sid"], c["t"], c["t"] - o[0]["t"])))
+            return Failure("chunk-played-twice", "turn %s node %s offset %s of the start at chars %s was scheduled to play twice (page socket %s at %s ms, then socket %s at %s ms, %d ms apart)" % (key + (o[0]["sid"], o[0]["t"], c["sid"], c["t"], c["t"] - o[0]["t"])))
         if p["stopAt"] is None:
             seen[key] = (c, p)
+        for (turn, node), per in heard.items():
+            if turn != c["turn"] or node != c["node"]:
+                continue
+            others = [v for st, v in per.items() if st != start]
+            if others and c["startChars"] >= 0 and per.get(start) is None and c["startChars"] < max(others):
+                return Failure("chunk-played-twice", "turn %s node %s: a start at chars %s after another socket already played up to chars %s (page socket %s at %s ms)" % (c["turn"], c["node"], c["startChars"], max(others), c["sid"], c["t"]))
+        if done:
+            per = heard.setdefault((c["turn"], c["node"]), {})
+            per[start] = max(per.get(start, 0), c["chars"] or 0)
         if prev:
             pp, pc = prev
-            if (c["turn"], c["offset"]) < (pc["turn"], pc["offset"]):
-                return Failure("chunk-order", "turn %s offset %s plays after turn %s offset %s" % (c["turn"], c["offset"], pc["turn"], pc["offset"]))
+            if c["turn"] < pc["turn"] or (c["turn"] == pc["turn"] and (c["sid"], c["startChars"]) == (pc["sid"], pc["startChars"]) and c["offset"] < pc["offset"]) or (c["turn"] == pc["turn"] and (c["sid"], c["startChars"]) != (pc["sid"], pc["startChars"]) and (c["node"], c["chars"]) < (pc["node"], pc["chars"])):
+                return Failure("chunk-order", "turn %s node %s chars %s offset %s plays after turn %s node %s chars %s offset %s" % (c["turn"], c["node"], c["chars"], c["offset"], pc["turn"], pc["node"], pc["chars"], pc["offset"]))
             gap = p["at"] - (pp["at"] + pp["dur"])
-            if pc["turn"] == c["turn"] and gap > GAP_S:
+            if pc["turn"] == c["turn"] and (pc["sid"], pc["startChars"]) == (c["sid"], c["startChars"]) and gap > GAP_S:
                 prev_end_wall = pp["t"] + (pp["at"] + pp["dur"] - pp["ctxNow"]) * 1000
                 if c["t"] <= prev_end_wall - 40:
                     return Failure("chunk-gap", "a %d ms silence inside turn %s before offset %s although the chunk was on the page %d ms earlier" % (gap * 1000, c["turn"], c["offset"], prev_end_wall - c["t"]))
@@ -166,7 +180,7 @@ def facts(page):
       if (!A) return null;
       const mic = document.querySelector('.fw-mic');
       const live = [...document.querySelectorAll('[data-state]')].filter((e) => /^(live|draining)$/.test(e.dataset.state)).length;
-      return { now: A.wall(), ctx: (A.played.length && A.played[A.played.length - 1].ctxNow) || 0, chunks: A.chunks, played: A.played.map((p) => ({ id: p.id, t: p.t, at: p.at, dur: p.dur, stopAt: p.stopAt, ended: !!p.ended, ctxNow: p.ctxNow })), frames: A.frames, sockets: A.sockets, starts: A.starts, overlaps: A.overlaps, tracks: A.liveTracks(),
+      return { now: A.wall(), ctx: (A.played.length && A.played[A.played.length - 1].ctxNow) || 0, chunks: A.chunks, played: A.played.map((p) => ({ id: p.id, t: p.t, e: p.e, at: p.at, dur: p.dur, stopAt: p.stopAt, ended: !!p.ended, ctxNow: p.ctxNow })), frames: A.frames, sockets: A.sockets, starts: A.starts, overlaps: A.overlaps, tracks: A.liveTracks(),
                mic: mic ? { label: mic.getAttribute('aria-label'), disabled: mic.disabled, pressed: mic.getAttribute('aria-pressed') } : null,
                level: document.documentElement.style.getPropertyValue('--fw-mic-level'), live };
     }""")
@@ -210,6 +224,7 @@ def wire_failure(frames):
 
 class Audio(Network):
     name = "audio"
+    leak_wait = 12
     needs_speech = True
     init_script = INSTRUMENT
     profiles = ("desktop", "phone")
@@ -469,7 +484,7 @@ class Audio(Network):
                 raise Failure("mic-leak", "%d capture tracks still live with the mic idle" % f["tracks"])
             if f["level"].strip():
                 raise Failure("mic-stuck", "--fw-mic-level is still %s with the mic idle" % clip(f["level"]))
-        end = time.time() + 12
+        end = time.time() + self.leak_wait
         while time.time() < end:
             state = run.stack.speech_call()
             if all(c["closed"] for c in state["calls"]) and all(s["closed"] for s in state["streams"]):
@@ -478,7 +493,7 @@ class Audio(Network):
         state = run.stack.speech_call()
         open_calls = [c for c in state["calls"] if not c["closed"]]
         if open_calls:
-            raise Failure("speech-leak", "%d speech calls still open 12 s after every turn sealed (%s)" % (len(open_calls), clip(open_calls[0]["url"], 90)))
+            raise Failure("speech-leak", "%d speech calls still open %d s after every turn sealed (%s)" % (len(open_calls), self.leak_wait, clip(open_calls[0]["url"], 90)))
         open_streams = [s for s in state["streams"] if not s["closed"]]
         if open_streams:
             raise Failure("stt-leak", "%d speech-to-text streams still open with the mic idle" % len(open_streams))
