@@ -333,7 +333,7 @@ try:
             pg.wait_for_timeout(200)
             grown = pg.locator(".zr-input").bounding_box()
             assert grown["height"] > 140, "the input grows with its text past four lines: %s" % grown
-            assert grown["height"] <= height * 0.46, "the input leaves the transcript room: %s" % grown
+            assert grown["height"] <= height * 0.32, "the input leaves the transcript room: %s" % grown
             pg.locator(".zr-input").fill("")
             pg.wait_for_timeout(200)
             assert pg.locator(".zr-composer").bounding_box()["height"] <= 76, "the composer settles back when the text goes"

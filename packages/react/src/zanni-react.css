@@ -183,6 +183,12 @@
 .zr-composer > * { width: 100%; max-width: calc(var(--zr-measure, 46rem) - var(--zr-edge-l, 16px) - var(--zr-edge-r, 16px)); margin-inline: auto; }
 .zr-compose-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: end; gap: var(--z-space-3, 8px); }
 .zr-compose-row[data-attach] { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+.zr-compose-row[data-stack] > .zr-attach { grid-area: attach; }
+.zr-compose-row[data-stack] > .zr-input { grid-area: input; }
+.zr-compose-row[data-stack] > .zr-pill-pair { grid-area: pair; }
+.zr-compose-row[data-stack], .zr-compose-row[data-stack][data-attach] { grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "input input input input" "attach . mic pair"; }
+.zr-compose-row[data-stack] > :not(.zr-input) { animation: zr-below var(--zr-d-slide) var(--zr-spring) both; }
+@keyframes zr-below { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
 .zr-compose-row[data-prompt] { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
 .zr-prompt { font: 400 1.5rem / 1 var(--zr-mono, "VT323", ui-monospace, monospace); color: var(--z-accent); }
 .zr-hints { display: flex; flex-direction: column; gap: var(--z-space-2, 4px); }
@@ -198,7 +204,7 @@
   display: block;
   width: 100%;
   min-height: 36px;
-  max-height: min(45dvh, 22rem);
+  max-height: min(30dvh, 11rem);
   margin: 0;
   padding: 5px var(--z-space-4, 12px);
   border: 1px solid var(--z-line);

@@ -340,6 +340,25 @@ with sync_playwright() as p:
     assert pg.evaluate("document.querySelector('.fw').hasAttribute('data-running')") or True
     pg.context.close()
 
+    pg = fresh()
+    attend(pg, fast)
+    rects = lambda: pg.evaluate("""() => { const r = (s) => { const b = document.querySelector(s).getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, b: b.bottom }; }; return { bar: r('.zr-composer'), input: r('.zr-input'), send: r('.zr-send'), attach: r('.zr-attach') }; }""")
+    idle = rects()
+    assert idle["input"]["w"] >= idle["bar"]["w"] * 0.45, "the input takes at least 45%% of the bar on one line: %s" % idle
+    assert abs(idle["send"]["y"] - idle["input"]["y"]) < 12, "pills share the line while the text fits: %s" % idle
+    pg.locator(".zr-input").tap()
+    pg.keyboard.insert_text("the quick brown fox jumps over the lazy dog " * 3)
+    pg.wait_for_timeout(700)
+    over = rects()
+    assert over["input"]["w"] >= over["bar"]["w"] - 36, "on overflow the input takes the full bar width: %s" % over
+    assert over["send"]["y"] >= over["input"]["b"] - 1 and over["attach"]["y"] >= over["input"]["b"] - 1, "on overflow the pills sit below the input: %s" % over
+    assert over["input"]["h"] > idle["input"]["h"] + 20, "and the input grows taller: %s" % over
+    pg.locator(".zr-input").fill("")
+    pg.wait_for_timeout(700)
+    back = rects()
+    assert abs(back["send"]["y"] - back["input"]["y"]) < 12 and back["input"]["w"] < back["bar"]["w"] - 100, "an empty input puts the pills back on its line: %s" % back
+    pg.context.close()
+
     NO_FIELD_SIZING = "(() => { const was = CSS.supports.bind(CSS); CSS.supports = (a, b) => (a === 'field-sizing' ? false : was(a, b)); })();"
     for label, fallback in (("native field-sizing", False), ("the scrollHeight fallback", True)):
         ctx = browser.new_context(**phone)
@@ -364,7 +383,7 @@ with sync_playwright() as p:
         many = geometry(pg)
         assert many["input"]["height"] > one["input"]["height"] + 20, "typing wrapped text grows the box (%s): %s -> %s" % (label, one["input"]["height"], many["input"]["height"])
         near(many["composer"]["bottom"], one["composer"]["bottom"], "it grows upward, the bottom stays above the keyboard (%s)" % label)
-        near(many["composer"]["top"], one["composer"]["top"] - (many["input"]["height"] - one["input"]["height"]), "the composer's top rises by exactly the growth (%s)" % label)
+        assert many["composer"]["top"] <= one["composer"]["top"] - (many["input"]["height"] - one["input"]["height"]) + 1, "the composer's top rises at least by the growth (%s)" % label
         near(many["lastBottom"], many["composer"]["top"], "the transcript still ends at the composer (%s)" % label, 40)
         assert many["fromBottom"] <= 1, "following the end, the transcript is carried up with it (%s): %s" % (label, many)
         pg.keyboard.insert_text(words * 3)

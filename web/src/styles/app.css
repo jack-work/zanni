@@ -142,6 +142,12 @@ body.fw-page {
 
 
 .fw .fw-mic { min-width: 0; gap: 0; height: 36px; min-height: 36px; border-radius: 18px; padding-inline: var(--z-space-3, 8px); }
+.zr-compose-row[data-stack] > .fw-mic { grid-area: mic; }
+.fw[data-voice] .zr-compose-row, .fw[data-mic]:not([data-mic="idle"]):not([data-mic="unsupported"]) .zr-compose-row { grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "input input input input" "attach . mic pair"; }
+.fw[data-voice] .zr-compose-row > .zr-attach, .fw[data-mic]:not([data-mic="idle"]):not([data-mic="unsupported"]) .zr-compose-row > .zr-attach { grid-area: attach; }
+.fw[data-voice] .zr-compose-row > .zr-input, .fw[data-mic]:not([data-mic="idle"]):not([data-mic="unsupported"]) .zr-compose-row > .zr-input { grid-area: input; }
+.fw[data-voice] .zr-compose-row > .fw-mic, .fw[data-mic]:not([data-mic="idle"]):not([data-mic="unsupported"]) .zr-compose-row > .fw-mic { grid-area: mic; }
+.fw[data-voice] .zr-compose-row > .zr-pill-pair, .fw[data-mic]:not([data-mic="idle"]):not([data-mic="unsupported"]) .zr-compose-row > .zr-pill-pair { grid-area: pair; }
 .fw-mic-label { display: inline-block; max-width: 0; overflow: hidden; white-space: nowrap; transition: max-width var(--fw-d-slide) var(--fw-out); }
 .fw[data-voice] .fw-mic-label, .fw[data-mic]:not([data-mic="idle"]):not([data-mic="unsupported"]) .fw-mic-label { max-width: 8rem; margin-left: var(--z-space-2, 4px); }
 .fw .fw-mic { position: relative; transition-property: background-color, border-color, color, scale; transition-duration: var(--fw-d-slide), var(--fw-d-slide), var(--fw-d-slide), var(--fw-d-press); transition-timing-function: var(--fw-out); }
