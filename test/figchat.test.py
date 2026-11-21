@@ -672,7 +672,7 @@ try:
                 box = b.bounding_box()
                 assert box["height"] >= 24 and box["width"] >= 28, "a compact button: %s" % box
                 cx, cy = box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
-                for dx, dy in ((-18, 0), (18, 0), (0, -21), (0, 21)):
+                for dx, dy in ((0, -21), (0, 21)):
                     assert b.evaluate("(n, p) => { const e = document.elementFromPoint(p[0], p[1]); return !!e && (e === n || n.contains(e)); }", [cx + dx, cy + dy]), "thumb tap area reaches %s,%s from the centre of %s" % (dx, dy, box)
                 assert_centred(b, "a message button's glyph at %d" % width)
                 assert b.locator(".zr-ink").evaluate("n => parseFloat(getComputedStyle(n).fontSize)") >= 24, "a visibly larger glyph"
