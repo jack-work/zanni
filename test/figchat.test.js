@@ -71,6 +71,13 @@ async function test(name, fn) {
     const out = [];
     const conn = g.open({ aria: 'c0ffee01c0ffee01c0ffee01c0ffee01' }, { ready: (e) => out.push(['ready', e.store]), start: (e) => out.push(['start', e.turn, e.key, e.node, e.cursor, e.rate]), chunk: (c) => out.push(['chunk', c.turn, c.node, c.cursor, c.offset, c.pcm.byteLength]), end: (e) => out.push(['end', e.key]), cancel: (e) => out.push(['cancel', e.why]), error: (e) => out.push(['error', e.code]) });
     assert.strictEqual(socks.length, 0, 'no socket until voice is on');
+    const said = g.open({ aria: 'feedfacefeedfacefeedfacefeedface' }, {});
+    said.say(7);
+    const sayer = socks.pop();
+    assert.deepStrictEqual(sayer.sent, [], 'say waits for the socket to open');
+    sayer.readyState = 1;
+    sayer.emit('open', {});
+    assert.deepStrictEqual(sayer.sent.map((x) => JSON.parse(x)), [{ type: 'say', turn: 7 }], 'say asks the gateway to speak one turn once the socket opens');
     conn.voice(true);
     assert.strictEqual(socks.length, 1);
     assert.strictEqual(socks[0].url, 'wss://fig.example/chat/audio/c0ffee01c0ffee01c0ffee01c0ffee01');
