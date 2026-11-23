@@ -38,6 +38,10 @@
    "budget": 39.8,
    "margin": 1.0
   },
+  "history.rows.3.keydown_to_paint.p95": {
+   "budget": 50,
+   "margin": 0
+  },
   "history.rows.3.script_ms_per_frame": {
    "budget": 15.9,
    "margin": 1.0,
