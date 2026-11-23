@@ -23,8 +23,8 @@ const FLASH_MS = 1800;
 const turnEl = (turn: number): HTMLElement | null => document.querySelector<HTMLElement>('.nodi-turn[data-turn="' + turn + '"]');
 const pause = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-async function appears(turn: number, tries: number): Promise<HTMLElement | null> {
-  for (let i = 0; i < tries; i++) {
+async function appears(turn: number): Promise<HTMLElement | null> {
+  for (let i = 0; i < 24; i++) {
     const el = turnEl(turn);
     if (el) return el;
     await pause(25);
@@ -60,7 +60,7 @@ export function AriaView({ attended }: { attended: Attended }) {
   const handsFree = useAtomValue(handsFreeAtom);
   const toggleHandsFree = useSetAtom(toggleHandsFreeAtom);
   const speaking = useAtomValue(speakingAtom);
-  const { jump, ...win } = useTurnWindow(turns, listRef, speaking && speaking.aria === aria ? [speaking.turn] : []);
+  const [spans, jump] = useTurnWindow(turns, listRef);
   const cancelMic = useSetAtom(micCancelAtom);
   useVoice(attended);
   useEffect(() => () => cancelMic(), [cancelMic]);
@@ -110,11 +110,9 @@ export function AriaView({ attended }: { attended: Attended }) {
   const seek = useCallback(
     async (turn: number) => {
       for (let n = 0; n <= DEEP_LIMIT; n++) {
-        const jumped = !turnEl(turn) && jump(turn);
-        const el = await appears(turn, jumped ? 60 : 12);
+        jump(turn);
+        const el = await appears(turn);
         if (el) {
-          el.scrollIntoView();
-          await pause(80);
           el.scrollIntoView();
           el.setAttribute("data-flash", "");
           setTimeout(() => el.removeAttribute("data-flash"), FLASH_MS);
@@ -129,7 +127,7 @@ export function AriaView({ attended }: { attended: Attended }) {
       }
       scrollToBottom();
     },
-    [client, aria, loadOlder, jump],
+    [client, aria, loadOlder],
   );
 
   useEffect(() => {
@@ -202,9 +200,9 @@ export function AriaView({ attended }: { attended: Attended }) {
           )}
           <TranscriptContext value={transcript}>
             <ol ref={listRef} className="nodi-turns" aria-label="Transcript" data-held={turns.length}>
-              {win.spans.flatMap((span, k) => [
+              {spans.flatMap(([from, to], k) => [
                 <li key={"gap" + k} className="nodi-gap" data-slot={k} aria-hidden="true" />,
-                ...turns.slice(span.from, span.to).map((t) => <TurnView key={t.key} turn={t} speaking={speakingHere} fresh={baseline !== null && t.turn > baseline} />),
+                ...turns.slice(from, to).map((t) => <TurnView key={t.key} turn={t} speaking={speakingHere} fresh={baseline !== null && t.turn > baseline} />),
               ])}
             </ol>
           </TranscriptContext>

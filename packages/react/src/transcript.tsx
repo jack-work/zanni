@@ -354,14 +354,15 @@ function DeltaTable({ rows }: { rows: readonly DeltaRow[] }) {
   );
 }
 
-function TurnContent({ turn: m, speaking }: { turn: TurnModel; speaking: Speaking | null }) {
+function TurnBody({ turn: m, speaking, fresh }: TurnViewProps) {
+  const state = m.end ? (m.end.kind === "error" ? "failed" : "ended") : m.open ? "open" : "done";
   const mine = speaking && speaking.turn === m.turn ? speaking : null;
   const rows = useMemo(() => groupWork(m.items), [m.items]);
   const hooks = useContext(TranscriptContext);
   const [deltasOpen, setDeltasOpen] = useState(false);
   const deltas = m.deltas ?? [];
   return (
-    <>
+    <li className="nodi-turn zr-host" data-turn={m.turn} data-state={state} {...(fresh ? { "data-fresh": "" } : {})}>
       <div className="nodi-turn-head">
         <span className="nodi-turn-no">Turn {m.turn}</span>
         <span className="nodi-turn-marks">
@@ -391,18 +392,11 @@ function TurnContent({ turn: m, speaking }: { turn: TurnModel; speaking: Speakin
             </p>
           ))}
       </div>
-    </>
+    </li>
   );
 }
 
 export const TurnView = memo(
-  function TurnView({ turn: m, speaking, fresh }: TurnViewProps) {
-    const state = m.end ? (m.end.kind === "error" ? "failed" : "ended") : m.open ? "open" : "done";
-    return (
-      <li className="nodi-turn zr-host" data-turn={m.turn} data-state={state} {...(fresh ? { "data-fresh": "" } : {})}>
-        <TurnContent turn={m} speaking={speaking} />
-      </li>
-    );
-  },
+  TurnBody,
   (a, b) => a.turn === b.turn && a.fresh === b.fresh && spokenIn(a.speaking, a.turn.turn) === spokenIn(b.speaking, b.turn.turn),
 );
