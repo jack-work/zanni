@@ -339,9 +339,12 @@
 @keyframes zr-sticky-line { from { opacity: 0; translate: 0 -4px; } }
 .zr-sticky-scroll { max-height: max(25dvh, 6.5rem); max-height: round(down, max(25dvh, 6.5rem), var(--zr-sticky-lh)); overflow-y: auto; overscroll-behavior: contain; white-space: pre-wrap; overflow-wrap: anywhere; transition: max-height var(--zr-d-slide) var(--zr-out); }
 .zr-sticky[data-head="full"] .zr-sticky-scroll { max-height: calc(var(--zr-vv-h, 100dvh) - var(--zr-composer-h, 0px) - 6rem); max-height: round(down, calc(var(--zr-vv-h, 100dvh) - var(--zr-composer-h, 0px) - 6rem), var(--zr-sticky-lh)); }
-.zr-fit { position: relative; display: block; min-width: 0; overflow: hidden; white-space: nowrap; }
+.zr-ts { display: block; min-width: 0; }
+.zr-ts:not([data-set]) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zr-ts-line { display: block; white-space: pre; animation: zr-ts-in var(--zr-d-pop) var(--zr-out); }
+@keyframes zr-ts-in { from { opacity: 0; translate: 0 -3px; } }
+.zr-fit { position: relative; overflow: hidden; }
 .zr-fit-more { color: var(--z-muted); }
-.zr-fit-probe { position: absolute; top: 0; left: 0; visibility: hidden; white-space: pre; pointer-events: none; }
 .zr-rule { --zr-spread: 0%; height: 1.0625rem; margin-top: -0.53125rem; position: relative; overflow: hidden; color: var(--z-rule, var(--z-line)); font: 400 1.0625rem / 1 var(--zr-mono, "VT323", ui-monospace, monospace); white-space: nowrap; pointer-events: none; -webkit-user-select: none; user-select: none; transition: --zr-spread var(--zr-d-exit) steps(6, end); }
 .zr-rule[data-double] { --zr-spread: 50%; }
 .zr-sticky[data-pinned] .zr-rule, .zr-sticky:not([data-head="shut"]) .zr-rule { background: var(--z-ground); }

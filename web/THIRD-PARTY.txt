@@ -69,3 +69,8 @@ Symbols Nerd Font, two glyphs (microphone U+F130, paperclip U+F0C6)
   Dave Gandy, https://fontawesome.com, licensed CC BY 4.0.
   assets/fontpack/fonts/symbols-nerd-subset.woff2, used as a fallback after VT323
   for the compose bar's two icons.
+
+Pretext 1.0.0 (@chenglou/pretext), MIT
+  Copyright (c) 2026 Pretext contributors
+  packages/react/src/typeset-pretext.ts: text measured and broken into lines
+  without the DOM. Loaded on demand in its own chunk, never in the first page load.
