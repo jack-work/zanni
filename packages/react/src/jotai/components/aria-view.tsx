@@ -41,7 +41,6 @@ export function AriaView({ attended }: { attended: Attended }) {
   const paneRef = useRef<HTMLElement | null>(null);
   const olderRef = useRef<HTMLButtonElement | null>(null);
   const headRef = useRef<HTMLHeadingElement | null>(null);
-  const listRef = useRef<HTMLOListElement | null>(null);
   const anchor = useRef<{ turn: number; top: number } | null>(null);
   const loading = useRef(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -60,7 +59,7 @@ export function AriaView({ attended }: { attended: Attended }) {
   const handsFree = useAtomValue(handsFreeAtom);
   const toggleHandsFree = useSetAtom(toggleHandsFreeAtom);
   const speaking = useAtomValue(speakingAtom);
-  const [spans, jump] = useTurnWindow(turns, listRef);
+  const [spans, jump] = useTurnWindow(turns);
   const cancelMic = useSetAtom(micCancelAtom);
   useVoice(attended);
   useEffect(() => () => cancelMic(), [cancelMic]);
@@ -199,9 +198,9 @@ export function AriaView({ attended }: { attended: Attended }) {
             </Button>
           )}
           <TranscriptContext value={transcript}>
-            <ol ref={listRef} className="nodi-turns" aria-label="Transcript" data-held={turns.length}>
-              {spans.flatMap(([from, to], k) => [
-                <li key={"gap" + k} className="nodi-gap" data-slot={k} aria-hidden="true" />,
+            <ol className="nodi-turns" aria-label="Transcript" data-held={turns.length}>
+              {spans.flatMap(([from, to, gap], k) => [
+                gap && <li key={"g" + k} data-slot={k} />,
                 ...turns.slice(from, to).map((t) => <TurnView key={t.key} turn={t} speaking={speakingHere} fresh={baseline !== null && t.turn > baseline} />),
               ])}
             </ol>
