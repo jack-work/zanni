@@ -4,6 +4,7 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { clock } from "../../index";
 import { ACCEPT, MAX_FILES, kindWord, sizeLabel } from "../lib/attach";
 import { addFilesAtom, attachingAtom, removeAttachmentAtom } from "../state/attach";
+import { voiceAtom } from "../state/audio";
 import { micAtom, micToggleAtom, dictationFocusAtom } from "../state/mic";
 import { linkAtom, runningAtom, workAtom } from "../state/aria";
 import { composerAtom, composerNoteAtom, draftAtom, interruptAtom, keyOf, sendAtom } from "../state/composer";
@@ -87,6 +88,7 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
   const interrupt = useSetAtom(interruptAtom);
   const clearNote = useSetAtom(composerNoteAtom);
   const mic = useAtomValue(micAtom);
+  const voiceOn = useAtomValue(voiceAtom);
   const toggleMic = useSetAtom(micToggleAtom);
   const focusTick = useAtomValue(dictationFocusAtom);
   const live = link === "live";
@@ -191,6 +193,7 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
           </Button>
         </>
       }
+      stacked={voiceOn || (mic.state !== "idle" && mic.state !== "unsupported")}
       accessory={
         cmd.on ? undefined : (
         <Button

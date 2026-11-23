@@ -1,10 +1,11 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, type KeyboardEvent, type ReactNode, type Ref } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { Pill, PillPair, type PillSpec } from "./pill";
 import { Strip, type StripProps } from "./strip";
 import { useLinger } from "./motion";
 import { onKeyboard } from "./viewport";
 
 export const KEYBOARD_CLOSE_SETTLE_MS = 300;
+export const ONE_LINE_MAX = 44;
 
 export interface ComposerProps {
   value: string;
@@ -28,6 +29,7 @@ export interface ComposerProps {
   strip?: Omit<StripProps, "leaving"> | null;
   stripActions?: ReactNode;
   accessory?: ReactNode;
+  stacked?: boolean;
   grip?: ReactNode;
   focusTick?: number;
   inputRef?: Ref<HTMLTextAreaElement>;
@@ -59,7 +61,7 @@ export function useSizeVar(ref: { current: HTMLElement | null }, name: string): 
 }
 
 export function Composer(props: ComposerProps) {
-  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendGlyph, attach, command, prompt, mode, hints, tray, onEscape, onTab, enterRuns, sendDisabled, running, strip, stripActions, accessory, grip, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
+  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendGlyph, attach, command, prompt, mode, hints, tray, onEscape, onTab, enterRuns, sendDisabled, running, strip, stripActions, accessory, stacked, grip, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
   const form = useRef<HTMLFormElement | null>(null);
   const input = useRef<HTMLTextAreaElement | null>(null);
   const typing = useRef(false);
@@ -79,6 +81,20 @@ export function Composer(props: ComposerProps) {
     if (typeof inputRef === "function") inputRef(el);
     else if (inputRef) (inputRef as { current: HTMLTextAreaElement | null }).current = el;
   };
+
+  const [stack, setStack] = useState(false);
+  useEffect(() => {
+    if (value === "") setStack(false);
+  }, [value]);
+  useEffect(() => {
+    const el = input.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const watch = new ResizeObserver(() => {
+      if (el.offsetHeight > ONE_LINE_MAX) setStack(true);
+    });
+    watch.observe(el);
+    return () => watch.disconnect();
+  }, []);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -152,7 +168,7 @@ export function Composer(props: ComposerProps) {
       )}
       {tray}
       {hints}
-      <div className="zr-compose-row" data-attach={attach ? "" : undefined} data-prompt={prompt ? "" : undefined}>
+      <div className="zr-compose-row" data-attach={attach ? "" : undefined} data-stack={!prompt && (stack || stacked) ? "" : undefined} data-prompt={prompt ? "" : undefined}>
         {attach && <Pill {...attach} className="zr-attach" />}
         {prompt && (
           <span className="zr-prompt" aria-hidden="true">

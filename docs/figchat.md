@@ -176,6 +176,16 @@ voce no longer touches the session.
 The gateway contract (`audio.start`, `audio.chunk`, `audio.end`,
 `audio.cancel`, `error`) is in figaro-forms `docs/gateway.md`.
 
+## Icons
+
+The compose bar's two icons, the microphone (U+F130, `glyphs.voice`) and the
+paperclip (U+F0C6, `glyphs.attach`) from figaro-forms 0.18.3, come from a two-glyph
+subset of Symbols Nerd Font (`assets/fontpack/fonts/symbols-nerd-subset.woff2`,
+708 bytes) declared as the family "Nerd Icons" and listed right
+after VT323 in the mono stacks, so no other text falls through to it. The
+subset is SIL OFL 1.1 (`OFL-symbols-nerd.txt`); the icons are Font Awesome 4 by
+Dave Gandy, CC BY 4.0, credited in `THIRD-PARTY.txt`.
+
 ## Motion
 
 Tokens on `.fw`: `--fw-pop` (zanni's spring), `--fw-spring` (a damped spring,
