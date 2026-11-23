@@ -24,6 +24,30 @@
    "budget": 515024,
    "margin": 0.05
   },
+  "bundle.lazy.dictation.brotli": {
+   "budget": 1392,
+   "margin": 0.1
+  },
+  "bundle.lazy.dictation.gzip": {
+   "budget": 1577,
+   "margin": 0.1
+  },
+  "bundle.lazy.pcm-worklet.brotli": {
+   "budget": 1018,
+   "margin": 0.1
+  },
+  "bundle.lazy.pcm-worklet.gzip": {
+   "budget": 1142,
+   "margin": 0.1
+  },
+  "bundle.lazy.voice-hub.brotli": {
+   "budget": 1616,
+   "margin": 0.1
+  },
+  "bundle.lazy.voice-hub.gzip": {
+   "budget": 1780,
+   "margin": 0.1
+  },
   "history.rows.2.keydown_to_paint.p50": {
    "budget": 56.5,
    "goal": 25,

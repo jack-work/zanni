@@ -251,6 +251,27 @@ async function test(name, fn) {
     }
   });
 
+  await test('bundle: STATS.json marks what the first load pulls in', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'figchat-initial-'));
+    const dist = path.join(root, 'dist');
+    const put = (name, text) => fs.writeFileSync(path.join(dist, 'assets', name), text);
+    fs.mkdirSync(path.join(dist, 'assets'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'THIRD-PARTY.txt'), 'notices\n');
+    fs.writeFileSync(path.join(dist, 'index.html'), '<!doctype html><script type="module" src="./assets/index-AbCd1234.js"></script><link rel="stylesheet" href="./assets/style-WxYz5678.css">');
+    put('style-WxYz5678.css', 'body{}\n');
+    put('shared-Qq11Ww22.js', 'export const a = 1;\n');
+    put('typeset-Zz99Yy88.js', 'export const sentinel = "figchat:pretext";\n');
+    put('index-AbCd1234.js', 'import { a } from "./shared-Qq11Ww22.js"; export const go = () => import("./typeset-Zz99Yy88.js");\n');
+    const bundle = (target) => cp.execFileSync('node', [path.join(__dirname, '..', 'bin', 'figchat-bundle'), target, dist], { stdio: 'pipe' });
+    const out = path.join(root, 'out');
+    bundle(out);
+    const files = JSON.parse(fs.readFileSync(path.join(out, 'STATS.json'), 'utf8')).files;
+    const first = Object.keys(files).filter((n) => files[n].initial).sort();
+    assert.deepStrictEqual(first, ['index-AbCd1234.js', 'index.html', 'shared-Qq11Ww22.js', 'style-WxYz5678.css']);
+    assert.strictEqual(files['typeset-Zz99Yy88.js'].initial, false, 'a dynamic import is not first load');
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
   await test('pcm worklet: any input rate becomes 40 ms frames of 16 kHz s16le with a level, and the tone survives', () => {
     const { Framer, FRAME_SAMPLES } = require('../assets/figchat/pcm-worklet.js');
     assert.strictEqual(FRAME_SAMPLES, 640);

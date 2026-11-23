@@ -121,18 +121,21 @@ class Door:
 
 
 def bundle_sizes(bundle):
+    stats = json.load(open(os.path.join(bundle, "STATS.json")))["files"]
     chunks = []
     for name in sorted(os.listdir(bundle)):
         if name in ("SHA256SUMS", "THIRD-PARTY.txt", "STATS.json"):
             continue
         data = open(os.path.join(bundle, name), "rb").read()
-        row = {"name": name, "raw": len(data), "gzip": len(gzip.compress(data, 9, mtime=0)), "hashed": bool(HASHED.search(name))}
+        row = {"name": name, "raw": len(data), "gzip": len(gzip.compress(data, 9, mtime=0)), "hashed": bool(HASHED.search(name)), "initial": stats[name]["initial"]}
         if brotli:
             row["brotli"] = len(brotli.compress(data, quality=11))
         chunks.append(row)
     code = [c for c in chunks if c["name"].endswith((".js", ".css"))]
-    total = lambda k: sum(c.get(k, 0) for c in code)
-    return {"chunks": chunks, "code_raw": total("raw"), "code_gzip": total("gzip"), "code_brotli": total("brotli") if brotli else None,
+    first = [c for c in code if c["initial"]]
+    total = lambda k: sum(c.get(k, 0) for c in first)
+    lazy = {HASHED.sub("", c["name"]).rsplit(".", 1)[0]: {k: c.get(k) for k in ("raw", "gzip", "brotli")} for c in code if not c["initial"]}
+    return {"chunks": chunks, "code_raw": total("raw"), "code_gzip": total("gzip"), "code_brotli": total("brotli") if brotli else None, "lazy": lazy,
             "all_raw": sum(c["raw"] for c in chunks), "unhashed": [c["name"] for c in chunks if not c["hashed"]]}
 
 

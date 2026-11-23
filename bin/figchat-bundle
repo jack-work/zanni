@@ -7,7 +7,7 @@ const zlib = require('zlib');
 
 const out = process.argv[2];
 if (!out || out === '-h' || out === '--help') {
-  process.stdout.write('usage: figchat-bundle OUT_DIR [DIST_DIR]\n\nFlattens the Vite build of web/ (default web/dist) into OUT_DIR: index.html, then every file\nfrom dist/assets beside it, THIRD-PARTY.txt (from beside dist) and STATS.json (raw and gzip bytes per file) and SHA256SUMS. Serve index.html at the app root and the\ndirectory under assets/ beside it, so ./assets/<file> in index.html resolves. Refuses an index.html with\nan inline script or a style attribute (the edge CSP forbids both).\n');
+  process.stdout.write('usage: figchat-bundle OUT_DIR [DIST_DIR]\n\nFlattens the Vite build of web/ (default web/dist) into OUT_DIR: index.html, then every file\nfrom dist/assets beside it, THIRD-PARTY.txt (from beside dist) and STATS.json (raw and gzip bytes per file, and whether the first page load pulls it in) and SHA256SUMS. Serve index.html at the app root and the\ndirectory under assets/ beside it, so ./assets/<file> in index.html resolves. Refuses an index.html with\nan inline script or a style attribute (the edge CSP forbids both).\n');
   process.exit(out ? 0 : 2);
 }
 const root = path.join(__dirname, '..');
@@ -33,11 +33,20 @@ for (const f of fs.readdirSync(assets)) {
 }
 fs.copyFileSync(path.join(dist, '..', 'THIRD-PARTY.txt'), path.join(out, 'THIRD-PARTY.txt'));
 const files = {};
+const initial = new Set(['index.html']);
+const pending = [];
+for (const m of html.matchAll(/(?:src|href)="\.\/assets\/([^"]+\.(?:js|css))"/g)) pending.push(m[1]);
+while (pending.length) {
+  const f = pending.pop();
+  if (initial.has(f) || !fs.existsSync(path.join(out, f))) continue;
+  initial.add(f);
+  if (f.endsWith('.js')) for (const m of fs.readFileSync(path.join(out, f), 'utf8').matchAll(/(?:\bfrom|\bimport)\s*["']\.\/([^"']+\.js)["']/g)) pending.push(m[1]);
+}
 let raw = 0, gzip = 0;
 for (const f of fs.readdirSync(out).sort()) {
   const bytes = fs.readFileSync(path.join(out, f));
   const packed = zlib.gzipSync(bytes, { level: 9 }).length;
-  files[f] = { raw: bytes.length, gzip: packed, hashed: hashed(f) };
+  files[f] = { raw: bytes.length, gzip: packed, hashed: hashed(f), initial: initial.has(f) };
   raw += bytes.length;
   gzip += packed;
 }
