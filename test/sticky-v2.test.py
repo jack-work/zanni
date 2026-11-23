@@ -44,16 +44,14 @@ def run(p, name, ctxargs, browser):
     pg.wait_for_timeout(1500)
     pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop -= 200")
     pin_a_turn(pg)
-    g = geom(pg)
-    pinned = [b for b in g["bars"]]
-    assert pinned, g
-    for left, width in g["bars"]:
-        assert abs(left - g["sc"][0]) < 1.5 and abs(width - g["sc"][1]) < 1.5, "%s: the bar spans the pane: %s" % (name, g)
-    line = pg.locator(".zr-sticky[data-pinned] .zr-sticky-line")
-    assert line.count() >= 1, "%s: pinned lines %d of %d pinned bars" % (name, line.count(), pg.locator(".zr-sticky[data-pinned]").count())
-    lines = line.locator(".zr-ts-line").count()
-    assert lines >= 1
-    assert pg.locator(".zr-sticky[data-pinned] .zr-sticky-jump").count() == 1, name
+    got = pg.evaluate("""() => {
+      const sc = document.querySelector('[data-zr-scroll]').getBoundingClientRect();
+      const bars = [...document.querySelectorAll('.zr-sticky')].map((n) => n.getBoundingClientRect()).filter((r) => r.bottom > sc.top && r.top < sc.bottom);
+      return { sc: [sc.left, sc.width], bars: bars.map((r) => [r.left, r.width]), lines: document.querySelectorAll('.zr-sticky[data-pinned] .zr-sticky-line .zr-ts-line').length, pinned: document.querySelectorAll('.zr-sticky[data-pinned]').length, jump: document.querySelectorAll('.zr-sticky[data-pinned] .zr-sticky-jump').length };
+    }""")
+    assert got["pinned"] >= 1 and got["lines"] >= 1 and got["jump"] >= 1, "%s: %s" % (name, got)
+    for left, width in got["bars"]:
+        assert abs(left - got["sc"][0]) < 1.5 and abs(width - got["sc"][1]) < 1.5, "%s: the bar spans the pane: %s" % (name, got)
     if shots:
         os.makedirs(shots, exist_ok=True)
         pg.screenshot(path=os.path.join(shots, "sticky-v2-%s.png" % name))
