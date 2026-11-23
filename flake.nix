@@ -195,6 +195,40 @@
           '';
         };
 
+        packages.zanni-react = pkgs.buildNpmPackage {
+          pname = "zanni-react";
+          inherit version;
+          src = pkgs.lib.cleanSourceWith {
+            name = "zanni-source";
+            src = ./.;
+            filter = path: type:
+              let
+                rel = pkgs.lib.removePrefix (toString ./.) (toString path);
+                top = builtins.elemAt (pkgs.lib.splitString "/" rel) 1;
+                base = baseNameOf path;
+              in
+              rel == "" || (builtins.elem top [ "web" "packages" "assets" "bin" ] && !(builtins.elem base [ "node_modules" "dist" "dist-react" "dist-react-jotai" "dist-types" ]));
+          };
+          sourceRoot = "zanni-source/web";
+          nodejs = pkgs.nodejs_24;
+          npmDepsHash = "sha256-L0Qet4bVhvbgyErU2lo53wRm1FpDA2kt3F5vgTacw1Y=";
+          makeCacheWritable = true;
+          dontNpmBuild = true;
+          buildPhase = ''
+            runHook preBuild
+            ZANNI_REACT_ENTRY=react node_modules/.bin/vite build -c vite.react.config.ts
+            ZANNI_REACT_ENTRY=react-jotai node_modules/.bin/vite build -c vite.react.config.ts
+            node_modules/.bin/tsc -p tsconfig.react-types.json
+            runHook postBuild
+          '';
+          installPhase = ''
+            runHook preInstall
+            node ../bin/zanni-react-bundle $out .
+            node ../bin/zanni-react-check $out
+            runHook postInstall
+          '';
+        };
+
         # The specimen page, built from source. Also the drift guard: the
         # copy committed at examples/card.html must equal what the tools
         # produce today, so the file Gluck opens in a browser with no build
@@ -256,6 +290,24 @@
           node ${./assets/fontpack/fontpack.gen.js} > built.css
           diff -u ${./assets/fontpack/fonts.css} built.css \
             || { echo "assets/fontpack/fonts.css is stale: node assets/fontpack/fontpack.gen.js > assets/fontpack/fonts.css"; exit 1; }
+          touch $out
+        '';
+
+        checks.zanni-react = pkgs.runCommand "zanni-react-check" {
+          nativeBuildInputs = [ pkgs.nodejs ];
+        } ''
+          cp -r ${./bin} bin
+          cp -r ${./assets} assets
+          chmod -R u+w bin assets
+          bundle=${self.packages.${system}.zanni-react}
+          node bin/zanni-react-check $bundle
+          cp -r $bundle poisoned
+          chmod -R u+w poisoned
+          v=$(ls poisoned/react)
+          printf '%s' 'document.body.innerHTML = "<script>x</script>";' >> poisoned/react/$v/index.js
+          if node bin/zanni-react-check poisoned 2> err; then echo "an inline script went through"; exit 1; fi
+          grep -q "does not match SHA256SUMS" err
+          grep -q "carries a script tag" err
           touch $out
         '';
 

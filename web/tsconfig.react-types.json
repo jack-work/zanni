@@ -1,0 +1,59 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": [
+      "ES2023",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "paths": {
+      "zanni-react": [
+        "../packages/react/src/index.ts"
+      ],
+      "figaro-forms": [
+        "./node_modules/figaro-forms/dist/index.d.ts"
+      ],
+      "figaro-forms/catalog": [
+        "./node_modules/figaro-forms/dist/catalog.d.ts"
+      ],
+      "figaro-forms/glyphs": [
+        "./node_modules/figaro-forms/dist/glyphs.d.ts"
+      ],
+      "figaro-forms/aria": [
+        "./node_modules/figaro-forms/dist/aria/index.d.ts"
+      ],
+      "figaro-forms/aria/jotai": [
+        "./node_modules/figaro-forms/dist/aria/jotai.d.ts"
+      ],
+      "zanni-react/jotai": [
+        "../packages/react/src/jotai.ts"
+      ],
+      "*": [
+        "./node_modules/@types/*",
+        "./node_modules/*"
+      ]
+    },
+    "types": [
+      "vite/client",
+      "node"
+    ],
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "dist-types",
+    "rootDir": ".."
+  },
+  "include": [
+    "../packages/react/src",
+    "src/zanni.d.ts"
+  ]
+}

@@ -34,6 +34,45 @@ in `web/test/react` and run with the app's.
 figaro web resolves the package by alias to `packages/react/src` (vite.config.ts, tsconfig paths), so one lockfile and one
 nix build cover both.
 
+## Served bundle
+`packages.zanni-react` (flake output) builds both entries to immutable versioned files, the version being `assets/manifest.json`'s:
+
+```
+$out/react/<version>/{index.js,index.css,index.d.ts,SHA256SUMS}
+$out/react-jotai/<version>/{index.js,index.css,index.d.ts,pcm-worklet.js,SHA256SUMS}
+```
+
+Serving contract for the backend (`gateway.spain-upkeep`):
+
+- Route `/zanni/react/<version>/` to `$out/react/<version>/` and `/zanni/react-jotai/<version>/` to `$out/react-jotai/<version>/`. Both live under the one package output, so the version directories of every release can sit side by side.
+- A version directory never changes once published: `Cache-Control: private, max-age=31536000, immutable` (private because the site sits behind login), no revalidation, no other path serves the same bytes. A new version is a new directory. Serve `.js` as `text/javascript`, `.css` as `text/css`, `SHA256SUMS` as `text/plain`, `index.d.ts` as `text/plain`.
+- Same origin only. The edge CSP stays `script-src 'self'`; no file contains inline script or style, a `data:` or `blob:` module, `eval` or `new Function` (`checks.zanni-react` fails the build otherwise). `pcm-worklet.js` is a file beside `index.js` because an audio worklet module is a script and `data:` is refused; the jotai bundle loads it as `new URL("pcm-worklet.js", import.meta.url)`, so it must stay in the same directory as `index.js`.
+- `SHA256SUMS` is `sha256sum -c` format over the other files of its directory.
+- The route serves nothing else: React, react-dom, jotai and figaro-forms are not in the bundles and not served here.
+
+Externals, resolved by the page's import map (one React per page, one trace and one voice hub):
+
+| bundle | bare imports it leaves |
+|---|---|
+| `react` | `react`, `react/jsx-runtime`, `figaro-forms/glyphs` |
+| `react-jotai` | `react`, `react/jsx-runtime`, `react-dom`, `jotai`, `figaro-forms/aria`, `figaro-forms/aria/jotai`, `figaro-forms/catalog`, `zanni-react` |
+
+`react-jotai` imports the core as `zanni-react` rather than copying it, so map `zanni-react` to the core bundle's `index.js` of the same version.
+
+Import map (see `examples/react-bundle.html`):
+
+```
+{ "imports": {
+  "react": "/vendor/react/index.js",
+  "react/jsx-runtime": "/vendor/react/jsx-runtime.js",
+  "figaro-forms/glyphs": "/vendor/figaro-forms/glyphs.js",
+  "zanni-react": "/zanni/react/<version>/index.js" } }
+```
+
+An inline import map is a script to the CSP: `script-src 'self'` refuses it unless the policy also carries its hash (`'sha256-...'` over the exact text between the tags), and external import maps are not supported by browsers. A page that cannot carry the hash bundles `zanni-react` through its own bundler from the same files.
+
+Styles: link `index.css` of the core beside the page's z2 token and control CSS; `react-jotai/<version>/index.css` is empty and exists so both directories have the same shape. Types: `index.d.ts` is a script file of ambient module declarations (`zanni-react`, and `zanni-react/jotai`, which refers to the core's declarations, so load both); add them to a TypeScript project with `/// <reference path>` or `include`. The manifest's `react` entry lists every export of each bundle under `bundle.exports`, and `checks.zanni-react` fails when it differs from the built files.
+
 ## zanni-react/jotai
 `AriaView`, `Roster`, `StatusBar`, `BoundPit`, `BoundComposer`, `TurnActions` and the atoms behind them (`bootAtom`,
 `routeAtom`, `rosterAtom`, `composerAtom`, `draftAtom`, `audioSessionAtom`, `micAtom`, `pitViewAtom` and the rest). Needs jotai
