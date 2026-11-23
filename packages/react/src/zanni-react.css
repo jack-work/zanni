@@ -324,7 +324,6 @@
 .zr-tray-x::before { content: ""; position: absolute; inset: -6px 0; }
 .zr-tray-x:hover, .zr-tray-x:focus-visible { color: var(--z-ink); }
 
-@property --zr-spread { syntax: "<percentage>"; inherits: true; initial-value: 0%; }
 .zr-sticky-scope { position: relative; }
 .zr-sticky { --zr-sticky-lh: 1.603125rem; position: sticky; top: var(--zr-sticky-top, 0px); z-index: 1; font: 400 1.0625rem / 1 var(--zr-mono, "VT323", ui-monospace, monospace); letter-spacing: 0.04em; color: var(--z-muted); }
 .zr-sticky-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--z-space-3, 8px); min-height: 28px; background: var(--z-ground); }
@@ -345,12 +344,11 @@
 @keyframes zr-ts-in { from { opacity: 0; translate: 0 -3px; } }
 .zr-fit { position: relative; overflow: hidden; }
 .zr-fit-more { color: var(--z-muted); }
-.zr-rule { --zr-spread: 0%; height: 1.0625rem; margin-top: -0.53125rem; position: relative; overflow: hidden; color: var(--z-rule, var(--z-line)); font: 400 1.0625rem / 1 var(--zr-mono, "VT323", ui-monospace, monospace); white-space: nowrap; pointer-events: none; -webkit-user-select: none; user-select: none; transition: --zr-spread var(--zr-d-exit) steps(6, end); }
+.zr-rule { --zr-spread: 0%; height: 1.0625rem; margin-top: -0.53125rem; position: relative; overflow: hidden; color: var(--z-rule, var(--z-line)); pointer-events: none; }
 .zr-rule[data-double] { --zr-spread: 50%; }
 .zr-sticky[data-pinned] .zr-rule, .zr-sticky:not([data-head="shut"]) .zr-rule { background: var(--z-ground); }
-.zr-rule-single, .zr-rule-double { position: absolute; inset: 0; }
-.zr-rule[data-double] > span { mask-size: 12.5% 100%; mask-repeat: repeat-x; -webkit-mask-size: 12.5% 100%; -webkit-mask-repeat: repeat-x; }
-.zr-rule-double { animation: zr-spread var(--zr-d-slide) var(--zr-out); }
-@keyframes zr-spread { from { --zr-spread: 0%; } }
-.zr-rule-double { mask-image: linear-gradient(90deg, #000 var(--zr-spread), transparent var(--zr-spread), transparent calc(100% - var(--zr-spread)), #000 calc(100% - var(--zr-spread))); -webkit-mask-image: linear-gradient(90deg, #000 var(--zr-spread), transparent var(--zr-spread), transparent calc(100% - var(--zr-spread)), #000 calc(100% - var(--zr-spread))); }
-.zr-rule[data-double] .zr-rule-single { mask-image: linear-gradient(90deg, transparent var(--zr-spread), #000 var(--zr-spread), #000 calc(100% - var(--zr-spread)), transparent calc(100% - var(--zr-spread))); -webkit-mask-image: linear-gradient(90deg, transparent var(--zr-spread), #000 var(--zr-spread), #000 calc(100% - var(--zr-spread)), transparent calc(100% - var(--zr-spread))); }
+.zr-rule::before, .zr-rule::after { content: ""; position: absolute; left: 0; right: 0; }
+.zr-rule::before { top: 50%; border-top: 1px solid; transition: opacity var(--zr-d-exit); }
+.zr-rule::after { top: calc(50% - 2px); height: 3px; border-block: 1px solid; transform: scaleX(0); transition: transform var(--zr-d-slide) var(--zr-out); }
+.zr-rule[data-double]::before { opacity: 0; }
+.zr-rule[data-double]::after { transform: none; }

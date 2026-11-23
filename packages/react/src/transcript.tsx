@@ -1,5 +1,5 @@
 import { formatWorkedTime, groupWork, stepsTitle, type Work } from "./work";
-import { createContext, memo, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Fold } from "./fold";
 import { reducedMotion } from "./motion";
 import { glyphs } from "./glyphs";
@@ -356,32 +356,43 @@ function DeltaTable({ rows }: { rows: readonly DeltaRow[] }) {
   );
 }
 
+const TurnHeading = memo(function TurnHeading({ turn, forkedFrom }: { turn: number; forkedFrom: string | undefined }) {
+  const hooks = useContext(TranscriptContext);
+  return (
+    <>
+      <span className="nodi-turn-no">Turn {turn}</span>
+      {forkedFrom && <span className="nodi-turn-fork">{glyphs.fork + " " + (hooks.nameOf?.(forkedFrom) ?? forkedFrom.slice(0, 8))}</span>}
+    </>
+  );
+});
+
+const TurnTools = memo(function TurnTools({ turn, deltas, open, toggle, reply, asked }: { turn: number; deltas: number; open: boolean; toggle: () => void; reply: boolean; asked: boolean }) {
+  const hooks = useContext(TranscriptContext);
+  return (
+    <span className="nodi-turn-tools">
+      {deltas > 0 && (
+        <button type="button" className="nodi-turn-delta" aria-expanded={open} aria-label={"Form changes: " + deltas} onClick={toggle}>
+          {glyphs.delta}
+        </button>
+      )}
+      {hooks.actions?.(turn, reply, asked)}
+    </span>
+  );
+});
+
 function TurnBody({ turn: m, speaking, fresh }: TurnViewProps) {
   const state = m.end ? (m.end.kind === "error" ? "failed" : "ended") : m.open ? "open" : "done";
   const mine = speaking && speaking.turn === m.turn ? speaking : null;
   const rows = useMemo(() => groupWork(m.items), [m.items]);
   const hooks = useContext(TranscriptContext);
   const [deltasOpen, setDeltasOpen] = useState(false);
+  const toggle = useCallback(() => setDeltasOpen((o) => !o), []);
   const deltas = m.deltas ?? [];
   return (
     <li className="nodi-turn zr-host" data-turn={m.turn} data-state={state} {...(fresh ? { "data-fresh": "" } : {})}>
       <Sticky
-        heading={
-          <>
-            <span className="nodi-turn-no">Turn {m.turn}</span>
-            {m.forkedFrom && <span className="nodi-turn-fork">{glyphs.fork + " " + (hooks.nameOf?.(m.forkedFrom) ?? m.forkedFrom.slice(0, 8))}</span>}
-          </>
-        }
-        tools={
-          <span className="nodi-turn-tools">
-            {deltas.length > 0 && (
-              <button type="button" className="nodi-turn-delta" aria-expanded={deltasOpen} aria-label={"Form changes: " + deltas.length} onClick={() => setDeltasOpen(!deltasOpen)}>
-                {glyphs.delta}
-              </button>
-            )}
-            {hooks.actions?.(m.turn, !m.open && m.items.some((i) => i.kind === "prose"), !!m.input && m.input.parts.length > 0)}
-          </span>
-        }
+        heading={<TurnHeading turn={m.turn} forkedFrom={m.forkedFrom} />}
+        tools={<TurnTools turn={m.turn} deltas={deltas.length} open={deltasOpen} toggle={toggle} reply={!m.open && m.items.some((i) => i.kind === "prose")} asked={!!m.input && m.input.parts.length > 0} />}
         text={m.input ? m.input.parts.map((p) => p.text).join("\n\n") : ""}
       >
       {deltasOpen && deltas.length > 0 && <DeltaTable rows={deltas} />}

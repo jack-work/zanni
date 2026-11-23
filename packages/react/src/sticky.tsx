@@ -7,7 +7,6 @@ import { Plain } from "./text";
 export type HeadMode = "shut" | "open" | "full";
 
 export const DOUBLE_TAP_MS = 300;
-export const RULE_CELLS = 128;
 
 export function tapMode(mode: HeadMode, sinceLast: number | null): HeadMode {
   if (mode === "shut") return "open";
@@ -22,12 +21,7 @@ export function keyMode(mode: HeadMode, key: string): HeadMode {
 }
 
 export const Rule = memo(function Rule({ double }: { double: boolean }) {
-  return (
-    <div className="zr-rule" {...(double ? { "data-double": "" } : {})} aria-hidden="true">
-      <span className="zr-rule-single">{glyphs.rule.repeat(RULE_CELLS)}</span>
-      {double && <span className="zr-rule-double">{glyphs["rule.double"].repeat(RULE_CELLS)}</span>}
-    </div>
-  );
+  return <div className="zr-rule" {...(double ? { "data-double": "" } : {})} aria-hidden="true" />;
 });
 
 export const QuestionMark = createContext<RefObject<HTMLDivElement | null> | null>(null);

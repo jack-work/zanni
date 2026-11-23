@@ -47,6 +47,6 @@ export type { PlayRequest, PlayerIslandProps } from "./player";
 export { FIT_ELLIPSIS, Fit, firstLine } from "./fit";
 export { Typeset, loadTypeset } from "./typeset";
 export type { TypesetProps } from "./typeset";
-export { DOUBLE_TAP_MS, QuestionMark, RULE_CELLS, Rule, Sticky, keyMode, tapMode, usePinned } from "./sticky";
+export { DOUBLE_TAP_MS, QuestionMark, Rule, Sticky, keyMode, tapMode, usePinned } from "./sticky";
 export type { HeadMode, StickyProps } from "./sticky";
 export { useTurnWindow } from "./window";
