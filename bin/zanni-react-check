@@ -6,7 +6,7 @@ const crypto = require('crypto');
 
 const dir = process.argv[2];
 if (!dir || dir === '-h' || dir === '--help') {
-  process.stdout.write('usage: zanni-react-check BUNDLE_DIR\n\nChecks the output of zanni-react-bundle: each of react and react-jotai holds exactly the manifest version, whose\nSHA256SUMS matches its files; no file carries inline script or style, a data: or blob: module, eval or Function;\nreact, react-dom, jotai and figaro-forms are imports and not copies; react-jotai imports zanni-react only for names\nthe react bundle exports; index.d.ts declares its module.\n');
+  process.stdout.write('usage: zanni-react-check BUNDLE_DIR\n\nChecks the output of zanni-react-bundle: each of react and react-jotai holds exactly the manifest version, whose\nSHA256SUMS matches its files; no file carries inline script or style, a data: or blob: module, eval or Function;\nreact, react-dom, jotai and figaro-forms are imports and not copies; react-jotai imports zanni-react only for names\nthe react bundle exports; index.d.ts declares its module; the react bundle exports listed in the manifest are the bundles exports.\n');
   process.exit(dir ? 0 : 2);
 }
 const root = path.join(__dirname, '..');
@@ -84,6 +84,18 @@ if (bundles.react && bundles['react-jotai']) {
   const wanted = [...bundles['react-jotai'].matchAll(/import\s*\{([^}]*)\}\s*from\s*"zanni-react"/g)].flatMap((m) => names(m[1]).map((n) => n.split(/\s+as\s+/)[0]));
   if (!wanted.length) fail('react-jotai/index.js imports nothing from zanni-react, so it carries its own copy of the core');
   for (const n of wanted) if (!exported.has(n)) fail('react-jotai imports ' + n + ' from zanni-react, which the react bundle does not export');
+}
+
+const listed = manifest.components.react && manifest.components.react.bundle && manifest.components.react.bundle.exports;
+if (!listed) fail('assets/manifest.json lists no bundle exports for react');
+else {
+  const sorted = (a) => JSON.stringify([...a].sort());
+  for (const [name, mod] of [['react', 'zanni-react'], ['react-jotai', 'zanni-react/jotai']]) {
+    if (!bundles[name]) continue;
+    const e = /export\s*\{([^}]*)\}/.exec(bundles[name]);
+    const have = e ? names(e[1]).map((n) => n.split(/\s+as\s+/).pop()) : [];
+    if (sorted(have) !== sorted(listed[mod] || [])) fail('the manifest exports for ' + mod + ' differ from ' + name + '/index.js: ' + have.filter((n) => !(listed[mod] || []).includes(n)).concat((listed[mod] || []).filter((n) => !have.includes(n)).map((n) => '-' + n)).join(', '));
+  }
 }
 
 if (bad.length) {
