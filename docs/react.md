@@ -45,7 +45,7 @@ $out/react-jotai/<version>/{index.js,index.css,index.d.ts,pcm-worklet.js,SHA256S
 Serving contract for the backend (`gateway.spain-upkeep`):
 
 - Route `/zanni/react/<version>/` to `$out/react/<version>/` and `/zanni/react-jotai/<version>/` to `$out/react-jotai/<version>/`. Both live under the one package output, so the version directories of every release can sit side by side.
-- A version directory never changes once published: `Cache-Control: public, max-age=31536000, immutable`, no revalidation, no other path serves the same bytes. A new version is a new directory. Serve `.js` as `text/javascript`, `.css` as `text/css`, `SHA256SUMS` as `text/plain`, `index.d.ts` as `text/plain`.
+- A version directory never changes once published: `Cache-Control: private, max-age=31536000, immutable` (private because the site sits behind login), no revalidation, no other path serves the same bytes. A new version is a new directory. Serve `.js` as `text/javascript`, `.css` as `text/css`, `SHA256SUMS` as `text/plain`, `index.d.ts` as `text/plain`.
 - Same origin only. The edge CSP stays `script-src 'self'`; no file contains inline script or style, a `data:` or `blob:` module, `eval` or `new Function` (`checks.zanni-react` fails the build otherwise). `pcm-worklet.js` is a file beside `index.js` because an audio worklet module is a script and `data:` is refused; the jotai bundle loads it as `new URL("pcm-worklet.js", import.meta.url)`, so it must stay in the same directory as `index.js`.
 - `SHA256SUMS` is `sha256sum -c` format over the other files of its directory.
 - The route serves nothing else: React, react-dom, jotai and figaro-forms are not in the bundles and not served here.
