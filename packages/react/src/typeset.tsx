@@ -1,4 +1,5 @@
 import { memo, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { flushSync } from "react-dom";
 import { Plain } from "./text";
 
 type Engine = typeof import("./typeset-pretext").engine;
@@ -40,7 +41,7 @@ export const Typeset = memo(function Typeset({ text, lines: max = Infinity, more
       const cs = getComputedStyle(node);
       setBox((was) => (was && was.width === width && was.font === cs.font ? was : { width, font: cs.font, lineHeight: parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.3 }));
     };
-    const watch = new ResizeObserver((entries) => read(entries[0]!.contentRect.width));
+    const watch = new ResizeObserver((entries) => flushSync(() => read(entries[0]!.contentRect.width)));
     watch.observe(node);
     void document.fonts?.ready.then(() => read(node.clientWidth));
     return () => watch.disconnect();
@@ -63,7 +64,7 @@ export const Typeset = memo(function Typeset({ text, lines: max = Infinity, more
     <span ref={setNode} className={["zr-ts", className].filter(Boolean).join(" ")} data-set={rows ? "" : undefined}>
       {rows ? (
         rows.map((row, i) => (
-          <span key={i + ":" + row} className="zr-ts-line">
+          <span key={i} className="zr-ts-line">
             <Plain text={row} />
             {cut && i === rows.length - 1 && <span className="zr-fit-more">{tail}</span>}
           </span>
