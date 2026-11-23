@@ -21,14 +21,21 @@ class Stack:
     dials the mock door; fault ops go to the gateway's --fault-socket.
     """
 
-    def __init__(self, bundle, step=15, gateway=None, fixture=None, speech=False, door_flags=()):
+    def __init__(self, bundle, step=15, gateway=None, fixture=None, speech=False, door_flags=(), door_url=None, token_file=None):
+        self.door_url = door_url
+        self.token_file = token_file
         self.tmp = tempfile.mkdtemp(prefix="figfuzz-")
         env = dict(os.environ, FIGCHAT_BARE_ORIGIN="1")
         if fixture:
             env["FIGCHAT_FIXTURE"] = fixture
-        self.door = subprocess.Popen(["node", os.path.join(TEST, "figchat-server.js"), bundle, str(step), *map(str, door_flags)], stdout=subprocess.PIPE, text=True, env=env)
-        self.door_port = int(self.door.stdout.readline())
-        self.base = "http://127.0.0.1:%d" % self.door_port
+        if door_url:
+            self.door = None
+            self.door_port = 0
+            self.base = ""
+        else:
+            self.door = subprocess.Popen(["node", os.path.join(TEST, "figchat-server.js"), bundle, str(step), *map(str, door_flags)], stdout=subprocess.PIPE, text=True, env=env)
+            self.door_port = int(self.door.stdout.readline())
+            self.base = "http://127.0.0.1:%d" % self.door_port
         self.gateway = None
         self.edge = None
         self.faults = None
@@ -61,16 +68,15 @@ class Stack:
         with socket.socket() as s:
             s.bind(("127.0.0.1", 0))
             port = s.getsockname()[1]
-        self.faults = os.path.join(self.tmp, "faults.sock")
+        self.faults = None if self.door_url else os.path.join(self.tmp, "faults.sock")
         self.gateway_log = open(os.path.join(self.tmp, "gateway.log"), "w")
-        self.gateway = subprocess.Popen(
-            [binary, "--door-url", "ws://127.0.0.1:%d/door" % self.door_port, "--speech-socket", self.speech_socket,
-             "--admin", ADMIN, "--store", "gluck", "--port", str(port), "--peer", "127.0.0.1", "--edge-secret-file", secret_file,
-             "--fault-socket", self.faults, "--no-attach"],
-            stdout=self.gateway_log, stderr=subprocess.STDOUT, env=dict(os.environ, CREDENTIALS_DIRECTORY=self.tmp))
+        argv = [binary, "--door-url", self.door_url or "ws://127.0.0.1:%d/door" % self.door_port, "--speech-socket", self.speech_socket,
+                "--admin", ADMIN, "--store", "gluck", "--port", str(port), "--peer", "127.0.0.1", "--edge-secret-file", secret_file, "--no-attach"]
+        argv += ["--door-token-file", self.token_file] if self.door_url else ["--fault-socket", self.faults]
+        self.gateway = subprocess.Popen(argv, stdout=self.gateway_log, stderr=subprocess.STDOUT, env=dict(os.environ, CREDENTIALS_DIRECTORY=self.tmp))
         end = time.time() + 15
         while time.time() < end:
-            if os.path.exists(self.faults):
+            if self.door_url or os.path.exists(self.faults):
                 try:
                     with socket.socket() as s:
                         s.connect(("127.0.0.1", port))
