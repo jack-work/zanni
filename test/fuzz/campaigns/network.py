@@ -110,6 +110,9 @@ class Network(Campaign):
         want = [t["id"] for t in truth if t["id"] > run.base]
         if all(i in drawn for i in want):
             return True
+        drawn = {t["no"] for t in run.dom_turns()}
+        if all(i in drawn for i in want):
+            return True
         older = run.page.locator(".fw-older")
         if min(drawn, default=0) > min(want) and older.count():
             try:

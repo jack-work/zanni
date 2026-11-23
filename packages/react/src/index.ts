@@ -37,6 +37,7 @@ export { DELTA_KEY_CAP, DELTA_VALUE_FLOOR, FORKED_FROM_KEYS, cellFull, cellLine,
 export type { WireDelta } from "./deltas";
 export { nodi, speech, voce } from "./zanni";
 export type * from "./nodi-types";
+export { useTurnWindow } from "./window";
 export { NEAR_BOTTOM, distanceFromBottom, scrollRoot, scrollToBottom, useFollow } from "./follow";
 export { KEYBOARD_MIN, frameOf, onKeyboard, onViewportChange, trackViewport, useViewport, viewportHeight } from "./viewport";
 export type { ViewportFrame } from "./viewport";
