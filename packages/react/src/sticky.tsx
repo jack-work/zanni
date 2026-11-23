@@ -1,4 +1,4 @@
-import { createContext, useEffect, useId, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode, type RefObject } from "react";
+import { createContext, memo, useEffect, useId, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode, type RefObject } from "react";
 import { Fit } from "./fit";
 import { scrollRoot } from "./follow";
 import { glyphs } from "./glyphs";
@@ -21,14 +21,14 @@ export function keyMode(mode: HeadMode, key: string): HeadMode {
   return mode;
 }
 
-export function Rule({ double }: { double: boolean }) {
+export const Rule = memo(function Rule({ double }: { double: boolean }) {
   return (
     <div className="zr-rule" {...(double ? { "data-double": "" } : {})} aria-hidden="true">
       <span className="zr-rule-single">{glyphs.rule.repeat(RULE_CELLS)}</span>
-      <span className="zr-rule-double">{glyphs["rule.double"].repeat(RULE_CELLS)}</span>
+      {double && <span className="zr-rule-double">{glyphs["rule.double"].repeat(RULE_CELLS)}</span>}
     </div>
   );
-}
+});
 
 export const QuestionMark = createContext<RefObject<HTMLDivElement | null> | null>(null);
 

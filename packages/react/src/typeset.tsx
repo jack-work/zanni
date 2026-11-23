@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { memo, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { Plain } from "./text";
 
 type Engine = typeof import("./typeset-pretext").engine;
@@ -21,7 +21,7 @@ export interface TypesetProps {
   readonly className?: string;
 }
 
-export function Typeset({ text, lines: max = Infinity, more = false, tail = "", className }: TypesetProps) {
+export const Typeset = memo(function Typeset({ text, lines: max = Infinity, more = false, tail = "", className }: TypesetProps) {
   const [node, setNode] = useState<HTMLSpanElement | null>(null);
   const [engine, setEngine] = useState<Engine | null>(null);
   const [box, setBox] = useState<Box | null>(null);
@@ -76,4 +76,4 @@ export function Typeset({ text, lines: max = Infinity, more = false, tail = "", 
       )}
     </span>
   );
-}
+});
