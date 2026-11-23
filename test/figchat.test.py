@@ -975,11 +975,11 @@ try:
             pg.wait_for_selector(".zr-tree-row")
             assert pg.locator(".fw-top, .fw-mark, .fw-title").count() == 0, "the header is gone"
             assert pg.locator(".fw-head").count() == 0, "no logo on the list"
-            assert pg.locator(".fw-status").is_visible() == phone, "the slim status bar is a phone thing"
+            assert pg.locator(".fw-status").is_visible(), "the slim status bar shows at every width"
             attend(pg, fast, MAIN)
             assert pg.locator(".fw-head").count() == 0, "no logo while attending"
             assert pg.locator(".fw-top-new, .fw-bar").count() == 0
-            if phone:
+            if True:
                 bar = pg.locator(".fw-status")
                 until(pg, "document.querySelector('.fw-status-mantra') && document.querySelector('.fw-status-mantra').textContent.length > 0", 8000)
                 box = bar.bounding_box()
