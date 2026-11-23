@@ -7,7 +7,7 @@ import { Plain } from "./text";
 export type HeadMode = "shut" | "open" | "full";
 
 export const DOUBLE_TAP_MS = 300;
-export const RULE_CELLS = 240;
+export const RULE_CELLS = 128;
 
 export function tapMode(mode: HeadMode, sinceLast: number | null): HeadMode {
   if (mode === "shut") return "open";
