@@ -60,6 +60,9 @@ export function AriaView({ attended }: { attended: Attended }) {
   const toggleHandsFree = useSetAtom(toggleHandsFreeAtom);
   const speaking = useAtomValue(speakingAtom);
   const [spans, jump] = useTurnWindow(turns);
+  useLayoutEffect(() => {
+    if (followed) follow.snap();
+  });
   const cancelMic = useSetAtom(micCancelAtom);
   useVoice(attended);
   useEffect(() => () => cancelMic(), [cancelMic]);

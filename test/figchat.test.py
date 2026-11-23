@@ -115,8 +115,8 @@ def hit_area(pg, loc, what):
 
 
 class Door:
-    def __init__(self, bundle, step):
-        self.proc = subprocess.Popen(["node", os.path.join(root, "test", "figchat-server.js"), bundle, str(step)], stdout=subprocess.PIPE, text=True)
+    def __init__(self, bundle, step, *flags):
+        self.proc = subprocess.Popen(["node", os.path.join(root, "test", "figchat-server.js"), bundle, str(step), *flags], stdout=subprocess.PIPE, text=True)
         self.port = int(self.proc.stdout.readline())
         self.base = "http://127.0.0.1:%d" % self.port
         self.url = self.base + "/chat/"
@@ -135,8 +135,8 @@ class Door:
 doors = []
 
 
-def door(step):
-    d = Door(bundle, step)
+def door(step, *flags):
+    d = Door(bundle, step, *flags)
     doors.append(d)
     return d
 
@@ -582,6 +582,70 @@ try:
         until(pg, "!document.querySelector('.fw').hasAttribute('data-running')", timeout=10000)
         assert slow.state()["interrupts"] == ["keep", "clear"], slow.state()
         assert pg.locator(".nodi-turn[data-turn='29']").count() == 0, "a cleared queue starts no turn"
+        pg.close()
+
+        for width, height in ((390, 844), (1280, 800), (1920, 1080)):
+            pg = fresh(width, height)
+            attend(pg, door(12, "--history", "300", "--page", "20000"), MAIN)
+            root_js = "document.querySelector('[data-zr-scroll]')"
+            landed = "new Promise((r) => requestAnimationFrame(() => setTimeout(() => { const s = %s; r(Math.round((s.scrollHeight - s.clientHeight - s.scrollTop) * 100) / 100); }, 0)))" % root_js
+
+            def latest_lands(what):
+                pg.wait_for_selector(".zr-latest", timeout=5000)
+                pg.locator(".zr-latest").click()
+                pg.wait_for_timeout(700)
+                got = pg.evaluate(landed)
+                assert got <= 1, "%s at %d: Latest stops %s px short of the bottom" % (what, width, got)
+
+            pg.evaluate(root_js + ".scrollTop = 0")
+            pg.wait_for_timeout(400)
+            latest_lands("from far up")
+            for _ in range(10):
+                pg.evaluate(root_js + ".scrollTop = 0")
+                pg.wait_for_timeout(250)
+            assert held(pg) > 60, held(pg)
+            latest_lands("after the window loaded more rows")
+            send(pg, "keep going")
+            pg.wait_for_timeout(500)
+            pg.evaluate(root_js + ".scrollTop = 0")
+            pg.wait_for_timeout(300)
+            latest_lands("mid-stream")
+            pg.close()
+
+        pg = fresh(1280, 800)
+        attend(pg, door(150), MAIN)
+        away = "(() => { const r = document.querySelector('[data-zr-scroll]'); return Math.round(r.scrollHeight - r.clientHeight - r.scrollTop); })()"
+        pg.mouse.move(640, 300)
+        for step, how in enumerate(("wheel", "key")):
+            until(pg, away + " <= 2")
+            for _ in range(3):
+                if how == "wheel":
+                    pg.mouse.wheel(0, -40)
+                else:
+                    pg.locator(".fw-h1").focus()
+                    pg.keyboard.press("ArrowUp")
+                pg.wait_for_timeout(150)
+            left = pg.evaluate(away)
+            assert 20 <= left <= 140, "small upward scrolls inside the last stretch move the view: %s" % left
+            pg.set_viewport_size({"width": 1280, "height": 760 - step * 100})
+            pg.wait_for_timeout(500)
+            assert pg.evaluate(away) >= left - 2, "%s up by a little released the follow, a resize left the reader where they were: %s -> %s" % (how, left, pg.evaluate(away))
+            pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop += 1e6")
+            until(pg, away + " <= 2")
+            pg.set_viewport_size({"width": 1280, "height": 700 - step * 100})
+            pg.wait_for_timeout(400)
+            assert pg.evaluate(away) <= 2, "scrolling back to the bottom follows again: %s" % pg.evaluate(away)
+        send(pg, "start a long run please")
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='running']", timeout=20000)
+        until(pg, away + " <= 2")
+        pg.mouse.move(640, 200)
+        for _ in range(2):
+            pg.mouse.wheel(0, -40)
+            pg.wait_for_timeout(150)
+        left = pg.evaluate(away)
+        assert left >= 20, left
+        pg.wait_for_timeout(1500)
+        assert pg.evaluate(away) >= left - 2, "while a turn streams the view stays where the reader left it: %s -> %s" % (left, pg.evaluate(away))
         pg.close()
 
         pg = fresh()

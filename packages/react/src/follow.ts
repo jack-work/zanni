@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
-export const NEAR_BOTTOM = 160;
+export const NEAR_BOTTOM = 24;
 export const AWAY_FROM_BOTTOM = 96;
 
 export function scrollRoot(): HTMLElement {
@@ -24,6 +24,7 @@ export function scrollToBottom(): void {
 export interface Follow {
   readonly away: boolean;
   readonly toBottom: () => void;
+  readonly snap: () => void;
   readonly paging: RefObject<boolean>;
 }
 
@@ -36,7 +37,24 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
   const toBottom = useCallback(() => {
     stuck.current = true;
     setAway(false);
-    scrollToBottom();
+    let frames = 0;
+    let at = 0;
+    const pin = () => {
+      if (scrollRoot().scrollTop < at - 1) return;
+      scrollToBottom();
+      at = scrollRoot().scrollTop;
+      if (stuck.current && ++frames < 30) requestAnimationFrame(pin);
+    };
+    pin();
+  }, []);
+
+  const snap = useCallback(() => {
+    const root = scrollRoot();
+    if (!stuck.current || paging.current || root.scrollTop < lastY.current) return;
+    const end = root.scrollHeight - root.clientHeight;
+    if (root.scrollTop === end) return;
+    root.scrollTop = end;
+    lastY.current = root.scrollTop;
   }, []);
 
   useEffect(() => {
@@ -51,8 +69,8 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
     const judge = () => setAway(top - root.scrollTop > AWAY_FROM_BOTTOM);
     const onScroll = () => {
       const y = root.scrollTop;
-      if (top - y <= NEAR_BOTTOM) stuck.current = true;
-      else if (y < lastY.current) stuck.current = false;
+      if (y < lastY.current) stuck.current = false;
+      else if (top - y <= NEAR_BOTTOM) stuck.current = true;
       lastY.current = y;
       judge();
     };
@@ -66,7 +84,10 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
         const h = el.getBoundingClientRect().height;
         measure();
         if (paging.current) return;
-        if (stuck.current) root.scrollTop = top;
+        if (stuck.current && root.scrollTop >= lastY.current && root.scrollTop !== top) {
+          root.scrollTop = top;
+          lastY.current = root.scrollTop;
+        }
         judge();
       });
       watch.observe(el);
@@ -78,5 +99,5 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
     };
   }, [active, pane]);
 
-  return { away, toBottom, paging };
+  return { away, toBottom, snap, paging };
 }
