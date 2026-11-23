@@ -40,6 +40,14 @@
    "budget": 1142,
    "margin": 0.1
   },
+  "bundle.lazy.typeset-pretext.brotli": {
+   "budget": 33810,
+   "margin": 0.1
+  },
+  "bundle.lazy.typeset-pretext.gzip": {
+   "budget": 38333,
+   "margin": 0.1
+  },
   "bundle.lazy.voice-hub.brotli": {
    "budget": 1616,
    "margin": 0.1
