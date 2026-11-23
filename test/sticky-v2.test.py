@@ -55,7 +55,10 @@ def run(p, name, ctxargs, browser):
     assert got["pinned"] >= 1 and got["lines"] >= 1 and got["jump"] >= 1, "%s: %s" % (name, got)
     for left, width in got["bars"]:
         assert abs(left - got["sc"][0]) < 1.5 and abs(width - got["sc"][1]) < 1.5, "%s: the bar spans the pane: %s" % (name, got)
+    opaque = pg.evaluate("""() => { const l = document.querySelector('.zr-sticky[data-pinned] .zr-sticky-line'); if (!l) return null; const cs = getComputedStyle(l); const f = getComputedStyle(l.parentElement); return { opacity: cs.opacity, bg: cs.backgroundColor, color: cs.color, floatBg: f.backgroundColor }; }""")
+    assert opaque and opaque["opacity"] == "1" and not opaque["bg"].endswith(", 0)") and opaque["bg"] != "rgba(0, 0, 0, 0)", "%s: the pinned line is opaque: %s" % (name, opaque)
     if shots:
+        pg.evaluate("Promise.all(document.getAnimations().map((a) => a.finished.catch(() => null)))")
         os.makedirs(shots, exist_ok=True)
         pg.screenshot(path=os.path.join(shots, "sticky-v2-%s.png" % name))
     w = ctxargs["viewport"]["width"]
