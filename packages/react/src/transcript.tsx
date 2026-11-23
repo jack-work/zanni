@@ -5,7 +5,7 @@ import { reducedMotion } from "./motion";
 import { glyphs } from "./glyphs";
 import { nodi, type InputModel, type Item, type ProseItem, type SteeringItem, type ThinkingItem, type ToolItem, type TurnModel, type UnknownItem } from "./zanni";
 import { BlockView, Plain } from "./text";
-import { Sticky } from "./sticky";
+import { QuestionMark, Sticky } from "./sticky";
 import { cellLine, keyColumns, rowFull, valueLines } from "./deltas";
 import type { DeltaCell, DeltaRow } from "./nodi-types";
 
@@ -35,8 +35,9 @@ function stamp(ms: unknown): string {
 
 export function InputView({ input, turn }: { input: InputModel; turn: number }) {
   const first = input.parts[0];
+  const mark = useContext(QuestionMark);
   return (
-    <div className="nodi-input" data-from={first ? first.role : "you"}>
+    <div ref={mark} className="nodi-input" data-from={first ? first.role : "you"}>
       {input.parts.map((p, i) => {
         const when = i === 0 ? stamp(input.at) : "";
         return (
@@ -368,17 +369,19 @@ function TurnBody({ turn: m, speaking, fresh }: TurnViewProps) {
         heading={
           <>
             <span className="nodi-turn-no">Turn {m.turn}</span>
-            <span className="nodi-turn-marks">
-              {m.forkedFrom && <span className="nodi-turn-fork">{glyphs.fork + " " + (hooks.nameOf?.(m.forkedFrom) ?? m.forkedFrom.slice(0, 8))}</span>}
-              {deltas.length > 0 && (
-                <button type="button" className="nodi-turn-delta" aria-expanded={deltasOpen} aria-label={"Form changes: " + deltas.length} onClick={() => setDeltasOpen(!deltasOpen)}>
-                  {glyphs.delta}
-                </button>
-              )}
-            </span>
+            {m.forkedFrom && <span className="nodi-turn-fork">{glyphs.fork + " " + (hooks.nameOf?.(m.forkedFrom) ?? m.forkedFrom.slice(0, 8))}</span>}
           </>
         }
-        tools={<span className="nodi-turn-tools">{hooks.actions?.(m.turn, !m.open && m.items.some((i) => i.kind === "prose"), !!m.input && m.input.parts.length > 0)}</span>}
+        tools={
+          <span className="nodi-turn-tools">
+            {deltas.length > 0 && (
+              <button type="button" className="nodi-turn-delta" aria-expanded={deltasOpen} aria-label={"Form changes: " + deltas.length} onClick={() => setDeltasOpen(!deltasOpen)}>
+                {glyphs.delta}
+              </button>
+            )}
+            {hooks.actions?.(m.turn, !m.open && m.items.some((i) => i.kind === "prose"), !!m.input && m.input.parts.length > 0)}
+          </span>
+        }
         text={m.input ? m.input.parts.map((p) => p.text).join("\n\n") : ""}
       >
       {deltasOpen && deltas.length > 0 && <DeltaTable rows={deltas} />}

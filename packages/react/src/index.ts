@@ -37,7 +37,6 @@ export { DELTA_KEY_CAP, DELTA_VALUE_FLOOR, FORKED_FROM_KEYS, cellFull, cellLine,
 export type { WireDelta } from "./deltas";
 export { nodi, speech, voce } from "./zanni";
 export type * from "./nodi-types";
-export { useTurnWindow } from "./window";
 export { NEAR_BOTTOM, distanceFromBottom, scrollRoot, scrollToBottom, useFollow } from "./follow";
 export { KEYBOARD_MIN, frameOf, onKeyboard, onViewportChange, trackViewport, useViewport, viewportHeight } from "./viewport";
 export type { ViewportFrame } from "./viewport";
@@ -45,3 +44,8 @@ export type { Follow } from "./follow";
 export { LatestPill } from "./latest";
 export { PlayerIsland } from "./player";
 export type { PlayRequest, PlayerIslandProps } from "./player";
+export { FIT_ELLIPSIS, Fit, firstLine, fitText } from "./fit";
+export type { Fitted } from "./fit";
+export { DOUBLE_TAP_MS, QuestionMark, RULE_CELLS, Rule, Sticky, keyMode, tapMode, usePinned } from "./sticky";
+export type { HeadMode, StickyProps } from "./sticky";
+export { useTurnWindow } from "./window";
