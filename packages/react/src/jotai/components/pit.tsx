@@ -3,6 +3,7 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useState } from "react";
 import { PIT_ROWS, EFFORT_KEY, FORKED_FROM_KEY, byLastUsed, valueAt, type PitRowId, type PitView } from "../lib/pit-rows";
 import { PHASE_WORDS, labelOf } from "../lib/roster";
+import { OlderArias } from "./older";
 import { TopologyTree, FormTree } from "./tree-view";
 import { FormEdit, type FormEditTarget } from "./form-edit";
 import { turnsAtom, linkAtom } from "../state/aria";
@@ -241,6 +242,7 @@ function RecentView() {
           />
         ))}
       </PitList>
+      <OlderArias shown={new Set(recent.rows.map((r) => r.id))} more={recent.more} onVisit={() => pit?.setSnap("closed")} />
     </>
   );
 }

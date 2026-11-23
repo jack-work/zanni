@@ -570,10 +570,13 @@
       return base;
     }
     var formLabel = function (row) { return row.handle || row.mantra || row.short; };
+    function windowIds() { return o.window ? core.order.slice(0, o.window) : core.order; }
+    function cut() { return Math.max(0, core.order.length - windowIds().length); }
     function ariasRoot() {
-      var rows = core.order.map(function (id) { return core.arias[id].row; });
+      var kept = {};
+      var rows = windowIds().map(function (id) { kept[id] = true; return core.arias[id].row; });
       var byParent = {};
-      rows.forEach(function (r) { var p = r.parent && core.arias[r.parent] ? r.parent : ''; (byParent[p] = byParent[p] || []).push(r); });
+      rows.forEach(function (r) { var p = r.parent && kept[r.parent] ? r.parent : ''; (byParent[p] = byParent[p] || []).push(r); });
       var used = {};
       function level(parent) {
         var out = {};
@@ -589,14 +592,17 @@
         });
         return out;
       }
-      return { arias: level('') };
+      var root = { arias: level('') };
+      if (cut()) root.more = cut();
+      return root;
     }
     function recentRoot() {
       var out = {};
-      core.order.forEach(function (id) {
+      windowIds().forEach(function (id) {
         var r = core.arias[id].row;
         out[r.short] = { id: r.id, handle: r.handle || '', title: r.mantra, state: r.state, active_at: r.last_active || r.created_at };
       });
+      if (cut()) out.more = cut();
       return out;
     }
     function formRoot(id) {
