@@ -251,7 +251,7 @@ async function test(name, fn) {
     }
   });
 
-  await test('bundle: STATS.json marks what the first load pulls in', () => {
+  await test('bundle: STATS.json marks what the first load pulls in, and a first-load chunk that carries Pretext fails the build', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'figchat-initial-'));
     const dist = path.join(root, 'dist');
     const put = (name, text) => fs.writeFileSync(path.join(dist, 'assets', name), text);
@@ -269,6 +269,8 @@ async function test(name, fn) {
     const first = Object.keys(files).filter((n) => files[n].initial).sort();
     assert.deepStrictEqual(first, ['index-AbCd1234.js', 'index.html', 'shared-Qq11Ww22.js', 'style-WxYz5678.css']);
     assert.strictEqual(files['typeset-Zz99Yy88.js'].initial, false, 'a dynamic import is not first load');
+    put('index-AbCd1234.js', 'import { a } from "./shared-Qq11Ww22.js"; import "./typeset-Zz99Yy88.js";\n');
+    assert.throws(() => bundle(path.join(root, 'bad')), /carries Pretext/);
     fs.rmSync(root, { recursive: true, force: true });
   });
 
