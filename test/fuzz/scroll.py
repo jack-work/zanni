@@ -183,7 +183,7 @@ def check_layout(p, tag):
         p.record("layout.composer-in-view." + tag, L["composer"]["bottom"] <= L["vh"] + 1 and L["composer"]["top"] >= 0, "bottom %.0f of %d" % (L["composer"]["bottom"], L["vh"]))
 
 
-def scenario(p, streaming, static=True):
+def scenario(p, streaming, static=True, engine="chromium", dynamics_on=True):
     page = p.page
     if not static:
         if streaming:
@@ -383,6 +383,166 @@ def stream_checks(p):
     p.wait_running(False, 90)
 
 
+def anchor(p):
+    return p.js("""(() => {
+      const sc = document.querySelector('[data-zr-scroll]');
+      const r = sc.getBoundingClientRect();
+      const mid = r.top + r.height / 2;
+      for (const t of document.querySelectorAll('.nodi-turn')) {
+        const b = t.getBoundingClientRect();
+        if (b.top <= mid && b.bottom >= mid) return { id: t.dataset.turn, off: (mid - b.top) / b.height, top: b.top - r.top };
+      }
+      return null;
+    })()""")
+
+
+def touch_fling(p, dy, speed):
+    cdp = p.page.context.new_cdp_session(p.page)
+    box = p.js("(() => { const r = document.querySelector('[data-zr-scroll]').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()")
+    cdp.send("Input.synthesizeScrollGesture", {"x": box[0], "y": box[1], "yDistance": -dy, "speed": speed, "gestureSourceType": "touch"})
+    cdp.detach()
+
+
+def dynamics(p, engine):
+    page = p.page
+    w, h = page.viewport_size["width"], page.viewport_size["height"]
+    if engine == "chromium":
+        p.to_bottom()
+        p.start()
+        touch_fling(p, 2400, 2500)
+        time.sleep(1.5)
+        rows = p.stop()
+        p.record("touch.fling-up.no-reversals", not reversals(rows, "up"), "%s" % reversals(rows, "up")[:2])
+        p.record("touch.fling-up.no-blank-frames", blanks(rows) == 0, "%d blank frames" % blanks(rows))
+        p.record("touch.fling-up.moved", rows and rows[-1][1] < rows[0][1] - 200, "%s to %s" % (rows[0][1] if rows else None, rows[-1][1] if rows else None))
+        j = drift(p)
+        p.record("touch.fling-up.no-drift-after-settle", not j, "%d frames %s" % (len(j), j[:2]))
+        p.start()
+        touch_fling(p, -2400, 2500)
+        time.sleep(1.5)
+        rows = p.stop()
+        p.record("touch.fling-down.no-reversals", not reversals(rows, "down"), "%s" % reversals(rows, "down")[:2])
+        p.record("touch.fling-down.no-blank-frames", blanks(rows) == 0, "%d blank frames" % blanks(rows))
+
+    p.to_bottom()
+    for _ in range(6):
+        p.wheel(-700)
+    time.sleep(0.8)
+    a0 = anchor(p)
+    page.set_viewport_size({"width": h, "height": w})
+    time.sleep(1.2)
+    a1 = anchor(p)
+    p.shot("10-rotated")
+    p.record("rotate.mid-scroll-keeps-turn", a0 and a1 and a0["id"] == a1["id"], "%s to %s" % (a0, a1))
+    p.record("rotate.mid-scroll-not-blank", p.js("document.querySelectorAll('.nodi-turn').length") > 0)
+    page.set_viewport_size({"width": w, "height": h})
+    time.sleep(1.2)
+    a2 = anchor(p)
+    p.record("rotate.back-keeps-turn", a0 and a2 and a0["id"] == a2["id"], "%s to %s" % (a0, a2))
+    check_layout(p, "after-rotate")
+
+    p.to_bottom()
+    page.set_viewport_size({"width": h, "height": w})
+    time.sleep(1.2)
+    d = p.dist()
+    p.record("rotate.at-bottom-stays-at-bottom", d <= 3, "%.0f short" % d)
+    page.set_viewport_size({"width": w, "height": h})
+    time.sleep(1.2)
+    d = p.dist()
+    p.record("rotate.back-at-bottom-stays-at-bottom", d <= 3, "%.0f short" % d)
+
+    p.start()
+    for step in range(8):
+        p.wheel(-500)
+        page.set_viewport_size({"width": w, "height": h - 20 * (step + 1)})
+    time.sleep(1.0)
+    rows = p.stop()
+    p.record("resize.shrinking-while-wheeling-not-blank", blanks(rows) == 0 and p.js("document.querySelectorAll('.nodi-turn').length") > 0)
+    page.set_viewport_size({"width": w, "height": h})
+    time.sleep(0.8)
+
+    p.to_bottom()
+    for _ in range(6):
+        p.wheel(-700)
+    time.sleep(0.8)
+    before = p.scroller()["top"]
+    page.locator(".zr-input").click()
+    page.keyboard.insert_text("focus check")
+    time.sleep(0.6)
+    after = p.scroller()["top"]
+    p.record("focus.typing-in-composer-keeps-position", abs(after - before) <= 3, "%.0f to %.0f" % (before, after))
+    page.keyboard.press("Control+a")
+    page.keyboard.press("Delete")
+    if p.pill():
+        pill = page.locator(".zr-latest").first
+        pill.focus()
+        page.keyboard.press("Enter")
+        time.sleep(2.0)
+        p.record("focus.latest-by-keyboard-lands-on-bottom", p.dist() <= 3, "%.0f short" % p.dist())
+    else:
+        p.record("focus.latest-by-keyboard-lands-on-bottom", False, "no Latest pill after scrolling up")
+    p.js("(() => { const s = document.querySelector('[data-zr-scroll]'); s.scrollTop = Math.max(0, s.scrollHeight - 4000); s.focus({ preventScroll: true }); })()")
+    time.sleep(0.8)
+    before = p.scroller()["top"]
+    page.keyboard.press("Space")
+    time.sleep(0.9)
+    after = p.scroller()["top"]
+    p.record("focus.space-scrolls-down", after > before + 20, "%.0f to %.0f" % (before, after))
+    p.shot("11-after-focus")
+
+
+FAKE_VV = """
+(() => {
+  const t = new EventTarget();
+  const vv = { height: 844, offsetTop: 0, scale: 1, addEventListener: (k, f) => t.addEventListener(k, f), removeEventListener: (k, f) => t.removeEventListener(k, f) };
+  Object.defineProperty(window, 'visualViewport', { value: vv, configurable: true });
+  window.__vv = (h, top) => { vv.height = h; vv.offsetTop = top; t.dispatchEvent(new Event('resize')); t.dispatchEvent(new Event('scroll')); };
+})();
+"""
+
+
+def composer_focus(pw, engine, st, aria, outdir):
+    browser = getattr(pw, engine).launch()
+    ctx = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True, device_scale_factor=2)
+    ctx.add_init_script(FAKE_VV)
+    page = ctx.new_page()
+    page.goto(st.url + "#/gluck/" + aria)
+    page.wait_for_selector(".zr-input", timeout=20000)
+    time.sleep(2.5)
+    p = Probe(page, outdir, "%s-390-focus" % engine)
+    focused = lambda: page.evaluate("!!document.activeElement && document.activeElement.classList.contains('zr-input')")
+    box = page.locator(".zr-input").bounding_box()
+    page.touchscreen.tap(box["x"] + 40, box["y"] + box["height"] / 2)
+    page.evaluate("window.__vv(544, 0)")
+    time.sleep(0.6)
+    p.record("composer.tap-focuses", focused())
+    page.keyboard.insert_text("focus check")
+    send = page.locator("button.zr-send").first.bounding_box()
+    page.touchscreen.tap(send["x"] + send["width"] / 2, send["y"] + send["height"] / 2)
+    started = p.wait_running(True)
+    p.record("composer.stream-started", started)
+    p.record("composer.focus-kept-on-send-tap", focused())
+    typed = "abcdefghijklmnopqrstuvwxyz0123456789"
+    lost = None
+    for i, ch in enumerate(typed):
+        if not focused() and lost is None:
+            lost = i
+        page.keyboard.press(ch)
+        time.sleep(0.12)
+    time.sleep(0.4)
+    got = page.evaluate("document.querySelector('.zr-input').value")
+    p.record("composer.typing-while-streaming-lands-every-char", got == typed, "%r" % got)
+    p.record("composer.focus-kept-through-stream", lost is None and focused(), "first lost at char %s" % lost)
+    page.evaluate("window.__vv(544, 300)")
+    time.sleep(0.8)
+    p.record("composer.focus-kept-when-keyboard-viewport-pans", focused(), "keyboard still up, visual viewport top moved 300 px")
+    p.shot("focus-after-pan")
+    p.wait_running(False, 90)
+    ctx.close()
+    browser.close()
+    return {"results": p.results, "shots": p.shots}
+
+
 def known_of(path):
     try:
         return json.load(open(path))
@@ -398,6 +558,8 @@ def main():
     ap.add_argument("--out", default="scroll-out")
     ap.add_argument("--known", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "scroll-known.json"))
     ap.add_argument("--stream-only", action="store_true", help="skip the static scroll checks, run only the streaming ones")
+    ap.add_argument("--no-focus", action="store_true")
+    ap.add_argument("--no-dynamics", action="store_true")
     ap.add_argument("--no-stream", action="store_true")
     ap.add_argument("--webkit", action="store_true", help="also run 390 and 844 in WebKit with the iPhone profile")
     a = ap.parse_args()
@@ -433,11 +595,15 @@ def main():
                 page.wait_for_selector(".zr-input", timeout=20000)
                 time.sleep(2.5)
                 p = Probe(page, os.path.join(a.out, label), label)
-                scenario(p, None if a.no_stream else stream_checks, static=not a.stream_only)
+                scenario(p, None if a.no_stream else stream_checks, static=not a.stream_only, engine=engine, dynamics_on=not a.no_dynamics)
                 p.record("page.no-uncaught-errors", not errors, "%s" % errors[:2])
                 results[label] = {"results": p.results, "shots": p.shots, "emulated_wheel": getattr(p, "emulated", False)}
                 ctx.close()
                 browser.close()
+                if not a.no_focus and w == "390":
+                    label = "%s-390-focus" % engine
+                    print(label, flush=True)
+                    results[label] = composer_focus(pw, engine, st, aria, os.path.join(a.out, label))
     finally:
         st.stop()
     known = known_of(a.known)
