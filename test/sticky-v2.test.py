@@ -25,8 +25,11 @@ def geom(pg):
 
 
 def pin_a_turn(pg):
+    until(pg, "!document.querySelector('.fw').hasAttribute('data-running')", 15000)
+    pg.wait_for_timeout(500)
     pg.evaluate("""() => { const sc = document.querySelector('[data-zr-scroll]'); const t = [...document.querySelectorAll('.nodi-turn')].find((n) => n.querySelector('.nodi-input') && n.querySelector('.nodi-input').textContent.includes('sticky header decides')); sc.scrollTop += t.getBoundingClientRect().top - sc.getBoundingClientRect().top + 260; }""")
     until(pg, "!!document.querySelector('.zr-sticky[data-pinned]')", 5000)
+
 
 
 def run(p, name, ctxargs, browser):
