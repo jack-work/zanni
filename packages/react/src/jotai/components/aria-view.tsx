@@ -204,7 +204,7 @@ export function AriaView({ attended }: { attended: Attended }) {
           <TranscriptContext value={transcript}>
             <ol ref={listRef} className="nodi-turns" aria-label="Transcript" data-held={turns.length}>
               {win.spans.flatMap((span, k) => [
-                ...(win.windowed ? [<li key={"gap" + k} className="nodi-gap" data-slot={k} aria-hidden="true" />] : []),
+                <li key={"gap" + k} className="nodi-gap" data-slot={k} aria-hidden="true" />,
                 ...turns.slice(span.from, span.to).map((t) => <TurnView key={t.key} turn={t} speaking={speakingHere} fresh={baseline !== null && t.turn > baseline} />),
               ])}
             </ol>

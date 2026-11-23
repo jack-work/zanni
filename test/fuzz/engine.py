@@ -85,22 +85,29 @@ class Run:
         return self.page.evaluate("document.querySelector('.zr-input') ? document.querySelector('.zr-input').value : null")
 
     def dom_turns(self, peek=False):
-        return self.page.evaluate("""async (peek) => {
-          const out = [];
-          for (const n of [...document.querySelectorAll('.nodi-turn')].map((t) => t.dataset.turn)) {
-            let t = document.querySelector('.nodi-turn[data-turn="' + n + '"]');
-            if (!t) continue;
-            for (let tries = 0; !peek && t.hasAttribute('data-parked') && tries < 15; tries++) {
-              t.scrollIntoView({ block: 'center' });
-              await new Promise((r) => setTimeout(r, 200));
-              t = document.querySelector('.nodi-turn[data-turn="' + n + '"]');
+        return self.page.evaluate("""async ([peek, floor]) => {
+          const seen = new Map();
+          const grab = () => {
+            for (const t of document.querySelectorAll('.nodi-turn')) {
+              const n = Number(t.dataset.turn);
+              if (seen.has(n)) continue;
+              const said = t.querySelector('.nodi-said-text');
+              seen.set(n, { no: n, said: said ? said.textContent : null,
+                            prose: t.querySelectorAll('.nodi-prose').length, thinking: t.querySelectorAll('.nodi-thinking').length });
             }
-            const said = t.querySelector('.nodi-said-text');
-            out.push({ no: Number(n), said: said ? said.textContent : null,
-                       prose: t.querySelectorAll('.nodi-prose').length, thinking: t.querySelectorAll('.nodi-thinking').length });
+          };
+          const sc = document.querySelector('[data-zr-scroll]');
+          grab();
+          for (let step = 0; !peek && sc && step < 60 && Math.min(...seen.keys()) > floor; step++) {
+            const before = sc.scrollTop;
+            sc.scrollTop = before - sc.clientHeight * 0.8;
+            await new Promise((r) => setTimeout(r, 150));
+            grab();
+            if (sc.scrollTop === before) break;
           }
-          return out;
-        }""", peek)
+          if (!peek && sc) sc.scrollTop = sc.scrollHeight;
+          return [...seen.values()];
+        }""", [peek, self.base])
 
     def pit_facts(self):
         return self.page.evaluate("""() => {

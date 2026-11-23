@@ -3,114 +3,82 @@ import { scrollRoot } from "./follow";
 
 export const ESTIMATE = 400;
 export const TAIL = 3;
-export const MARGIN_VIEWS = 2;
-const DEFAULT_VIEW = 900;
-const MAX_GAPS = 8;
 
 export interface Span {
   readonly from: number;
   readonly to: number;
 }
 
-export interface Plan {
-  readonly spans: readonly Span[];
-  readonly gaps: readonly number[];
-}
-
-export function planWindow(count: number, anchor: number, view: number, extra: readonly number[], height: (i: number) => number): Plan {
-  if (count === 0) return { spans: [], gaps: [] };
-  const margin = view * MARGIN_VIEWS;
+export function planWindow(count: number, anchor: number, view: number, extra: readonly number[], height: (i: number) => number): { spans: Span[]; gaps: number[] } {
+  const keep = new Uint8Array(count);
   let lo = anchor;
-  for (let acc = 0; lo > 0 && acc < margin; ) acc += height(--lo);
-  let hi = anchor;
-  for (let acc = 0; hi < count && acc < view + margin; ) acc += height(hi++);
-  const picks: Span[] = [{ from: lo, to: Math.max(hi, anchor + 1) }, { from: Math.max(0, count - TAIL), to: count }];
-  for (const i of extra) if (i >= 0 && i < count) picks.push({ from: i, to: i + 1 });
-  picks.sort((a, b) => a.from - b.from);
+  let hi = anchor + 1;
+  for (let acc = 0; lo > 0 && acc < view * 2; ) acc += height(--lo);
+  for (let acc = 0; hi < count && acc < view * 3; ) acc += height(hi++);
+  keep.fill(1, lo, hi);
+  keep.fill(1, Math.max(0, count - TAIL));
+  for (const i of extra) keep[i] = 1;
   const spans: Span[] = [];
-  for (const p of picks) {
-    const last = spans[spans.length - 1];
-    if (last && p.from <= last.to) spans[spans.length - 1] = { from: last.from, to: Math.max(last.to, p.to) };
-    else spans.push(p);
-  }
   const gaps: number[] = [];
-  let at = 0;
-  for (const s of spans) {
-    let sum = 0;
-    for (let i = at; i < s.from; i++) sum += height(i);
-    gaps.push(sum);
-    at = s.to;
+  let gap = 0;
+  let cur: { from: number; to: number } | null = null;
+  for (let i = 0; i < count; i++) {
+    if (!keep[i]) {
+      cur = null;
+      gap += height(i);
+    } else if (cur) cur.to = i + 1;
+    else {
+      cur = { from: i, to: i + 1 };
+      spans.push(cur);
+      gaps.push(gap);
+      gap = 0;
+    }
   }
   return { spans, gaps };
 }
 
-export function turnAt(count: number, y: number, height: (i: number) => number): number {
-  let acc = 0;
-  for (let i = 0; i < count; i++) {
-    acc += height(i);
-    if (acc > y) return i;
-  }
-  return Math.max(0, count - 1);
-}
-
 let sheet: CSSStyleSheet | undefined;
-const rules: CSSStyleRule[] = [];
 
-function gapRule(slot: number): CSSStyleRule {
+function setGap(slot: number, px: number): void {
   if (!sheet) {
     sheet = new CSSStyleSheet();
     document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
   }
-  while (rules.length <= slot) {
-    sheet.insertRule('.nodi-gap[data-slot="' + rules.length + '"] {}', sheet.cssRules.length);
-    rules.push(sheet.cssRules[sheet.cssRules.length - 1] as CSSStyleRule);
-  }
-  return rules[slot]!;
+  while (sheet.cssRules.length <= slot) sheet.insertRule('.nodi-gap[data-slot="' + sheet.cssRules.length + '"] {}', sheet.cssRules.length);
+  (sheet.cssRules[slot] as CSSStyleRule).style.height = px + "px";
 }
 
-export interface TurnWindow {
-  readonly spans: readonly Span[];
-  readonly windowed: boolean;
-  readonly jump: (turn: number) => void;
-}
-
-export function useTurnWindow(turns: readonly { readonly turn: number }[], list: RefObject<HTMLElement | null>, extra: readonly number[]): TurnWindow {
-  const windowed = typeof ResizeObserver !== "undefined" && typeof CSSStyleSheet !== "undefined";
+export function useTurnWindow(turns: readonly { readonly turn: number }[], list: RefObject<HTMLElement | null>, extra: readonly number[]) {
+  const windowed = typeof ResizeObserver !== "undefined";
   const heights = useRef(new Map<number, number>());
-  const view = useRef(DEFAULT_VIEW);
+  const view = useRef(900);
   const [anchor, setAnchor] = useState<number | null>(null);
   const latest = useRef(turns);
   latest.current = turns;
-  const height = (i: number) => heights.current.get(turns[i]!.turn) ?? ESTIMATE;
-  const at = anchor === null ? -1 : turns.findIndex((t) => t.turn === anchor);
-  const plan = windowed ? planWindow(turns.length, at < 0 ? turns.length - 1 : at, view.current, extra.map((t) => turns.findIndex((x) => x.turn === t)), height) : { spans: [{ from: 0, to: turns.length }], gaps: [0] };
-  const key = plan.spans.map((s) => s.from + "-" + s.to).join(",");
-  const gapsKey = plan.gaps.join(",");
   const watch = useRef<ResizeObserver | null>(null);
+  const height = (i: number) => heights.current.get(latest.current[i]!.turn) ?? ESTIMATE;
+  const at = anchor === null ? -1 : turns.findIndex((t) => t.turn === anchor);
+  const plan = planWindow(turns.length, at < 0 ? turns.length - 1 : at, windowed ? view.current : Infinity, extra.map((t) => turns.findIndex((x) => x.turn === t)), height);
+  const key = plan.spans.map((s) => s.from + "-" + s.to).join();
 
   useLayoutEffect(() => {
-    if (!windowed) return;
-    plan.gaps.slice(0, MAX_GAPS).forEach((g, i) => {
-      gapRule(i).style.height = g + "px";
+    plan.gaps.forEach((g, i) => windowed && setGap(i, g));
+  }, [plan.gaps.join(), windowed]);
+
+  useLayoutEffect(() => {
+    if (!windowed || !list.current) return;
+    watch.current ??= new ResizeObserver((entries) => {
+      for (const e of entries) heights.current.set(Number((e.target as HTMLElement).dataset.turn), e.borderBoxSize[0]!.blockSize);
     });
-  }, [gapsKey, windowed]);
-
-  useLayoutEffect(() => {
-    const el = list.current;
-    if (!windowed || !el) return;
-    if (!watch.current) {
-      watch.current = new ResizeObserver((entries) => {
-        for (const e of entries) {
-          const n = Number((e.target as HTMLElement).dataset.turn);
-          if (n) heights.current.set(n, e.borderBoxSize[0]?.blockSize ?? e.contentRect.height);
-        }
-      });
-    }
     watch.current.disconnect();
-    el.querySelectorAll<HTMLElement>(".nodi-turn").forEach((t) => watch.current!.observe(t));
+    list.current.querySelectorAll<HTMLElement>(".nodi-turn").forEach((t) => watch.current!.observe(t));
+    return () => watch.current?.disconnect();
   }, [key, windowed, list]);
 
-  useEffect(() => () => watch.current?.disconnect(), []);
+  const top = useCallback(() => {
+    const root = scrollRoot();
+    return root.scrollTop - (list.current!.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop);
+  }, [list]);
 
   useEffect(() => {
     if (!windowed) return;
@@ -118,40 +86,35 @@ export function useTurnWindow(turns: readonly { readonly turn: number }[], list:
     let frame = 0;
     const read = () => {
       frame = 0;
-      const el = list.current;
-      if (!el) return;
-      view.current = root.clientHeight || DEFAULT_VIEW;
-      const top = el.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop;
-      const turns = latest.current;
-      const i = turnAt(turns.length, root.scrollTop - top, (j) => heights.current.get(turns[j]!.turn) ?? ESTIMATE);
-      const n = turns[i]?.turn ?? null;
-      setAnchor((prev) => (prev === n ? prev : n));
+      view.current = root.clientHeight;
+      const all = latest.current;
+      let acc = 0;
+      let i = 0;
+      for (const y = top(); i < all.length - 1 && (acc += heights.current.get(all[i]!.turn) ?? ESTIMATE) <= y; i++);
+      setAnchor(all[i]?.turn ?? null);
     };
     const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(read);
+      frame ||= requestAnimationFrame(read);
     };
     root.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       root.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(frame);
     };
-  }, [windowed, list]);
+  }, [windowed, top]);
 
   const jump = useCallback(
     (turn: number) => {
-      const root = scrollRoot();
-      const el = list.current;
-      const turns = latest.current;
-      const i = turns.findIndex((t) => t.turn === turn);
-      if (!windowed || !el || i < 0) return;
+      const all = latest.current;
+      const i = all.findIndex((t) => t.turn === turn);
+      if (!windowed || i < 0 || !list.current) return;
       let y = 0;
-      for (let j = 0; j < i; j++) y += heights.current.get(turns[j]!.turn) ?? ESTIMATE;
-      const top = el.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop;
+      for (let j = 0; j < i; j++) y += heights.current.get(all[j]!.turn) ?? ESTIMATE;
       setAnchor(turn);
-      root.scrollTop = top + y;
+      scrollRoot().scrollTop += y - top();
     },
-    [windowed, list],
+    [windowed, list, top],
   );
 
-  return { spans: plan.spans, windowed, jump };
+  return { spans: plan.spans, jump };
 }

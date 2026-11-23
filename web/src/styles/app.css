@@ -163,7 +163,6 @@ body.fw-page {
 .fw button:active:not(:disabled) { scale: 0.94; transition-duration: var(--fw-d-press); }
 
 
-.nodi-gap { list-style: none; margin: 0; padding: 0; }
 .nodi-turn[data-fresh] .nodi-input {
   translate: 0 0;
   opacity: 1;
