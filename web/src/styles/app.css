@@ -174,7 +174,7 @@ body.fw-page {
   transition: opacity var(--fw-d-exit) var(--fw-out);
   @starting-style { opacity: 0; }
 }
-.nodi-turn[data-flash] .nodi-turn-head { animation: fw-flash 1800ms var(--fw-out) both; }
+.nodi-turn[data-flash] .zr-sticky-bar { animation: fw-flash 1800ms var(--fw-out) both; }
 @keyframes fw-flash { from { background: color-mix(in srgb, var(--z-accent) 25%, transparent); } to { background: transparent; } }
 
 
@@ -231,7 +231,7 @@ body.fw-page {
 .nodi-delta-full { padding: 0 var(--z-space-2, 4px) var(--z-space-2, 4px); }
 .nodi-delta-side { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
 .nodi-delta-side[data-side="+"] { color: var(--z-ink); }
-.nodi-turn-head .nodi-turn-no { margin-right: 1ch; }
+.zr-sticky-bar .nodi-turn-no { margin-right: 1ch; }
 
 .fw-help { display: flex; flex-direction: column; gap: var(--z-space-2, 4px); margin: 0; }
 .fw-help-row { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: var(--z-space-3, 8px); font-size: 1.0625rem; }

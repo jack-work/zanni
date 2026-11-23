@@ -5,6 +5,7 @@ import { reducedMotion } from "./motion";
 import { glyphs } from "./glyphs";
 import { nodi, type InputModel, type Item, type ProseItem, type SteeringItem, type ThinkingItem, type ToolItem, type TurnModel, type UnknownItem } from "./zanni";
 import { BlockView, Plain } from "./text";
+import { Sticky } from "./sticky";
 import { cellLine, keyColumns, rowFull, valueLines } from "./deltas";
 import type { DeltaCell, DeltaRow } from "./nodi-types";
 
@@ -363,18 +364,23 @@ function TurnBody({ turn: m, speaking, fresh }: TurnViewProps) {
   const deltas = m.deltas ?? [];
   return (
     <li className="nodi-turn zr-host" data-turn={m.turn} data-state={state} {...(fresh ? { "data-fresh": "" } : {})}>
-      <div className="nodi-turn-head">
-        <span className="nodi-turn-no">Turn {m.turn}</span>
-        <span className="nodi-turn-marks">
-          {m.forkedFrom && <span className="nodi-turn-fork">{glyphs.fork + " " + (hooks.nameOf?.(m.forkedFrom) ?? m.forkedFrom.slice(0, 8))}</span>}
-          {deltas.length > 0 && (
-            <button type="button" className="nodi-turn-delta" aria-expanded={deltasOpen} aria-label={"Form changes: " + deltas.length} onClick={() => setDeltasOpen(!deltasOpen)}>
-              {glyphs.delta}
-            </button>
-          )}
-        </span>
-        <span className="nodi-turn-tools">{hooks.actions?.(m.turn, !m.open && m.items.some((i) => i.kind === "prose"), !!m.input && m.input.parts.length > 0)}</span>
-      </div>
+      <Sticky
+        heading={
+          <>
+            <span className="nodi-turn-no">Turn {m.turn}</span>
+            <span className="nodi-turn-marks">
+              {m.forkedFrom && <span className="nodi-turn-fork">{glyphs.fork + " " + (hooks.nameOf?.(m.forkedFrom) ?? m.forkedFrom.slice(0, 8))}</span>}
+              {deltas.length > 0 && (
+                <button type="button" className="nodi-turn-delta" aria-expanded={deltasOpen} aria-label={"Form changes: " + deltas.length} onClick={() => setDeltasOpen(!deltasOpen)}>
+                  {glyphs.delta}
+                </button>
+              )}
+            </span>
+          </>
+        }
+        tools={<span className="nodi-turn-tools">{hooks.actions?.(m.turn, !m.open && m.items.some((i) => i.kind === "prose"), !!m.input && m.input.parts.length > 0)}</span>}
+        text={m.input ? m.input.parts.map((p) => p.text).join("\n\n") : ""}
+      >
       {deltasOpen && deltas.length > 0 && <DeltaTable rows={deltas} />}
       <div className="nodi-turn-body">
         {m.input && m.input.parts.length > 0 && <InputView input={m.input} turn={m.turn} />}
@@ -392,6 +398,7 @@ function TurnBody({ turn: m, speaking, fresh }: TurnViewProps) {
             </p>
           ))}
       </div>
+      </Sticky>
     </li>
   );
 }

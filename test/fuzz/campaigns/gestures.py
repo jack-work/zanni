@@ -6,7 +6,7 @@ SELECTORS = {
     "send": ".zr-send",
     "input": ".zr-input",
     "scroll": ".fw-scroll",
-    "turn-head": ".nodi-turn-head",
+    "turn-head": ".zr-sticky-bar",
     "fold": ".zr-fold > summary, .nodi-sum",
     "pit-handle": ".zr-pit-handle",
     "pit-close": ".zr-pit-bar button",
