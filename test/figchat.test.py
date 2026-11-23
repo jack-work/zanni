@@ -252,6 +252,13 @@ try:
         assert anchor > 0, "paging in older turns keeps the reader where they were, not at the top: %s" % anchor
         pg.close()
 
+        pg = fresh()
+        attend(pg, fast, MAIN)
+        pg.context.new_cdp_session(pg).send("Emulation.setCPUThrottlingRate", {"rate": 4})
+        pg.evaluate("(() => { const s = document.querySelector('[data-zr-scroll]'); s.addEventListener('scroll', () => { s.scrollTop = 0; }); s.scrollTop = 0; })()")
+        until(pg, "!!document.querySelector(\".nodi-turn[data-turn='4']\")", timeout=15000)
+        pg.close()
+
         deep = fresh()
         attend(deep, fast, MAIN, 12)
         deep.wait_for_selector(".nodi-turn[data-turn='12']")
