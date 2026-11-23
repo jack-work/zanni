@@ -1,6 +1,7 @@
 import { Tree, glyphs, type TreeNodeData } from "../../index";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { OlderArias } from "./older";
 import { ancestorsOf, formNodes, topologyNodes } from "../lib/topology";
 import { topologyFormsAtom, treeStateAtom } from "../state/pit";
 import { attendedAtom, clientAtom, goAtom, storeNameAtom } from "../state/route";
@@ -67,6 +68,7 @@ export function TopologyTree({ onVisit, autoFocus, className }: { onVisit?: () =
           go({ store, aria: id });
         }}
       />
+      <OlderArias shown={new Set(tree.nodes.keys())} more={tree.more} onVisit={onVisit} />
       {(note || status) && (
         <p className="fw-note" role="status">
           {note || status}
