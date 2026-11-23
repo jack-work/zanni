@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en" data-theme="figaro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-NYPtIiM8Ad5l1cDhv/12gWa1EAcaLjKO9rLWSK9kzv8='; style-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'">
+<title>zanni-react from the served bundle</title>
+<link rel="stylesheet" href="../assets/v2/z2-tokens.css">
+<link rel="stylesheet" href="../assets/v2/z2-control.css">
+<link rel="stylesheet" href="/zanni/react/0.33.11/index.css">
+<script type="importmap">{
+  "imports": {
+    "react": "/vendor/react/index.js",
+    "react/jsx-runtime": "/vendor/react/jsx-runtime.js",
+    "react-dom/client": "/vendor/react-dom/client.js",
+    "figaro-forms/glyphs": "/vendor/figaro-forms/glyphs.js",
+    "zanni-react": "/zanni/react/0.33.11/index.js"
+  }
+}</script>
+<script type="module" src="react-bundle.js"></script>
+</head>
+<body>
+<main>
+<h1>zanni-react, no build step</h1>
+<p>This page imports <code>zanni-react</code> from <code>/zanni/react/0.33.11/index.js</code> through an import map and runs <code>react-bundle.js</code> as a module. React, react-dom and figaro-forms are the page's own same-origin files under <code>/vendor</code>. The import map is inline, so the Content-Security-Policy names its sha256; change the map and the hash must change with it. See docs/react.md.</p>
+<div id="root"></div>
+</main>
+</body>
+</html>
