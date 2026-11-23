@@ -107,11 +107,12 @@ export function useTurnWindow(turns: readonly { readonly turn: number }[], list:
     (turn: number) => {
       const all = latest.current;
       const i = all.findIndex((t) => t.turn === turn);
-      if (!windowed || i < 0 || !list.current) return;
+      if (!windowed || i < 0 || !list.current) return false;
       let y = 0;
       for (let j = 0; j < i; j++) y += heights.current.get(all[j]!.turn) ?? ESTIMATE;
       setAnchor(turn);
       scrollRoot().scrollTop += y - top();
+      return true;
     },
     [windowed, list, top],
   );

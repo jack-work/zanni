@@ -21,11 +21,10 @@ const DEEP_LIMIT = 60;
 const FLASH_MS = 1800;
 
 const turnEl = (turn: number): HTMLElement | null => document.querySelector<HTMLElement>('.nodi-turn[data-turn="' + turn + '"]');
-const frames = (n: number) => new Promise<void>((r) => (n > 0 ? requestAnimationFrame(() => frames(n - 1).then(r)) : r()));
 const pause = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-async function appears(turn: number): Promise<HTMLElement | null> {
-  for (let i = 0; i < 12; i++) {
+async function appears(turn: number, tries: number): Promise<HTMLElement | null> {
+  for (let i = 0; i < tries; i++) {
     const el = turnEl(turn);
     if (el) return el;
     await pause(25);
@@ -111,11 +110,11 @@ export function AriaView({ attended }: { attended: Attended }) {
   const seek = useCallback(
     async (turn: number) => {
       for (let n = 0; n <= DEEP_LIMIT; n++) {
-        if (!turnEl(turn)) jump(turn);
-        const el = await appears(turn);
+        const jumped = !turnEl(turn) && jump(turn);
+        const el = await appears(turn, jumped ? 60 : 12);
         if (el) {
           el.scrollIntoView();
-          await frames(3);
+          await pause(80);
           el.scrollIntoView();
           el.setAttribute("data-flash", "");
           setTimeout(() => el.removeAttribute("data-flash"), FLASH_MS);

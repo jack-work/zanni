@@ -101,7 +101,7 @@ class Run:
           for (let step = 0; !peek && sc && step < 60 && Math.min(...seen.keys()) > floor; step++) {
             const before = sc.scrollTop;
             sc.scrollTop = before - sc.clientHeight * 0.8;
-            await new Promise((r) => setTimeout(r, 150));
+            await new Promise((r) => setTimeout(r, 300));
             grab();
             if (sc.scrollTop === before) break;
           }
