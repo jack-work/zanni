@@ -3,3 +3,6 @@ result-*
 web/node_modules
 web/dist
 __pycache__/
+web/dist-react
+web/dist-react-jotai
+web/dist-types

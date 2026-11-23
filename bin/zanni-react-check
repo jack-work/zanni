@@ -1,0 +1,93 @@
+#!/usr/bin/env node
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+
+const dir = process.argv[2];
+if (!dir || dir === '-h' || dir === '--help') {
+  process.stdout.write('usage: zanni-react-check BUNDLE_DIR\n\nChecks the output of zanni-react-bundle: each of react and react-jotai holds exactly the manifest version, whose\nSHA256SUMS matches its files; no file carries inline script or style, a data: or blob: module, eval or Function;\nreact, react-dom, jotai and figaro-forms are imports and not copies; react-jotai imports zanni-react only for names\nthe react bundle exports; index.d.ts declares its module.\n');
+  process.exit(dir ? 0 : 2);
+}
+const root = path.join(__dirname, '..');
+const manifest = JSON.parse(fs.readFileSync(path.join(process.env.ZANNI_ASSETS || path.join(root, 'assets'), 'manifest.json'), 'utf8'));
+const version = manifest.version;
+const bad = [];
+const fail = (m) => bad.push(m);
+const read = (p) => fs.readFileSync(p, 'utf8');
+const names = (s) => s.split(',').map((x) => x.trim()).filter(Boolean);
+
+const inlineScript = [
+  [/<script\b/i, 'a script tag'],
+  [/<style\b/i, 'a style tag'],
+  [/\bdata:(text\/javascript|application\/javascript|text\/css)/i, 'a data: script or style'],
+  [/\bblob:/, 'a blob: URL'],
+  [/\beval\s*\(/, 'eval'],
+  [/\bnew\s+Function\s*\(/, 'new Function'],
+  [/\bdocument\.write\b/, 'document.write'],
+];
+const reactCopies = [
+  [/react\.transitional\.element/, 'React element internals'],
+  [/__SECRET_INTERNALS_DO_NOT_USE/, 'React internals'],
+  [/__CLIENT_INTERNALS_DO_NOT_USE/, 'React internals'],
+  [/\bscheduler\b.*\bunstable_/, 'the scheduler'],
+  [/hydrateRoot|createRoot\s*[:(]/, 'react-dom client'],
+];
+
+const expect = { react: ['SHA256SUMS', 'index.css', 'index.d.ts', 'index.js'], 'react-jotai': ['SHA256SUMS', 'index.css', 'index.d.ts', 'index.js', 'pcm-worklet.js'] };
+const bundles = {};
+for (const name of Object.keys(expect)) {
+  const top = path.join(dir, name);
+  if (!fs.existsSync(top)) { fail(name + ' is missing'); continue; }
+  const versions = fs.readdirSync(top);
+  if (versions.length !== 1 || versions[0] !== version) { fail(name + ' holds ' + versions.join(', ') + ', expected only ' + version); continue; }
+  const here = path.join(top, version);
+  const files = fs.readdirSync(here).sort();
+  if (JSON.stringify(files) !== JSON.stringify(expect[name])) { fail(name + ' holds ' + files.join(', ') + ', expected ' + expect[name].join(', ')); continue; }
+  const sums = read(path.join(here, 'SHA256SUMS')).trim().split('\n');
+  const listed = new Set();
+  for (const line of sums) {
+    const m = /^([0-9a-f]{64}) {2}(\S+)$/.exec(line);
+    if (!m) { fail(name + ' SHA256SUMS line is malformed: ' + line); continue; }
+    listed.add(m[2]);
+    const have = fs.existsSync(path.join(here, m[2])) ? crypto.createHash('sha256').update(fs.readFileSync(path.join(here, m[2]))).digest('hex') : 'missing';
+    if (have !== m[1]) fail(name + '/' + m[2] + ' does not match SHA256SUMS');
+  }
+  for (const f of files) if (f !== 'SHA256SUMS' && !listed.has(f)) fail(name + '/' + f + ' is not in SHA256SUMS');
+  const src = {};
+  for (const f of files) {
+    if (f === 'SHA256SUMS') continue;
+    src[f] = read(path.join(here, f));
+    if (f.endsWith('.js') || f.endsWith('.css')) for (const [re, what] of inlineScript) if (re.test(src[f])) fail(name + '/' + f + ' carries ' + what);
+  }
+  const js = src['index.js'];
+  for (const [re, what] of reactCopies) if (re.test(js)) fail(name + '/index.js bundles ' + what);
+  const imported = new Set([...js.matchAll(/(?:^|[;\n}])\s*(?:import|export)\b[^"';]*?\bfrom\s*"([^"]+)"/g)].map((m) => m[1]));
+  if (!imported.has('react/jsx-runtime')) fail(name + '/index.js does not import react/jsx-runtime');
+  if (!imported.has('react')) fail(name + '/index.js does not import react');
+  if (name === 'react' && !imported.has('figaro-forms/glyphs')) fail('react/index.js does not import figaro-forms/glyphs');
+  if (name === 'react-jotai') {
+    for (const need of ['jotai', 'figaro-forms/aria/jotai', 'zanni-react']) if (!imported.has(need)) fail(name + '/index.js does not import ' + need);
+  }
+  const decl = src['index.d.ts'];
+  const expectModule = name === 'react' ? 'declare module "zanni-react" {' : 'declare module "zanni-react/jotai" {';
+  if (!decl.includes(expectModule)) fail(name + '/index.d.ts does not declare ' + expectModule);
+  if (/\bfrom\s+"\.{1,2}\//.test(decl)) fail(name + '/index.d.ts carries a relative import');
+  bundles[name] = js;
+}
+
+if (bundles.react && bundles['react-jotai']) {
+  const exported = new Set();
+  const e = /export\s*\{([^}]*)\}/.exec(bundles.react);
+  if (!e) fail('react/index.js has no export list');
+  else for (const n of names(e[1])) exported.add(n.split(/\s+as\s+/).pop());
+  const wanted = [...bundles['react-jotai'].matchAll(/import\s*\{([^}]*)\}\s*from\s*"zanni-react"/g)].flatMap((m) => names(m[1]).map((n) => n.split(/\s+as\s+/)[0]));
+  if (!wanted.length) fail('react-jotai/index.js imports nothing from zanni-react, so it carries its own copy of the core');
+  for (const n of wanted) if (!exported.has(n)) fail('react-jotai imports ' + n + ' from zanni-react, which the react bundle does not export');
+}
+
+if (bad.length) {
+  process.stderr.write(bad.map((m) => 'zanni-react-check: ' + m).join('\n') + '\n');
+  process.exit(1);
+}
+process.stdout.write('zanni-react-check: ' + version + ' ok\n');
