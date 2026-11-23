@@ -8,6 +8,10 @@
       url = "git+ssh://git@spain/var/lib/keel/jack/figaro-forms.git?rev=1155160365dbfa82907ffef39969e01cb9e54ef5";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    figaro-forms-paced = {
+      url = "git+ssh://git@spain/var/lib/keel/jack/figaro-forms.git?ref=lane/fake-speech-paced&rev=e2fdb9296fbd0e81b6bca7e8f9819dd2c0e374f1";
+      flake = false;
+    };
   };
 
   outputs =
@@ -16,6 +20,7 @@
       nixpkgs,
       flake-utils,
       figaro-forms,
+      figaro-forms-paced,
       ...
     }:
     let
@@ -123,7 +128,7 @@
         fuzzPython = pkgs.python3.withPackages (ps: [ ps.playwright ]);
         speechKit = pkgs.runCommand "figfuzz-speech-kit" { } ''
           mkdir $out
-          cp ${figaro-forms}/packages/bridge/test/fake-speech.ts $out/
+          cp ${figaro-forms-paced}/packages/bridge/test/fake-speech.ts $out/
           ln -s ${gateway}/lib/node_modules $out/node_modules
         '';
       in
@@ -416,7 +421,7 @@
           chmod -R u+w examples assets test bench
           bundle=${self.packages.${system}.figchat-shell}
           python3 test/fuzz/regress/run.py $bundle 2>&1 | tee $out
-          for c in composer gestures network audio scale; do
+          for c in composer gestures network audio paced scale; do
             python3 test/fuzz/fuzz.py $bundle --campaign $c --seed 1 --runs 2 --steps 25 --no-shrink --regress-dir $TMPDIR/found 2>&1 | tee -a $out
           done
         '';

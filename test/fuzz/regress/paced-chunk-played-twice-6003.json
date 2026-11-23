@@ -1,0 +1,91 @@
+{
+ "campaign": "paced",
+ "seed": 6003,
+ "profile": "phone",
+ "invariant": "chunk-played-twice",
+ "message": "turn 27 node 0 offset 0 was scheduled to play twice (page socket 1 at 1868 ms, then socket 4 at 4714 ms, 2846 ms apart)",
+ "owner": "was an audio.py false positive (offsets restart at 0 on every audio.start); kept to guard the keyed check",
+ "status": "pass",
+ "strict": [],
+ "actions": [
+  {
+   "k": "bounce"
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "door.bearer",
+    "ms": 3000
+   }
+  },
+  {
+   "k": "send",
+   "n": 2,
+   "kind": "[long]"
+  },
+  {
+   "k": "reload"
+  },
+  {
+   "k": "pace",
+   "jitter": 0,
+   "p": 0,
+   "slow": 500,
+   "per": 9600
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "page.close",
+    "code": 1006,
+    "audio": true
+   }
+  },
+  {
+   "k": "reload"
+  },
+  {
+   "k": "bounce"
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "speech.fail",
+    "count": 3
+   }
+  },
+  {
+   "k": "voice",
+   "to": "on"
+  },
+  {
+   "k": "wait",
+   "ms": 800
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "page.close",
+    "code": 1001,
+    "audio": true
+   }
+  },
+  {
+   "k": "fault",
+   "op": {
+    "op": "door.lapse",
+    "notice": true,
+    "audio": null
+   }
+  },
+  {
+   "k": "send",
+   "n": 34,
+   "kind": "[tool]"
+  },
+  {
+   "k": "voice",
+   "to": "on"
+  }
+ ]
+}
