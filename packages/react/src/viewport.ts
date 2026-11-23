@@ -22,7 +22,7 @@ export function frameOf(vv: Pick<VisualViewportLike, "height" | "offsetTop" | "s
   const top = Math.max(0, Math.round(vv.offsetTop));
   const height = Math.round(vv.height);
   const inset = Math.max(0, layoutHeight - top - height);
-  return { height, top, inset, keyboard: inset >= KEYBOARD_MIN };
+  return { height, top, inset, keyboard: layoutHeight - height >= KEYBOARD_MIN };
 }
 
 type ViewportSource = { visualViewport?: VisualViewportLike | null };
@@ -74,7 +74,7 @@ export function trackViewport(root: HTMLElement = document.documentElement): () 
     if (!root.getAttribute("style")) root.removeAttribute("style");
     if (f.keyboard) root.setAttribute("data-keyboard", "");
     else root.removeAttribute("data-keyboard");
-    if (f.keyboard !== open) {
+    if (f.keyboard !== open && Math.abs(vv.scale - 1) <= 0.01) {
       open = f.keyboard;
       keyboardListeners.forEach((fn) => fn(open));
     }
