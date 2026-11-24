@@ -655,6 +655,22 @@ try:
         assert pg.evaluate(away) >= left - 2, "while a turn streams the view stays where the reader left it: %s -> %s" % (left, pg.evaluate(away))
         pg.close()
 
+        pg = fresh(390, 844)
+        attend(pg, door(150), MAIN)
+        send(pg, "start a long run please")
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='running'] summary", timeout=20000)
+        tail = "(() => { const r = document.querySelector('[data-zr-scroll]'); return Math.round(r.scrollHeight - r.clientHeight - r.scrollTop); })()"
+        until(pg, tail + " <= 2")
+        for target in (".nodi-turn[data-turn='27'] .nodi-input", ".nodi-turn[data-turn='27'] .nodi-tool summary"):
+            box = pg.locator(target).first.bounding_box()
+            pg.touchscreen.tap(box["x"] + 20, box["y"] + box["height"] / 2)
+            pg.wait_for_timeout(300)
+            assert pg.evaluate(tail) <= 2, "a tap on %s mid-stream moved the view: %s" % (target, pg.evaluate(tail))
+        pg.evaluate("(() => { const li = document.createElement('li'); li.style.height = '500px'; document.querySelector('.nodi-turns').appendChild(li); })()")
+        pg.wait_for_timeout(800)
+        assert pg.evaluate(tail) <= 2, "a tap on a fold mid-stream does not stop the follow: %s" % pg.evaluate(tail)
+        pg.close()
+
         pg = fresh()
         attend(pg, door(150), MAIN)
         send(pg, "start a long run please")

@@ -70,12 +70,19 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
     const judge = () => setAway(top - root.scrollTop > AWAY_FROM_BOTTOM);
     const UP_KEYS = ["ArrowUp", "PageUp", "Home", "k"];
     const editable = (t: EventTarget | null) => t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+    let touchY = 0;
     const intent = (e: Event) => {
       const t = e.target as Node;
-      const up = e instanceof WheelEvent ? e.deltaY < 0 : e instanceof KeyboardEvent ? UP_KEYS.includes(e.key) && !editable(t) : e.type === "touchstart" ? root.contains(t) : t === root;
+      if (e instanceof TouchEvent) {
+        const y = e.touches[0]?.clientY ?? 0;
+        if (e.type === "touchstart") touchY = y;
+        else if (y > touchY + 2 && root.contains(t)) stuck.current = false;
+        return;
+      }
+      const up = e instanceof WheelEvent ? e.deltaY < 0 : e instanceof KeyboardEvent ? UP_KEYS.includes(e.key) && !editable(t) : t === root;
       if (up) stuck.current = false;
     };
-    const intents = ["wheel", "keydown", "touchstart", "pointerdown"];
+    const intents = ["wheel", "keydown", "touchstart", "touchmove", "pointerdown"];
     for (const t of intents) window.addEventListener(t, intent, { passive: true, capture: true });
     const onScroll = () => {
       const y = root.scrollTop;
