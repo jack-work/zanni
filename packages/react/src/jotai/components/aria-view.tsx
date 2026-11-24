@@ -62,7 +62,7 @@ export function AriaView({ attended }: { attended: Attended }) {
   const [spans, jump] = useTurnWindow(turns);
   useLayoutEffect(() => {
     if (followed) follow.snap();
-  });
+  }, [turns, followed, follow.snap]);
   const cancelMic = useSetAtom(micCancelAtom);
   useVoice(attended);
   useEffect(() => () => cancelMic(), [cancelMic]);

@@ -68,6 +68,15 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
     measure();
     lastY.current = root.scrollTop;
     const judge = () => setAway(top - root.scrollTop > AWAY_FROM_BOTTOM);
+    const UP_KEYS = ["ArrowUp", "PageUp", "Home", "k"];
+    const editable = (t: EventTarget | null) => t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+    const intent = (e: Event) => {
+      const t = e.target as Node;
+      const up = e instanceof WheelEvent ? e.deltaY < 0 : e instanceof KeyboardEvent ? UP_KEYS.includes(e.key) && !editable(t) : e.type === "touchstart" ? root.contains(t) : t === root;
+      if (up) stuck.current = false;
+    };
+    const intents = ["wheel", "keydown", "touchstart", "pointerdown"];
+    for (const t of intents) window.addEventListener(t, intent, { passive: true, capture: true });
     const onScroll = () => {
       const y = root.scrollTop;
       measure();
@@ -75,7 +84,7 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
         if (top - y > AT_END) stuck.current = false;
         lastY.current = y;
       } else {
-        if (top - y <= NEAR_BOTTOM && y >= lastY.current) stuck.current = true;
+        if (top - y <= NEAR_BOTTOM && y > lastY.current) stuck.current = true;
         lastY.current = Math.max(lastY.current, y);
       }
       judge();
@@ -101,6 +110,7 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
     }
     return () => {
       source.removeEventListener("scroll", onScroll);
+      for (const t of intents) window.removeEventListener(t, intent, { capture: true });
       watch?.disconnect();
     };
   }, [active, pane]);

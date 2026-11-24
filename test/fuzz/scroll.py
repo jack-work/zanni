@@ -102,6 +102,8 @@ class Probe:
             self.emulated = True
 
     def step(self, dy, smooth=True):
+        if dy < 0:
+            self.js("() => document.querySelector('[data-zr-scroll]').dispatchEvent(new KeyboardEvent('keydown', { key: 'k', bubbles: true }))")
         self.js("(a) => document.querySelector('[data-zr-scroll]').scrollBy({ top: a[0], behavior: a[1] ? 'smooth' : 'instant' })", [dy, smooth])
 
     def to_bottom(self):
