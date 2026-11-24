@@ -8,6 +8,7 @@ const BEHIND = 1800;
 const AHEAD = 2700;
 
 let sheet: CSSStyleSheet | undefined;
+const set = [NaN, NaN];
 
 function setGap(slot: number, px: number): void {
   if (!document.adoptedStyleSheets) return;
@@ -16,6 +17,8 @@ function setGap(slot: number, px: number): void {
     sheet.replaceSync('[data-slot="0"] {} [data-slot="1"] {}');
     document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
   }
+  if (set[slot] === px) return;
+  set[slot] = px;
   (sheet.cssRules[slot] as CSSStyleRule).style.height = px + "px";
 }
 
@@ -35,13 +38,17 @@ export function useTurnWindow(turns: readonly { readonly turn: number }[]) {
   const spans = [[lo, hi, lo > 0], [tail, n, tail > hi]] as const;
 
   useLayoutEffect(() => {
+    const fit = () => {
+      let top = 0;
+      let mid = 0;
+      for (let i = 0; i < tail; i++) if (i < lo) top += sizeOf(i);
+      else if (i >= hi) mid += sizeOf(i);
+      setGap(0, top - SPACING);
+      setGap(1, mid - SPACING);
+    };
+    fit();
     document.querySelectorAll<HTMLElement>(".nodi-turn").forEach((t) => (heights.current[t.dataset.turn!] = t.offsetHeight + SPACING));
-    let top = 0;
-    let mid = 0;
-    for (let i = 0; i < tail; i++) if (i < lo) top += sizeOf(i);
-    else if (i >= hi) mid += sizeOf(i);
-    setGap(0, top - SPACING);
-    setGap(1, mid - SPACING);
+    fit();
   });
 
   useEffect(() => {

@@ -74,7 +74,7 @@ describe("Typeset and Fit", () => {
     expect(container.querySelector(".zr-fit-more")).toBeNull();
   });
 
-  it("sets the lines again when the box changes width, and keeps the lines that did not change", async () => {
+  it("sets the lines again when the box changes width and keeps each line's node, so a live resize does not replay a fade", async () => {
     const { container } = render(<Typeset text="abcdefghijklmnopqrstuvwxyz" />);
     await waitFor(() => expect(resize).toBeDefined());
     act(() => resize!(130));
@@ -82,6 +82,6 @@ describe("Typeset and Fit", () => {
     const first = container.querySelector(".zr-ts-line")!;
     act(() => resize!(260));
     await waitFor(() => expect(rows(container.querySelector(".zr-ts")!)).toEqual(["abcdefghijklmnopqrstuvwxyz"]));
-    expect(container.querySelector(".zr-ts-line")).not.toBe(first);
+    expect(container.querySelector(".zr-ts-line")).toBe(first);
   });
 });

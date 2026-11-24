@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
-export const NEAR_BOTTOM = 160;
+export const NEAR_BOTTOM = 24;
 export const AWAY_FROM_BOTTOM = 96;
+const AT_END = 2;
 
 export function scrollRoot(): HTMLElement {
   return document.querySelector<HTMLElement>("[data-zr-scroll]") ?? (document.scrollingElement as HTMLElement | null) ?? document.documentElement;
@@ -24,6 +25,7 @@ export function scrollToBottom(): void {
 export interface Follow {
   readonly away: boolean;
   readonly toBottom: () => void;
+  readonly snap: () => void;
   readonly paging: RefObject<boolean>;
 }
 
@@ -36,7 +38,24 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
   const toBottom = useCallback(() => {
     stuck.current = true;
     setAway(false);
-    scrollToBottom();
+    let frames = 0;
+    let at = 0;
+    const pin = () => {
+      if (scrollRoot().scrollTop < at - 1) return;
+      scrollToBottom();
+      at = scrollRoot().scrollTop;
+      if (stuck.current && ++frames < 30) requestAnimationFrame(pin);
+    };
+    pin();
+  }, []);
+
+  const snap = useCallback(() => {
+    const root = scrollRoot();
+    if (!stuck.current || paging.current || root.scrollTop < lastY.current - 1) return;
+    const end = root.scrollHeight - root.clientHeight;
+    if (root.scrollTop === end) return;
+    root.scrollTop = end;
+    lastY.current = root.scrollTop;
   }, []);
 
   useEffect(() => {
@@ -49,11 +68,32 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
     measure();
     lastY.current = root.scrollTop;
     const judge = () => setAway(top - root.scrollTop > AWAY_FROM_BOTTOM);
+    const UP_KEYS = ["ArrowUp", "PageUp", "Home", "k"];
+    const editable = (t: EventTarget | null) => t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+    let touchY = 0;
+    const intent = (e: Event) => {
+      const t = e.target as Node;
+      if (e instanceof TouchEvent) {
+        const y = e.touches[0]?.clientY ?? 0;
+        if (e.type === "touchstart") touchY = y;
+        else if (y > touchY + 2 && root.contains(t)) stuck.current = false;
+        return;
+      }
+      const up = e instanceof WheelEvent ? e.deltaY < 0 : e instanceof KeyboardEvent ? UP_KEYS.includes(e.key) && !editable(t) : t === root;
+      if (up) stuck.current = false;
+    };
+    const intents = ["wheel", "keydown", "touchstart", "touchmove", "pointerdown"];
+    for (const t of intents) window.addEventListener(t, intent, { passive: true, capture: true });
     const onScroll = () => {
       const y = root.scrollTop;
-      if (top - y <= NEAR_BOTTOM) stuck.current = true;
-      else if (y < lastY.current) stuck.current = false;
-      lastY.current = y;
+      measure();
+      if (y < lastY.current - 1) {
+        if (top - y > AT_END) stuck.current = false;
+        lastY.current = y;
+      } else {
+        if (top - y <= NEAR_BOTTOM && y > lastY.current) stuck.current = true;
+        lastY.current = Math.max(lastY.current, y);
+      }
       judge();
     };
     judge();
@@ -66,7 +106,10 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
         const h = el.getBoundingClientRect().height;
         measure();
         if (paging.current) return;
-        if (stuck.current) root.scrollTop = top;
+        if (stuck.current && root.scrollTop >= lastY.current - 1 && root.scrollTop !== top) {
+          root.scrollTop = top;
+          lastY.current = root.scrollTop;
+        }
         judge();
       });
       watch.observe(el);
@@ -74,9 +117,10 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
     }
     return () => {
       source.removeEventListener("scroll", onScroll);
+      for (const t of intents) window.removeEventListener(t, intent, { capture: true });
       watch?.disconnect();
     };
   }, [active, pane]);
 
-  return { away, toBottom, paging };
+  return { away, toBottom, snap, paging };
 }

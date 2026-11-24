@@ -63,7 +63,7 @@ export const Typeset = memo(function Typeset({ text, lines: max = Infinity, more
     <span ref={setNode} className={["zr-ts", className].filter(Boolean).join(" ")} data-set={rows ? "" : undefined}>
       {rows ? (
         rows.map((row, i) => (
-          <span key={i + ":" + row} className="zr-ts-line">
+          <span key={i} className="zr-ts-line">
             <Plain text={row} />
             {cut && i === rows.length - 1 && <span className="zr-fit-more">{tail}</span>}
           </span>

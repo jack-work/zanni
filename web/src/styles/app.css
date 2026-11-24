@@ -117,12 +117,12 @@ body.fw-page {
 .fw-older { display: flex; width: 100%; }
 .fw-metrics { min-height: 1rem; }
 .fw .nodi-turns { margin-top: var(--z-space-4, 12px); }
+.nodi-input { scroll-margin-top: 2.5rem; }
 .nodi-prose[data-speaking] { box-shadow: inset 3px 0 0 var(--z-accent); padding-left: var(--z-space-3, 8px); }
 
 
 @media (min-width: 900px) {
-  .fw { --zr-pit-left: var(--fw-side); --fw-bar: 0px; }
-  .fw-status { display: none; }
+  .fw { --zr-pit-left: var(--fw-side); --fw-width: 100%; }
   .fw-body { display: grid; grid-template-columns: var(--fw-side) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
   .fw[data-route] .fw-side {
     display: block;
@@ -206,7 +206,7 @@ body.fw-page {
 .fw-field textarea { resize: vertical; }
 .fw-new-actions { display: flex; justify-content: flex-end; }
 
-@media (min-width: 900px) { .fw .zr-sheet { left: var(--fw-side); } }
+@media (min-width: 900px) { .fw .zr-sheet { left: var(--fw-side); width: auto; } }
 @media (pointer: coarse) {
   .fw-field select, .fw-field input, .fw-field textarea { min-height: 44px; }
   .fw-new-actions .zr-btn { min-height: 44px; }

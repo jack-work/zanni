@@ -20,6 +20,8 @@ export function leafPreview(label: string, v: unknown): string {
   return clipEllipsis(raw.replace(/\s+/g, " ").trim(), VALUE_COLUMNS);
 }
 
+export const REFUSED = "not available to you";
+
 export interface TopologyForms {
   readonly troupe: unknown;
   readonly arias: Readonly<Record<string, unknown>>;
@@ -70,7 +72,10 @@ export function topologyNodes(tree: TreeState, here: string | undefined, forms: 
       const n = tree.nodes.get(id);
       return n && n.daemon === d.id ? [make(n)] : [];
     });
-    if (arias.length === 0) continue;
+    if (arias.length === 0) {
+      if (d.error) out.push({ id: "@node:" + d.id, label: d.id, count: 0, peek: "", mantra: REFUSED, here: d.self, children: [] });
+      continue;
+    }
     const top = (forms.arias[d.id] as { arias?: unknown } | undefined)?.arias;
     const group: TreeNodeData = { id: "@arias:" + d.id, label: "arias", count: keyCount(top) || arias.length, peek: "", children: arias };
     const mine = (forms.troupe as Record<string, unknown> | undefined)?.[d.id];

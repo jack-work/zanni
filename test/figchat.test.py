@@ -115,8 +115,8 @@ def hit_area(pg, loc, what):
 
 
 class Door:
-    def __init__(self, bundle, step):
-        self.proc = subprocess.Popen(["node", os.path.join(root, "test", "figchat-server.js"), bundle, str(step)], stdout=subprocess.PIPE, text=True)
+    def __init__(self, bundle, step, *flags):
+        self.proc = subprocess.Popen(["node", os.path.join(root, "test", "figchat-server.js"), bundle, str(step), *flags], stdout=subprocess.PIPE, text=True)
         self.port = int(self.proc.stdout.readline())
         self.base = "http://127.0.0.1:%d" % self.port
         self.url = self.base + "/chat/"
@@ -135,8 +135,8 @@ class Door:
 doors = []
 
 
-def door(step):
-    d = Door(bundle, step)
+def door(step, *flags):
+    d = Door(bundle, step, *flags)
     doors.append(d)
     return d
 
@@ -250,6 +250,13 @@ try:
         pg.wait_for_timeout(400)
         anchor = pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop")
         assert anchor > 0, "paging in older turns keeps the reader where they were, not at the top: %s" % anchor
+        pg.close()
+
+        pg = fresh()
+        attend(pg, fast, MAIN)
+        pg.context.new_cdp_session(pg).send("Emulation.setCPUThrottlingRate", {"rate": 4})
+        pg.evaluate("(() => { const s = document.querySelector('[data-zr-scroll]'); s.addEventListener('scroll', () => { s.scrollTop = 0; }); s.scrollTop = 0; })()")
+        until(pg, "!!document.querySelector(\".nodi-turn[data-turn='4']\")", timeout=15000)
         pg.close()
 
         deep = fresh()
@@ -498,7 +505,8 @@ try:
             assert tbox["height"] <= 24, "the strip text never wraps: %s" % tbox
             assert box["x"] >= 0 and box["x"] + box["width"] <= width, "the composer stays inside the screen: %s" % box
             row = pg.locator(".zr-compose-row").bounding_box()
-            assert row["width"] <= 46 * 16, "the input row sits at the transcript measure: %s" % row
+            measure = 46 * 16 if width < 900 else pg.locator(".fw-pane").bounding_box()["width"]
+            assert row["width"] <= measure, "the input row sits at the transcript measure: %s" % row
             for b in pg.locator(".fw-stop").all():
                 hit_area(pg, b, "stop buttons")
             assert pg.locator(".zr-strip-time").inner_text()[0].isdigit()
@@ -582,6 +590,86 @@ try:
         until(pg, "!document.querySelector('.fw').hasAttribute('data-running')", timeout=10000)
         assert slow.state()["interrupts"] == ["keep", "clear"], slow.state()
         assert pg.locator(".nodi-turn[data-turn='29']").count() == 0, "a cleared queue starts no turn"
+        pg.close()
+
+        for width, height in ((390, 844), (1280, 800), (1920, 1080)):
+            pg = fresh(width, height)
+            attend(pg, door(12, "--history", "300", "--page", "20000"), MAIN)
+            root_js = "document.querySelector('[data-zr-scroll]')"
+            landed = "new Promise((r) => requestAnimationFrame(() => setTimeout(() => { const s = %s; r(Math.round((s.scrollHeight - s.clientHeight - s.scrollTop) * 100) / 100); }, 0)))" % root_js
+
+            def latest_lands(what):
+                pg.wait_for_selector(".zr-latest", timeout=5000)
+                pg.locator(".zr-latest").click()
+                pg.wait_for_timeout(700)
+                got = pg.evaluate(landed)
+                assert got <= 1, "%s at %d: Latest stops %s px short of the bottom" % (what, width, got)
+
+            pg.evaluate(root_js + ".scrollTop = 0")
+            pg.wait_for_timeout(400)
+            latest_lands("from far up")
+            for _ in range(10):
+                pg.evaluate(root_js + ".scrollTop = 0")
+                pg.wait_for_timeout(250)
+            assert held(pg) > 60, held(pg)
+            latest_lands("after the window loaded more rows")
+            send(pg, "keep going")
+            pg.wait_for_timeout(500)
+            pg.evaluate(root_js + ".scrollTop = 0")
+            pg.wait_for_timeout(300)
+            latest_lands("mid-stream")
+            pg.close()
+
+        pg = fresh(1280, 800)
+        attend(pg, door(150), MAIN)
+        away = "(() => { const r = document.querySelector('[data-zr-scroll]'); return Math.round(r.scrollHeight - r.clientHeight - r.scrollTop); })()"
+        pg.mouse.move(640, 300)
+        for step, how in enumerate(("wheel", "key")):
+            until(pg, away + " <= 2")
+            for _ in range(3):
+                if how == "wheel":
+                    pg.mouse.wheel(0, -40)
+                else:
+                    pg.locator(".fw-h1").focus()
+                    pg.keyboard.press("ArrowUp")
+                pg.wait_for_timeout(150)
+            left = pg.evaluate(away)
+            assert 20 <= left <= 140, "small upward scrolls inside the last stretch move the view: %s" % left
+            pg.set_viewport_size({"width": 1280, "height": 760 - step * 100})
+            pg.wait_for_timeout(500)
+            assert pg.evaluate(away) >= left - 2, "%s up by a little released the follow, a resize left the reader where they were: %s -> %s" % (how, left, pg.evaluate(away))
+            pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop += 1e6")
+            until(pg, away + " <= 2")
+            pg.set_viewport_size({"width": 1280, "height": 700 - step * 100})
+            pg.wait_for_timeout(400)
+            assert pg.evaluate(away) <= 2, "scrolling back to the bottom follows again: %s" % pg.evaluate(away)
+        send(pg, "start a long run please")
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='running']", timeout=20000)
+        until(pg, away + " <= 2")
+        pg.mouse.move(640, 200)
+        for _ in range(2):
+            pg.mouse.wheel(0, -40)
+            pg.wait_for_timeout(150)
+        left = pg.evaluate(away)
+        assert left >= 20, left
+        pg.wait_for_timeout(1500)
+        assert pg.evaluate(away) >= left - 2, "while a turn streams the view stays where the reader left it: %s -> %s" % (left, pg.evaluate(away))
+        pg.close()
+
+        pg = fresh(390, 844)
+        attend(pg, door(150), MAIN)
+        send(pg, "start a long run please")
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='running'] summary", timeout=20000)
+        tail = "(() => { const r = document.querySelector('[data-zr-scroll]'); return Math.round(r.scrollHeight - r.clientHeight - r.scrollTop); })()"
+        until(pg, tail + " <= 2")
+        for target in (".nodi-turn[data-turn='27'] .nodi-input", ".nodi-turn[data-turn='27'] .nodi-tool summary"):
+            box = pg.locator(target).first.bounding_box()
+            pg.touchscreen.tap(box["x"] + 20, box["y"] + box["height"] / 2)
+            pg.wait_for_timeout(300)
+            assert pg.evaluate(tail) <= 2, "a tap on %s mid-stream moved the view: %s" % (target, pg.evaluate(tail))
+        pg.evaluate("(() => { const li = document.createElement('li'); li.style.height = '500px'; document.querySelector('.nodi-turns').appendChild(li); })()")
+        pg.wait_for_timeout(800)
+        assert pg.evaluate(tail) <= 2, "a tap on a fold mid-stream does not stop the follow: %s" % pg.evaluate(tail)
         pg.close()
 
         pg = fresh()
@@ -890,7 +978,8 @@ try:
             else:
                 assert pg.locator(".zr-pit-scrim").count() == 0, "the docked drawer has no scrim"
                 box = pg.locator(".zr-pit").bounding_box()
-                assert box["width"] <= 736 + 1 and abs(box["x"] + box["width"] / 2 - (320 + (width - 320) / 2)) <= 1, "docked to the transcript pane: %s" % box
+                pane = pg.locator(".fw-pane").bounding_box()
+                assert abs(box["x"] - pane["x"]) <= 1 and abs(box["x"] + box["width"] - (pane["x"] + pane["width"])) <= 1, "docked across the transcript pane: %s vs %s" % (box, pane)
                 assert pg.locator(".zr-pit[data-docked]").count() == 1
 
             hx, hy = centre(pg.locator(".zr-pit-handle"))
@@ -975,11 +1064,11 @@ try:
             pg.wait_for_selector(".zr-tree-row")
             assert pg.locator(".fw-top, .fw-mark, .fw-title").count() == 0, "the header is gone"
             assert pg.locator(".fw-head").count() == 0, "no logo on the list"
-            assert pg.locator(".fw-status").is_visible() == phone, "the slim status bar is a phone thing"
+            assert pg.locator(".fw-status").is_visible(), "the slim status bar shows at every width"
             attend(pg, fast, MAIN)
             assert pg.locator(".fw-head").count() == 0, "no logo while attending"
             assert pg.locator(".fw-top-new, .fw-bar").count() == 0
-            if phone:
+            if True:
                 bar = pg.locator(".fw-status")
                 until(pg, "document.querySelector('.fw-status-mantra') && document.querySelector('.fw-status-mantra').textContent.length > 0", 8000)
                 box = bar.bounding_box()

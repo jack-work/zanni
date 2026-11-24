@@ -49,7 +49,7 @@ export function TopologyTree({ onVisit, autoFocus, className }: { onVisit?: () =
     setNote("press x again to kill " + name);
   };
 
-  const status = tree.error ? "No topology: " + tree.error : !tree.ready && roots.length === 0 ? "Loading the topology." : roots.length === 0 ? "No arias." : "";
+  const status = tree.error && roots.length === 0 ? "No arias to show here." : !tree.ready && roots.length === 0 ? "Loading the topology." : roots.length === 0 ? "No arias." : "";
   return (
     <>
       <Tree
