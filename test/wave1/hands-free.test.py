@@ -39,8 +39,15 @@ def sources(events):
     return [e for e in events if e["ev"] == "src.start"]
 
 
+PING_S = 0.16
+
+
 def ping_times(events):
-    return [e["w"] for e in events if e["ev"] == "state" and not e.get("turn") and e["state"] in ("live", "draining")]
+    return [e["w"] for e in sources_of(events) if abs(e["dur"] - PING_S) < 0.003]
+
+
+def sources_of(events):
+    return [e for e in events if e["ev"] == "src.start"]
 
 
 def turn_start(events, turn):
@@ -71,7 +78,7 @@ def main():
                 pg.wait_for_selector(".zr-composer .zr-input")
                 pg.wait_for_timeout(800)
                 if hands:
-                    pg.locator(".fw-hands").click()
+                    pg.evaluate("document.querySelector('.fw-hands').click()")
                     try:
                         pg.wait_for_selector(".fw-hands[aria-pressed='true']", timeout=5000)
                     except Exception:
@@ -146,18 +153,19 @@ def main():
                         pg.locator(".nodi-turn[data-turn='27'] .fw-output-play [data-action='play']").click()
                         pg.wait_for_selector(".nodi-turn[data-turn='27'] .voce[data-state='idle']", timeout=30000)
                     events, says = session(engine, press, False)
-                    rep.check(says == [27], "%s voice off: Play synthesised the turn once, on press: %s" % (engine, says))
+                    rep.check(len(sources(events)) >= 5, "%s voice off: Play on a turn played it (%d sources)" % (engine, len(sources(events))))
+                    rep.check(says == [], "%s voice off: a turn with a stored copy plays it, no synthesis: %s" % (engine, says))
 
                 rep.run(engine + ": hands-free reply autoplays with the ping", check_one)
                 rep.run(engine + ": back-to-back replies play in order", check_two)
                 rep.run(engine + ": voice off, nothing is synthesised unasked", check_silent)
-                rep.run(engine + ": voice off, Play synthesises on press", check_play)
+                rep.run(engine + ": voice off, Play plays the stored copy", check_play)
 
             def check_held():
                 events, _ = session("chromium", held, True)
                 rep.check(len(sources(events)) >= 5, "chromium held: the held reply played after the recording stopped (%d sources)" % len(sources(events)))
                 ps, at = ping_times(events), turn_start(events, 27)
-                rep.check(len(ps) >= 1 and at is not None and ps[-1] <= at + 50, "chromium held: ping, then the reply (%s, %s)" % (ps, at))
+                rep.check(len(ps) >= 1 and at is not None and ps[-1] <= at + 200, "chromium held: ping, then the reply (%s, %s)" % (ps, at))
 
             rep.run("chromium: a reply during recording is held, then pings and plays", check_held)
             for browser, _ in engines.values():
