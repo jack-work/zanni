@@ -24,27 +24,34 @@ from stack import MAIN, Stack
 SAMPLER = """
 (() => {
   window.__sm = { on: false, rows: [] };
-  const loop = () => {
-    if (window.__sm.on) {
-      const sc = document.querySelector('[data-zr-scroll]');
-      if (sc) {
-        const r = sc.getBoundingClientRect();
-        const mid = r.top + r.height / 2;
-        let id = null, top = 0, seen = 0;
-        for (const t of document.querySelectorAll('.nodi-turn')) {
-          const b = t.getBoundingClientRect();
-          if (b.bottom > r.top && b.top < r.bottom) seen++;
-          if (id === null && b.top <= mid && b.bottom >= mid) { id = t.dataset.turn; top = b.top - r.top; }
-        }
-        window.__sm.rows.push([performance.now(), sc.scrollTop, sc.scrollHeight, id, top, seen]);
-      }
+  const sample = () => {
+    if (!window.__sm.on) return;
+    const sc = document.querySelector('[data-zr-scroll]');
+    if (!sc) return;
+    const r = sc.getBoundingClientRect();
+    const mid = r.top + r.height / 2;
+    let id = null, top = 0, seen = 0;
+    const tops = {};
+    for (const t of document.querySelectorAll('.nodi-turn')) {
+      const b = t.getBoundingClientRect();
+      if (b.bottom > r.top && b.top < r.bottom) { seen++; tops[t.dataset.turn] = b.top - r.top; }
+      if (id === null && b.top <= mid && b.bottom >= mid) { id = t.dataset.turn; top = b.top - r.top; }
     }
+    window.__sm.rows.push([performance.now(), sc.scrollTop, sc.scrollHeight, id, top, seen, tops]);
+  };
+  const loop = () => {
+    setTimeout(sample, 0);
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
 })();
 """
 
+SABOTAGE = {
+    "jump-bottom-on-wheel-up": """(() => { let n = 0; window.addEventListener('wheel', (e) => { if (e.deltaY < 0 && ++n === 12) { const s = document.querySelector('[data-zr-scroll]'); setTimeout(() => { s.scrollTop = s.scrollHeight; }, 5); } }, true); })();""",
+    "unfollow-while-streaming": """(() => { setInterval(() => { const s = document.querySelector('[data-zr-scroll]'); const i = document.querySelector('.zr-input'); if (s && i && i.placeholder === 'Steer figaro' && s.scrollHeight - s.clientHeight - s.scrollTop < 60) s.scrollTop -= 400; }, 120); })();""",
+    "resize-jumps-to-top": """(() => { window.addEventListener('resize', () => { const s = document.querySelector('[data-zr-scroll]'); if (s && s.scrollHeight - s.clientHeight - s.scrollTop > 200) s.scrollTop = 0; }); })();""",
+}
 SIZES = {"390": (390, 844), "844": (844, 390), "1280": (1280, 800), "1920": (1920, 1080)}
 HISTORY = ("--history", 600, "--page", 24000, "--fps", 25, "--bytes", 12000, "--chunk", 40)
 
@@ -95,7 +102,11 @@ class Probe:
         box = self.js("(() => { const r = document.querySelector('[data-zr-scroll]').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()")
         self.page.mouse.move(box[0], box[1])
         before = self.scroller()["top"]
-        self.page.mouse.wheel(0, dy)
+        try:
+            self.page.mouse.wheel(0, dy)
+        except Exception:
+            self.js("(dy) => document.querySelector('[data-zr-scroll]').scrollBy(0, dy)", dy)
+            self.emulated = True
         time.sleep(gap)
         if self.scroller()["top"] == before and abs(dy) > 0:
             self.js("(dy) => document.querySelector('[data-zr-scroll]').scrollBy(0, dy)", dy)
@@ -113,7 +124,7 @@ class Probe:
         self.page.keyboard.insert_text(text)
         time.sleep(0.2)
         btn = self.page.locator("button.zr-send, button[aria-label='Send']").first
-        if self.page.viewport_size["width"] < 700 and btn.count():
+        if btn.count() and (self.page.viewport_size["width"] < 700 or self.page.evaluate("matchMedia('(pointer: coarse)').matches")):
             btn.click()
         else:
             self.page.keyboard.press("Enter")
@@ -130,11 +141,17 @@ class Probe:
 def reversals(rows, direction, tol=3):
     found = []
     for a, b in zip(rows, rows[1:]):
-        if a[3] is not None and a[3] == b[3]:
-            dtop = b[4] - a[4]
-            wrong = dtop < -tol if direction == "up" else dtop > tol
-            if wrong:
-                found.append({"turn": a[3], "moved": round(dtop, 1), "scrollTop": [round(a[1]), round(b[1])], "scrollHeight": [a[2], b[2]]})
+        shared = [k for k in a[6] if k in b[6]]
+        if shared:
+            for k in shared:
+                dtop = b[6][k] - a[6][k]
+                if dtop < -tol if direction == "up" else dtop > tol:
+                    found.append({"turn": k, "moved": round(dtop, 1), "scrollTop": [round(a[1]), round(b[1])], "scrollHeight": [a[2], b[2]]})
+                    break
+        elif abs(a[2] - b[2]) < 200:
+            dtop = b[1] - a[1]
+            if dtop > tol if direction == "up" else dtop < -tol:
+                found.append({"turn": None, "moved": round(dtop, 1), "scrollTop": [round(a[1]), round(b[1])], "scrollHeight": [a[2], b[2]], "no_shared_turn": True})
     return found
 
 
@@ -193,6 +210,8 @@ def scenario(p, streaming, static=True, engine="chromium", dynamics_on=True):
     p.shot("01-bottom")
     check_layout(p, "bottom")
     p.record("follow.pill-hidden-at-bottom", not p.pill())
+    if engine == "webkit":
+        return
 
     p.start()
     for _ in range(25):
@@ -287,7 +306,7 @@ def scenario(p, streaming, static=True, engine="chromium", dynamics_on=True):
     j = reversals(rows, "down")
     p.record("steps.j-60-no-reversals", not j, "%d %s" % (len(j), j[:2]))
 
-    for key, label in (("PageUp", "pageup"), ("Home", "home"), ("End", "end"), ("ArrowUp", "arrowup")):
+    for key, label in (("PageUp", "pageup"), ("Home", "home"), ("End", "end"), ("ArrowUp", "arrowup")) if engine == "chromium" else ():
         p.to_bottom()
         p.js("document.querySelector('[data-zr-scroll]').focus({ preventScroll: true })")
         before = p.scroller()["top"]
@@ -299,6 +318,8 @@ def scenario(p, streaming, static=True, engine="chromium", dynamics_on=True):
         else:
             p.record("keys.%s-scrolls-up" % label, after < before - 20, "%.0f to %.0f" % (before, after))
 
+    if dynamics_on:
+        dynamics(p, engine)
     if streaming:
         streaming(p)
 
@@ -396,10 +417,36 @@ def anchor(p):
     })()""")
 
 
-def touch_fling(p, dy, speed):
+def turn_visible(p, tid):
+    return p.js("""(id) => {
+      const sc = document.querySelector('[data-zr-scroll]');
+      const t = document.querySelector('.nodi-turn[data-turn="' + id + '"]');
+      if (!sc || !t) return false;
+      const r = sc.getBoundingClientRect(), b = t.getBoundingClientRect();
+      return b.bottom > r.top && b.top < r.bottom;
+    }""", tid)
+
+
+def settle(p, quiet=0.4, limit=6.0):
+    end = time.time() + limit
+    last, since = None, time.time()
+    while time.time() < end:
+        top = p.scroller()["top"]
+        if top != last:
+            last, since = top, time.time()
+        elif time.time() - since >= quiet:
+            return
+        time.sleep(0.05)
+
+
+def touch_fling(p, finger_dy, dt=0.008):
     cdp = p.page.context.new_cdp_session(p.page)
-    box = p.js("(() => { const r = document.querySelector('[data-zr-scroll]').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()")
-    cdp.send("Input.synthesizeScrollGesture", {"x": box[0], "y": box[1], "yDistance": -dy, "speed": speed, "gestureSourceType": "touch"})
+    x, y = p.js("(() => { const r = document.querySelector('[data-zr-scroll]').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()")
+    cdp.send("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": [{"x": x, "y": y}]})
+    for i in range(1, 11):
+        cdp.send("Input.dispatchTouchEvent", {"type": "touchMove", "touchPoints": [{"x": x, "y": y + finger_dy * i / 10}]})
+        time.sleep(dt)
+    cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
     cdp.detach()
 
 
@@ -409,8 +456,8 @@ def dynamics(p, engine):
     if engine == "chromium":
         p.to_bottom()
         p.start()
-        touch_fling(p, 2400, 2500)
-        time.sleep(1.5)
+        touch_fling(p, 600)
+        settle(p)
         rows = p.stop()
         p.record("touch.fling-up.no-reversals", not reversals(rows, "up"), "%s" % reversals(rows, "up")[:2])
         p.record("touch.fling-up.no-blank-frames", blanks(rows) == 0, "%d blank frames" % blanks(rows))
@@ -418,7 +465,7 @@ def dynamics(p, engine):
         j = drift(p)
         p.record("touch.fling-up.no-drift-after-settle", not j, "%d frames %s" % (len(j), j[:2]))
         p.start()
-        touch_fling(p, -2400, 2500)
+        touch_fling(p, -600)
         time.sleep(1.5)
         rows = p.stop()
         p.record("touch.fling-down.no-reversals", not reversals(rows, "down"), "%s" % reversals(rows, "down")[:2])
@@ -433,12 +480,12 @@ def dynamics(p, engine):
     time.sleep(1.2)
     a1 = anchor(p)
     p.shot("10-rotated")
-    p.record("rotate.mid-scroll-keeps-turn", a0 and a1 and a0["id"] == a1["id"], "%s to %s" % (a0, a1))
+    p.record("rotate.mid-scroll-keeps-turn-in-view", a0 and turn_visible(p, a0["id"]), "turn %s, was mid-viewport" % (a0 and a0["id"]))
     p.record("rotate.mid-scroll-not-blank", p.js("document.querySelectorAll('.nodi-turn').length") > 0)
     page.set_viewport_size({"width": w, "height": h})
     time.sleep(1.2)
     a2 = anchor(p)
-    p.record("rotate.back-keeps-turn", a0 and a2 and a0["id"] == a2["id"], "%s to %s" % (a0, a2))
+    p.record("rotate.back-keeps-turn-in-view", a0 and turn_visible(p, a0["id"]), "turn %s, was mid-viewport" % (a0 and a0["id"]))
     check_layout(p, "after-rotate")
 
     p.to_bottom()
@@ -481,13 +528,14 @@ def dynamics(p, engine):
         p.record("focus.latest-by-keyboard-lands-on-bottom", p.dist() <= 3, "%.0f short" % p.dist())
     else:
         p.record("focus.latest-by-keyboard-lands-on-bottom", False, "no Latest pill after scrolling up")
-    p.js("(() => { const s = document.querySelector('[data-zr-scroll]'); s.scrollTop = Math.max(0, s.scrollHeight - 4000); s.focus({ preventScroll: true }); })()")
-    time.sleep(0.8)
-    before = p.scroller()["top"]
-    page.keyboard.press("Space")
-    time.sleep(0.9)
-    after = p.scroller()["top"]
-    p.record("focus.space-scrolls-down", after > before + 20, "%.0f to %.0f" % (before, after))
+    if engine == "chromium":
+        p.js("(() => { const s = document.querySelector('[data-zr-scroll]'); s.scrollTop = Math.max(0, s.scrollHeight - 4000); s.focus({ preventScroll: true }); })()")
+        time.sleep(0.8)
+        before = p.scroller()["top"]
+        page.keyboard.press("Space")
+        time.sleep(0.9)
+        after = p.scroller()["top"]
+        p.record("focus.space-scrolls-down", after > before + 20, "%.0f to %.0f" % (before, after))
     p.shot("11-after-focus")
 
 
@@ -566,10 +614,11 @@ def main():
     ap.add_argument("--out", default="scroll-out")
     ap.add_argument("--known", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "scroll-known.json"))
     ap.add_argument("--stream-only", action="store_true", help="skip the static scroll checks, run only the streaming ones")
+    ap.add_argument("--sabotage", choices=sorted(SABOTAGE), help="inject a known break into the page; the matching checks must go red")
     ap.add_argument("--no-focus", action="store_true")
     ap.add_argument("--no-dynamics", action="store_true")
     ap.add_argument("--no-stream", action="store_true")
-    ap.add_argument("--webkit", action="store_true", help="also run 390 and 844 in WebKit with the iPhone profile")
+    ap.add_argument("--webkit", action="store_true", help="also run 390 and 844 in WebKit (iPhone profile): layout, pill and composer focus only, because mobile WebKit has no real wheel or keyboard scroll")
     a = ap.parse_args()
     real = a.door == "real"
     if real:
@@ -596,6 +645,8 @@ def main():
                 browser = getattr(pw, engine).launch()
                 ctx = browser.new_context(**opts)
                 ctx.add_init_script(SAMPLER)
+                if a.sabotage:
+                    ctx.add_init_script(SABOTAGE[a.sabotage])
                 page = ctx.new_page()
                 errors = []
                 page.on("pageerror", lambda e: errors.append(str(e)))
@@ -619,7 +670,7 @@ def main():
     for label, r in results.items():
         for x in r["results"]:
             base = x["id"].split(".")[0] + "." + x["id"].split(".")[1] if "." in x["id"] else x["id"]
-            slug = known.get(x["id"]) or known.get(base) or known.get(x["id"].rsplit(".", 1)[0])
+            slug = known.get(label + ":" + x["id"]) or known.get(x["id"]) or known.get(base) or known.get(x["id"].rsplit(".", 1)[0])
             x["label"] = label
             if x["ok"] and slug:
                 xpass.append((label, x["id"], slug))

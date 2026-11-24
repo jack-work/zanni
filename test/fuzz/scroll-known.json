@@ -1,4 +1,9 @@
 {
  "composer.focus-kept-when-keyboard-viewport-pans": "mobile-composer-blur-on-viewport-pan",
- "pit.touch-tap-on-grip-opens": "pit-grip-touch-tap-closes-at-once"
+ "pit.touch-tap-on-grip-opens": "pit-grip-touch-tap-closes-at-once",
+ "chromium-1280:stream.follows-at-bottom": "scroll-follow-lost-mid-stream",
+ "chromium-1280:stream.no-pill-while-following": "scroll-follow-lost-mid-stream",
+ "release.small-step-up-sticks": "scroll-small-step-pulled-back",
+ "chromium-1280:steps.k-60-no-reversals": "scroll-small-step-pulled-back",
+ "chromium-1280:touch.fling-up.no-reversals": "scroll-small-step-pulled-back"
 }
