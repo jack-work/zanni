@@ -50,3 +50,5 @@ export type { TypesetProps } from "./typeset";
 export { DOUBLE_TAP_MS, QuestionMark, Rule, Sticky, keyMode, tapMode, usePinned } from "./sticky";
 export type { HeadMode, StickyProps } from "./sticky";
 export { useTurnWindow } from "./window";
+export { DEPLOY_STEPS, QueueBoard, SINCE_WINDOWS, boardCell, cellTitle, formatDuration, formatRate, shortSha, sinceOf } from "./queue-board";
+export type { BoardCell, DeployCommit, DeployEnv, DeployOutcome, DeploySpan, DeployStepName, DeploysResponse, QueueBoardProps, SinceKey, StepRollup } from "./queue-board";
