@@ -102,6 +102,7 @@ export function AsksList({ asks, now }: { asks: readonly Ask[]; now: number }) {
                 <span className="fw-ask-stage" data-stage={a.stage}>
                   {" · " + a.stage}
                 </span>
+                <span className="fw-ask-age">{" · " + askedLabel(age)}</span>
                 <span className="fw-ask-spans">
                   <Spans ask={a} />
                 </span>
