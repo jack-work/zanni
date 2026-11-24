@@ -55,6 +55,14 @@ for (const b of buttons) {
 }
 ```
 
+## Static, and in React
+
+The markup needs no script: `parla.css` alone draws the head and the bubble,
+so a page whose only job is one line from Figaro (a sign-in page speaking for
+the boss) leaves out `parla.js` and `data-parla`. In React,
+`<FigaroSays>line</FigaroSays>` from zanni-react renders the same markup with
+the shipped head; see [react](react.md).
+
 ## Knobs
 
 | property | default | what |
@@ -63,11 +71,20 @@ for (const b of buttons) {
 | `--parla-mouth` | 0.6 | where the tail meets the head, as a fraction of its height |
 | `--parla-tilt` | -1.5deg | the bubble's resting tilt |
 | `--parla-outline` | 3px | the bubble's outline |
+| `--parla-teeter` | 1.4deg | how far the bubble teeters each way about the mouth |
+| `--parla-bob` | 2px | how far it bobs up |
 
 ## Motion
 
-`prefers-reduced-motion: reduce` removes the pop and the wiggle. The words
-still change, `*AHEM*` included, because they are content.
+The bubble floats like a held card: it teeters end to end about the mouth
+(`rotate`, 5.2 s) and bobs (`translate`, 3.3 s), on periods that never line up,
+so the drift does not repeat visibly. The float uses the individual `rotate` and
+`translate` properties, not `transform`, so the pop and the wiggle compose with
+it, and new words keep the float's phase instead of restarting it.
+
+`prefers-reduced-motion: reduce` removes the pop, the wiggle and the float:
+the bubble holds still at its tilt. The words still change, `*AHEM*` included,
+because they are content.
 
 ## Under a strict CSP
 
