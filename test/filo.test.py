@@ -56,6 +56,8 @@ def near(a, b, tol=0.6):
 
 def settle(pg):
     pg.wait_for_timeout(500)
+    pg.wait_for_function(f"!{ROOT}.classList.contains('filo-held')", timeout=5000)
+    pg.wait_for_timeout(100)
 
 
 def at(pg, t):
