@@ -896,7 +896,7 @@ try:
             mine = pg.locator(".nodi-turn[data-turn='26'] .fw-inline[data-kind='input']")
             mine.scroll_into_view_if_needed()
             assert mine.locator(".fw-inline-btn").evaluate_all("bs => bs.map(b => b.dataset.action)") == ["play", "retranscribe"]
-            assert mine.locator(".fw-inline-btn").all_inner_texts() == ["▸", "↩"], "the buttons wear their own glyphs, and ✎ stays Send"
+            assert mine.locator(".fw-inline-btn").all_inner_texts() == ["\uf028", "↩"], "the buttons wear their own glyphs, and ✎ stays Send"
             said_box = pg.locator(".nodi-turn[data-turn='26'] .nodi-said").first.bounding_box()
             bar_box = mine.bounding_box()
             assert bar_box["y"] >= said_box["y"] + said_box["height"] - 1 and bar_box["y"] - (said_box["y"] + said_box["height"]) < 40, "the buttons sit right under the message: %s %s" % (said_box, bar_box)
