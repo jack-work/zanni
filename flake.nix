@@ -207,7 +207,7 @@
                 top = builtins.elemAt (pkgs.lib.splitString "/" rel) 1;
                 base = baseNameOf path;
               in
-              rel == "" || (builtins.elem top [ "web" "packages" "assets" "bin" ] && !(builtins.elem base [ "node_modules" "dist" "dist-react" "dist-react-jotai" "dist-types" ]));
+              rel == "" || (builtins.elem top [ "web" "packages" "assets" "bin" ] && !(builtins.elem base [ "node_modules" "dist" "dist-react" "dist-react-jotai" "dist-runtime" "dist-types" ]));
           };
           sourceRoot = "zanni-source/web";
           nodejs = pkgs.nodejs_24;
@@ -218,6 +218,9 @@
             runHook preBuild
             ZANNI_REACT_ENTRY=react node_modules/.bin/vite build -c vite.react.config.ts
             ZANNI_REACT_ENTRY=react-jotai node_modules/.bin/vite build -c vite.react.config.ts
+            for entry in react jsx-runtime react-dom-client figaro-forms-glyphs pretext; do
+              ZANNI_RUNTIME_ENTRY=$entry node_modules/.bin/vite build -c vite.runtime.config.ts
+            done
             node_modules/.bin/tsc -p tsconfig.react-types.json
             runHook postBuild
           '';
@@ -308,6 +311,12 @@
           if node bin/zanni-react-check poisoned 2> err; then echo "an inline script went through"; exit 1; fi
           grep -q "does not match SHA256SUMS" err
           grep -q "carries a script tag" err
+          cp -r $bundle poisoned-runtime
+          chmod -R u+w poisoned-runtime
+          printf '%s' 'eval("1");' >> poisoned-runtime/runtime/$v/react.js
+          if node bin/zanni-react-check poisoned-runtime 2> err; then echo "an eval in the runtime went through"; exit 1; fi
+          grep -q "runtime/react.js does not match SHA256SUMS" err
+          grep -q "runtime/react.js carries eval" err
           touch $out
         '';
 
