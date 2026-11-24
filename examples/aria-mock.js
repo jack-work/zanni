@@ -95,7 +95,7 @@
       { text: 'And tell me when it is up.' }
     ];
     turns[8].inquiry = 'The pass is ready for review.\n\nShip it behind the flag.\n\nAnd tell me when it is up.';
-    turns[11].inquiry_segments = [{ name: 'Gluck at the terminal', sender: 'terminal', text: turns[11].inquiry }];
+    turns[11].inquiry_segments = [{ name: 'You at the terminal', sender: 'terminal', text: turns[11].inquiry }];
     return turns;
   }
 

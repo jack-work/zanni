@@ -7,13 +7,13 @@ description: figaro web, the React and Jotai client for the figaro-forms aria st
 
 The web chat for figaro. It attends one aria at a time over a door that speaks
 the `figaro-forms/aria` contract (JSON-RPC over WebSocket), draws it in nodi's
-DOM shape, and lets Gluck send, steer, stop, fork, dictate and listen.
+DOM shape, and lets its user send, steer, stop, fork, dictate and listen.
 
 The visible title is "figaro web". Identifiers (`packages.figchat-shell`,
 `bin/figchat-bundle`, `test/figchat.test.*`) keep the old name.
 
 zanni's rule "no framework and no runtime" yields for figaro web only, by
-Gluck's order. The zanni components stay framework-free; figaro web wraps them.
+the owner's order. The zanni components stay framework-free; figaro web wraps them.
 `nodi`'s pure functions (`model`, `blocks`, `stream`, `spans`, `reveal`, `metricsLine`)
 and `voce`, the player, are imported from `assets/`; React draws the DOM that
 `nodi.css` and `voce.css` style, so those sheets apply unchanged.
@@ -158,7 +158,7 @@ voce no longer touches the session.
   that owns them, one voce player per turn (`lib/voice-hub.ts`). voce queues:
   a reply arriving while another speaks waits its turn.
 - Hands-free implies voice. Each arriving reply is announced with a short
-  ping before its audio. A reply that arrives while Gluck records is held with
+  ping before its audio. A reply that arrives while the user records is held with
   no sound; when he stops there is one ping and the held replies play in
   arrival order.
 - Voice and hands-free live in memory only: not in localStorage,
@@ -168,7 +168,7 @@ voce no longer touches the session.
   id, before permission or speech. An AudioWorklet (`assets/figchat/pcm-worklet.js`)
   sends 40 ms frames of 16 kHz mono s16le (1280 bytes); up to two seconds wait
   in a queue until the socket opens. Partials and finals fill the composer
-  while Gluck is still speaking; stop sends `{"type":"end"}` and the `done`
+  while the user is still speaking; stop sends `{"type":"end"}` and the `done`
   text settles the draft. At most five minutes. A level meter under the record
   button moves from the first frame. Sending is an ordinary prompt. The frame
   contract is `2026/11/21/stt-stream-contract.md` in the captains-log.

@@ -75,4 +75,4 @@ Source of truth is keel at `git@spain:jack/zanni.git`, browsable at
 `keel.kelliher.info/jack/zanni`; GitHub is a mirror pushed on every receive,
 and is what consumers name because a flake input must be fetchable without
 spain's SSH. `gesso`, `phosphor`, `fontpack` and `glyphmark` are names I chose
-and Gluck has not ratified; a rename costs one directory and one class prefix.
+and the owner has not ratified; a rename costs one directory and one class prefix.
