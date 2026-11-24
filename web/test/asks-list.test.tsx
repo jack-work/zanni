@@ -4,7 +4,7 @@ import { foldAsks } from "zanni-react/jotai";
 import { AsksList } from "../../packages/react/src/jotai/components/asks";
 import { readFileSync } from "node:fs";
 
-const fixture = JSON.parse(readFileSync(new URL("../../test/wave1/fixtures/orders.json", import.meta.url), "utf8")) as { orders: Record<string, { state: string }> };
+const fixture = JSON.parse(readFileSync("../test/wave1/fixtures/orders.json", "utf8")) as { orders: Record<string, { state: string }> };
 
 const NOW = Date.parse("2026-11-23T21:30:00-05:00");
 
