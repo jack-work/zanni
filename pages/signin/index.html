@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="z/gesso.css">
 <link rel="stylesheet" href="z/fontpack.css">
 <link rel="stylesheet" href="signin.css">
+<script src="/google-hosts.js"></script>
 <script src="signin.js" defer></script>
 <body class="gesso">
 <header class="bar"><span class="mark"><b>k</b>kelliher</span></header>
@@ -43,7 +44,7 @@
       <button class="btn primary" id="passkey-go" type="button">Use your passkey</button>
     </div>
     <div class="links"><button class="linkish" id="switch" type="button" hidden></button><button class="linkish" id="restart" type="button">Not you? Start again</button></div>
-    <p class="aside" id="none" hidden>This account has no second step yet. Set one up at <a href="https://auth.kelliher.info/">auth.kelliher.info</a>, then come back.</p>
+    <p class="aside" id="none" hidden>This account has no second step yet. <a id="none-setup" href="https://auth.kelliher.info/2fa/one-time-password">Set one up</a>, then come back.</p>
   </section>
 
   <section id="done" aria-labelledby="done-title" hidden>
