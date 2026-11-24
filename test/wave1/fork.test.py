@@ -3,7 +3,7 @@
 Pager captures: /var/tmp/wave1-capture/fork (figaro 0.80.0, tmux, isolated
 daemon). Per case the pager attends the alternative, shows its own history
 followed to the end (live), names it in the status bar as `<handle> · <mantra>`
-with the web's own fork marks (Gluck 11-21: plainly on a fork), and draws `⑂ <parent handle>` only on the head of the
+with the web's own fork marks (11-21: plainly on a fork), and draws `⑂ <parent handle>` only on the head of the
 fork's first own turn. A fork at :N keeps turns 1..N-1.
 """
 from kit import Door, Report, bundle_arg, until

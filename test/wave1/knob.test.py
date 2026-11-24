@@ -1,4 +1,4 @@
-"""Gluck v0.33.2 bug 1: the grip above the composer never floats over the pit.
+"""v0.33.2 bug 1: the grip above the composer never floats over the pit.
 
 While the pit is open or being dragged, the composer's grip is hidden and the
 pit's own handle rides with it. At closed, mid-drag, half, full and while

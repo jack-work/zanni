@@ -233,7 +233,7 @@
 
         # The specimen page, built from source. Also the drift guard: the
         # copy committed at examples/card.html must equal what the tools
-        # produce today, so the file Gluck opens in a browser with no build
+        # produce today, so the file the owner opens in a browser with no build
         # step is never quietly stale.
         packages.example = pkgs.runCommand "zanni-example-card" {
           nativeBuildInputs = [ self.packages.${system}.default ];

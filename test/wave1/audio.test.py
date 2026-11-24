@@ -1,4 +1,4 @@
-"""Gluck v0.33.2 bug 3: audio playback is gapless, never cuts itself off, and queues.
+"""v0.33.2 bug 3: audio playback is gapless, never cuts itself off, and queues.
 
 Instrumented in Chromium: every AudioBufferSource start and stop is logged with
 its scheduled time, every media element play and pause, every player state.

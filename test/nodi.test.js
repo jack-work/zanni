@@ -43,7 +43,7 @@ async function test(name, fn) {
 
   await test('model: who sent an input decides how it reads', () => {
     assert.deepStrictEqual(nodi.who(undefined, undefined), { role: 'you', label: 'You' });
-    assert.deepStrictEqual(nodi.who('', 'Gluck'), { role: 'you', label: 'Gluck' });
+    assert.deepStrictEqual(nodi.who('', 'Owner'), { role: 'you', label: 'Owner' });
     assert.deepStrictEqual(nodi.who('c0ffee02c0ffee02c0ffee02c0ffee02', 'Il Zanni'), { role: 'aria', label: 'Il Zanni' });
     assert.deepStrictEqual(nodi.who('c0ffee02c0ffee02c0ffee02c0ffee02'), { role: 'aria', label: 'c0ffee02' });
     assert.deepStrictEqual(nodi.who('king', 'the King'), { role: 'caller', label: 'the King' });
