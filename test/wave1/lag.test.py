@@ -13,6 +13,8 @@ import os
 
 from kit import Door, Report, bundle_arg, until
 
+import timing
+
 from playwright.sync_api import sync_playwright
 
 MAIN = "c0ffee01" * 4
@@ -150,7 +152,8 @@ def main():
 
             def streaming():
                 r = session(True)
-                rep.check(r["p95"] is not None and r["p95"] < BAR_MS, "p95 keydown-to-paint while streaming is %.1f ms, bar %.0f ms" % (r["p95"] or -1, BAR_MS))
+                rep.check(r["p95"] is not None, "a p95 keydown-to-paint was measured while streaming")
+                timing.record("wave1.lag.streaming_keydown_p95", r["p95"], BAR_MS)
                 rep.check(r["composer_renders"] <= r["keys"] + 5, "the composer re-rendered %d times for %d keys while streaming (stream frames re-render it)" % (r["composer_renders"], r["keys"]))
 
             rep.run("while a reply streams in 40 ms frames", streaming)

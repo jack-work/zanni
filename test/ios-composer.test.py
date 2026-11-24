@@ -5,6 +5,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from playwright.sync_api import sync_playwright
 
+import timing
 from figchat_kit import FAKE_VISUAL_VIEWPORT, HANG_MS, MAIN, Door, assert_centred, keystrokes, quantile, until
 
 bundle = os.path.abspath(sys.argv[1])
@@ -336,9 +337,11 @@ with sync_playwright() as p:
             busy += keystrokes(pg, 3, 0)
     print("streaming n %d p50 %.1f p95 %.1f max %.1f" % (len(busy), statistics.median(busy), quantile(busy, 0.95), max(busy)))
     assert len(busy) >= 40, "enough keystrokes landed while a turn streamed: %d" % len(busy)
-    print("streaming over idle p50 ratio %.2f (report only)" % (statistics.median(busy) / statistics.median(idle)))
+    ratio = statistics.median(busy) / statistics.median(idle)
+    print("streaming over idle p50 ratio %.2f (report only)" % ratio)
     limit = max(TARGET_P95_MS, RELEASE_P95_MS * RELEASE_SLACK, quantile(idle, 0.95) * STREAMING_OVER_IDLE)
-    assert quantile(busy, 0.95) <= limit, "keystroke to paint at p95 while a turn streams is %.1f ms, over %.1f (target %d, v0.34.0 measured %.1f, idle p95 %.1f x %.1f)" % (quantile(busy, 0.95), limit, TARGET_P95_MS, RELEASE_P95_MS, quantile(idle, 0.95), STREAMING_OVER_IDLE)
+    timing.record("ios.streaming_typing.p95", round(quantile(busy, 0.95), 1), round(limit, 1))
+    timing.record("ios.streaming_typing.over_idle_p50", round(ratio, 2), 2, "ratio")
     pg.context.close()
 
     pg = fresh()
