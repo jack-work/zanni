@@ -8,7 +8,7 @@ export function Roster() {
   const openNew = useSetAtom(openNewFigaroAtom);
   const [pane, setPane] = useAtom(paneAtom);
   return (
-    <Pane as="nav" className="fw-side" id="fw-arias" label="Arias" open={pane.open} width={pane.width} onWidth={(width) => setPane({ width })}>
+    <Pane as="nav" className="fw-side" id="fw-arias" label="Arias" open={pane.open} width={pane.width} onWidth={(width) => setPane({ width })} onOpen={() => setPane({ open: true })}>
       <div className="fw-side-head">
         <h2 className="fw-h2">Arias</h2>
         <div className="fw-side-tools">
