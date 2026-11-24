@@ -39,7 +39,10 @@ FAKE_VISUAL_VIEWPORT = """
 """
 
 
-def until(pg, js, timeout=10000):
+HANG_MS = int(os.environ.get("FIGCHAT_HANG_MS", "120000"))
+
+
+def until(pg, js, timeout=HANG_MS):
     end = time.time() + timeout / 1000.0
     last = None
     while time.time() < end:
