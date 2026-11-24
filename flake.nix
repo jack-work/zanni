@@ -337,6 +337,23 @@
           touch $out
         '';
 
+        checks.figaro-404 = pkgs.runCommand "zanni-figaro-404-test" {
+          nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.fonttools ps.brotli ps.playwright ])) ];
+          PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
+          PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+          FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
+        } ''
+          set -o pipefail
+          export HOME=$TMPDIR
+          mkdir tree && cd tree
+          cp -r ${./assets} assets
+          cp -r ${./bin} bin
+          cp -r ${./pages} pages
+          cp -r ${./test} test
+          chmod -R u+w .
+          python3 test/figaro-404.test.py 2>&1 | tee $out
+        '';
+
         checks.parla = pkgs.runCommand "zanni-parla-test" {
           nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.playwright ])) ];
           PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;

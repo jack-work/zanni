@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+import base64
+import io
+import json
+import re
+import sys
+from pathlib import Path
+
+from fontTools import subset
+from fontTools.ttLib import TTFont
+
+USAGE = """usage: zanni-404 [OUT]
+
+Builds the denied-page 404 from parla: one HTML file whose CSS, fonts and
+Figaro head are inline, so serving it makes no other request. Fonts are cut
+to the characters the page can show. Writes pages/figaro-404.html, or OUT.
+"""
+
+ROOT = Path(__file__).resolve().parent.parent
+A = ROOT / "assets"
+TITLE = "Not here"
+BACK = "Go back"
+
+
+def strip(css):
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+    css = re.sub(r"\s*\n\s*", "\n", css)
+    return css.strip()
+
+
+def woff2(name, text):
+    font = TTFont(A / "fontpack" / "fonts" / name, recalcTimestamp=False)
+    opts = subset.Options()
+    opts.flavor = "woff2"
+    opts.layout_features = ["kern", "liga"]
+    opts.name_IDs = []
+    opts.notdef_outline = False
+    s = subset.Subsetter(opts)
+    s.populate(text=text)
+    s.subset(font)
+    out = io.BytesIO()
+    font.flavor = "woff2"
+    font.save(out)
+    return base64.b64encode(out.getvalue()).decode()
+
+
+def face(family, name, text):
+    return "@font-face{font-family:'%s';font-display:block;src:url(data:font/woff2;base64,%s) format('woff2')}" % (family, woff2(name, text))
+
+
+def build():
+    lines = json.loads((A / "parla" / "not-here.json").read_text())
+    prose = "".join(sorted(set("".join(lines))))
+    head = base64.b64encode((A / "parla" / "figaro-head.png").read_bytes()).decode()
+    css = "\n".join([
+        face("z404-display", "jacquard-24.woff2", TITLE),
+        face("z404-prose", "eb-garamond.woff2", prose),
+        face("z404-mono", "vt323.woff2", BACK),
+        strip((A / "gesso" / "gesso.css").read_text()),
+        strip((A / "parla" / "parla.css").read_text()),
+        strip("""
+:root { color-scheme: light dark; --fontpack-prose: 'z404-prose', Georgia, serif; }
+html, body { margin: 0; min-height: 100vh; }
+main { box-sizing: border-box; width: min(40rem, 100%); margin: 0 auto; padding: 12vh 1.25rem 3rem; }
+h1 { margin: 0 0 1.6rem; font: 400 3rem/1 'z404-display', serif; letter-spacing: 0.03em; text-align: center; }
+.back { display: block; margin: 1.4rem auto 0; padding: 0.5rem 1.2rem; font: 21px/1.2 'z404-mono', monospace; letter-spacing: 0.05em; color: var(--z-on-accent); background: var(--z-accent); border: 3px solid var(--z-ink); border-radius: 6px; box-shadow: 4px 4px 0 var(--z-shadow); cursor: pointer; }
+.back:focus-visible { outline: 3px solid var(--z-focus); outline-offset: 3px; }
+"""),
+    ])
+    script = strip("""
+(function () {
+var lines = %s;
+var b = document.querySelector('.parla-bubble');
+var at = Math.floor(Math.random() * lines.length);
+function show() { b.textContent = lines[at]; b.classList.remove('parla-again'); void b.offsetWidth; b.classList.add('parla-again'); }
+b.textContent = lines[at];
+b.addEventListener('click', function () { at = (at + 1) %% lines.length; show(); });
+document.querySelector('.back').addEventListener('click', function () { history.back(); });
+})();
+""" % json.dumps(lines, ensure_ascii=False))
+    return (
+        '<!doctype html>\n<html lang="en">\n<meta charset="utf-8">\n'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">\n'
+        '<meta name="robots" content="noindex">\n'
+        f"<title>{TITLE}</title>\n<style>\n{css}\n</style>\n"
+        '<body class="gesso">\n<main>\n'
+        f"<h1>{TITLE}</h1>\n"
+        '<div class="parla">'
+        f'<img class="parla-head" src="data:image/png;base64,{head}" alt="Figaro" draggable="false">'
+        f'<button type="button" class="parla-bubble" aria-live="polite">{lines[0]}</button>'
+        "</div>\n"
+        f'<button type="button" class="back">{BACK}</button>\n'
+        f"</main>\n<script>\n{script}\n</script>\n</body>\n</html>\n"
+    )
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 2 or (len(sys.argv) == 2 and sys.argv[1] in ("-h", "--help")):
+        sys.stdout.write(USAGE)
+        sys.exit(0 if len(sys.argv) == 2 else 2)
+    out = Path(sys.argv[1]) if len(sys.argv) == 2 else ROOT / "pages" / "figaro-404.html"
+    out.write_text(build())
