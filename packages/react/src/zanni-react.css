@@ -329,7 +329,7 @@
 .zr-tray-x:hover, .zr-tray-x:focus-visible { color: var(--z-ink); }
 
 .zr-sticky-scope { position: relative; }
-.zr-sticky { --zr-bleed-l: calc(max(0px, (100cqw - var(--zr-measure, 46rem)) / 2) + var(--zr-edge-l, 16px)); --zr-bleed-r: calc(max(0px, (100cqw - var(--zr-measure, 46rem)) / 2) + var(--zr-edge-r, 16px)); margin-inline: calc(var(--zr-bleed-l) * -1) calc(var(--zr-bleed-r) * -1); }
+.zr-sticky { --zr-bleed-l: calc(max(0px, (100cqw - var(--zr-sticky-measure, var(--zr-measure, 46rem))) / 2) + var(--zr-edge-l, 16px)); --zr-bleed-r: calc(max(0px, (100cqw - var(--zr-sticky-measure, var(--zr-measure, 46rem))) / 2) + var(--zr-edge-r, 16px)); margin-inline: calc(var(--zr-bleed-l) * -1) calc(var(--zr-bleed-r) * -1); }
 .zr-sticky-bar, .zr-sticky-line, .zr-sticky-panel { padding-inline: var(--zr-edge-l, 16px) var(--zr-edge-r, 16px); }
 .zr-sticky-jump { flex: none; min-width: 36px; min-height: 36px; margin-block: -4px; padding: 0; border: 0; background: transparent; color: var(--z-accent); font: inherit; font-size: 1.375rem; cursor: pointer; touch-action: manipulation; }
 .zr-sticky { --zr-sticky-lh: 1.603125rem; position: sticky; top: var(--zr-sticky-top, 0px); z-index: 1; font: 400 1.0625rem / 1 var(--zr-mono, "VT323", ui-monospace, monospace); letter-spacing: 0.04em; color: var(--z-muted); }
