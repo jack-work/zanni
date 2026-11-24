@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { EFFORT_KEY, valueAt } from "../lib/pit-rows";
 import { STATUS_SPINNER, ctxLine, stateGlyph } from "../lib/status";
 import { contextTokensAtom, endStateAtom, linkAtom, runningAtom } from "../state/aria";
-import { boundStateAtom, treeStateAtom } from "../state/pit";
+import { boundStateAtom, forkOfAtom, treeStateAtom } from "../state/pit";
 import { attendedAtom } from "../state/route";
 
 function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomValue<typeof attendedAtom>>>["client"]; aria: string }) {
@@ -16,6 +16,7 @@ function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomVa
   const tree = useAtomValue(treeStateAtom);
   const facts = useAtomValue(ariaFactsAtom(client, aria));
   const bound = useAtomValue(boundStateAtom);
+  const forkOf = useAtomValue(forkOfAtom);
   const pit = usePit();
   const [frame, setFrame] = useState(0);
   useEffect(() => {
@@ -33,7 +34,7 @@ function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomVa
   const glyph = stateGlyph({ link, running, failed, interrupted, frame });
   const open = pit && pit.snap !== "closed";
   return (
-    <header className="fw-status" data-link={link} data-state={running ? "running" : failed ? "error" : interrupted ? "interrupted" : "done"} data-effort={valueAt(bound?.root, EFFORT_KEY)}>
+    <header className="fw-status" data-link={link} data-state={running ? "running" : failed ? "error" : interrupted ? "interrupted" : "done"} data-effort={valueAt(bound?.root, EFFORT_KEY)} data-fork={forkOf ? "" : undefined}>
       {open && (
         <span className="fw-status-pit" aria-hidden="true">
           {glyphs["pit.form"]}
@@ -42,6 +43,11 @@ function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomVa
       <span className="fw-status-glyph" role="status" aria-label={link === "live" ? (running ? "running" : "idle") : link}>
         {glyph}
       </span>
+      {forkOf && (
+        <span className="fw-status-fork" title={"Fork of " + forkOf.name}>
+          {glyphs.fork}
+        </span>
+      )}
       <span className="fw-status-handle">{handle}</span>
       {link === "signedout" && <span className="fw-status-word">Signed out</span>}
       {mantra && <span className="fw-status-mantra">{mantra}</span>}
