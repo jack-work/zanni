@@ -1,11 +1,12 @@
-import { Button, LatestPill, scrollRoot, scrollToBottom, useFollow, useTurnWindow, Plain, TranscriptContext, TurnView } from "../../index";
+import { Button, LatestPill, glyphs, scrollRoot, scrollToBottom, useFollow, useTurnWindow, Plain, TranscriptContext, TurnView } from "../../index";
 import { useAtomValue, useSetAtom } from "jotai";
 import { ariaAtom } from "figaro-forms/aria/jotai";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useFirstFrame } from "../lib/first-frame";
 import { labelOf } from "../lib/roster";
 import { metricsLineAtom, noteAtom, turnsAtom } from "../state/aria";
-import { treeStateAtom } from "../state/pit";
+import { forkOfAtom, treeStateAtom } from "../state/pit";
+import { routeFor } from "../lib/route";
 import { rosterAtom } from "../state/roster";
 import { composerAtom, forkAtom, keyOf } from "../state/composer";
 import { handsFreeAtom, speakingAtom, toggleHandsFreeAtom } from "../state/audio";
@@ -168,6 +169,7 @@ export function AriaView({ attended }: { attended: Attended }) {
     [tree],
   );
   const gone = link === "gone" || link === "refused";
+  const fork_of = useAtomValue(forkOfAtom);
   const status = note || pageError;
   const metrics = useAtomValue(metricsLineAtom(client, aria));
 
@@ -179,6 +181,11 @@ export function AriaView({ attended }: { attended: Attended }) {
             <a className="fw-back" href="#/">
               Arias
             </a>
+            {fork_of && (
+              <a className="fw-forkmark" href={routeFor(attended.store, fork_of.id)} title="The aria this one was forked from">
+                {glyphs.fork + " Fork of " + fork_of.name}
+              </a>
+            )}
             {!gone && (
             <div className="fw-subtools">
               <Button variant="quiet" size="compact" className="fw-hands" aria-pressed={handsFree} onClick={() => toggleHandsFree()}>
