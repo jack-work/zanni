@@ -57,11 +57,36 @@ with sync_playwright() as p:
     pg.wait_for_timeout(50)
     assert "parla-wiggle" in classes(pg), "the bubble wiggles when Figaro is put down"
 
+    def floats(pg):
+        return pg.evaluate("""() => {
+            const b = document.querySelector('.parla-bubble');
+            const names = getComputedStyle(b).animationName.split(', ');
+            const props = b.getAnimations().filter(a => ['parla-teeter', 'parla-bob'].includes(a.animationName))
+                .flatMap(a => a.effect.getKeyframes().flatMap(k => Object.keys(k)))
+                .filter(k => !['offset', 'easing', 'composite', 'computedOffset'].includes(k));
+            return { names, props: [...new Set(props)].sort() };
+        }""")
+
+    for state in ("f.rest()", "f.wiggle()", "f.quip('again', 5000)"):
+        pg.evaluate(state)
+        got = floats(pg)
+        assert "parla-teeter" in got["names"] and "parla-bob" in got["names"], (state, got)
+        assert got["props"] == ["rotate", "translate"], ("the float moves by rotate and translate only, never transform", got)
+    pg.evaluate("window.t = document.querySelector('.parla-bubble').getAnimations().find(a => a.animationName === 'parla-teeter')")
+    pg.evaluate("f.say('changed words')")
+    assert pg.evaluate("document.querySelector('.parla-bubble').getAnimations().includes(window.t)"), "new words do not restart the float"
+    angles = set()
+    for _ in range(4):
+        angles.add(pg.evaluate("getComputedStyle(document.querySelector('.parla-bubble')).rotate"))
+        pg.wait_for_timeout(700)
+    assert len(angles) > 1, ("the bubble teeters", angles)
+
     calm = b.new_page(reduced_motion="reduce")
     calm.goto(PAGE)
     calm.evaluate("window.f = document.querySelector('[data-parla]').parla")
     calm.evaluate("f.quip('q', 5000); f.interrupt('e')")
     assert calm.evaluate("getComputedStyle(document.querySelector('.parla-bubble')).animationName") == "none"
+    assert calm.evaluate("getComputedStyle(document.querySelector('.parla-bubble')).rotate") == "none", "reduced motion leaves the bubble still"
     assert bubble(calm) == "*AHEM*"
     b.close()
 print("parla ok")
