@@ -3,7 +3,7 @@
 Pager captures: /var/tmp/wave1-capture/fork (figaro 0.80.0, tmux, isolated
 daemon). Per case the pager attends the alternative, shows its own history
 followed to the end (live), names it in the status bar as `<handle> · <mantra>`
-with the web's own fork marks (Gluck 11-21: plainly on a fork), and draws `⑂ <parent handle>` only on the head of the
+with no fork glyph, and draws `⑂ <parent handle>` only on the head of the
 fork's first own turn. A fork at :N keeps turns 1..N-1.
 """
 from kit import Door, Report, bundle_arg, until
@@ -33,8 +33,7 @@ FACTS_JS = """(main) => {
     handle: (document.querySelector('.fw-status-handle') || {}).textContent || null,
     mantra: (document.querySelector('.fw-status-mantra') || {}).textContent || null,
     statusFork: !!document.querySelector('.fw-status-fork'),
-    banner: (document.querySelector('.fw-forkmark') || {}).textContent || null,
-    statusFork_data: document.querySelector('.fw-status') ? document.querySelector('.fw-status').hasAttribute('data-fork') : null,
+    banner: !!document.querySelector('.fw-fork-banner'),
     forkGlyphs: (document.querySelector('#app').innerText.match(/\\u2442/g) || []).length,
     rowLevel: row ? Number(row.getAttribute('aria-level')) : null,
     parentLevel: parentRow ? Number(parentRow.getAttribute('aria-level')) : null,
@@ -71,10 +70,10 @@ def common(rep, at, f, parent, parent_label, turns, mark_turn, width):
     rep.check(max(f["turns"] or [0]) <= turns[-1], "%s: turns past the fork point are shown: %s" % (at, [t for t in f["turns"] if t > turns[-1]]))
     rep.check(f["atEnd"] is True, "%s: the transcript is followed to its end, atEnd=%r" % (at, f["atEnd"]))
     rep.check(f["handle"] and f["handle"].startswith("fork-"), "%s: the status bar names the alternative by handle, got %r" % (at, f["handle"]))
-    rep.check(f["statusFork"] and f["statusFork_data"], "%s: the status bar shows ⑂ and an accent rule on a fork" % at)
-    rep.check(f["banner"] and f["banner"].startswith("⑂ Fork of "), "%s: the sub-bar says which aria this is a fork of, got %r" % (at, f["banner"]))
+    rep.check(not f["statusFork"], "%s: the pager's status bar carries no ⑂" % at)
+    rep.check(not f["banner"], "%s: the pager draws no fork banner" % at)
     if mark_turn is None:
-        rep.check(f["marks"] == [], "%s: no own turn yet, so no ⑂ on a turn head: marks %s" % (at, f["marks"]))
+        rep.check(f["marks"] == [] and f["forkGlyphs"] == 0, "%s: no own turn yet, so no ⑂ anywhere: marks %s, ⑂ x%d" % (at, f["marks"], f["forkGlyphs"]))
     else:
         rep.check(f["marks"] == [{"turn": mark_turn, "text": "⑂ " + parent_label}], "%s: ⑂ %s on turn %d's head only, got %s" % (at, parent_label, mark_turn, f["marks"]))
     if width >= 900:

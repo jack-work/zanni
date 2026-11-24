@@ -1,5 +1,7 @@
 export { Button, ButtonGroup } from "./button";
 export type { ButtonGroupProps, ButtonProps, ButtonSize, ButtonVariant } from "./button";
+export { Pane } from "./pane";
+export type { PaneProps } from "./pane";
 export { Sheet } from "./sheet";
 export type { SheetProps } from "./sheet";
 export { Tree, VALUE_COLUMNS, branchPeek, clipEllipsis, inlineBranch, treeRows } from "./tree";

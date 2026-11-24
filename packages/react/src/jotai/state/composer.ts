@@ -1,6 +1,4 @@
 import { atom, type PrimitiveAtom } from "jotai";
-import { flushSync } from "react-dom";
-import { transition } from "../../index";
 import { audioSessionAtom, cancelSpeechAtom, unlockAudio } from "./audio";
 import { goAtom, attendedAtom } from "./route";
 import { rosterActionAtom } from "./roster";
@@ -217,13 +215,6 @@ export interface ForkRequest {
 
 export type Done = { readonly ok: true; readonly done: string } | { readonly ok: false; readonly why: string };
 
-function land(go: () => void): void {
-  const root = document.documentElement;
-  root.dataset.vt = "fork";
-  transition(() => flushSync(go));
-  setTimeout(() => delete root.dataset.vt, 600);
-}
-
 export const forkAtom = atom(null, async (get, set, req: number | ForkRequest): Promise<Done> => {
   const at = get(attendedAtom);
   if (!at) return { ok: false, why: "Fork: no aria is open." };
@@ -261,7 +252,7 @@ export const forkAtom = atom(null, async (get, set, req: number | ForkRequest): 
   set(comp, (s) => ({ ...s, forking: false }));
   void set(rosterActionAtom, "refresh");
   if (!stay) {
-    land(() => set(goAtom, { store: at.store, aria: alternative }));
+    set(goAtom, { store: at.store, aria: alternative });
     if (note) set(composerAtom(keyOf(at.store, alternative)), (s) => ({ ...s, note }));
   } else if (note) set(comp, (s) => ({ ...s, note }));
   return { ok: true, done: "Forked into " + alternative.slice(0, 8) + "." };
