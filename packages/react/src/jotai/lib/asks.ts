@@ -122,3 +122,13 @@ export function foldAsks(root: unknown, now: number): Ask[] {
   for (const [id, order] of Object.entries(orders)) if (isObject(order)) out.push(foldAsk(id, order, now));
   return out.sort(compareAsks);
 }
+
+export function dwellLabel(span: AskSpan, next: AskSpan | undefined): string {
+  const ms = span.ms === undefined ? "" : " " + formatSpan(span.ms);
+  if (span.stage === "filed") return span.current ? "waiting" + ms + " for a lane" : "waited" + ms + " for " + (next?.stage ?? "a lane");
+  return "in " + span.stage + ms;
+}
+
+export function askedLabel(age: number | undefined): string {
+  return age === undefined ? "" : "asked " + formatSpan(age) + " ago";
+}

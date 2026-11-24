@@ -98,13 +98,13 @@ def main():
                     rep.check([r["id"] for r in rows] == want, "%d: the rows are sorted by stage then oldest filed: %s" % (width, [r["id"] for r in rows][:6]))
                     rep.check(all(r["stage"] == orders["orders"][r["id"]]["state"] for r in rows), "%d: each row names the stage it has reached" % width)
                     row = next(r for r in rows if r["id"] == "compose-full-width")
-                    rep.check(row["age"] == "2d 10h", "%d: age since filed: %r" % (width, row["age"]))
+                    rep.check(row["age"] == "asked 2d 10h ago", "%d: age since filed: %r" % (width, row["age"]))
                     rep.check(
-                        row["spans"] == "filed 10m · lane 1d 13h · ready 24m · cut 11h 41m · live 8h 35m",
+                        row["spans"] == "waited 10m for lane · in lane 1d 13h · in ready 24m · in cut 11h 41m · in live 8h 35m",
                         "%d: time in each stage: %r" % (width, row["spans"]),
                     )
                     bad = next(r for r in rows if r["id"] == "backups")
-                    rep.check(bad["spans"].startswith("filed <1m"), "%d: a back-filled stamp before its predecessor reads as no time: %r" % (width, bad["spans"]))
+                    rep.check(bad["spans"].startswith("waited <1m for lane"), "%d: a back-filled stamp before its predecessor reads as no time: %r" % (width, bad["spans"]))
                     pg.locator(".zr-pit-handle").focus()
                     pg.keyboard.press("ArrowUp")
                     pg.wait_for_selector(".zr-pit[data-snap='full']")

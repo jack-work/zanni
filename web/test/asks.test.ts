@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ageOf, compareAsks, foldAsk, foldAsks, formatSpan } from "zanni-react/jotai";
+import { askedLabel, dwellLabel, ageOf, compareAsks, foldAsk, foldAsks, formatSpan } from "zanni-react/jotai";
 import { readFileSync } from "node:fs";
 
 const fixture = JSON.parse(readFileSync("test/fixtures/orders.json", "utf8")) as { orders: Record<string, { state: string }> };
@@ -147,5 +147,21 @@ describe("the real orders form", () => {
 
   it("never reports a negative span", () => {
     for (const r of rows) for (const s of r.spans) expect(s.ms === undefined || s.ms >= 0, r.id + " " + s.stage).toBe(true);
+  });
+});
+
+describe("labels", () => {
+  const a = foldAsk("a", { stages: { filed: "2026-11-23T10:00:00-05:00", lane: "2026-11-23T10:05:00-05:00" } }, NOW);
+  const f = foldAsk("f", { stages: { filed: "2026-11-23T10:00:00-05:00" } }, NOW);
+
+  it("says what each dwell was spent on", () => {
+    expect(dwellLabel(a.spans[0]!, a.spans[1])).toBe("waited 5m for lane");
+    expect(dwellLabel(a.spans[1]!, undefined)).toBe("in lane 11h 25m");
+    expect(dwellLabel(f.spans[0]!, undefined)).toBe("waiting 11h 30m for a lane");
+  });
+
+  it("gives the age its own sentence", () => {
+    expect(askedLabel(ageOf(f, NOW))).toBe("asked 11h 30m ago");
+    expect(askedLabel(undefined)).toBe("");
   });
 });

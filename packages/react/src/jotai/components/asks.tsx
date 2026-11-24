@@ -1,7 +1,7 @@
 import { PitList, PitRow, glyphs } from "../../index";
 import { useAtomValue } from "jotai";
 import { useEffect, useMemo, useState } from "react";
-import { ageOf, formatSpan, foldAsks, type Ask, type Stage } from "../lib/asks";
+import { ageOf, askedLabel, dwellLabel, formatSpan, foldAsks, type Ask, type Stage } from "../lib/asks";
 import { asksStateAtom } from "../state/asks";
 
 const STAGE_GLYPH: Record<Stage, string> = {
@@ -36,8 +36,7 @@ function Spans({ ask }: { ask: Ask }) {
       {ask.spans.map((s, i) => (
         <span key={s.stage} className="fw-ask-span" data-stage={s.stage} data-current={s.current ? "" : undefined}>
           {i > 0 && " · "}
-          {s.stage}
-          {s.ms !== undefined && " " + formatSpan(s.ms)}
+          {dwellLabel(s, ask.spans[i + 1])}
         </span>
       ))}
     </>
@@ -96,7 +95,7 @@ export function AsksList({ asks, now }: { asks: readonly Ask[]; now: number }) {
             className="fw-ask"
             glyph={STAGE_GLYPH[a.stage]}
             label={a.text || a.id}
-            meta={age === undefined ? "" : formatSpan(age)}
+            meta={askedLabel(age)}
             sub={
               <>
                 <span className="fw-ask-owner">{a.owner || "no owner"}</span>

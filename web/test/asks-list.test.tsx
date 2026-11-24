@@ -18,9 +18,9 @@ describe("AsksList", () => {
     const first = rows[0]!;
     expect(first.getAttribute("data-id")).toBe(asks[0]!.id);
     expect(first.querySelector(".fw-ask-stage")!.textContent).toContain("filed");
-    expect(first.querySelector(".zr-pit-row-meta")!.textContent).toMatch(/\d/);
+    expect(first.querySelector(".zr-pit-row-meta")!.textContent).toMatch(/^asked .* ago$/);
     const live = rows.find((r) => r.getAttribute("data-id") === "compose-full-width")!;
-    expect(live.querySelector(".fw-ask-spans")!.textContent).toMatch(/^filed .* · lane .* · ready .* · cut .* · live /);
+    expect(live.querySelector(".fw-ask-spans")!.textContent).toMatch(/^waited .* for lane · in lane .* · in ready .* · in cut .* · in live /);
   });
 
   it("opens the full text, owner and stage times on a tap and closes them on the next", () => {
