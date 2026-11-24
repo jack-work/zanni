@@ -9,7 +9,7 @@ import urllib.request
 from playwright.sync_api import sync_playwright
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from figchat_kit import assert_centred
+from figchat_kit import HANG_MS, assert_centred, until
 
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 shots = os.environ.get("FIGCHAT_SHOTS", "")
@@ -62,17 +62,6 @@ def toggle_voice(pg):
     open_pit(pg)
     pg.locator(".fw-voice").click()
     close_pit(pg)
-
-
-def until(pg, js, timeout=10000):
-    end = time.time() + timeout / 1000.0
-    last = None
-    while time.time() < end:
-        last = pg.evaluate(js)
-        if last:
-            return last
-        pg.wait_for_timeout(50)
-    raise AssertionError("timed out waiting for: %s (last %r)" % (js, last))
 
 
 SANS = """() => {
@@ -149,6 +138,14 @@ fast = door(12)
 try:
     with sync_playwright() as p:
         browser = p.chromium.launch(args=["--no-sandbox", "--disable-audio-output", "--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"])
+        open_context = browser.new_context
+
+        def hang_bounded_context(**options):
+            ctx = open_context(**options)
+            ctx.set_default_timeout(HANG_MS)
+            return ctx
+
+        browser.new_context = hang_bounded_context
 
         def fresh(width=390, height=844, scheme="light"):
             phone = width < 600
@@ -167,7 +164,7 @@ try:
         def attend(pg, door, aria, turn=None):
             pg.goto("about:blank")
             pg.goto(door.url + "#/gluck/" + aria + (":%d" % turn if turn else ""))
-            until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'", timeout=15000)
+            until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'")
 
         def held(pg):
             return pg.evaluate("Number(document.querySelector('.nodi-turns').dataset.held)")
@@ -242,7 +239,7 @@ try:
             tool = pg.locator(".nodi-turn[data-turn='7'] .nodi-tool")
             assert tool.evaluate("n => n.open") is True, "tool blocks are open by default"
             until(pg, "document.querySelector(\".nodi-turn[data-turn='7'] .nodi-tool-args\").innerText.includes('go test')", 5000)
-            tool.locator(".nodi-tool-out").wait_for(state="visible", timeout=5000)
+            tool.locator(".nodi-tool-out").wait_for(state="visible")
             assert "clipped" in tool.locator(".nodi-clipped").inner_text(), "a clipped result says so"
             sans_free(pg, "history at %d" % width)
             no_sideways(pg, width, "history")
@@ -252,7 +249,7 @@ try:
         pg = fresh()
         attend(pg, fast, MAIN)
         pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop = 0")
-        until(pg, "document.querySelector('.nodi-turn') && Number(document.querySelector('.nodi-turn').dataset.turn) < 20", timeout=10000)
+        until(pg, "document.querySelector('.nodi-turn') && Number(document.querySelector('.nodi-turn').dataset.turn) < 20")
         pg.wait_for_timeout(400)
         anchor = pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop")
         assert anchor > 0, "paging in older turns keeps the reader where they were, not at the top: %s" % anchor
@@ -262,13 +259,13 @@ try:
         attend(pg, fast, MAIN)
         pg.context.new_cdp_session(pg).send("Emulation.setCPUThrottlingRate", {"rate": 4})
         pg.evaluate("(() => { const s = document.querySelector('[data-zr-scroll]'); s.addEventListener('scroll', () => { s.scrollTop = 0; }); s.scrollTop = 0; })()")
-        until(pg, "!!document.querySelector(\".nodi-turn[data-turn='4']\")", timeout=15000)
+        until(pg, "!!document.querySelector(\".nodi-turn[data-turn='4']\")")
         pg.close()
 
         deep = fresh()
         attend(deep, fast, MAIN, 12)
         deep.wait_for_selector(".nodi-turn[data-turn='12']")
-        until(deep, "() => { const r = document.querySelector(\"[data-turn='12']\").getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight; }", timeout=10000)
+        until(deep, "() => { const r = document.querySelector(\"[data-turn='12']\").getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight; }")
         assert deep.locator(".nodi-said[data-from='you'] .nodi-who").count() >= 1
         assert "Gluck at the terminal" in deep.locator(".nodi-turn[data-turn='12']").inner_text(), "a terminal caller keeps its name"
         deep.close()
@@ -303,7 +300,7 @@ try:
             pg.keyboard.type(":fork :12")
             pg.keyboard.press("Enter")
             until(pg, "/^#\\/[^/]+\\/[0-9a-f]{32}$/.test(location.hash) && !location.hash.includes('%s')" % MAIN, 8000)
-            pg.wait_for_selector(".nodi-turn[data-turn='11']", timeout=10000)
+            pg.wait_for_selector(".nodi-turn[data-turn='11']")
             assert pg.locator(".zr-command").get_attribute("aria-pressed") == "false", "a run leaves command mode"
             assert pg.locator(".zr-input").input_value() == "", "the command line is not left in the composer"
             assert [m for m in pg.errors if "fork" in m.lower()] == [], pg.errors
@@ -311,7 +308,7 @@ try:
             pg.locator(".zr-input").click()
             pg.keyboard.type(":ls")
             pg.keyboard.press("Enter")
-            pg.wait_for_selector(".zr-pit[data-snap='half']", timeout=5000)
+            pg.wait_for_selector(".zr-pit[data-snap='half']")
             assert "Tree" in pg.locator(".zr-pit").inner_text(), "ls opens the tree"
             sans_free(pg, "command mode at %d" % width)
             assert not pg.errors, pg.errors
@@ -320,7 +317,7 @@ try:
         for width, height in ((390, 844), (1280, 800)):
             pg = fresh(width, height)
             attend(pg, fast, LANE, 2)
-            pg.wait_for_selector(".nodi-turn[data-turn='2'] .nodi-turn-delta", timeout=10000)
+            pg.wait_for_selector(".nodi-turn[data-turn='2'] .nodi-turn-delta")
             assert pg.locator(".nodi-turn-delta").count() == 1, "only the turn whose form changed wears the delta mark"
             assert pg.locator(".nodi-deltas").count() == 0, "the table starts shut"
             pg.locator(".nodi-turn-delta").click()
@@ -495,7 +492,7 @@ try:
                 assert_centred(pg.locator(".fw-mic"), "the record button's glyph at %d %s" % (width, scheme), tol=2.0, blank_ok=True)
             assert pg.locator(".zr-send").get_attribute("aria-label") == "Send"
             send(pg, "please run the tests")
-            pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='running']", timeout=10000)
+            pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='running']")
             thinking = pg.locator(".nodi-turn[data-turn='27'] .nodi-thinking")
             assert thinking.evaluate("n => n.open") is True, "thinking is open while it streams"
             assert pg.locator(".nodi-turn[data-turn='27'][data-state='open']").count() == 1
@@ -526,9 +523,9 @@ try:
             assert last <= top + 1, "scrolled to the bottom, the last node ends above the composer: %s vs %s" % (last, top)
             no_sideways(pg, width, "running turn")
             snap(pg, "running-%s-%d" % (scheme, width))
-            pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='ok']", timeout=10000)
-            pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])", timeout=10000)
-            until(pg, "!document.querySelector('.zr-strip')", timeout=5000)
+            pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='ok']")
+            pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])")
+            until(pg, "!document.querySelector('.zr-strip')")
             assert thinking.evaluate("n => n.open") is True, "thinking is still open once the turn settles"
             until(pg, "document.querySelector(\".nodi-turn[data-turn='27'] .nodi-thought\").innerText.includes('answer plainly')", 5000)
             thinking.locator("summary").click()
@@ -551,12 +548,12 @@ try:
         drop_door = door(12)
         attend(pg, drop_door, MAIN)
         send(pg, "run it and then [drop] the line")
-        until(pg, "document.querySelector('.fw').hasAttribute('data-running')", timeout=10000)
-        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool", timeout=10000)
+        until(pg, "document.querySelector('.fw').hasAttribute('data-running')")
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool")
         drop_door.drop()
-        until(pg, "document.querySelector('.fw').dataset.link === 'offline'", timeout=5000)
-        until(pg, "document.querySelector('.fw').dataset.link === 'live'", timeout=15000)
-        until(pg, "!document.querySelector('.fw').hasAttribute('data-running')", timeout=15000)
+        until(pg, "document.querySelector('.fw').dataset.link === 'offline'")
+        until(pg, "document.querySelector('.fw').dataset.link === 'live'")
+        until(pg, "!document.querySelector('.fw').hasAttribute('data-running')")
         for want in ("27", "28"):
             if pg.locator(".nodi-turn[data-turn='%s']" % want).count():
                 prose = pg.locator(".nodi-turn[data-turn='%s'] .nodi-prose" % want).count()
@@ -584,7 +581,7 @@ try:
             shut_door = door(12)
             shut_door.shut()
             pg.goto(shut_door.url + "#/gluck/" + MAIN)
-            until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'signedout'", timeout=60000)
+            until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'signedout'")
             pg.wait_for_timeout(2000)
             dialed = shut_door.state()["upgrades"]
             assert dialed >= 5, "the shell dials at least five fresh sockets before it gives up: %d" % dialed
@@ -598,7 +595,7 @@ try:
             assert shut_door.state()["upgrades"] == dialed, "the shell stops dialing once signed out"
             shut_door.shut(False)
             pg.locator(".fw-signedout button", has_text="Retry").click()
-            until(pg, "document.querySelector('.fw').dataset.link === 'live'", timeout=15000)
+            until(pg, "document.querySelector('.fw').dataset.link === 'live'")
             assert pg.locator(".fw-signedout").count() == 0
             assert not [e for e in pg.errors if "WebSocket" not in e and "websocket" not in e and "ERR_" not in e], pg.errors
             pg.close()
@@ -607,7 +604,7 @@ try:
         attend(pg, door(12), MAIN)
         send(pg, EVIL)
         pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-input")
-        pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])", timeout=10000)
+        pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])")
         assert hostile_findings(pg) == [], hostile_findings(pg)
         assert EVIL in pg.locator(".nodi-turn[data-turn='27'] .nodi-input").inner_text()
         assert not pg.errors, pg.errors
@@ -656,18 +653,18 @@ try:
         slow = door(150)
         attend(pg, slow, MAIN)
         send(pg, "please run the build")
-        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool", timeout=15000)
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool")
         pg.locator(".fw-stop:not(.fw-stop-clear)").click()
-        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-end", timeout=10000)
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-end")
         assert "interrupted" in pg.locator(".nodi-turn[data-turn='27'] .nodi-end").inner_text()
         until(pg, "!document.querySelector('.fw').hasAttribute('data-running')")
         assert slow.state()["interrupts"] == ["keep"], slow.state()
         send(pg, "second run the tests")
-        pg.wait_for_selector(".nodi-turn[data-turn='28'] .nodi-thinking", timeout=15000)
+        pg.wait_for_selector(".nodi-turn[data-turn='28'] .nodi-thinking")
         send(pg, "queued thought")
         until(pg, "document.querySelector('.fw').hasAttribute('data-running')")
         pg.locator(".fw-stop-clear").click()
-        until(pg, "!document.querySelector('.fw').hasAttribute('data-running')", timeout=10000)
+        until(pg, "!document.querySelector('.fw').hasAttribute('data-running')")
         assert slow.state()["interrupts"] == ["keep", "clear"], slow.state()
         assert pg.locator(".nodi-turn[data-turn='29']").count() == 0, "a cleared queue starts no turn"
         pg.close()
@@ -679,9 +676,12 @@ try:
             landed = "new Promise((r) => requestAnimationFrame(() => setTimeout(() => { const s = %s; r(Math.round((s.scrollHeight - s.clientHeight - s.scrollTop) * 100) / 100); }, 0)))" % root_js
 
             def latest_lands(what):
-                pg.wait_for_selector(".zr-latest", timeout=5000)
+                pg.wait_for_selector(".zr-latest")
                 pg.locator(".zr-latest").click()
-                pg.wait_for_timeout(700)
+                try:
+                    until(pg, landed + ".then((gap) => gap <= 1)", timeout=15000)
+                except AssertionError:
+                    pass
                 got = pg.evaluate(landed)
                 assert got <= 1, "%s at %d: Latest stops %s px short of the bottom" % (what, width, got)
 
@@ -724,7 +724,7 @@ try:
             pg.wait_for_timeout(400)
             assert pg.evaluate(away) <= 2, "scrolling back to the bottom follows again: %s" % pg.evaluate(away)
         send(pg, "start a long run please")
-        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='running']", timeout=20000)
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='running']")
         until(pg, away + " <= 2")
         pg.mouse.move(640, 200)
         for _ in range(2):
@@ -739,7 +739,7 @@ try:
         pg = fresh(390, 844)
         attend(pg, door(150), MAIN)
         send(pg, "start a long run please")
-        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='running'] summary", timeout=20000)
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='running'] summary")
         tail = "(() => { const r = document.querySelector('[data-zr-scroll]'); return Math.round(r.scrollHeight - r.clientHeight - r.scrollTop); })()"
         until(pg, tail + " <= 2")
         for target in (".nodi-turn[data-turn='27'] .nodi-input", ".nodi-turn[data-turn='27'] .nodi-tool summary"):
@@ -755,9 +755,9 @@ try:
         pg = fresh()
         attend(pg, door(150), MAIN)
         send(pg, "start a long run please")
-        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='running']", timeout=20000)
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='running']")
         send(pg, "also mind the dark theme")
-        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-steering", timeout=20000)
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-steering")
         assert "also mind the dark theme" in pg.locator(".nodi-turn[data-turn='27'] .nodi-steering").inner_text()
         assert pg.locator(".nodi-turn[data-turn='27'] .nodi-steering .nodi-who").inner_text() == "You"
         pg.close()
@@ -765,12 +765,12 @@ try:
         pg = fresh()
         attend(pg, door(12), MAIN)
         pg.locator(".fw-fork").click()
-        until(pg, "location.hash.startsWith('#/gluck/') && !location.hash.includes('%s')" % MAIN, timeout=10000)
-        until(pg, "document.querySelector('.fw').dataset.link === 'live' && document.querySelectorAll('.nodi-turn').length >= 1", timeout=10000)
+        until(pg, "location.hash.startsWith('#/gluck/') && !location.hash.includes('%s')" % MAIN)
+        until(pg, "document.querySelector('.fw').dataset.link === 'live' && document.querySelectorAll('.nodi-turn').length >= 1")
         assert pg.locator(".nodi-turn").count() >= 1, "the alternative opens with the history it was cut from"
         pg.wait_for_selector(".fw-forkmark")
         assert pg.locator(".fw-forkmark").inner_text().startswith("\u2442 Fork of ")
-        until(pg, "!document.documentElement.dataset.vt", timeout=3000)
+        until(pg, "!document.documentElement.dataset.vt")
         assert not pg.errors, pg.errors
         pg.close()
 
@@ -782,11 +782,11 @@ try:
         pg.locator(".fw-back").click()
         pg.wait_for_selector(".zr-tree-row")
         pg.locator(".zr-tree-row[data-id='%s']" % ("c0ffee04" * 4)).click()
-        until(pg, "document.querySelector('.fw').dataset.link === 'live'", timeout=10000)
+        until(pg, "document.querySelector('.fw').dataset.link === 'live'")
         assert pg.locator(".zr-input").input_value() == "", "another aria has its own draft"
         pg.goto("about:blank")
         pg.goto(draft_door.url + "#/gluck/" + MAIN)
-        until(pg, "document.querySelector('.zr-input')", timeout=10000)
+        until(pg, "document.querySelector('.zr-input')")
         assert pg.locator(".zr-input").input_value() == "half a thought", "the draft survives a reload"
         pg.close()
 
@@ -810,16 +810,16 @@ try:
         mid = [w for w in widths if idle_width + 4 < w < final_width - 4]
         assert len(mid) >= 2, "the width glides through intermediate values, it does not jump: %s" % sorted(set(round(w) for w in widths))
         send(pg, "just a [plain] hello")
-        pg.wait_for_selector(".nodi-turn[data-turn='27'] .voce[data-for='27']", timeout=15000)
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .voce[data-for='27']")
         assert pg.locator(".nodi-turn[data-turn='27'] .nodi-prose .voce").count() == 1, "one player per turn, inside a prose node"
         assert pg.locator(".nodi-turn[data-turn='27'] .voce").count() == 1
         until(pg, "document.querySelector('.voce').dataset.state !== 'none'", 10000)
         until(pg, "['idle','loading','playing','paused'].includes(document.querySelector('.voce').dataset.state)", 15000)
         sans_free(pg, "voice player")
         assert door_v.state()["audio"] >= 1, "the gateway audio socket was opened by the voice toggle"
-        pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])", timeout=10000)
+        pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])")
         pg.locator(".nodi-turn[data-turn='26'] .fw-output-play [data-action='play']").click()
-        pg.wait_for_selector(".nodi-turn[data-turn='26'] .voce[data-for='26']", timeout=5000)
+        pg.wait_for_selector(".nodi-turn[data-turn='26'] .voce[data-for='26']")
         until(pg, "['loading','playing','idle'].includes(document.querySelector(\".nodi-turn[data-turn='26'] .voce\").dataset.state)", 10000)
         assert pg.evaluate("window.localStorage.length + window.sessionStorage.length") == 0 or not pg.evaluate("Object.keys(window.localStorage).concat(Object.keys(window.sessionStorage)).some(k => /voice|hands/i.test(k))"), "voice and hands-free are never stored"
         pg.close()
@@ -836,10 +836,10 @@ try:
         until(pg, "document.querySelector('.fw').dataset.mic === 'recording'", 10000)
         send(pg, "just a [plain] hello")
         until(pg, "document.querySelector('.fw').dataset.audio === 'recording-with-pending'", 15000)
-        pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])", timeout=10000)
+        pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])")
         assert pg.locator(".nodi-turn[data-turn='27'] .voce").count() == 0, "a reply arriving while Gluck records makes no sound and shows no player yet"
         pg.locator(".fw-mic").click()
-        pg.wait_for_selector(".nodi-turn[data-turn='27'] .voce[data-for='27']", timeout=15000)
+        pg.wait_for_selector(".nodi-turn[data-turn='27'] .voce[data-for='27']")
         until(pg, "document.querySelector('.fw').dataset.audio !== 'recording-with-pending' && document.querySelector('.fw').dataset.audio !== 'recording'", 10000)
         until(pg, "['live','draining','idle','playing'].includes(document.querySelector('.voce').dataset.state)", 15000)
         pg.locator(".fw-hands").click()
@@ -957,10 +957,10 @@ try:
             pg.locator(".nodi-turn[data-turn='26'] .nodi-said").first.click()
             assert pg.locator(".zr-scrim, .zr-sheet").count() == 0, "tapping a message opens nothing"
             mine.locator("[data-action='play']").click()
-            pg.wait_for_selector(".fw-inline-player .voce", timeout=5000)
+            pg.wait_for_selector(".fw-inline-player .voce")
             until(pg, "['loading','playing','idle','expired','error'].includes(document.querySelector('.fw-inline-player .voce').dataset.state)", 10000)
             mine.locator("[data-action='retranscribe']").click()
-            pg.wait_for_selector(".fw-inline-heard", timeout=5000)
+            pg.wait_for_selector(".fw-inline-heard")
             assert "re-heard words" in pg.locator(".fw-inline-heard").inner_text()
             assert inline_door.state()["retranscribed"] == ["gluck/" + MAIN + ":26/in"], inline_door.state()["retranscribed"]
             assert pg.locator(".zr-scrim, .zr-sheet").count() == 0, "no shaded sheet for re-transcribe"
@@ -968,7 +968,7 @@ try:
             assert pg.locator(".zr-input").input_value() == "typed re-heard words"
             assert pg.locator(".fw-inline[data-kind='prose']").count() == 0, "a reply has no row of its own for play"
             pg.locator(".nodi-turn[data-turn='26'] .fw-output-play [data-action='play']").click()
-            pg.wait_for_selector(".nodi-turn[data-turn='26'] .voce[data-for='26']", timeout=5000)
+            pg.wait_for_selector(".nodi-turn[data-turn='26'] .voce[data-for='26']")
             assert pg.locator(".fw-play-big").count() == 0
             assert not pg.errors, pg.errors
             ctx.close()
@@ -1016,7 +1016,7 @@ try:
             return got
 
         def pit_gone(pg, what):
-            pg.wait_for_selector(".zr-pit", state="detached", timeout=3000)
+            pg.wait_for_selector(".zr-pit", state="detached")
             assert pg.evaluate("document.documentElement.style.getPropertyValue('--zr-pit-h')") == "", what
 
         def centre(loc):
@@ -1300,7 +1300,7 @@ try:
         pit_at(pg, "half", 422, "reduced motion still drags")
         assert pg.evaluate("parseFloat(getComputedStyle(document.querySelector('.zr-pit')).transitionDuration) * 1000") <= 1
         pg.keyboard.press("Escape")
-        pg.wait_for_selector(".zr-pit", state="detached", timeout=1000)
+        pg.wait_for_selector(".zr-pit", state="detached")
         assert not pg.errors, pg.errors
         ctx.close()
 
@@ -1311,10 +1311,10 @@ try:
         mine = pg.locator(".nodi-turn[data-turn='26'] .fw-inline[data-kind='input']")
         mine.scroll_into_view_if_needed()
         mine.locator("[data-action='play']").click()
-        pg.wait_for_selector(".fw-inline-player .voce", timeout=5000)
+        pg.wait_for_selector(".fw-inline-player .voce")
         until(pg, "['playing','idle','expired','error'].includes(document.querySelector('.fw-inline-player .voce').dataset.state)", 10000)
         mine.locator("[data-action='retranscribe']").click()
-        pg.wait_for_selector(".fw-inline-heard", timeout=5000)
+        pg.wait_for_selector(".fw-inline-heard")
         toggle_voice(pg)
         for _ in range(100):
             if any(g["kind"] == "audio-ws" for g in sess_door.state()["sessions"]):
@@ -1360,7 +1360,7 @@ try:
         assert {p["header"] for p in sess_door.state()["otel"] if p["header"]} <= {sid}
         assert not pg.errors, pg.errors
         pg.reload()
-        until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'", timeout=15000)
+        until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'")
         later = {g["header"] or g["query"] for g in sess_door.state()["sessions"]}
         assert len(later) == 2 and sid in later, "a reload mints a new id: %s" % later
         pg.close()
@@ -1371,8 +1371,8 @@ try:
             pg = fresh(width, height)
             attend(pg, md_door, MAIN)
             send(pg, "show me [md] [plain]")
-            pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-prose", timeout=15000)
-            pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-h", timeout=15000)
+            pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-prose")
+            pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-h")
             pg.evaluate("document.querySelector(\".nodi-turn[data-turn='27'] .nodi-h\").__kept = 'heading'")
             seen_partial = False
             for _ in range(400):
@@ -1383,7 +1383,7 @@ try:
                     break
                 pg.wait_for_timeout(25)
             assert seen_partial, "the table fills in row by row while the reply streams"
-            pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])", timeout=15000)
+            pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])")
             kinds = pg.evaluate("[...document.querySelectorAll(\".nodi-turn[data-turn='27'] .nodi-text > *\")].map(n => n.className.split(' ')[0])")
             assert kinds == ["nodi-h", "nodi-p", "nodi-list", "nodi-pre", "nodi-table-wrap", "nodi-p"], kinds
             assert pg.evaluate("document.querySelector(\".nodi-turn[data-turn='27'] .nodi-h\").__kept") == "heading", "a settled block keeps its element while later blocks stream"
@@ -1421,12 +1421,12 @@ try:
         attend(pg, door(150), MAIN)
         assert press_ms(pg) <= 1, "reduced motion sets the press release to 1ms: %s" % press_ms(pg)
         send(pg, "please run the build")
-        pg.wait_for_selector(".zr-strip[data-kind='running']", timeout=15000)
+        pg.wait_for_selector(".zr-strip[data-kind='running']")
         pg.wait_for_timeout(300)
         assert pg.locator(".zr-glyph i").first.evaluate("n => getComputedStyle(n).animationName") == "none", "the glyph is still under reduced motion"
         assert pg.evaluate(MOTION) == [], pg.evaluate(MOTION)
         pg.locator(".fw-stop-clear").click()
-        pg.wait_for_selector(".zr-strip", state="detached", timeout=5000)
+        pg.wait_for_selector(".zr-strip", state="detached")
         ctx.close()
 
         pg = fresh()
@@ -1434,17 +1434,17 @@ try:
         assert press_ms(pg) == 320, "the press releases on the pop token: %s" % press_ms(pg)
         assert pg.locator(".nodi-turn[data-fresh]").count() == 0, "history does not animate in"
         send(pg, "please run the build")
-        pg.wait_for_selector(".zr-strip[data-kind='running']", timeout=15000)
+        pg.wait_for_selector(".zr-strip[data-kind='running']")
         assert pg.locator(".nodi-turn[data-turn='27'][data-fresh]").count() == 1, "the new turn is the one that arrives with motion"
         assert pg.locator(".zr-glyph i").first.evaluate("n => getComputedStyle(n).animationName") == "zr-glyph"
         assert pg.evaluate("[...document.querySelectorAll('.zr-glyph i')].every(n => getComputedStyle(n).animationTimingFunction.startsWith('steps'))"), "the glyph steps, it does not glide"
         pg.locator(".fw-stop-clear").click()
-        pg.wait_for_selector(".zr-strip", state="detached", timeout=5000)
+        pg.wait_for_selector(".zr-strip", state="detached")
         pg.close()
 
         refused = fresh()
         refused.goto(fast.url + "#/gluck/" + "f" * 32)
-        until(refused, "document.querySelector('.fw').dataset.link === 'gone'", timeout=10000)
+        until(refused, "document.querySelector('.fw').dataset.link === 'gone'")
         assert "No such aria" in refused.locator(".fw-main").inner_text()
         refused.goto("about:blank")
         refused.goto(fast.url + "#/nowhere/" + MAIN)
