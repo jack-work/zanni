@@ -1,1 +1,4 @@
-{"composer.focus-kept-when-keyboard-viewport-pans": "mobile-composer-blur-on-viewport-pan"}
+{
+ "composer.focus-kept-when-keyboard-viewport-pans": "mobile-composer-blur-on-viewport-pan",
+ "pit.touch-tap-on-grip-opens": "pit-grip-touch-tap-closes-at-once"
+}
