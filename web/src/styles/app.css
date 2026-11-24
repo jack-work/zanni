@@ -122,8 +122,7 @@ body.fw-page {
 
 
 @media (min-width: 900px) {
-  .fw { --zr-pit-left: var(--fw-side); --fw-bar: 0px; }
-  .fw-status { display: none; }
+  .fw { --zr-pit-left: var(--fw-side); }
   .fw-body { display: grid; grid-template-columns: var(--fw-side) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
   .fw[data-route] .fw-side {
     display: block;
