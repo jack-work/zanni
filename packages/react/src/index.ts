@@ -1,6 +1,10 @@
 export { Button, ButtonGroup } from "./button";
 export type { ButtonGroupProps, ButtonProps, ButtonSize, ButtonVariant } from "./button";
 export { Pane } from "./pane";
+export { Shell } from "./shell";
+export type { ShellHosts, ShellPane, ShellProps, ShellSlots } from "./shell";
+export { useTheme } from "./theme";
+export type { Theme } from "./theme";
 export type { PaneProps } from "./pane";
 export { Sheet } from "./sheet";
 export type { SheetProps } from "./sheet";

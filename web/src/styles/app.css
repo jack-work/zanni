@@ -139,7 +139,6 @@ body.fw-page {
   .fw-body { display: grid; grid-template-columns: var(--zr-pane-w, 320px) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
   .fw[data-route] .fw-side {
     display: block;
-    position: relative;
     max-width: none;
     padding: var(--z-space-5, 16px) var(--z-space-4, 12px);
     background: var(--z-ground);
@@ -147,11 +146,8 @@ body.fw-page {
   }
   .fw[data-route] .fw-pane { display: flex; }
   .fw-back { display: none; }
-  .zr-pane-grip { position: absolute; top: 0; right: 0; bottom: 0; width: 6px; cursor: col-resize; touch-action: none; z-index: 2; }
-  .zr-pane-grip:hover, .zr-pane-grip:focus-visible, .zr-pane-grip:active { background: var(--z-accent); }
-  .zr-pane:not([data-open]) { visibility: hidden; border-right: 0; padding: 0; }
 }
-@media (max-width: 639px) { .fw-panes, .zr-pane-grip { display: none; } }
+@media (max-width: 639px) { .fw-panes, .fw .zr-pane-grip { display: none; } }
 .fw-subbar { display: flex; align-items: center; justify-content: space-between; gap: var(--z-space-3, 8px); }
 .fw-subtools { display: inline-flex; gap: var(--z-space-3, 8px); margin-left: auto; }
 .fw-voice { min-width: 5.5rem; }
