@@ -1,6 +1,7 @@
 import { atom, type Atom } from "jotai";
 import { ariaAtom, ariaConnectionAtom, ariaPhaseAtom } from "figaro-forms/aria/jotai";
 import type { AriaClient, AriaSnapshot, Phase } from "figaro-forms/aria";
+import type { ConnectionState } from "figaro-forms";
 import { nodi, type TurnModel } from "../../index";
 import { workOf, type Work_ } from "../../index";
 import { refusalText } from "../lib/roster";
@@ -95,13 +96,17 @@ export function noteAtom(client: AriaClient, aria: string): Atom<string> {
   );
 }
 
-const connectionPhase: Record<string, Phase> = { open: "live", connecting: "connecting", waiting: "offline", closed: "closed" };
+export type Link = Phase | "signedout";
 
-export const linkAtom = atom<Phase>((get) => {
+const connectionPhase: Record<ConnectionState, Link> = { open: "live", connecting: "connecting", waiting: "offline", signedout: "signedout", closed: "closed" };
+
+export const linkAtom = atom<Link>((get) => {
   const a = get(attendedAtom);
-  if (a) return get(ariaPhaseAtom(a.client, a.aria));
-  const client = get(clientAtom);
-  return client ? (connectionPhase[get(ariaConnectionAtom(client))] ?? "detached") : "detached";
+  const client = a?.client ?? get(clientAtom);
+  if (!client) return "detached";
+  const connection = get(ariaConnectionAtom(client));
+  if (connection === "signedout") return "signedout";
+  return a ? get(ariaPhaseAtom(a.client, a.aria)) : connectionPhase[connection];
 });
 
 export const attendedRunningAtom = atom((get) => {

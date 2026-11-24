@@ -24,5 +24,6 @@ export const PHASE_WORDS: Record<string, string> = {
   refused: "Not allowed",
   gone: "Not found",
   closed: "Closed",
+  signedout: "Signed out",
   detached: "",
 };

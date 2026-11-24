@@ -22,6 +22,7 @@ export { AriaView } from "./jotai/components/aria-view";
 export { Composer as BoundComposer } from "./jotai/components/composer";
 export { Pit as BoundPit } from "./jotai/components/pit";
 export { Roster } from "./jotai/components/roster";
+export { SignedOut } from "./jotai/components/signed-out";
 export { StatusBar } from "./jotai/components/status-bar";
 export { ctxLine, stateGlyph } from "./jotai/lib/status";
 export { TurnActions } from "./jotai/components/turn-actions";
