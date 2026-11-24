@@ -19,6 +19,7 @@ What each section measures:
 |---|---|
 | bundle | every file of the shell, raw, gzip -9, brotli 11; `unhashed` lists names without a content hash |
 | load.cold / load.warm | fresh context, then a second page in the same context; paint entries, `tti` is link live plus a tree row plus two frames; wire bytes and cache hits from CDP |
+| pane | 1280x800, the attended aria: requestAnimationFrame gaps (ms) for 450 ms after a pane close, an open (both by the Arias button) and a resize (ArrowRight); `frame_ms.<kind>` has n, p50, p95 and max. `--only pane` runs this section alone |
 | attach | `#/` loaded, then the hash set to the main aria; `first_frame` is the time to more than three turns painted (two frames), `app_mark` is the page's own `figchat:attach` to `figchat:first-frame` |
 | input[] | CPU throttle 1x and 4x. `keydown_to_paint` is keydown timestamp to the task after the next frame; `roundtrip` is `keystrokes()` from the test kit. Idle, during the mock's tool reply, and during a 24 KB prose reply (`streaming_long.series`, per window of 25 keys) |
 | stream_frame | per 40 ms stream frame: React commits, components rendered (counted through the DevTools hook, split into live turn, settled turns, outside the transcript), CDP script, layout and style |
