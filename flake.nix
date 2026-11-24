@@ -504,6 +504,9 @@
             export FONTCONFIG_FILE=${pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts pkgs.noto-fonts-color-emoji pkgs.noto-fonts-cjk-sans pkgs.noto-fonts ]; }}
             export PARITY_GATEWAY=${gateway}/bin/figaro-gateway
             export PARITY_WS=${gateway}/lib/node_modules/ws
+            export LD_LIBRARY_PATH=${pkgs.mesa}/lib:${pkgs.libglvnd}/lib
+            export __EGL_VENDOR_LIBRARY_FILENAMES=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json
+            export LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless
             export PATH=${pkgs.nodejs_24}/bin:$PATH
             cd web
             [ -d node_modules ] || npm ci --ignore-scripts
