@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { useDialog } from "./dialog";
-import { EXIT_MS, reducedMotion } from "./motion";
+import { EASE, EXIT_MS, reducedMotion } from "./motion";
 import { rootVar } from "./rootvars";
 
 export type PaneForm = "docked" | "drawer" | "sheet";
@@ -25,7 +25,6 @@ const STEP = 16;
 const SWIPE = 60;
 const COLLAPSE_SLACK = 40;
 const SLIDE_PX = 24;
-const EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)";
 
 export const PANE_WIDTH_VAR = { left: "--zr-pane-w", right: "--zr-pane-right-w" } as const;
 
