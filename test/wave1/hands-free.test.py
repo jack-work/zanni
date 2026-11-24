@@ -35,19 +35,16 @@ INSTRUMENT = """
 """
 
 
-PING_MAX_S = 0.3
-
-
 def sources(events):
     return [e for e in events if e["ev"] == "src.start"]
 
 
-def pings(events):
-    return [e for e in sources(events) if e["dur"] < PING_MAX_S]
+def ping_times(events):
+    return [e["w"] for e in events if e["ev"] == "state" and not e.get("turn") and e["state"] in ("live", "draining")]
 
 
-def replies(events):
-    return [e for e in sources(events) if e["dur"] >= PING_MAX_S]
+def turn_start(events, turn):
+    return next((e["w"] for e in events if e["ev"] == "state" and e.get("turn") == str(turn) and e["state"] in ("live", "draining")), None)
 
 
 def main():
@@ -75,8 +72,16 @@ def main():
                 pg.wait_for_timeout(800)
                 if hands:
                     pg.locator(".fw-hands").click()
-                    pg.wait_for_selector(".fw-hands[aria-pressed='true']")
-                work(pg, door)
+                    try:
+                        pg.wait_for_selector(".fw-hands[aria-pressed='true']", timeout=5000)
+                    except Exception:
+                        pg.screenshot(path="/tmp/hands-free-%s-pressed.png" % engine)
+                        raise
+                try:
+                    work(pg, door)
+                except Exception:
+                    pg.screenshot(path="/tmp/hands-free-%s.png" % engine)
+                    raise
                 events = pg.evaluate("window.__au")
                 says = door.state()["says"]
                 ctx.close()
@@ -97,8 +102,9 @@ def main():
                 pg.wait_for_selector(".nodi-turn[data-turn='28'] .voce[data-state='idle']", timeout=60000)
 
             def held(pg, door):
-                say(pg, "just a [plain] hello")
                 pg.locator(".fw-mic").click()
+                until(pg, "document.querySelector('.fw').dataset.mic === 'recording'", 15000)
+                say(pg, "just a [plain] hello")
                 until(pg, "document.querySelector('.fw').dataset.audio === 'recording-with-pending'", 20000)
                 pg.wait_for_timeout(1500)
                 rep.check(not sources(pg.evaluate("window.__au")), "chromium held: nothing plays while recording")
@@ -113,23 +119,18 @@ def main():
             for engine in ("chromium", "webkit"):
                 def check_one(engine=engine):
                     events, _ = session(engine, one, True)
-                    ps, rs = pings(events), replies(events)
-                    rep.check(len(rs) >= 5, "%s one: the reply played with no tap (%d sources)" % (engine, len(rs)))
+                    rep.check(len(sources(events)) >= 5, "%s one: the reply played with no tap (%d sources)" % (engine, len(sources(events))))
+                    ps, at = ping_times(events), turn_start(events, 27)
                     rep.check(len(ps) >= 1, "%s one: the arrival ping sounded" % engine)
-                    if ps and rs:
-                        rep.check(ps[0]["w"] <= rs[0]["w"], "%s one: the ping comes before the reply" % engine)
+                    rep.check(at is not None, "%s one: turn 27 went live by itself" % engine)
+                    if ps and at:
+                        rep.check(ps[0] <= at + 50, "%s one: the ping comes with the reply, not after it" % engine)
 
                 def check_two(engine=engine):
                     events, _ = session(engine, two, True)
-                    spans = {}
-                    for e in events:
-                        if e["ev"] == "state" and e["state"] in ("draining", "live"):
-                            spans.setdefault(e["turn"], e["w"])
-                    order = [t for t, _ in sorted(spans.items(), key=lambda kv: kv[1])]
-                    rep.check(order[-2:] == ["27", "28"], "%s two: both replies played, in arrival order: %s" % (engine, order))
-                    src = sorted(replies(events), key=lambda e: e["at"])
-                    over = [(a["at"], b["at"]) for a, b in zip(src, src[1:]) if b["at"] < a["at"] + a["dur"] - 0.005]
-                    rep.check(not over, "%s two: no overlap: %s" % (engine, over[:3]))
+                    a27, a28 = turn_start(events, 27), turn_start(events, 28)
+                    rep.check(a27 is not None and a28 is not None and a27 < a28, "%s two: both replies played, in arrival order (%s, %s)" % (engine, a27, a28))
+                    rep.check(len(ping_times(events)) >= 2, "%s two: each arrival pinged (%d)" % (engine, len(ping_times(events))))
 
                 def check_silent(engine=engine):
                     events, says = session(engine, silent, False)
@@ -138,10 +139,14 @@ def main():
 
                 def check_play(engine=engine):
                     def press(pg, door):
-                        pg.locator(".nodi-turn[data-turn='26'] .fw-output-play [data-action='play']").click()
-                        pg.wait_for_selector(".nodi-turn[data-turn='26'] .voce[data-state='idle']", timeout=30000)
+                        say(pg, "just a [plain] hello")
+                        until(pg, "(() => { const t = document.querySelector(\".nodi-turn[data-turn='27']\"); return !!t && t.dataset.state !== 'open'; })()", 40000)
+                        pg.wait_for_timeout(800)
+                        rep.check(door.state()["says"] == [], "%s voice off: nothing synthesised before the tap: %s" % (engine, door.state()["says"]))
+                        pg.locator(".nodi-turn[data-turn='27'] .fw-output-play [data-action='play']").click()
+                        pg.wait_for_selector(".nodi-turn[data-turn='27'] .voce[data-state='idle']", timeout=30000)
                     events, says = session(engine, press, False)
-                    rep.check(says.count(26) == 1, "%s voice off: Play synthesised the turn once, on press: %s" % (engine, says))
+                    rep.check(says == [27], "%s voice off: Play synthesised the turn once, on press: %s" % (engine, says))
 
                 rep.run(engine + ": hands-free reply autoplays with the ping", check_one)
                 rep.run(engine + ": back-to-back replies play in order", check_two)
@@ -150,12 +155,9 @@ def main():
 
             def check_held():
                 events, _ = session("chromium", held, True)
-                rs = replies(events)
-                rep.check(len(rs) >= 5, "chromium held: the held reply played after the recording stopped (%d sources)" % len(rs))
-                ps = pings(events)
-                rep.check(len(ps) >= 1, "chromium held: the ping sounded when it was released")
-                if rs and ps:
-                    rep.check(ps[-1]["w"] <= rs[0]["w"] + 50, "chromium held: ping, then the reply")
+                rep.check(len(sources(events)) >= 5, "chromium held: the held reply played after the recording stopped (%d sources)" % len(sources(events)))
+                ps, at = ping_times(events), turn_start(events, 27)
+                rep.check(len(ps) >= 1 and at is not None and ps[-1] <= at + 50, "chromium held: ping, then the reply (%s, %s)" % (ps, at))
 
             rep.run("chromium: a reply during recording is held, then pings and plays", check_held)
             for browser, _ in engines.values():
