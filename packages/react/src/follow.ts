@@ -84,12 +84,12 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
     };
     const intents = ["wheel", "keydown", "touchstart", "touchmove", "pointerdown"];
     for (const t of intents) window.addEventListener(t, intent, { passive: true, capture: true });
-    let size = "";
+    let width = -1;
     let turned = -Infinity;
     const resized = () => {
-      const now = root.clientWidth + "x" + root.clientHeight;
-      if (now === size) return false;
-      size = now;
+      const now = root.clientWidth;
+      if (now === width) return false;
+      width = now;
       turned = performance.now();
       return true;
     };
