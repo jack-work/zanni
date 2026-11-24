@@ -60,6 +60,9 @@ export function AriaView({ attended }: { attended: Attended }) {
   const toggleHandsFree = useSetAtom(toggleHandsFreeAtom);
   const speaking = useAtomValue(speakingAtom);
   const [spans, jump] = useTurnWindow(turns);
+  useLayoutEffect(() => {
+    if (followed) follow.snap();
+  }, [turns, followed, follow.snap]);
   const cancelMic = useSetAtom(micCancelAtom);
   useVoice(attended);
   useEffect(() => () => cancelMic(), [cancelMic]);
@@ -145,16 +148,15 @@ export function AriaView({ attended }: { attended: Attended }) {
 
   useEffect(() => {
     const el = olderRef.current;
-    if (!el || !followed || typeof IntersectionObserver === "undefined") return;
-    const watch = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) loadOlder().catch(() => {});
-      },
-      { rootMargin: "300px 0px 0px 0px" },
-    );
-    watch.observe(el);
-    return () => watch.disconnect();
-  }, [followed, olderAvailable, loadOlder]);
+    if (!el || !followed || loadingOlder || pageError) return;
+    const root = scrollRoot();
+    const fill = () => {
+      if (el.getBoundingClientRect().bottom > root.getBoundingClientRect().top) loadOlder().catch(() => {});
+    };
+    fill();
+    root.addEventListener("scroll", fill, { passive: true });
+    return () => root.removeEventListener("scroll", fill);
+  }, [followed, olderAvailable, loadOlder, loadingOlder, pageError]);
 
   const tree = useAtomValue(treeStateAtom);
   const transcript = useMemo(
