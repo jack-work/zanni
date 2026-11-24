@@ -8,6 +8,7 @@ const BEHIND = 1800;
 const AHEAD = 2700;
 
 let sheet: CSSStyleSheet | undefined;
+const set = [NaN, NaN];
 
 function setGap(slot: number, px: number): void {
   if (!document.adoptedStyleSheets) return;
@@ -16,6 +17,8 @@ function setGap(slot: number, px: number): void {
     sheet.replaceSync('[data-slot="0"] {} [data-slot="1"] {}');
     document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
   }
+  if (set[slot] === px) return;
+  set[slot] = px;
   (sheet.cssRules[slot] as CSSStyleRule).style.height = px + "px";
 }
 
