@@ -515,7 +515,7 @@
             export PATH=${pkgs.nodejs}/bin:${benchPython}/bin:$PATH
             export BUNDLE=${self.packages.${system}.figchat-shell}
             exec ${pkgs.flock}/bin/flock /tmp/zanni-perf.lock ${pkgs.writeShellScript "zanni-perf-run" ''
-              set -eu -o pipefail
+              set -u -o pipefail
               work=$(mktemp -d)
               trap 'rm -rf "$work"' EXIT
               cd "$work"
@@ -525,14 +525,17 @@
               cp -r ${./bench} bench
               chmod -R u+w assets examples test bench
               export LD_LIBRARY_PATH=${pkgs.mesa}/lib:${pkgs.libglvnd}/lib __EGL_VENDOR_LIBRARY_FILENAMES=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless
-              python3 bench/figchat_bench.py "$BUNDLE" --sha ${self.shortRev or self.dirtyShortRev or "dirty"} --out "$work/result.json"
-              python3 bench/check.py "$work/result.json" bench/budgets.json
               export ZANNI_TIMINGS="$work/timings.jsonl" ZANNI_REV=${self.shortRev or self.dirtyShortRev or "dirty"}
-              python3 test/fuzz/regress/run.py "$BUNDLE"
+              rc=0
+              python3 bench/figchat_bench.py "$BUNDLE" --sha ${self.shortRev or self.dirtyShortRev or "dirty"} --out "$work/result.json" || rc=$?
+              python3 bench/check.py "$work/result.json" bench/budgets.json || rc=$?
+              python3 test/fuzz/regress/run.py "$BUNDLE" || rc=$?
               for c in composer gestures network audio paced scale; do
-                python3 test/fuzz/fuzz.py "$BUNDLE" --campaign $c --seed 1 --runs 2 --steps 25 --no-shrink --regress-dir "$work/found"
+                python3 test/fuzz/fuzz.py "$BUNDLE" --campaign $c --seed 1 --runs 2 --steps 25 --no-shrink --regress-dir "$work/found" || rc=$?
               done
               python3 test/timing.py "$work/timings.jsonl" "''${ZANNI_PERF_OUT:-$OLDPWD}/zanni-timings.json"
+              cp "$work/result.json" "''${ZANNI_PERF_OUT:-$OLDPWD}/zanni-bench.json" 2>/dev/null || true
+              exit $rc
             ''}
           '');
         };
