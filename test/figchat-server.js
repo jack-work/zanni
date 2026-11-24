@@ -23,6 +23,7 @@ if (flags.window) bench.window = flags.window;
 if (flags.history !== undefined) bench.history = flags.history;
 if (['fps', 'bytes', 'chunk'].some((k) => flags[k] !== undefined)) bench.stream = Object.fromEntries(['fps', 'bytes', 'chunk'].filter((k) => flags[k] !== undefined).map((k) => [k, flags[k]]));
 const core = mock.create(Object.assign({ step, fixture, orders }, bench));
+let shut = false;
 const seen = { otel: [], attach: [], upgrades: 0, refused: 0, audio: 0, stt: [], retranscribed: [], says: [], stream: [] };
 const expired = new Set([5, 6]);
 const sessions = [];
@@ -75,6 +76,12 @@ const server = http.createServer((req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end('{}');
     });
+    return;
+  }
+  if (url.pathname === '/__shut') {
+    shut = url.searchParams.get('on') !== '0';
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ shut }));
     return;
   }
   if (url.pathname === '/__drop') {
@@ -290,6 +297,7 @@ server.on('upgrade', (req, socket) => {
   noteSession('door-ws', req, url);
   sockets.add(socket);
   handshake(req, socket);
+  if (shut) { socket.destroy(); return; }
   const conn = core.attach({
     text: (s) => { if (!socket.destroyed) socket.write(frame(1, Buffer.from(s))); },
     close: () => socket.destroy()

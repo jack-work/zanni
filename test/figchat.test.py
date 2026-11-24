@@ -127,6 +127,9 @@ class Door:
     def drop(self):
         urllib.request.urlopen(self.base + "/__drop").read()
 
+    def shut(self, on=True):
+        urllib.request.urlopen(self.base + "/__shut?on=" + ("1" if on else "0")).read()
+
     def stop(self):
         self.proc.terminate()
         self.proc.wait()
@@ -561,6 +564,29 @@ try:
         assert pg.locator(".nodi-turn[data-turn='%d'] .nodi-tool[data-status='ok']" % last).count() == 1
         assert not [e for e in pg.errors if "WebSocket" not in e and "websocket" not in e and "ERR_" not in e], pg.errors
         pg.close()
+
+        for width, height in ((390, 844), (1280, 800)):
+            pg = fresh(width, height)
+            shut_door = door(12)
+            shut_door.shut()
+            pg.goto(shut_door.url + "#/gluck/" + MAIN)
+            until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'signedout'", timeout=60000)
+            dialed = shut_door.state()["upgrades"]
+            assert dialed == 5, "five fresh sockets die young and the shell gives up: %d" % dialed
+            assert pg.locator(".fw-signedout .fw-signedout-line").inner_text() == "Signed out: sign in again"
+            assert pg.locator(".fw-signedout button", has_text="Reload").count() == 1
+            assert pg.locator(".fw-signedout button", has_text="Retry").count() == 1
+            assert pg.locator(".zr-composer").count() == 0, "no composer to type into while signed out"
+            no_sideways(pg, width, "the signed-out line")
+            snap(pg, "signedout-%d" % width)
+            pg.wait_for_timeout(6000)
+            assert shut_door.state()["upgrades"] == dialed, "the shell stops dialing once signed out"
+            shut_door.shut(False)
+            pg.locator(".fw-signedout button", has_text="Retry").click()
+            until(pg, "document.querySelector('.fw').dataset.link === 'live'", timeout=15000)
+            assert pg.locator(".fw-signedout").count() == 0
+            assert not [e for e in pg.errors if "WebSocket" not in e and "websocket" not in e and "ERR_" not in e], pg.errors
+            pg.close()
 
         pg = fresh()
         attend(pg, door(12), MAIN)
