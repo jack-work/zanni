@@ -130,6 +130,8 @@ class Network(Campaign):
             run.page.wait_for_timeout(250)
 
     def extra_quiescent(self, run):
+        if run.stack.state()["upgrades"] < 1:
+            raise Failure("never-connected", "the page never reached the door through the edge and the gateway, so nothing else here was tested")
         big = run.state.get("big")
         if big:
             shown = run.page.evaluate("document.body.innerText")
