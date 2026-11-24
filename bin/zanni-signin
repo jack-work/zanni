@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 if [ "${1:-}" = -h ] || [ "${1:-}" = --help ]; then
-  printf 'usage: zanni-signin\n\nCopies the zanni files pages/signin/ wears (gesso, fontpack and its three faces, parla and the\nFigaro head) into pages/signin/z/, so the page is served as plain files from its own directory.\n'
+  printf 'usage: zanni-signin\n\nCopies the zanni files pages/signin/ wears (gesso, and fontpack and its three\nfaces) into pages/signin/z/, so the page is served as plain files from its own directory.\n'
   exit 0
 fi
 root=$(cd "$(dirname "$0")/.." && pwd)
 z=$root/pages/signin/z
 rm -rf "$z"
 mkdir -p "$z/fonts"
-cp "$root/assets/gesso/gesso.css" "$root/assets/fontpack/fontpack.css" "$root/assets/parla/parla.css" "$root/assets/parla/figaro-head.png" "$z/"
+cp "$root/assets/gesso/gesso.css" "$root/assets/fontpack/fontpack.css" "$z/"
 grep -E "jacquard-24|eb-garamond\.woff2|vt323" "$root/assets/fontpack/fonts.css" > "$z/fonts.css"
 cp "$root/assets/fontpack/fonts/jacquard-24.woff2" "$root/assets/fontpack/fonts/eb-garamond.woff2" "$root/assets/fontpack/fonts/vt323.woff2" "$z/fonts/"
 cp "$root/assets/fontpack/fonts/OFL-jacquard24.txt" "$root/assets/fontpack/fonts/OFL-ebgaramond.txt" "$root/assets/fontpack/fonts/OFL-vt323.txt" "$z/fonts/"

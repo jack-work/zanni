@@ -237,9 +237,6 @@
     var ok = !!(to && to.protocol === 'https:' && googleHost(to.hostname));
     ['or', 'google', 'request'].forEach(function (id) { byId(id).hidden = !ok; });
     byId('google').href = GOOGLE + '?rd=' + encodeURIComponent(rd);
-    byId('says').textContent = ok
-      ? 'Sign in with the account the boss gave you, or with Google if he let yours in.'
-      : 'Sign in with the account the boss gave you.';
   }
 
   async function start() {
