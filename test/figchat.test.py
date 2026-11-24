@@ -613,6 +613,45 @@ try:
         assert not pg.errors, pg.errors
         pg.close()
 
+        for width, height in ((844, 390), (1280, 800), (1920, 1080)):
+            pg = fresh(width, height)
+            pg.goto("about:blank")
+            attend(pg, fast, MAIN)
+            panew = "Math.round(document.querySelector('.zr-pane').getBoundingClientRect().width)"
+            mainw = "Math.round(document.querySelector('.fw-pane').getBoundingClientRect().width)"
+            assert pg.locator(".zr-pane").is_visible(), "the left pane is docked at %d" % width
+            assert pg.evaluate("document.querySelector('.zr-pane').getAttribute('style')") is None, "an unresized pane carries no style attribute"
+            first = pg.evaluate(panew)
+            assert pg.evaluate(mainw) + first >= width - 2, "the chat takes the rest of the width at %d" % width
+            assert pg.evaluate("document.documentElement.scrollWidth") <= width, "nothing overflows sideways at %d" % width
+            box = pg.locator(".zr-pane-grip").bounding_box()
+            pg.mouse.move(box["x"] + 3, box["y"] + 100)
+            pg.mouse.down()
+            pg.mouse.move(box["x"] + 83, box["y"] + 100, steps=4)
+            pg.mouse.up()
+            pg.wait_for_timeout(200)
+            grown = pg.evaluate(panew)
+            assert grown > first + 40, "dragging the grip widens the pane: %s -> %s" % (first, grown)
+            pg.locator(".zr-pane-grip").focus()
+            pg.keyboard.press("ArrowLeft")
+            pg.wait_for_timeout(100)
+            assert pg.evaluate(panew) == grown - 16, "arrow keys resize by 16 px"
+            pg.locator(".fw-panes").click()
+            pg.wait_for_timeout(200)
+            assert pg.evaluate(panew) == 0 or not pg.locator(".zr-pane").is_visible(), "the Arias button collapses the pane"
+            assert pg.evaluate(mainw) >= width - 2, "a collapsed pane gives the chat the full width"
+            pg.reload()
+            until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'", timeout=15000)
+            assert not pg.locator(".zr-pane").is_visible(), "a collapsed pane stays collapsed after a reload"
+            pg.locator(".fw-panes").click()
+            pg.wait_for_timeout(200)
+            assert pg.evaluate(panew) == grown - 16, "the width is remembered across the reload"
+            pg.locator(".fw-narrow").click()
+            pg.wait_for_timeout(200)
+            narrow = pg.evaluate("Math.round(document.querySelector('.fw-main').getBoundingClientRect().width)")
+            assert narrow <= 46 * 16 + 2, "the Narrow setting brings back the measure: %s" % narrow
+            pg.close()
+
         pg = fresh()
         slow = door(150)
         attend(pg, slow, MAIN)

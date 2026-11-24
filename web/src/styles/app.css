@@ -24,7 +24,6 @@ body.fw-page {
   --zr-edge-r: var(--fw-edge-r);
   --fw-bar: 28px;
   --figchat-bar: var(--fw-bar);
-  --fw-side: 20rem;
   --fw-width: 46rem;
   --fw-caret: polygon(0 0,14.286% 0,14.286% 14.286%,42.857% 14.286%,42.857% 28.571%,71.429% 28.571%,71.429% 42.857%,100% 42.857%,100% 57.143%,71.429% 57.143%,71.429% 71.429%,42.857% 71.429%,42.857% 85.714%,14.286% 85.714%,14.286% 100%,0 100%);
   --fw-edge-l: max(var(--z-space-5, 16px), env(safe-area-inset-left));
@@ -137,9 +136,10 @@ body.fw-page {
 .nodi-prose[data-speaking] { box-shadow: inset 3px 0 0 var(--z-accent); padding-left: var(--z-space-3, 8px); }
 
 
-@media (min-width: 900px) {
-  .fw { --zr-pit-left: var(--fw-side); --fw-width: 100%; --zr-sticky-measure: 100cqw; }
-  .fw-body { display: grid; grid-template-columns: var(--fw-side) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+@media (min-width: 640px) {
+  .fw { --zr-pit-left: var(--zr-pane-w, 320px); --fw-width: 100%; --zr-sticky-measure: 100cqw; }
+  .fw[data-narrow] { --fw-width: 46rem; }
+  .fw-body { display: grid; grid-template-columns: var(--zr-pane-w, 320px) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
   .fw[data-route] .fw-side {
     display: block;
     max-width: none;
@@ -150,6 +150,7 @@ body.fw-page {
   .fw[data-route] .fw-pane { display: flex; }
   .fw-back { display: none; }
 }
+@media (max-width: 639px) { .fw-panes, .fw .zr-pane-grip { display: none; } }
 .fw-subbar { display: flex; align-items: center; justify-content: space-between; gap: var(--z-space-3, 8px); }
 .fw-subtools { display: inline-flex; gap: var(--z-space-3, 8px); margin-left: auto; }
 .fw-voice { min-width: 5.5rem; }
@@ -199,7 +200,7 @@ body.fw-page {
 
 
 
-@media (max-width: 899px) and (prefers-reduced-motion: no-preference) {
+@media (max-width: 639px) and (prefers-reduced-motion: no-preference) {
   ::view-transition-old(root) { animation: fw-vt-out var(--fw-d-exit, 160ms) cubic-bezier(0.2, 0.8, 0.2, 1) both; }
   ::view-transition-new(root) { animation: fw-vt-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 }
@@ -232,7 +233,7 @@ body.fw-page {
 .fw-field textarea { resize: vertical; }
 .fw-new-actions { display: flex; justify-content: flex-end; }
 
-@media (min-width: 900px) { .fw .zr-sheet { left: var(--fw-side); width: auto; } }
+@media (min-width: 640px) { .fw .zr-sheet { left: var(--zr-pane-w, 320px); width: auto; } }
 @media (pointer: coarse) {
   .fw-field select, .fw-field input, .fw-field textarea { min-height: 44px; }
   .fw-new-actions .zr-btn { min-height: 44px; }

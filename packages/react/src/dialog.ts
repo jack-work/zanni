@@ -6,10 +6,17 @@ export interface DialogOptions {
   active?: boolean;
   trap?: boolean;
   bodySelector?: string;
+  typing?: boolean;
+  root?: boolean;
+}
+
+function editable(t: EventTarget | null): boolean {
+  const n = t as HTMLElement | null;
+  return !!n && (n.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(n.tagName));
 }
 
 export function useDialog(root: RefObject<HTMLElement | null>, onClose: () => void, options: DialogOptions = {}): void {
-  const { active = true, trap = true, bodySelector = ".zr-sheet-body" } = options;
+  const { active = true, trap = true, bodySelector = ".zr-sheet-body", typing = true, root: focusRoot = false } = options;
   const close = useRef(onClose);
   close.current = onClose;
 
@@ -17,10 +24,11 @@ export function useDialog(root: RefObject<HTMLElement | null>, onClose: () => vo
     if (!active) return;
     const before = document.activeElement as HTMLElement | null;
     const el = root.current;
-    const target = el?.querySelector<HTMLElement>("[data-autofocus]") ?? el?.querySelector<HTMLElement>(bodySelector + " " + FOCUSABLE) ?? el?.querySelector<HTMLElement>(FOCUSABLE);
+    const target = focusRoot ? el : el?.querySelector<HTMLElement>("[data-autofocus]") ?? el?.querySelector<HTMLElement>(bodySelector + " " + FOCUSABLE) ?? el?.querySelector<HTMLElement>(FOCUSABLE);
     target?.focus();
     const onKey = (ev: KeyboardEvent) => {
       if (ev.key === "Escape") {
+        if (!typing && editable(ev.target)) return;
         close.current();
         return;
       }
@@ -45,5 +53,5 @@ export function useDialog(root: RefObject<HTMLElement | null>, onClose: () => vo
       document.removeEventListener("keydown", onKey);
       before?.focus?.({ preventScroll: true });
     };
-  }, [active, trap, bodySelector, root]);
+  }, [active, trap, bodySelector, typing, focusRoot, root]);
 }
