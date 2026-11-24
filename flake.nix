@@ -496,6 +496,22 @@
           python3 test/timing.py $ZANNI_TIMINGS $out/timings.json
         '';
 
+        apps.parity = {
+          type = "app";
+          program = toString (pkgs.writeShellScript "pager-parity" ''
+            export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+            export PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
+            export FONTCONFIG_FILE=${pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts pkgs.noto-fonts-color-emoji pkgs.noto-fonts-cjk-sans pkgs.noto-fonts ]; }}
+            export PARITY_GATEWAY=${gateway}/bin/figaro-gateway
+            export PARITY_WS=${gateway}/lib/node_modules/ws
+            export PATH=${pkgs.nodejs_24}/bin:$PATH
+            cd web
+            [ -d node_modules ] || npm ci --ignore-scripts
+            npm run build --silent -- --logLevel warn
+            exec npx playwright test "$@"
+          '');
+        };
+
         apps.figchat-fuzz = {
           type = "app";
           program = toString (pkgs.writeShellScript "figchat-fuzz" ''

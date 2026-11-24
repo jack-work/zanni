@@ -7,7 +7,7 @@ import type { Scenario } from "./check";
 
 export interface Unit {
   aria: string;
-  door: string;
+  rpc: string;
   headers: Record<string, string>;
   release(): Promise<void>;
 }
@@ -18,7 +18,11 @@ interface UnitFile {
   env: Record<string, string>;
 }
 
-const gatewayMain = () => `${process.env.FIGARO_FORMS_DIR ?? "/var/tmp/ff-session"}/packages/bridge/dist/gateway-main.js`;
+const gatewayBin = () => {
+  const bin = process.env.PARITY_GATEWAY;
+  if (!bin) throw new Error("PARITY_GATEWAY must name the figaro-gateway binary (nix run .#parity sets it)");
+  return bin;
+};
 
 export async function realUnit(scenario: Scenario): Promise<Unit> {
   const file = process.env.PARITY_UNIT;
@@ -35,8 +39,8 @@ export async function realUnit(scenario: Scenario): Promise<Unit> {
   const edgeSock = `${unit.root}/edge-${randomBytes(4).toString("hex")}.sock`;
   const proxy = await edgeProxy(edgeSock, `${unit.env.FIGARO_RUNTIME_DIR}/door.sock`, "gluck");
   const gateway: ChildProcess = spawn(
-    "node",
-    [gatewayMain(), "--door-url", `ws+unix://${edgeSock}:/door`, "--speech-socket", `${unit.root}/no-speech.sock`, "--admin", "gluck", "--store", "gluck", "--port", String(port), "--peer", "127.0.0.1", "--edge-secret-file", secretFile],
+    gatewayBin(),
+    ["--upstream-url", `ws+unix://${edgeSock}:/rpc`, "--speech-socket", `${unit.root}/no-speech.sock`, "--admin", "gluck", "--store", "gluck", "--port", String(port), "--peer", "127.0.0.1", "--edge-secret-file", secretFile],
     { env, stdio: ["ignore", "ignore", "pipe"] },
   );
   await new Promise<void>((resolve, reject) => {
@@ -45,7 +49,7 @@ export async function realUnit(scenario: Scenario): Promise<Unit> {
   });
   return {
     aria: born.aria_id,
-    door: `ws://127.0.0.1:${port}/door`,
+    rpc: `ws://127.0.0.1:${port}/rpc`,
     headers: { "x-figaro-edge": readFileSync(secretFile, "utf8").trim(), "remote-user": "gluck" },
     release: async () => {
       gateway.kill();

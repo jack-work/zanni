@@ -28,8 +28,8 @@ export function newFakeAria(): { core: MockCore; id: string } {
   return { core, id };
 }
 
-export async function fakeDoor(page: Page, core: MockCore): Promise<void> {
-  await page.routeWebSocket(/\/door/, (ws) => {
+export async function fakeRpc(page: Page, core: MockCore): Promise<void> {
+  await page.routeWebSocket(/\/rpc/, (ws) => {
     const conn = core.attach({ text: (s) => ws.send(s), close: () => ws.close() });
     ws.onMessage((raw) => {
       const frame = JSON.parse(String(raw));
@@ -40,9 +40,9 @@ export async function fakeDoor(page: Page, core: MockCore): Promise<void> {
   });
 }
 
-export async function relayDoor(page: Page, upstream: string, headers: Record<string, string>): Promise<void> {
-  const WS = createRequire(`${process.env.FIGARO_FORMS_DIR ?? "/var/tmp/ff-session"}/package.json`)("ws");
-  await page.routeWebSocket(/\/door/, (ws) => {
+export async function relayRpc(page: Page, upstream: string, headers: Record<string, string>): Promise<void> {
+  const WS = require(process.env.PARITY_WS!);
+  await page.routeWebSocket(/\/rpc/, (ws) => {
     const up = new WS(upstream, { headers });
     const queued: string[] = [];
     up.on("open", () => queued.splice(0).forEach((m) => up.send(m)));

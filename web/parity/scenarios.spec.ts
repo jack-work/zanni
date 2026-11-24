@@ -3,31 +3,28 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { check, type Doc, type Step } from "./check";
 import { readFacts } from "./facts";
-import { fakeDoor, fakeSpeech, newFakeAria, relayDoor, test, expect } from "./fixtures";
+import { fakeRpc, fakeSpeech, newFakeAria, relayRpc, test, expect } from "./fixtures";
 import { realUnit, type Unit } from "./real";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const doc: Doc = JSON.parse(readFileSync(join(here, "scenarios.json"), "utf8"));
 const glyphs: Record<string, string> = JSON.parse(readFileSync(join(here, "glyphs.json"), "utf8"));
-const LANDED = new Set(["messages.attend", "messages.show-everything"]);
 const real = process.env.PARITY_REAL === "1";
 const shots = process.env.PARITY_SHOTS ?? join(here, "..", "test-results", "parity");
 
 test.describe.configure({ mode: "serial" });
 
 for (const scenario of doc.scenarios) {
-  const landed = LANDED.has(scenario.slice);
-  const run = landed ? test : test.fixme;
-  run(`${real ? "real" : "fake"}: ${scenario.id} (${scenario.slice})`, async ({ page }, info) => {
+  test(`${real ? "real" : "fake"}: ${scenario.id} (${scenario.slice})`, async ({ page }, info) => {
     const unit: Unit | null = real ? await realUnit(scenario) : null;
     let aria: string;
     if (unit) {
       aria = unit.aria;
-      await relayDoor(page, unit.door, unit.headers);
+      await relayRpc(page, unit.rpc, unit.headers);
     } else {
       const fake = newFakeAria();
       aria = fake.id;
-      await fakeDoor(page, fake.core);
+      await fakeRpc(page, fake.core);
     }
     await fakeSpeech(page);
     const route = (name: string) => (name === "main" ? aria : aria);
