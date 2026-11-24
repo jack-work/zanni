@@ -65,8 +65,8 @@ describe("QueueBoard", () => {
     const r = data.steps.find((s) => s.step === "build")!;
     expect(build.querySelector('[data-stat="count"]')!.textContent).toBe(String(r.count));
     expect(build.querySelector('[data-stat="rate"]')!.textContent).toBe(formatRate(r.failure_rate));
-    expect(build.querySelector('[data-stat="p50"]')!.textContent).toBe("p50 " + formatDuration(r.p50_ms));
-    expect(build.querySelector('[data-stat="p95"]')!.textContent).toBe("p95 " + formatDuration(r.p95_ms));
+    expect(build.querySelector('[data-stat="p50"]')!.textContent).toBe(formatDuration(r.p50_ms));
+    expect(build.querySelector('[data-stat="p95"]')!.textContent).toBe(formatDuration(r.p95_ms));
     expect(build.hasAttribute("data-failing")).toBe(true);
     expect(document.querySelector('thead [data-step="queue"]')!.hasAttribute("data-failing")).toBe(false);
   });
