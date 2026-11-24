@@ -67,9 +67,13 @@ body.fw-page {
   user-select: none;
 }
 .fw-status-glyph { flex: none; width: 1.2ch; text-align: center; color: var(--z-ok); }
-.fw[data-link="offline"] .fw-status-glyph, .fw[data-link="gone"] .fw-status-glyph, .fw[data-link="refused"] .fw-status-glyph { color: var(--z-warn); }
+.fw[data-link="offline"] .fw-status-glyph, .fw[data-link="signedout"] .fw-status-glyph, .fw[data-link="gone"] .fw-status-glyph, .fw[data-link="refused"] .fw-status-glyph { color: var(--z-warn); }
 .fw-status[data-state="running"] .fw-status-glyph { color: var(--z-accent); }
 .fw-status[data-state="error"] .fw-status-glyph { color: var(--z-fail); }
+.fw-status-word { flex: none; color: var(--z-warn); }
+.fw-signedout { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--z-space-3, 8px); padding: var(--z-space-3, 8px) var(--z-space-4, 12px); border-top: 1px solid var(--z-line); color: var(--z-ink); }
+.fw-signedout-line { margin: 0; }
+.fw-signedout-actions { display: flex; gap: var(--z-space-3, 8px); }
 .fw-status-pit { flex: none; color: var(--z-accent); }
 .fw-status-handle { flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; color: var(--z-ink); }
 .fw-status-mantra { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--z-ink); }

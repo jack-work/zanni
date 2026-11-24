@@ -12,6 +12,7 @@ import { COMMAND_OFF, commandAtom, commandSourcesAtom, helpOpenAtom, loadOutfits
 import { pitViewAtom } from "../state/pit";
 import { applyCandidate, suggest, type Candidate } from "../lib/command";
 import { CommandHelp } from "./command-help";
+import { SignedOut } from "./signed-out";
 import type { Attended } from "../state/route";
 
 function useNow(period: number | null): number {
@@ -144,6 +145,8 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
   const note = comp.note || mic.note;
   const showStrip = running || !!note;
   const line = useWorkLine(attended, note, running);
+
+  if (link === "signedout") return <SignedOut />;
 
   return (
     <>
