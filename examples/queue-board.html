@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en" data-theme="figaro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-3l++K52IRHsHKn9Fyol7oldcWLITWIp7f7/buhPE2eQ='; style-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'">
+<title>QueueBoard from the served bundle</title>
+<link rel="stylesheet" href="../assets/v2/z2-tokens.css">
+<link rel="stylesheet" href="../assets/v2/z2-control.css">
+<link rel="stylesheet" href="/zanni/react/0.35.1/index.css">
+<script type="importmap">{
+  "imports": {
+    "react": "/vendor/react/index.js",
+    "react/jsx-runtime": "/vendor/react/jsx-runtime.js",
+    "react-dom/client": "/vendor/react-dom/client.js",
+    "figaro-forms/glyphs": "/vendor/figaro-forms/glyphs.js",
+    "zanni-react": "/zanni/react/0.35.1/index.js"
+  }
+}</script>
+<script type="module" src="queue-board.js"></script>
+</head>
+<body>
+<main>
+<div id="root"></div>
+</main>
+</body>
+</html>
