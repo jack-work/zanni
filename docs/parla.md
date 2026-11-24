@@ -55,6 +55,14 @@ for (const b of buttons) {
 }
 ```
 
+## Static, and in React
+
+The markup needs no script: `parla.css` alone draws the head and the bubble,
+so a page whose only job is one line from Figaro (a sign-in page speaking for
+the boss) leaves out `parla.js` and `data-parla`. In React,
+`<FigaroSays>line</FigaroSays>` from zanni-react renders the same markup with
+the shipped head; see [react](react.md).
+
 ## Knobs
 
 | property | default | what |

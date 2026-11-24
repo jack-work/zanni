@@ -33,6 +33,8 @@ export type { TrayItem, TrayProps } from "./tray";
 export { Hints } from "./hints";
 export type { Chip, HintsProps } from "./hints";
 export { Fold } from "./fold";
+export { FigaroSays, figaroHead, notHereLines } from "./figaro-says";
+export type { FigaroSaysProps } from "./figaro-says";
 export type { FoldProps } from "./fold";
 export { BlockView, Plain } from "./text";
 export { InputView, ProseView, SteeringView, ThinkingView, ToolView, TurnView, UnknownView, WorkGroup, TranscriptContext, toolStatusWord } from "./transcript";

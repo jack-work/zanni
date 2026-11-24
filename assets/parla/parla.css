@@ -109,3 +109,13 @@
   .parla-bubble.parla-wiggle,
   .parla-bubble.parla-again { animation: none; }
 }
+
+button.parla-bubble {
+  display: block;
+  width: auto;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button.parla-bubble:focus-visible { outline: 3px solid var(--z-focus); outline-offset: 4px; }
