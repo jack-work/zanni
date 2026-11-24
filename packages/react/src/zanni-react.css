@@ -373,6 +373,7 @@
 .zr-qb-step, .zr-qb-commit-head { color: var(--z-muted); }
 .zr-qb-step > span, .zr-qb-commit-head > span { display: block; }
 .zr-qb-step-name { color: var(--z-ink); text-transform: lowercase; }
+.zr-qb-phase { color: var(--z-muted); }
 .zr-qb-step[data-failing] [data-stat="rate"] { color: var(--z-fail); }
 .zr-qb-commit > span { display: block; overflow: hidden; text-overflow: ellipsis; }
 .zr-qb-sha { color: var(--z-accent); }

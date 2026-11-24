@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { DEPLOY_STEPS, QueueBoard, boardCell, formatDuration, formatRate, sinceOf, type DeploysResponse } from "zanni-react";
+import { QueueBoard, boardCell, boardColumns, formatDuration, formatRate, sinceOf, type DeploysResponse } from "zanni-react";
 import fixture from "../fixtures/deploys.json";
 
 const data = fixture as DeploysResponse;
@@ -9,12 +9,12 @@ const props = { data, env: "dev" as const, onEnv: () => {}, since: "7d" as const
 describe("QueueBoard", () => {
   it("draws one row per commit and one column per step, in order", () => {
     render(<QueueBoard {...props} />);
-    const heads = [...document.querySelectorAll<HTMLElement>("thead .zr-qb-step")].map((h) => h.dataset.step);
-    expect(heads).toEqual([...DEPLOY_STEPS]);
+    const heads = [...document.querySelectorAll<HTMLElement>("thead .zr-qb-step")].map((h) => h.dataset.step + (h.dataset.phase ? ":" + h.dataset.phase : ""));
+    expect(heads).toEqual(["queue", "review", "merge", "build", "dev_deploy", "prod_deploy:activate", "prod_deploy:acceptance", "cut"]);
     const rows = document.querySelectorAll<HTMLElement>("tbody .zr-qb-row");
     expect(rows.length).toBe(data.commits.length);
     expect(rows[0]!.dataset.trace).toBe(data.commits[0]!.trace);
-    expect(rows[0]!.querySelectorAll(".zr-qb-cell").length).toBe(DEPLOY_STEPS.length);
+    expect(rows[0]!.querySelectorAll(".zr-qb-cell").length).toBe(8);
   });
 
   it("shows the short sha, repo and ref on the row head", () => {
@@ -31,7 +31,7 @@ describe("QueueBoard", () => {
     const failed = data.commits.find((c) => c.ref === "lane/forms-signedout")!;
     const row = document.querySelector<HTMLElement>(`[data-trace="${failed.trace}"]`)!;
     const cells = [...row.querySelectorAll<HTMLElement>(".zr-qb-cell")];
-    expect(cells.map((c) => c.dataset.outcome ?? "empty")).toEqual(["ok", "ok", "ok", "fail", "empty", "empty", "empty"]);
+    expect(cells.map((c) => c.dataset.outcome ?? "empty")).toEqual(["ok", "ok", "ok", "fail", "empty", "empty", "empty", "empty"]);
     expect(cells[3]!.querySelector(".zr-qb-dur")!.textContent).toBe("5m41s");
     const skipped = document.querySelector<HTMLElement>(`[data-trace="${data.commits.find((c) => c.ref === "master" && c.repo === "figscope")!.trace}"]`)!;
     const skip = skipped.querySelectorAll<HTMLElement>(".zr-qb-cell")[1]!;
@@ -43,20 +43,38 @@ describe("QueueBoard", () => {
     render(<QueueBoard {...props} />);
     const prod = data.commits.find((c) => c.ref === "dev" && c.repo === "zanni")!;
     const cell = document.querySelector<HTMLElement>(`[data-trace="${prod.trace}"]`)!.querySelectorAll<HTMLElement>(".zr-qb-cell")[5]!;
+    expect(cell.title).toContain("prod_deploy activate ok");
     for (const want of ["site fig.kelliher.info", "unit figchat", "actor el-zapador", "cand c-0612", "box spain"]) expect(cell.title).toContain(want);
   });
 
   it("folds several spans of one step into one cell: worst outcome, last duration, a count", () => {
     const multi = data.commits.find((c) => c.repo === "spain-flake")!;
-    const cell = boardCell(multi, "prod_deploy")!;
+    const cell = boardCell(multi, "prod_deploy", "activate")!;
     expect(cell.spans.length).toBe(2);
     expect(cell.duration_ms).toBe(64000);
     const failing = { ...multi, steps: multi.steps.map((s, i) => (s.step === "prod_deploy" && i % 2 === 0 ? { ...s, outcome: "fail" as const } : s)) };
-    expect(boardCell(failing, "prod_deploy")!.outcome).toBe("fail");
+    expect(boardCell(failing, "prod_deploy", "activate")!.outcome).toBe("fail");
+    expect(boardCell(multi, "prod_deploy")).toBeNull();
     expect(boardCell(multi, "queue")!.spans.length).toBe(1);
     expect(boardCell({ ...multi, steps: [] }, "queue")).toBeNull();
     render(<QueueBoard {...props} />);
     expect(document.querySelector(`[data-trace="${multi.trace}"] .zr-qb-n`)!.textContent).toBe("\u00d72");
+  });
+
+  it("keys columns by step and phase, one per phase in the rollup's order, a plain column for an unphased step", () => {
+    expect(boardColumns(data).map((c) => c.key)).toEqual(["queue", "review", "merge", "build", "dev_deploy", "prod_deploy:activate", "prod_deploy:acceptance", "cut"]);
+    expect(boardColumns(null).map((c) => c.key)).toEqual(["queue", "review", "merge", "build", "dev_deploy", "prod_deploy", "cut"]);
+  });
+
+  it("splits an acceptance failure from a clean activation", () => {
+    render(<QueueBoard {...props} />);
+    const row = document.querySelector<HTMLElement>(`[data-trace="${data.commits.find((c) => c.ref === "lane/web-resume")!.trace}"]`)!;
+    const cells = [...row.querySelectorAll<HTMLElement>(".zr-qb-cell")];
+    expect([cells[5]!.dataset.outcome, cells[6]!.dataset.outcome]).toEqual(["ok", "fail"]);
+    const acceptance = document.querySelector<HTMLElement>('thead [data-step="prod_deploy"][data-phase="acceptance"]')!;
+    expect(acceptance.hasAttribute("data-failing")).toBe(true);
+    expect(acceptance.querySelector('[data-stat="phase"]')!.textContent).toBe("acceptance");
+    expect(document.querySelector('thead [data-step="prod_deploy"][data-phase="activate"]')!.hasAttribute("data-failing")).toBe(false);
   });
 
   it("heads each step with count, failure rate, p50 and p95", () => {
@@ -93,7 +111,7 @@ describe("QueueBoard", () => {
     expect(screen.getByRole("status").textContent).toBe("deploys: HTTP 502");
     rerender(<QueueBoard {...props} data={{ ...data, commits: [], steps: [] }} />);
     expect(document.querySelector(".zr-qb-empty")!.textContent).toBe("No deploys in this window.");
-    expect(document.querySelectorAll("thead .zr-qb-step").length).toBe(DEPLOY_STEPS.length);
+    expect(document.querySelectorAll("thead .zr-qb-step").length).toBe(7);
   });
 
   it("renders a hostile repo name as text with its controls made visible", () => {

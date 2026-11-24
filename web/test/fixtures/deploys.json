@@ -174,7 +174,26 @@
           "box": "spain",
           "repo": "zanni",
           "ref": "dev",
-          "sha": "85c2715b0f3e49d1a7c8e6024b9d35f1ac7e0d42"
+          "sha": "85c2715b0f3e49d1a7c8e6024b9d35f1ac7e0d42",
+          "phase": "activate"
+        },
+        {
+          "step": "prod_deploy",
+          "span": "85c2715bprodacpt",
+          "start": "2026-11-24T09:50:57Z",
+          "end": "2026-11-24T09:51:11Z",
+          "duration_ms": 14000,
+          "outcome": "ok",
+          "actor": "el-zapador",
+          "actor_aria": "42aa0099",
+          "site": "fig.kelliher.info",
+          "unit": "figchat",
+          "cand": "c-0612",
+          "box": "spain",
+          "repo": "zanni",
+          "ref": "dev",
+          "sha": "85c2715b0f3e49d1a7c8e6024b9d35f1ac7e0d42",
+          "phase": "acceptance"
         },
         {
           "step": "cut",
@@ -283,7 +302,26 @@
           "box": "spain",
           "repo": "figscope",
           "ref": "master",
-          "sha": "032a7d3e5c70b18f94a2d6c3e1f08a57b6d49c21"
+          "sha": "032a7d3e5c70b18f94a2d6c3e1f08a57b6d49c21",
+          "phase": "activate"
+        },
+        {
+          "step": "prod_deploy",
+          "span": "032a7d3eprodacpt",
+          "start": "2026-11-24T09:01:13Z",
+          "end": "2026-11-24T09:01:27Z",
+          "duration_ms": 14000,
+          "outcome": "ok",
+          "actor": "el-zapador",
+          "actor_aria": "42aa0099",
+          "site": "scope.kelliher.info",
+          "unit": "figscope",
+          "cand": "c-0611",
+          "box": "spain",
+          "repo": "figscope",
+          "ref": "master",
+          "sha": "032a7d3e5c70b18f94a2d6c3e1f08a57b6d49c21",
+          "phase": "acceptance"
         },
         {
           "step": "cut",
@@ -407,7 +445,7 @@
       "repo": "figaro",
       "ref": "lane/web-resume",
       "first": "2026-11-24T06:34:00Z",
-      "last": "2026-11-24T06:49:11Z",
+      "last": "2026-11-24T06:50:51Z",
       "steps": [
         {
           "step": "queue",
@@ -482,7 +520,25 @@
           "step": "prod_deploy",
           "span": "0275267dprod2000",
           "start": "2026-11-24T06:47:36Z",
-          "end": "2026-11-24T06:49:11Z",
+          "end": "2026-11-24T06:48:23Z",
+          "duration_ms": 47500,
+          "outcome": "ok",
+          "actor": "el-zapador",
+          "actor_aria": "42aa0099",
+          "site": "figar.org",
+          "unit": "figaro",
+          "cand": "c-0609",
+          "box": "spain",
+          "repo": "figaro",
+          "ref": "lane/web-resume",
+          "sha": "0275267d6a39c4e81f5b02a7d8e3c9164b0f7a5e",
+          "phase": "activate"
+        },
+        {
+          "step": "prod_deploy",
+          "span": "0275267dprodacpt",
+          "start": "2026-11-24T06:49:16Z",
+          "end": "2026-11-24T06:50:51Z",
           "duration_ms": 95000,
           "outcome": "fail",
           "actor": "el-zapador",
@@ -493,7 +549,8 @@
           "box": "spain",
           "repo": "figaro",
           "ref": "lane/web-resume",
-          "sha": "0275267d6a39c4e81f5b02a7d8e3c9164b0f7a5e"
+          "sha": "0275267d6a39c4e81f5b02a7d8e3c9164b0f7a5e",
+          "phase": "acceptance"
         }
       ]
     },
@@ -597,7 +654,25 @@
           "box": "spain",
           "repo": "spain-flake",
           "ref": "master",
-          "sha": "0e11a3f9c25d7b4806a1e93c5f2d8b7046a39e1c"
+          "sha": "0e11a3f9c25d7b4806a1e93c5f2d8b7046a39e1c",
+          "phase": "activate"
+        },
+        {
+          "step": "prod_deploy",
+          "span": "0e11a3f9prodacpt",
+          "start": "2026-11-24T05:11:40Z",
+          "end": "2026-11-24T05:11:54Z",
+          "duration_ms": 14000,
+          "outcome": "ok",
+          "actor": "el-zapador",
+          "actor_aria": "42aa0099",
+          "unit": "switch",
+          "cand": "c-0608",
+          "box": "spain",
+          "repo": "spain-flake",
+          "ref": "master",
+          "sha": "0e11a3f9c25d7b4806a1e93c5f2d8b7046a39e1c",
+          "phase": "acceptance"
         },
         {
           "step": "prod_deploy",
@@ -613,7 +688,25 @@
           "box": "spain",
           "repo": "spain-flake",
           "ref": "master",
-          "sha": "0e11a3f9c25d7b4806a1e93c5f2d8b7046a39e1c"
+          "sha": "0e11a3f9c25d7b4806a1e93c5f2d8b7046a39e1c",
+          "phase": "activate"
+        },
+        {
+          "step": "prod_deploy",
+          "span": "0e11a3f9prodacpt",
+          "start": "2026-11-24T05:13:04Z",
+          "end": "2026-11-24T05:13:18Z",
+          "duration_ms": 14000,
+          "outcome": "ok",
+          "actor": "el-zapador",
+          "actor_aria": "42aa0099",
+          "unit": "gateway",
+          "cand": "c-0608",
+          "box": "spain",
+          "repo": "spain-flake",
+          "ref": "master",
+          "sha": "0e11a3f9c25d7b4806a1e93c5f2d8b7046a39e1c",
+          "phase": "acceptance"
         },
         {
           "step": "cut",
@@ -684,12 +777,24 @@
     },
     {
       "step": "prod_deploy",
+      "phase": "activate",
+      "count": 5,
+      "ok": 5,
+      "fail": 0,
+      "skip": 0,
+      "p50_ms": 52000,
+      "p95_ms": 118000,
+      "failure_rate": 0
+    },
+    {
+      "step": "prod_deploy",
+      "phase": "acceptance",
       "count": 5,
       "ok": 4,
       "fail": 1,
       "skip": 0,
-      "p50_ms": 64000,
-      "p95_ms": 118000,
+      "p50_ms": 14000,
+      "p95_ms": 95000,
       "failure_rate": 0.2
     },
     {
