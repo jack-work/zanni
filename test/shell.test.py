@@ -140,6 +140,10 @@ def props(pg, id):
     return sorted(set(pg.evaluate(MOTION, id)))
 
 
+def settle(pg, sel):
+    pg.evaluate("(sel) => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))).then(() => Promise.all(document.querySelector(sel).getAnimations({ subtree: true }).map((a) => a.finished.catch(() => null))))", sel)
+
+
 def shot(pg, name):
     if SHOTS:
         os.makedirs(SHOTS, exist_ok=True)
@@ -333,7 +337,7 @@ with sync_playwright() as p:
         scroll(pg, 0)
 
         pg.tap("#b-tree")
-        pg.wait_for_timeout(500)
+        settle(pg, "#tree")
         tree = pg.evaluate("(() => { const t = document.querySelector('#tree'); const r = t.getBoundingClientRect(); return { open: t.hasAttribute('data-open'), left: r.left, top: r.top, role: t.getAttribute('role'), modal: t.getAttribute('aria-modal') } })()")
         check("%d: the files button opens a drawer below the bar" % w, tree["open"] and tree["left"] == 0 and tree["top"] == int(var(pg, "--proscenio-shown")[:-2]) and tree["role"] == "dialog" and tree["modal"] == "true", tree)
         check("%d: focus moves into the drawer, and a scrim shows" % w, pg.evaluate("document.querySelector('#tree').contains(document.activeElement)") and pg.locator(".zr-scrim").count() == 1)
