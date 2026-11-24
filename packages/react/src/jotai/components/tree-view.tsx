@@ -63,9 +63,11 @@ export function TopologyTree({ onVisit, autoFocus, className }: { onVisit?: () =
         autoFocus={autoFocus}
         keys={{ x: kill }}
         onActivate={(id) => {
-          if (id.startsWith("@")) return;
+          const role = tree.nodes.get(id);
+          const aria = role?.kind === "role" ? role.target : id.startsWith("@") ? undefined : id;
+          if (!aria) return;
           onVisit?.();
-          go({ store, aria: id });
+          go({ store, aria });
         }}
       />
       <OlderArias shown={new Set(tree.nodes.keys())} more={tree.more} onVisit={onVisit} />

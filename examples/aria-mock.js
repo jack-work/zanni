@@ -594,6 +594,7 @@
         return out;
       }
       var root = { arias: level('') };
+      root.arias['@frontend'] = { id: '@frontend', kind: 'form', name: 'frontend', target: core.ids.main, state: 'active', active_at: base };
       if (cut()) root.more = cut();
       return root;
     }

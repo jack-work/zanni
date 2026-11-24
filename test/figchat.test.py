@@ -188,6 +188,9 @@ try:
             assert re.search(r"\(\d+\)", texts[0]) and "arias (" in texts[1], "root then arias, each with its count: %s" % texts[:2]
             assert any(re.search(r"\(\d+\)  \".*\"", x) for x in texts), "aria rows read handle (turns)  mantra: %s" % texts
             assert "1" in pg.evaluate("[...document.querySelectorAll('.zr-tree-row')].map(a => a.dataset.depth)"), "children nest under their parent"
+            role_row = [x for x in texts if x.startswith("@frontend")]
+            assert role_row and "\u2192" in role_row[0], "a role row reads @name with its holder: %s" % texts
+            snap(pg, "roles-%d" % width)
             sans_free(pg, "the list at %d" % width)
             no_sideways(pg, width, "the list")
             assert not pg.errors, pg.errors

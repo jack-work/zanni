@@ -54,6 +54,20 @@ export function topologyNodes(tree: TreeState, here: string | undefined, forms: 
       const k = tree.nodes.get(c);
       return k ? [make(k)] : [];
     });
+    if (n.kind === "role") {
+      const name = n.roleName ?? n.label;
+      const holder = n.target ? tree.nodes.get(n.target) : undefined;
+      return {
+        id: n.id,
+        label: name.startsWith("@") ? name : "@" + name,
+        count: kids.length,
+        peek: "",
+        mantra: n.target ? "\u2192 " + (holder?.handle ?? holder?.label ?? n.target.slice(0, 8)) : "vacant",
+        here: false,
+        hint: n.target ? "Enter attend the holder" : "",
+        children: kids,
+      };
+    }
     return {
       id: n.id,
       label: n.handle ?? n.label,
