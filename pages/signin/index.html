@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Sign in · kelliher</title>
+<link rel="icon" href="z/figaro-head.png">
+<link rel="stylesheet" href="z/fonts.css">
+<link rel="stylesheet" href="z/gesso.css">
+<link rel="stylesheet" href="z/fontpack.css">
+<link rel="stylesheet" href="z/parla.css">
+<link rel="stylesheet" href="signin.css">
+<script src="signin.js" defer></script>
+<body class="gesso">
+<header class="bar"><span class="mark"><b>k</b>kelliher</span></header>
+<main class="stage">
+  <div class="stub" id="stub" hidden><span class="lbl">Return to</span><span class="to" id="stub-host"></span></div>
+
+  <section id="first" aria-labelledby="first-title">
+    <h1 id="first-title">Sign in</h1>
+    <form id="first-form" novalidate>
+      <label class="f" for="username"><span>Username</span><input class="t" id="username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
+      <label class="f" for="password"><span>Password</span><input class="t" id="password" name="password" type="password" autocomplete="current-password" required></label>
+      <label class="check" for="remember"><input id="remember" type="checkbox"> Remember me</label>
+      <p class="err" id="first-err" role="alert" hidden></p>
+      <button class="btn primary" id="first-go" type="submit">Sign in</button>
+    </form>
+    <div class="links"><a id="reset" href="https://auth.kelliher.info/reset-password/step1">Reset password?</a></div>
+    <div class="or" id="or" hidden>or</div>
+    <a class="btn google" id="google" hidden href="https://login.kelliher.info/oauth/google/start"><img src="g-logo.png" alt="">Continue with Google</a>
+    <a class="ask" id="request" hidden href="https://login.kelliher.info/request">No account? Request access</a>
+    <div class="parla"><img class="parla-head" src="z/figaro-head.png" alt="Figaro" draggable="false"><p class="parla-bubble" id="says">Sign in with the account the boss gave you.</p></div>
+  </section>
+
+  <section id="second" aria-labelledby="second-title" hidden>
+    <h1 id="second-title">One more step</h1>
+    <div id="totp" hidden>
+      <form id="totp-form" novalidate>
+        <label class="f" for="code"><span>Code from your authenticator app</span><input class="t code" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9]*" required></label>
+        <p class="err" id="totp-err" role="alert" hidden></p>
+        <button class="btn primary" id="totp-go" type="submit">Verify</button>
+      </form>
+    </div>
+    <div id="passkey" hidden>
+      <p class="err" id="passkey-err" role="alert" hidden></p>
+      <button class="btn primary" id="passkey-go" type="button">Use your passkey</button>
+    </div>
+    <div class="links"><button class="linkish" id="switch" type="button" hidden></button><button class="linkish" id="restart" type="button">Not you? Start again</button></div>
+    <p class="aside" id="none" hidden>This account has no second step yet. Set one up at <a href="https://auth.kelliher.info/">auth.kelliher.info</a>, then come back.</p>
+  </section>
+
+  <section id="done" aria-labelledby="done-title" hidden>
+    <h1 id="done-title">Signed in</h1>
+    <p class="center" id="done-who"></p>
+    <a class="btn primary" id="done-go" href="https://kelliher.info/" hidden>Continue</a>
+  </section>
+</main>
+</body>
+</html>

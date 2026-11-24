@@ -1,0 +1,41 @@
+/* zanni · fontpack — three faces, three jobs.
+ *
+ * Pixel-classical is a three-register voice, and the registers do not swap:
+ *
+ *   Jacquard 24   display, numerals, drop caps.  A pixel blackletter; it has
+ *                 one weight (400) and asking for another gets you a browser
+ *                 synthesising a bold, which smears the pixel grid.
+ *   EB Garamond   prose, and act names in italic. The humane register.
+ *   VT323         everything technical: commands, labels, chips, timestamps.
+ *                 A CRT terminal face. NEVER below ~13px CSS — it is a
+ *                 bitmap-derived design and it disintegrates when small.
+ *
+ * The rule that makes it read as one voice rather than three fonts: each
+ * face owns a job, and no element borrows another's. Display type is not
+ * body copy set larger.
+ */
+
+:root {
+  --fontpack-display: 'Jacquard 24', 'Cormorant Garamond', serif;
+  --fontpack-prose: 'EB Garamond', Georgia, 'Times New Roman', serif;
+  --fontpack-mono: 'VT323', ui-monospace, 'Courier New', monospace;
+}
+
+.fontpack-display {
+  font-family: var(--fontpack-display);
+  font-weight: 400;               /* the only weight it has */
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+.fontpack-prose {
+  font-family: var(--fontpack-prose);
+  line-height: 1.6;
+  font-feature-settings: 'kern' 1, 'liga' 1, 'onum' 1;
+}
+
+.fontpack-mono {
+  font-family: var(--fontpack-mono);
+  font-size: max(13px, 1em);      /* the floor, enforced where it is worn */
+  letter-spacing: 0.06em;
+}
