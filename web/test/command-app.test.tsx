@@ -88,7 +88,7 @@ describe("command mode in the composer", () => {
     expect(document.querySelector(".zr-strip-text")!.textContent).toBe("Set mantra.");
   });
 
-  it(":set on a key the door will not write shows the refusal in place and stays in command mode", async () => {
+  it(":set on a key the gateway will not write shows the refusal in place and stays in command mode", async () => {
     await attend();
     await run("set system.model x");
     await waitFor(() => expect(reason()).toMatch(/^system\.model is read-only here: /));
@@ -192,9 +192,9 @@ describe("command mode in the composer", () => {
   it("shows why a refused verb cannot run, while typing it and when it is run, and stays put", async () => {
     await attend();
     typed(":kill ");
-    expect(reason()).toMatch(/delegated door refuses/);
+    expect(reason()).toMatch(/delegated connection refuses/);
     await run("kill");
-    expect(reason()).toMatch(/delegated door refuses/);
+    expect(reason()).toMatch(/delegated connection refuses/);
     expect(pill().getAttribute("aria-pressed")).toBe("true");
     await run("frobnicate");
     expect(reason()).toBe("frobnicate: no such command. :help lists them.");

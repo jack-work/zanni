@@ -36,7 +36,7 @@ describe("planOf", () => {
   it("says why a verb is refused, in the catalog's words", () => {
     const kill = planOf("kill");
     expect(kill).toMatchObject({ kind: "refused" });
-    expect((kill as { why: string }).why).toMatch(/delegated door refuses/);
+    expect((kill as { why: string }).why).toMatch(/delegated connection refuses/);
     expect((planOf("replay") as { why: string }).why).toMatch(/^replay: /);
     expect((planOf("frobnicate") as { why: string }).why).toBe("frobnicate: no such command. :help lists them.");
     expect((planOf("comment") as { why: string }).why).toBe("comment: figaro web does not write comments yet");
@@ -76,7 +76,7 @@ describe("pathOf and keysOf", () => {
     expect(pathOf(root, "mantra.x").found).toBe(false);
   });
 
-  it("lists leaf keys, and leaves out the ones the door will not write when asked", () => {
+  it("lists leaf keys, and leaves out the ones the gateway will not write when asked", () => {
     expect(keysOf(root, false)).toEqual(["mantra", "system.model", "tools.list", "tools.shell"]);
     expect(keysOf(root, true)).toEqual(["mantra", "tools.list", "tools.shell"]);
     expect(keysOf(undefined, false)).toEqual([]);
@@ -91,7 +91,7 @@ describe("suggest", () => {
     expect(re.slice(0, re.findIndex((c) => c.off)).every((c) => !c.off)).toBe(true);
     expect(suggest("fo", src).items[0]!.text).toBe("fork");
     const kill = suggest("ki", src).items.find((c) => c.text === "kill")!;
-    expect(kill.off).toMatch(/delegated door/);
+    expect(kill.off).toMatch(/delegated connection/);
   });
 
   it("completes arias, keys, outfits and subcommands from what the page already knows", () => {
@@ -107,7 +107,7 @@ describe("suggest", () => {
 
   it("shows usage for the verb and the reason when it cannot run, and nothing after --", () => {
     expect(suggest("fork ", src).hint).toMatchObject({ usage: expect.stringContaining("fork"), refusal: "" });
-    expect(suggest("kill ", src).hint!.refusal).toMatch(/delegated door/);
+    expect(suggest("kill ", src).hint!.refusal).toMatch(/delegated connection/);
     expect(suggest("fork 3 -- some ", src)).toMatchObject({ items: [] });
     expect(suggest("zzz ", src).hint!.refusal).toBe("zzz: no such command");
     expect(NO_SUGGESTIONS.items).toEqual([]);

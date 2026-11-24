@@ -97,7 +97,7 @@ export function planOf(line: string): Plan {
         if (value === undefined) return { kind: "refused", word, why: doc.name + ": " + t + " takes a value. " + (doc.usage ?? "") };
         flags[which] = value;
       } else {
-        const limit = route.on === "door" && route.limits ? " (" + route.limits + ")" : "";
+        const limit = route.on === "gateway" && route.limits ? " (" + route.limits + ")" : "";
         return { kind: "refused", word, why: doc.name + ": figaro web does not take " + t + limit };
       }
     } else args.push(t);

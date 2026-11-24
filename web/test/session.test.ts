@@ -26,7 +26,7 @@ describe("session id", () => {
     expect(withSession("audio/key/a")).toBe("audio/key/a?session=" + sessionId);
     expect(withSession("audio/key/a?x=1#t")).toBe("audio/key/a?x=1&session=" + sessionId + "#t");
     expect(withSession(withSession("audio/key/a"))).toBe("audio/key/a?session=" + sessionId);
-    expect(sessionUrl(new URL("wss://h/chat/door?token=1")).href).toBe("wss://h/chat/door?token=1&session=" + sessionId);
+    expect(sessionUrl(new URL("wss://h/chat/rpc?token=1")).href).toBe("wss://h/chat/rpc?token=1&session=" + sessionId);
     expect(audioKeyUrl("audio/", "gluck/ab:3/out")).toBe("audio/key/gluck/ab%3A3/out");
   });
 });

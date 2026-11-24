@@ -246,7 +246,7 @@ export const runCommandAtom = atom(null, async (get, set, line: string): Promise
         return write(sub === "set" ? "set" : "unset", rest);
       }
       const named = doc.choices?.find((c: WebCommandChoice) => c.name === sub);
-      return fail("state " + sub + ": " + (named ? "not available in figaro web" : "no such subcommand") + (route.on === "door" && route.limits ? " (" + route.limits + ")" : "") + ".");
+      return fail("state " + sub + ": " + (named ? "not available in figaro web" : "no such subcommand") + (route.on === "gateway" && route.limits ? " (" + route.limits + ")" : "") + ".");
     }
     default:
       return fail(doc.name + ": figaro web does not run it yet.");

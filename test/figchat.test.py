@@ -288,7 +288,7 @@ try:
             snap(pg, "command-verbs-" + tag)
             pg.keyboard.type("kill ")
             until(pg, "!!document.querySelector('.zr-hint[data-refused]')", 3000)
-            assert "delegated door refuses" in pg.locator(".zr-hint[data-refused]").inner_text(), "a refused verb says why while it is typed"
+            assert "delegated connection refuses" in pg.locator(".zr-hint[data-refused]").inner_text(), "a refused verb says why while it is typed"
             got = pg.evaluate("(() => { const c = document.querySelector('.zr-composer').getBoundingClientRect(); return { height: c.height, top: c.top }; })()")
             assert got["height"] <= 200, "the hints keep the composer short: %s" % got
             no_sideways(pg, width, "command mode")
@@ -1238,14 +1238,14 @@ try:
             pg.wait_for_timeout(50)
         got = sess_door.state()["sessions"]
         kinds = {g["kind"] for g in got}
-        assert {"door-ws", "audio-ws", "stt-key", "audio-key"} <= kinds, kinds
+        assert {"gateway-ws", "audio-ws", "stt-key", "audio-key"} <= kinds, kinds
         ids = {g["header"] or g["query"] for g in got}
         assert len(ids) == 1 and len(next(iter(ids))) == 16, "one id for the whole page load: %s" % got
         assert re.fullmatch(r"[A-Za-z0-9_-]{16}", next(iter(ids))), ids
         for g in got:
             if g["kind"] in ("stt", "stt-key", "audio-key-status"):
                 assert g["header"], "fetches carry the header: %s" % g
-            if g["kind"] in ("door-ws", "audio-ws", "audio-key"):
+            if g["kind"] in ("gateway-ws", "audio-ws", "audio-key"):
                 assert g["query"], "upgrades and the audio element carry the query: %s" % g
         sid = next(iter(ids))
         stt_trace = next(g["traceparent"] for g in got if g["kind"] == "stt-key")
