@@ -208,7 +208,7 @@ async function test(name, fn) {
     const port = await new Promise((r) => proc.stdout.once('data', (d) => r(Number(String(d).trim()))));
     const sock = net.connect(port, '127.0.0.1');
     await new Promise((r) => sock.once('connect', r));
-    sock.write('GET /chat/door HTTP/1.1\r\nHost: 127.0.0.1:' + port + '\r\nOrigin: http://127.0.0.1:' + port + '\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: ' + crypto.randomBytes(16).toString('base64') + '\r\n\r\n');
+    sock.write('GET /chat/rpc HTTP/1.1\r\nHost: 127.0.0.1:' + port + '\r\nOrigin: http://127.0.0.1:' + port + '\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: ' + crypto.randomBytes(16).toString('base64') + '\r\n\r\n');
     const msgs = [];
     let buf = Buffer.alloc(0), upgraded = false;
     sock.on('data', (d) => {

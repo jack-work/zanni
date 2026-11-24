@@ -40,7 +40,7 @@ export default defineConfig({
   server: {
     fs: { allow: [resolve(import.meta.dirname, "..")] },
     proxy: {
-      "/door": { target: door, ws: true },
+      "/rpc": { target: door, ws: true },
       "/audio": { target: door, ws: true },
       "/stt": { target: door },
     },

@@ -32,7 +32,7 @@ a small Vite transform in `vite.config.ts` turns them into default exports.
 `bin/figchat-bundle` flattens `dist` into the layout the edge serves. The build
 is deterministic (`nix build --rebuild` gives the same `SHA256SUMS`).
 
-`npm run dev` in `web/` serves the app with Vite; `/door`, `/audio` and `/stt`
+`npm run dev` in `web/` serves the app with Vite; `/rpc`, `/audio` and `/stt`
 proxy to `FIGCHAT_DOOR` (default `http://127.0.0.1:8099`, run
 `node test/figchat-server.js <bundle>` for a mock door that prints its port).
 
@@ -40,7 +40,7 @@ proxy to `FIGCHAT_DOOR` (default `http://127.0.0.1:8099`, run
 
 A flat directory: `index.html` served at `/chat/`, every other file under
 `/chat/assets/`. The page dials `door`, `audio`, `stt` and `attach` relative to itself,
-so behind the edge they reach `/chat/door`, `/chat/audio`, `/chat/stt` and
+so behind the edge they reach `/chat/rpc`, `/chat/audio`, `/chat/stt` and
 `/chat/attach` (`lib/figchat-routes.nix` strips `/chat`; `attach` needs the edge
 route for the gateway's `POST /attach`, figaro-forms 0.11.1 and later). Same origin only, no inline script or
 style: `bin/figchat-bundle` refuses an `index.html` that has one, and the edge

@@ -39,7 +39,7 @@ function file(res, rel, extra) {
 }
 
 const sockets = new Set();
-const gatewayPath = (pathname) => /^\/chat\/(door|audio|stt|attach|otel)(\/|$)/.test(pathname) ? pathname.slice('/chat'.length) : pathname;
+const gatewayPath = (pathname) => /^\/chat\/(rpc|audio|stt|attach|otel)(\/|$)/.test(pathname) ? pathname.slice('/chat'.length) : pathname;
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
   url.pathname = gatewayPath(url.pathname);
@@ -292,9 +292,9 @@ server.on('upgrade', (req, socket) => {
   const am = /^\/audio\/([0-9a-f]{32})$/.exec(url.pathname);
   if (same && url.pathname === '/stt/stream' && /^gluck\/[0-9a-f]{32}$/.test(url.searchParams.get('aria') || '')) { noteSession('stt-ws', req, url); sttStream(req, socket, url); return; }
   if (same && am) { noteSession('audio-ws', req, url); audioSocket(req, socket, am[1]); return; }
-  if (url.pathname !== '/door' || !same) { seen.refused++; socket.destroy(); return; }
+  if (url.pathname !== '/rpc' || !same) { seen.refused++; socket.destroy(); return; }
   seen.upgrades++;
-  noteSession('door-ws', req, url);
+  noteSession('gateway-ws', req, url);
   sockets.add(socket);
   handshake(req, socket);
   if (shut) { socket.destroy(); return; }
