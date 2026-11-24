@@ -76,7 +76,7 @@ for (const name of Object.keys(expect)) {
   bundles[name] = js;
 }
 
-const runtimeFiles = ['SHA256SUMS', 'figaro-forms-glyphs.js', 'jsx-runtime.js', 'pretext.js', 'react-dom-client.js', 'react.js'];
+const runtimeFiles = ['SHA256SUMS', 'figaro-forms-glyphs.js', 'jsx-runtime.js', 'react-dom-client.js', 'react.js'];
 const runtimeForbidden = inlineScript.filter(([, what]) => what !== 'a script tag' && what !== 'a style tag');
 const runtimeTop = path.join(dir, 'runtime');
 if (!fs.existsSync(runtimeTop)) fail('runtime is missing');
@@ -105,10 +105,10 @@ else {
       }
       const imports = (js) => [...js.matchAll(/(?:^|[;\n}])\s*(?:import|export)\b[^"';]*?\bfrom\s*"([^"]+)"/g)].map((m) => m[1]);
       const exported = (js) => { const e = /export\s*\{([^}]*)\}\s*;?\s*$/.exec(js); return e ? names(e[1]).map((n) => n.split(/\s+as\s+/).pop()) : []; };
-      for (const f of ['react.js', 'jsx-runtime.js', 'figaro-forms-glyphs.js', 'pretext.js']) if (imports(src[f]).length) fail('runtime/' + f + ' imports ' + imports(src[f]).join(', ') + ' and must stand alone');
+      for (const f of ['react.js', 'jsx-runtime.js', 'figaro-forms-glyphs.js']) if (imports(src[f]).length) fail('runtime/' + f + ' imports ' + imports(src[f]).join(', ') + ' and must stand alone');
       if (JSON.stringify(imports(src['react-dom-client.js'])) !== JSON.stringify(['react'])) fail('runtime/react-dom-client.js must import react and nothing else, it imports ' + imports(src['react-dom-client.js']).join(', '));
       if (/__CLIENT_INTERNALS_DO_NOT_USE[A-Z_]*\s*:/.test(src['react-dom-client.js'])) fail('runtime/react-dom-client.js carries its own React');
-      const need = { 'react.js': ['createElement', 'useState', 'useEffect', 'useId', 'useSyncExternalStore', 'memo', 'version', 'default'], 'jsx-runtime.js': ['Fragment', 'jsx', 'jsxs'], 'react-dom-client.js': ['createRoot', 'hydrateRoot'], 'figaro-forms-glyphs.js': ['glyphs'], 'pretext.js': ['layoutWithLines', 'measureNaturalWidth', 'prepareWithSegments'] };
+      const need = { 'react.js': ['createElement', 'useState', 'useEffect', 'useId', 'useSyncExternalStore', 'memo', 'version', 'default'], 'jsx-runtime.js': ['Fragment', 'jsx', 'jsxs'], 'react-dom-client.js': ['createRoot', 'hydrateRoot'], 'figaro-forms-glyphs.js': ['glyphs'] };
       for (const f of Object.keys(need)) {
         const have = exported(src[f]);
         for (const n of need[f]) if (!have.includes(n)) fail('runtime/' + f + ' does not export ' + n);

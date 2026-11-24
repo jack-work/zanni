@@ -10,7 +10,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@chenglou/pretext": "1.0.0",
     "figaro-forms": "file:vendor/figaro-forms-0.23.2.tgz",
     "jotai": "^3.0.2",
     "react": "^19.3.1",

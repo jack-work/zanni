@@ -17,7 +17,7 @@ MAIN_TURNS = 26
 FACTS_JS = """(main) => {
   const turns = [...document.querySelectorAll('.nodi-turn')].map((n) => Number(n.dataset.turn));
   const marks = [...document.querySelectorAll('.nodi-turn')].map((n) => {
-    const m = n.querySelector('.zr-sticky-bar .nodi-turn-fork');
+    const m = n.querySelector('.nodi-turn-head .nodi-turn-fork');
     return m ? { turn: Number(n.dataset.turn), text: m.textContent.trim() } : null;
   }).filter(Boolean);
   const sc = document.querySelector('[data-zr-scroll]');

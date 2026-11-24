@@ -5,7 +5,6 @@ import { reducedMotion } from "./motion";
 import { glyphs } from "./glyphs";
 import { nodi, type InputModel, type Item, type ProseItem, type SteeringItem, type ThinkingItem, type ToolItem, type TurnModel, type UnknownItem } from "./zanni";
 import { BlockView, Plain } from "./text";
-import { QuestionMark, Sticky } from "./sticky";
 import { cellLine, keyColumns, rowFull, valueLines } from "./deltas";
 import type { DeltaCell, DeltaRow } from "./nodi-types";
 
@@ -35,9 +34,8 @@ function stamp(ms: unknown): string {
 
 export function InputView({ input, turn }: { input: InputModel; turn: number }) {
   const first = input.parts[0];
-  const mark = useContext(QuestionMark);
   return (
-    <div ref={mark} className="nodi-input" data-from={first ? first.role : "you"}>
+    <div className="nodi-input" data-from={first ? first.role : "you"}>
       {input.parts.map((p, i) => {
         const when = i === 0 ? stamp(input.at) : "";
         return (
@@ -390,11 +388,10 @@ function TurnBody({ turn: m, speaking, fresh }: TurnViewProps) {
   const deltas = m.deltas ?? [];
   return (
     <li className="nodi-turn zr-host" data-turn={m.turn} data-state={state} {...(fresh ? { "data-fresh": "" } : {})}>
-      <Sticky
-        heading={<TurnHeading turn={m.turn} forkedFrom={m.forkedFrom} />}
-        tools={<TurnTools turn={m.turn} deltas={deltas.length} open={deltasOpen} toggle={toggle} reply={!m.open && m.items.some((i) => i.kind === "prose")} asked={!!m.input && m.input.parts.length > 0} />}
-        text={m.input ? m.input.parts.map((p) => p.text).join("\n\n") : ""}
-      >
+      <div className="nodi-turn-head">
+        <TurnHeading turn={m.turn} forkedFrom={m.forkedFrom} />
+        <TurnTools turn={m.turn} deltas={deltas.length} open={deltasOpen} toggle={toggle} reply={!m.open && m.items.some((i) => i.kind === "prose")} asked={!!m.input && m.input.parts.length > 0} />
+      </div>
       {deltasOpen && deltas.length > 0 && <DeltaTable rows={deltas} />}
       <div className="nodi-turn-body">
         {m.input && m.input.parts.length > 0 && <InputView input={m.input} turn={m.turn} />}
@@ -412,7 +409,6 @@ function TurnBody({ turn: m, speaking, fresh }: TurnViewProps) {
             </p>
           ))}
       </div>
-      </Sticky>
     </li>
   );
 }

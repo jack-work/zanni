@@ -14,7 +14,7 @@ describe("a fork's first own turn", () => {
         </ol>
       </TranscriptContext>,
     );
-    expect(container.querySelector(".zr-sticky-bar .nodi-turn-fork")!.textContent).toBe("⑂ zanni");
+    expect(container.querySelector(".nodi-turn-head .nodi-turn-fork")!.textContent).toBe("⑂ zanni");
   });
 
   it("falls back to the id's first eight characters, and is absent on an ordinary turn", () => {

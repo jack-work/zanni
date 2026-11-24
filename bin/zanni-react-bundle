@@ -6,7 +6,7 @@ const crypto = require('crypto');
 
 const out = process.argv[2];
 if (!out || out === '-h' || out === '--help') {
-  process.stdout.write('usage: zanni-react-bundle OUT_DIR [WEB_DIR]\n\nLays the Vite builds of packages/react (WEB_DIR/dist-react, dist-react-jotai) and the tsc declarations\n(WEB_DIR/dist-types) out as OUT_DIR/{react,react-jotai}/<version>/{index.js,index.css,index.d.ts,SHA256SUMS}, the version\nbeing assets/manifest.json\'s, and WEB_DIR/dist-runtime as OUT_DIR/runtime/<version>/{react.js,jsx-runtime.js,react-dom-client.js,figaro-forms-glyphs.js,pretext.js,SHA256SUMS}. index.d.ts is one file of ambient module declarations: "zanni-react" and "zanni-react/jotai".\nThe jotai bundle also carries pcm-worklet.js, which the page loads beside the module.\n');
+  process.stdout.write('usage: zanni-react-bundle OUT_DIR [WEB_DIR]\n\nLays the Vite builds of packages/react (WEB_DIR/dist-react, dist-react-jotai) and the tsc declarations\n(WEB_DIR/dist-types) out as OUT_DIR/{react,react-jotai}/<version>/{index.js,index.css,index.d.ts,SHA256SUMS}, the version\nbeing assets/manifest.json\'s, and WEB_DIR/dist-runtime as OUT_DIR/runtime/<version>/{react.js,jsx-runtime.js,react-dom-client.js,figaro-forms-glyphs.js,SHA256SUMS}. index.d.ts is one file of ambient module declarations: "zanni-react" and "zanni-react/jotai".\nThe jotai bundle also carries pcm-worklet.js, which the page loads beside the module.\n');
   process.exit(out ? 0 : 2);
 }
 const root = path.join(__dirname, '..');
@@ -76,7 +76,7 @@ const runtimeDist = path.join(web, 'dist-runtime');
 const runtimeDir = path.join(out, 'runtime', version);
 fs.mkdirSync(runtimeDir, { recursive: true });
 const runtimeBuilt = fs.readdirSync(runtimeDist).sort();
-const runtimeExpected = ['figaro-forms-glyphs.js', 'jsx-runtime.js', 'pretext.js', 'react-dom-client.js', 'react.js'];
+const runtimeExpected = ['figaro-forms-glyphs.js', 'jsx-runtime.js', 'react-dom-client.js', 'react.js'];
 if (JSON.stringify(runtimeBuilt) !== JSON.stringify(runtimeExpected)) die('dist-runtime holds ' + runtimeBuilt.join(', ') + ', expected ' + runtimeExpected.join(', '));
 for (const f of runtimeBuilt) fs.copyFileSync(path.join(runtimeDist, f), path.join(runtimeDir, f));
 fs.writeFileSync(path.join(runtimeDir, 'SHA256SUMS'), runtimeBuilt.map((f) => sha(fs.readFileSync(path.join(runtimeDir, f))) + '  ' + f).join('\n') + '\n');

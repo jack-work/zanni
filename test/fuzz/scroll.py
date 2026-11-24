@@ -7,8 +7,7 @@
 Drives a long transcript by wheel, by small smooth steps (Vimium's k and j are 60 px), by keys, and by the Latest pill,
 sampling every animation frame, and checks: no frame jumps (a turn on screen moves by anything but the scroll), no blank
 viewport, auto-follow releases on a scroll up and re-engages near the bottom (and agrees with the pill), Latest lands on the
-bottom and stays there while a reply streams, older turns page in without losing position, the status bar and sticky
-bars never overlap, nothing overflows sideways. Each result is PASS, FAIL, XFAIL (known open bug, scroll-known.json) or XPASS.
+bottom and stays there while a reply streams, older turns page in without losing position, nothing overflows sideways. Each result is PASS, FAIL, XFAIL (known open bug, scroll-known.json) or XPASS.
 Exit 1 on any FAIL, or an XPASS (the known file is stale). Screenshots go to OUT/<profile>/.
 """
 import argparse
@@ -161,10 +160,9 @@ def layout(p):
       const vis = (e) => e && getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height > 0;
       const status = document.querySelector('.fw-status');
       const sc = document.querySelector('[data-zr-scroll]');
-      const bars = [...document.querySelectorAll('.zr-sticky-bar')].filter((b) => { const r = b.getBoundingClientRect(); const s = sc.getBoundingClientRect(); return r.bottom > s.top && r.top < s.bottom; });
       const composer = document.querySelector('.zr-composer, .fw-composer, .zr-input');
       return { vw: innerWidth, vh: innerHeight, sw: document.documentElement.scrollWidth, bodyW: document.body.scrollWidth, scW: sc.scrollWidth, scC: sc.clientWidth,
-               status: vis(status) ? box(status) : null, scroller: box(sc), bars: bars.map(box), pinned: bars.filter((b) => b.closest('.zr-sticky') && b.closest('.zr-sticky').hasAttribute('data-pinned')).map(box),
+               status: vis(status) ? box(status) : null, scroller: box(sc),
                composer: box(composer) };
     }""")
 
@@ -175,12 +173,6 @@ def check_layout(p, tag):
     if L["status"]:
         ok = L["status"]["top"] >= -1 and L["status"]["bottom"] <= L["vh"] + 1
         p.record("layout.status-bar-in-view." + tag, ok, "top %.0f bottom %.0f" % (L["status"]["top"], L["status"]["bottom"]))
-        over = [b for b in L["pinned"] if b["top"] < L["status"]["bottom"] - 2 and b["bottom"] > L["status"]["top"] + 2]
-        p.record("layout.pinned-bar-clear-of-status." + tag, not over, "%d overlapping" % len(over))
-    if L["pinned"]:
-        s = L["scroller"]
-        off = [b for b in L["pinned"] if abs(b["top"] - s["top"]) > 10]
-        p.record("layout.pinned-bar-at-scroller-top." + tag, not off, "%s" % [round(b["top"] - s["top"]) for b in off][:3])
     if L["composer"]:
         p.record("layout.composer-in-view." + tag, L["composer"]["bottom"] <= L["vh"] + 1 and L["composer"]["top"] >= 0, "bottom %.0f of %d" % (L["composer"]["bottom"], L["vh"]))
 

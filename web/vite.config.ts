@@ -26,7 +26,7 @@ export default defineConfig({
       { find: /^zanni-react\/jotai$/, replacement: resolve(pkg, "jotai.ts") },
       { find: /^zanni-react$/, replacement: resolve(pkg, "index.ts") },
     ],
-    dedupe: ["react", "react-dom", "jotai", "figaro-forms", "@chenglou/pretext"],
+    dedupe: ["react", "react-dom", "jotai", "figaro-forms"],
   },
   plugins: [zanniModules(), react()],
   build: {

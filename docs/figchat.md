@@ -176,22 +176,6 @@ voce no longer touches the session.
 The gateway contract (`audio.start`, `audio.chunk`, `audio.end`,
 `audio.cancel`, `error`) is in figaro-forms `docs/gateway.md`.
 
-## Typesetting
-
-`Typeset` (zanni-react) re-typesets a text as its box changes width. It draws the
-plain text clamped by CSS at once, loads Pretext in its own chunk
-(`typeset-pretext`, about 38 KB gzip, MIT), and then breaks the text into lines
-with `prepareWithSegments` once per text and font and `layoutWithLines` per
-width: arithmetic over cached widths, no DOM measurement. The width comes from a
-ResizeObserver entry, the font from the computed style. Each line is a block
-that fades and rises into place when its text changes (opacity and translate
-only); a line that did not change keeps its node. `lines` caps the count and
-`tail` ends a cut. `Fit`, the sticky bar's first line of the question, is a
-one-line `Typeset` with the dimmed " .." tail. Pretext reaches the page only
-through `import("./typeset-pretext")`: `bin/figchat-bundle` fails a build whose
-first-load chunks carry it, and the bench caps the lazy chunk's size apart from
-the first load's.
-
 ## Icons
 
 The compose bar's two icons, the microphone (U+F130, `glyphs.voice`) and the

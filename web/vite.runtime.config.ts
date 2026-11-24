@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import type { Plugin } from "vite";
 import { defineConfig } from "vitest/config";
 
-const names = ["react", "jsx-runtime", "react-dom-client", "figaro-forms-glyphs", "pretext"] as const;
+const names = ["react", "jsx-runtime", "react-dom-client", "figaro-forms-glyphs"] as const;
 type Name = (typeof names)[number];
 const requested = process.env.ZANNI_RUNTIME_ENTRY as Name | undefined;
 if (!requested || !names.includes(requested)) throw new Error("ZANNI_RUNTIME_ENTRY must be one of " + names.join(", "));
@@ -18,7 +18,6 @@ function entryModule(name: Name): string {
   }
   if (name === "jsx-runtime") return `export { Fragment, jsx, jsxs } from "react/jsx-runtime";\n`;
   if (name === "react-dom-client") return `export { createRoot, hydrateRoot, version } from "react-dom/client";\n`;
-  if (name === "pretext") return `export * from "@chenglou/pretext";\n`;
   return `export * from "figaro-forms/glyphs";\n`;
 }
 

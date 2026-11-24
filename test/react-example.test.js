@@ -53,6 +53,6 @@ assert.ok(!/unsafe-inline|unsafe-eval/.test(shellPage) && !/\sstyle=|<style\b|\s
 const shellImports = JSON.parse(shellMap).imports;
 const shellScript = fs.readFileSync(path.join(root, "examples/shell.js"), "utf8");
 assert.deepStrictEqual([...shellScript.matchAll(/from "([^"]+)"/g)].map((m) => m[1]).filter((i) => !(i in shellImports)), [], "every import of the Shell example is in its map");
-for (const spec of ["react", "react/jsx-runtime", "react-dom/client", "figaro-forms/glyphs", "@chenglou/pretext"]) assert.ok(/^\/zanni\/runtime\/\d+\.\d+\.\d+\/[a-z-]+\.js$/.test(shellImports[spec]), spec + " resolves to the served runtime");
+for (const spec of ["react", "react/jsx-runtime", "react-dom/client", "figaro-forms/glyphs"]) assert.ok(/^\/zanni\/runtime\/\d+\.\d+\.\d+\/[a-z-]+\.js$/.test(shellImports[spec]), spec + " resolves to the served runtime");
 for (const m of shellScript.matchAll(/import \{([^}]*)\} from "zanni-react"/g)) for (const n of m[1].split(",").map((x) => x.trim()).filter(Boolean)) assert.ok(listed.includes(n), "the manifest lists " + n);
 console.log("react-example.test: ok");

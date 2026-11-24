@@ -7,7 +7,7 @@ const zlib = require('zlib');
 
 const out = process.argv[2];
 if (!out || out === '-h' || out === '--help') {
-  process.stdout.write('usage: figchat-bundle OUT_DIR [DIST_DIR]\n\nFlattens the Vite build of web/ (default web/dist) into OUT_DIR: index.html, then every file\nfrom dist/assets beside it, THIRD-PARTY.txt (from beside dist) and STATS.json (raw and gzip bytes per file, and whether the first page load pulls it in) and SHA256SUMS. Serve index.html at the app root and the\ndirectory under assets/ beside it, so ./assets/<file> in index.html resolves. Refuses an index.html with\nan inline script or a style attribute (the edge CSP forbids both), and a first-load chunk that carries Pretext.\n');
+  process.stdout.write('usage: figchat-bundle OUT_DIR [DIST_DIR]\n\nFlattens the Vite build of web/ (default web/dist) into OUT_DIR: index.html, then every file\nfrom dist/assets beside it, THIRD-PARTY.txt (from beside dist) and STATS.json (raw and gzip bytes per file, and whether the first page load pulls it in) and SHA256SUMS. Serve index.html at the app root and the\ndirectory under assets/ beside it, so ./assets/<file> in index.html resolves. Refuses an index.html with\nan inline script or a style attribute (the edge CSP forbids both).\n');
   process.exit(out ? 0 : 2);
 }
 const root = path.join(__dirname, '..');
@@ -41,12 +41,6 @@ while (pending.length) {
   if (initial.has(f) || !fs.existsSync(path.join(out, f))) continue;
   initial.add(f);
   if (f.endsWith('.js')) for (const m of fs.readFileSync(path.join(out, f), 'utf8').matchAll(/(?:\bfrom|\bimport)\s*["']\.\/([^"']+\.js)["']/g)) pending.push(m[1]);
-}
-const heavy = ['figchat:pretext', '-zyyy'];
-for (const f of initial) {
-  if (!f.endsWith('.js')) continue;
-  const hit = heavy.find((m) => fs.readFileSync(path.join(out, f), 'utf8').includes(m));
-  if (hit) { process.stderr.write('figchat-bundle: ' + f + ' is in the first page load and carries Pretext (' + hit + '); import it dynamically\n'); process.exit(1); }
 }
 let raw = 0, gzip = 0;
 for (const f of fs.readdirSync(out).sort()) {

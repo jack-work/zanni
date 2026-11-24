@@ -11,8 +11,8 @@ from playwright.sync_api import sync_playwright
 MAIN = "c0ffee01" * 4
 
 FACTS = """() => [...document.querySelectorAll('.nodi-turn')].filter((t) => !t.hasAttribute('data-parked')).map((t) => {
-  const icons = [...t.querySelectorAll('.zr-sticky-bar .fw-play-icon')];
-  const head = t.querySelector('.zr-sticky-bar').getBoundingClientRect();
+  const icons = [...t.querySelectorAll('.nodi-turn-head .fw-play-icon')];
+  const head = t.querySelector('.nodi-turn-head').getBoundingClientRect();
   const b = icons[0] && icons[0].getBoundingClientRect();
   return { turn: t.dataset.turn, state: t.dataset.state, prose: t.querySelectorAll('.nodi-prose').length, icons: icons.length,
            shown: !!b && b.width > 0 && b.height > 0 && getComputedStyle(icons[0]).visibility !== 'hidden',
@@ -34,7 +34,7 @@ def main():
                 def run():
                     pg.goto(door.url + "#/gluck/" + MAIN)
                     until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'", 15000)
-                    pg.wait_for_selector(".nodi-turn .zr-sticky-bar")
+                    pg.wait_for_selector(".nodi-turn .nodi-turn-head")
                     pg.wait_for_timeout(800)
                     for mode in ("normal", "hands-free"):
                         if mode == "hands-free":
@@ -56,7 +56,7 @@ def main():
                     pg = ctx.new_page()
                     pg.goto(door.url + "#/gluck/" + MAIN)
                     until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'", 15000)
-                    pg.wait_for_selector(".nodi-turn[data-turn='26'] .zr-sticky-bar")
+                    pg.wait_for_selector(".nodi-turn[data-turn='26'] .nodi-turn-head")
                     pg.wait_for_timeout(800)
                     t = ".nodi-turn[data-turn='26']"
                     rep.check(pg.locator(t + " [data-action='play']").count() == 3, "%d: three play buttons on a turn with an inquiry and output (got %d)" % (width, pg.locator(t + " [data-action='play']").count()))
@@ -78,7 +78,7 @@ def main():
                     for z in sizes:
                         rep.check(z["glyph"] <= 28 and z["outer"] <= 36, "%d: a play button is compact: glyph %spx, takes %spx of height" % (width, z["glyph"], z["outer"]))
                         rep.check(z["w"] >= 44 and z["h"] >= 44, "%d: its tap area is generous, %sx%s" % (width, z["w"], z["h"]))
-                    pg.locator(t + " .zr-sticky-bar [data-action='play']").click()
+                    pg.locator(t + " .nodi-turn-head [data-action='play']").click()
                     pg.wait_for_timeout(4000)
                     plays = pg.evaluate("window.__plays")
                     rep.check(len(plays) >= 2 and plays[0].endswith("/in") and plays[1].endswith("/out"), "%d: the top button plays the inquiry, then the output: %s" % (width, plays))

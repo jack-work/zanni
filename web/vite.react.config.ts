@@ -56,7 +56,7 @@ function workletBesideModule(): Plugin {
   };
 }
 
-const externals = [/^react(\/.*)?$/, /^react-dom(\/.*)?$/, /^figaro-forms(\/.*)?$/, /^jotai(\/.*)?$/, "@chenglou/pretext", "zanni-react"];
+const externals = [/^react(\/.*)?$/, /^react-dom(\/.*)?$/, /^figaro-forms(\/.*)?$/, /^jotai(\/.*)?$/, "zanni-react"];
 
 export default defineConfig({
   plugins: [zanniModules(), workletBesideModule(), coreIsExternal()],

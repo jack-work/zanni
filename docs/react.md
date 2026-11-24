@@ -43,7 +43,7 @@ nix build cover both.
 ```
 $out/react/<version>/{index.js,index.css,index.d.ts,SHA256SUMS}
 $out/react-jotai/<version>/{index.js,index.css,index.d.ts,pcm-worklet.js,SHA256SUMS}
-$out/runtime/<version>/{react.js,jsx-runtime.js,react-dom-client.js,figaro-forms-glyphs.js,pretext.js,SHA256SUMS}
+$out/runtime/<version>/{react.js,jsx-runtime.js,react-dom-client.js,figaro-forms-glyphs.js,SHA256SUMS}
 ```
 
 Serving contract for the backend (`gateway.spain-upkeep`):
@@ -52,14 +52,14 @@ Serving contract for the backend (`gateway.spain-upkeep`):
 - A version directory never changes once published: `Cache-Control: private, max-age=31536000, immutable` (private because the site sits behind login), no revalidation, no other path serves the same bytes. A new version is a new directory. Serve `.js` as `text/javascript`, `.css` as `text/css`, `SHA256SUMS` as `text/plain`, `index.d.ts` as `text/plain`.
 - Same origin only. The edge CSP stays `script-src 'self'`; no file contains inline script or style, a `data:` or `blob:` module, `eval` or `new Function` (`checks.zanni-react` fails the build otherwise). `pcm-worklet.js` is a file beside `index.js` because an audio worklet module is a script and `data:` is refused; the jotai bundle loads it as `new URL("pcm-worklet.js", import.meta.url)`, so it must stay in the same directory as `index.js`.
 - `SHA256SUMS` is `sha256sum -c` format over the other files of its directory.
-- `runtime/<version>/` is the same-origin ESM a host without a bundler maps the bare imports to: `react.js` (React, one copy, named exports and a default), `jsx-runtime.js`, `react-dom-client.js` (createRoot, hydrateRoot; it imports `react` and carries no second React), `figaro-forms-glyphs.js` and `pretext.js` (the bundle imports `@chenglou/pretext` statically, so a host must map it), built from the same pins as the page's own `package-lock.json`. The files are production builds with no imports among them except react-dom-client's `react`. Served under the same rules as the other directories, at `/zanni/runtime/<version>/`.
+- `runtime/<version>/` is the same-origin ESM a host without a bundler maps the bare imports to: `react.js` (React, one copy, named exports and a default), `jsx-runtime.js`, `react-dom-client.js` (createRoot, hydrateRoot; it imports `react` and carries no second React), and `figaro-forms-glyphs.js`, built from the same pins as the page's own `package-lock.json`. The files are production builds with no imports among them except react-dom-client's `react`. Served under the same rules as the other directories, at `/zanni/runtime/<version>/`.
 - The route serves nothing else: jotai, figaro-forms (beyond its glyphs) and react-dom's other entries are not in the bundles and not served here.
 
 Externals, resolved by the page's import map (one React per page, one trace and one voice hub):
 
 | bundle | bare imports it leaves |
 |---|---|
-| `react` | `react`, `react/jsx-runtime`, `figaro-forms/glyphs`, `@chenglou/pretext` (imported by Typeset) |
+| `react` | `react`, `react/jsx-runtime`, `figaro-forms/glyphs` |
 | `react-jotai` | `react`, `react/jsx-runtime`, `react-dom`, `jotai`, `figaro-forms/aria`, `figaro-forms/aria/jotai`, `figaro-forms/catalog`, `zanni-react` |
 
 `react-jotai` imports the core as `zanni-react` rather than copying it, so map `zanni-react` to the core bundle's `index.js` of the same version.
@@ -71,7 +71,6 @@ Import map (see `examples/react-bundle.html`; `examples/shell.html` maps React t
   "react": "/vendor/react/index.js",
   "react/jsx-runtime": "/vendor/react/jsx-runtime.js",
   "figaro-forms/glyphs": "/vendor/figaro-forms/glyphs.js",
-  "@chenglou/pretext": "/vendor/pretext/index.js",
   "zanni-react": "/zanni/react/<version>/index.js" } }
 ```
 

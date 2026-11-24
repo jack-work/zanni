@@ -180,7 +180,7 @@
           };
           sourceRoot = "zanni-source/web";
           nodejs = pkgs.nodejs_24;
-          npmDepsHash = "sha256-/6DFzbTK6zZYvDt9dfAEN06I6qukPq4MnH1m1XLMH0c=";
+          npmDepsHash = "sha256-pwNnArG745Li5CnnX3kq94hNEzGbz8CSJ9CGcSNlTuU=";
           makeCacheWritable = true;
           doCheck = true;
           checkPhase = ''
@@ -211,14 +211,14 @@
           };
           sourceRoot = "zanni-source/web";
           nodejs = pkgs.nodejs_24;
-          npmDepsHash = "sha256-/6DFzbTK6zZYvDt9dfAEN06I6qukPq4MnH1m1XLMH0c=";
+          npmDepsHash = "sha256-pwNnArG745Li5CnnX3kq94hNEzGbz8CSJ9CGcSNlTuU=";
           makeCacheWritable = true;
           dontNpmBuild = true;
           buildPhase = ''
             runHook preBuild
             ZANNI_REACT_ENTRY=react node_modules/.bin/vite build -c vite.react.config.ts
             ZANNI_REACT_ENTRY=react-jotai node_modules/.bin/vite build -c vite.react.config.ts
-            for entry in react jsx-runtime react-dom-client figaro-forms-glyphs pretext; do
+            for entry in react jsx-runtime react-dom-client figaro-forms-glyphs; do
               ZANNI_RUNTIME_ENTRY=$entry node_modules/.bin/vite build -c vite.runtime.config.ts
             done
             node_modules/.bin/tsc -p tsconfig.react-types.json
