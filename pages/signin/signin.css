@@ -1,0 +1,69 @@
+:root { color-scheme: light dark; }
+html, body { margin: 0; min-height: 100vh; }
+body { font: 19px/1.45 var(--fontpack-prose); color: var(--z-ink); }
+[hidden] { display: none !important; }
+
+.bar { display: flex; align-items: center; height: 52px; padding: 0 1rem; background: var(--z-ground-2); border-bottom: 3px solid var(--z-ink); }
+.mark { font: 26px/1 var(--fontpack-display); color: var(--z-ink); }
+.mark b { font-weight: 400; color: light-dark(#a2762a, #d9a94e); margin-right: 0.35em; }
+
+.stage { box-sizing: border-box; width: min(27rem, 100%); margin: 0 auto; padding: 2rem 1.25rem 3rem; }
+h1 { margin: 0 0 1.2rem; text-align: center; font: 400 2.4rem/1.1 var(--fontpack-display); letter-spacing: 0.03em; }
+p { margin: 0 0 1rem; text-wrap: pretty; }
+.center { text-align: center; }
+.aside { font-size: 17px; color: var(--z-muted); }
+a { color: var(--z-accent); }
+
+.stub {
+  display: flex; align-items: center; gap: 0.8rem;
+  margin: 0 0 1.6rem; padding: 0.55rem 1rem 0.55rem 1.4rem;
+  background:
+    radial-gradient(circle at 0 50%, var(--z-ground) 0.55rem, transparent 0.6rem),
+    radial-gradient(circle at 100% 50%, var(--z-ground) 0.55rem, transparent 0.6rem),
+    var(--z-ground-2);
+  border-top: 2px dashed var(--z-line); border-bottom: 2px dashed var(--z-line);
+  font: 18px/1.25 var(--fontpack-mono); letter-spacing: 0.04em; color: var(--z-muted);
+}
+.stub .lbl { flex: none; text-transform: uppercase; font-size: 15px; color: light-dark(#a2762a, #d9a94e); border-right: 2px dashed var(--z-line); padding-right: 0.8rem; }
+.stub .to { min-width: 0; color: var(--z-ink); font-size: 21px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+label.f { display: block; margin: 0 0 1rem; font: 18px var(--fontpack-mono); letter-spacing: 0.04em; color: var(--z-muted); }
+label.f span { display: block; margin: 0 0 0.25rem; }
+.t {
+  box-sizing: border-box; width: 100%; min-height: 3.3rem; padding: 0.6rem 0.8rem;
+  font: 19px var(--fontpack-prose); color: var(--z-ink);
+  background: light-dark(#fbf6f0, #140a0b); border: 1px solid var(--z-line); border-radius: 4px;
+}
+.t:focus { outline: 2px solid color-mix(in oklab, var(--z-focus) 45%, transparent); border-color: var(--z-focus); }
+.t.code { font: 28px var(--fontpack-mono); letter-spacing: 0.3em; text-align: center; }
+.check { display: flex; align-items: center; gap: 0.6rem; margin: 0 0 1.2rem; min-height: 44px; font: 18px var(--fontpack-mono); letter-spacing: 0.04em; color: var(--z-muted); }
+.check input { width: 18px; height: 18px; margin: 0; accent-color: var(--z-accent); }
+
+.btn {
+  box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 0.7rem;
+  width: 100%; min-height: 3.2rem; margin: 0 0 0.9rem; padding: 0.6rem 1rem;
+  font: 21px/1.15 var(--fontpack-mono); letter-spacing: 0.05em; text-decoration: none;
+  border-radius: 6px; cursor: pointer; touch-action: manipulation;
+}
+.btn.primary { color: var(--z-on-accent); background: var(--z-accent); border: 3px solid var(--z-ink); box-shadow: 4px 4px 0 var(--z-shadow); }
+.btn.google { color: #1f1f1f; background: #fff; border: 3px solid var(--z-ink); box-shadow: 4px 4px 0 var(--z-shadow); }
+.btn.google img { width: 22px; height: 22px; }
+.btn:active { box-shadow: 2px 2px 0 var(--z-shadow); transform: translate(2px, 2px); }
+.btn:disabled { opacity: 0.6; cursor: progress; }
+.btn:focus-visible, a:focus-visible, .linkish:focus-visible { outline: 3px solid var(--z-focus); outline-offset: 3px; }
+
+.err { margin: 0 0 1rem; padding: 0.55rem 0.8rem; font-size: 17px; color: var(--z-fail); background: var(--z-tint); border: 1px solid var(--z-fail); border-radius: 4px; }
+
+.links { display: flex; justify-content: space-between; gap: 1rem; margin: 0 0 1.2rem; font-size: 17px; }
+.links a, .linkish { display: inline-block; padding: 0.5rem 0; }
+.links :only-child { margin-left: auto; }
+.linkish { font: 17px var(--fontpack-prose); color: var(--z-accent); text-decoration: underline; background: none; border: 0; cursor: pointer; }
+
+.or { display: flex; align-items: center; gap: 0.8rem; margin: 0.4rem 0 1.2rem; font: 17px var(--fontpack-mono); letter-spacing: 0.05em; color: var(--z-muted); }
+.or::before, .or::after { content: ""; flex: 1; border-top: 1px solid var(--z-rule); }
+
+.ask { display: block; width: max-content; margin: 0.3rem auto 0; padding: 0.5rem 0.4rem; font-size: 17px; }
+
+.parla { --parla-head: 72px; margin: 1.6rem 0 0.4rem; }
+.parla-bubble { font-size: 17px; }
+@media (min-width: 640px) { .parla { --parla-head: 84px; } }
