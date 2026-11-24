@@ -388,5 +388,4 @@
 .zr-qb-empty { margin: 0; padding: var(--z-space-4, 12px); color: var(--z-muted); }
 @media (max-width: 480px) {
   .zr-qb-commit-head, .zr-qb-commit { min-width: 6.5rem; max-width: 7.5rem; }
-  .zr-qb-repo { display: none; }
 }
