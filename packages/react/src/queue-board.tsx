@@ -140,10 +140,10 @@ function HeadCell({ step, rollup }: { step: DeployStepName; rollup: StepRollup |
         {rollup ? formatRate(rollup.failure_rate) : "\u2013"}
       </span>
       <span className="zr-qb-stat" data-stat="p50">
-        {rollup && rollup.count ? "p50 " + formatDuration(rollup.p50_ms) : "\u2013"}
+        {rollup && rollup.count ? formatDuration(rollup.p50_ms) : "\u2013"}
       </span>
       <span className="zr-qb-stat" data-stat="p95">
-        {rollup && rollup.count ? "p95 " + formatDuration(rollup.p95_ms) : "\u2013"}
+        {rollup && rollup.count ? formatDuration(rollup.p95_ms) : "\u2013"}
       </span>
     </th>
   );

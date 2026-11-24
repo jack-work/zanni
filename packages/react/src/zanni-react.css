@@ -387,5 +387,9 @@
 .zr-qb-n { margin-left: var(--z-space-2, 4px); color: var(--z-muted); }
 .zr-qb-empty { margin: 0; padding: var(--z-space-4, 12px); color: var(--z-muted); }
 @media (max-width: 480px) {
-  .zr-qb-commit-head, .zr-qb-commit { min-width: 6.5rem; max-width: 7.5rem; }
+  .zr-qb-table { min-width: 0; }
+  .zr-qb-table th, .zr-qb-table td { padding: var(--z-space-2, 4px) 6px; }
+  .zr-qb-commit-head, .zr-qb-commit { min-width: 5.5rem; max-width: 6.5rem; }
+  .zr-qb-cell { min-width: 4.25rem; }
+  .zr-qb-mark { margin-right: 2px; }
 }
