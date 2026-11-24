@@ -17,6 +17,7 @@ export type SinceKey = (typeof SINCE_WINDOWS)[number]["key"];
 
 export interface DeploySpan {
   step: DeployStepName;
+  phase?: string;
   span?: string;
   start?: string;
   end?: string;
@@ -46,6 +47,7 @@ export interface DeployCommit {
 
 export interface StepRollup {
   step: DeployStepName;
+  phase?: string;
   count: number;
   ok: number;
   fail: number;
@@ -84,26 +86,45 @@ export function formatRate(rate: number): string {
   return (pct < 10 && pct !== Math.round(pct) ? pct.toFixed(1) : String(Math.round(pct))) + "%";
 }
 
+export interface BoardColumn {
+  step: DeployStepName;
+  phase: string;
+  key: string;
+}
+
+export function boardColumns(data: DeploysResponse | null): BoardColumn[] {
+  return DEPLOY_STEPS.flatMap((step) => {
+    const phases: string[] = [];
+    const see = (phase: string | undefined) => {
+      if (!phases.includes(phase ?? "")) phases.push(phase ?? "");
+    };
+    for (const r of data?.steps ?? []) if (r.step === step) see(r.phase);
+    for (const c of data?.commits ?? []) for (const sp of c.steps) if (sp.step === step) see(sp.phase);
+    return (phases.length ? phases : [""]).map((phase) => ({ step, phase, key: phase ? step + ":" + phase : step }));
+  });
+}
+
 export interface BoardCell {
   step: DeployStepName;
+  phase: string;
   outcome: DeployOutcome;
   duration_ms: number;
   spans: DeploySpan[];
 }
 
-export function boardCell(commit: DeployCommit, step: DeployStepName): BoardCell | null {
-  const spans = commit.steps.filter((s) => s.step === step);
+export function boardCell(commit: DeployCommit, step: DeployStepName, phase = ""): BoardCell | null {
+  const spans = commit.steps.filter((s) => s.step === step && (s.phase ?? "") === phase);
   if (!spans.length) return null;
   const last = spans.reduce((a, b) => ((b.end ?? "") >= (a.end ?? "") ? b : a));
   const outcome: DeployOutcome = spans.some((s) => s.outcome === "fail") ? "fail" : spans.some((s) => s.outcome === "ok") ? "ok" : "skip";
-  return { step, outcome, duration_ms: last.duration_ms, spans };
+  return { step, phase, outcome, duration_ms: last.duration_ms, spans };
 }
 
 const ATTRS = ["site", "unit", "actor", "cand", "box"] as const;
 
 export function cellTitle(cell: BoardCell): string {
   return cell.spans
-    .map((s) => [s.step + " " + s.outcome + " " + formatDuration(s.duration_ms), ...ATTRS.filter((k) => s[k]).map((k) => k + " " + s[k])].join("\n"))
+    .map((s) => [s.step + (s.phase ? " " + s.phase : "") + " " + s.outcome + " " + formatDuration(s.duration_ms), ...ATTRS.filter((k) => s[k]).map((k) => k + " " + s[k])].join("\n"))
     .join("\n\n");
 }
 
@@ -118,7 +139,7 @@ function Cell({ cell }: { cell: BoardCell | null }): ReactNode {
   const duration = cell.outcome === "skip" ? "skip" : formatDuration(cell.duration_ms);
   const repeats = cell.spans.length > 1 ? "\u00d7" + cell.spans.length : "";
   return (
-    <td className="zr-qb-cell" data-outcome={cell.outcome} title={cellTitle(cell)} tabIndex={0} aria-label={[cell.step, cell.outcome, duration, repeats].filter(Boolean).join(" ")}>
+    <td className="zr-qb-cell" data-outcome={cell.outcome} title={cellTitle(cell)} tabIndex={0} aria-label={[cell.step, cell.phase, cell.outcome, duration, repeats].filter(Boolean).join(" ")}>
       <span className="zr-qb-mark" aria-hidden="true">
         {MARK[cell.outcome]}
       </span>
@@ -128,11 +149,16 @@ function Cell({ cell }: { cell: BoardCell | null }): ReactNode {
   );
 }
 
-function HeadCell({ step, rollup }: { step: DeployStepName; rollup: StepRollup | undefined }): ReactNode {
+function HeadCell({ column, rollup, phased }: { column: BoardColumn; rollup: StepRollup | undefined; phased: boolean }): ReactNode {
   const failing = !!rollup && rollup.fail > 0;
   return (
-    <th scope="col" className="zr-qb-step" data-step={step} data-failing={failing ? "" : undefined}>
-      <span className="zr-qb-step-name">{step.replace("_", " ")}</span>
+    <th scope="col" className="zr-qb-step" data-step={column.step} data-phase={column.phase || undefined} data-failing={failing ? "" : undefined}>
+      <span className="zr-qb-step-name">{column.step.replace("_", " ")}</span>
+      {phased && (
+        <span className="zr-qb-phase" data-stat="phase">
+          {column.phase || "\u00a0"}
+        </span>
+      )}
       <span className="zr-qb-stat" data-stat="count">
         {rollup ? rollup.count : 0}
       </span>
@@ -161,7 +187,9 @@ export interface QueueBoardProps {
 }
 
 export function QueueBoard({ data, env, onEnv, since, onSince, loading, error, label = "Merge queue" }: QueueBoardProps) {
-  const rollups = new Map((data?.steps ?? []).map((r) => [r.step, r] as const));
+  const rollups = new Map((data?.steps ?? []).map((r) => [r.phase ? r.step + ":" + r.phase : r.step, r] as const));
+  const columns = boardColumns(data);
+  const phased = columns.some((c) => c.phase);
   const commits = data?.commits ?? [];
   return (
     <section className="zr-qb" aria-label={label} aria-busy={loading ? "true" : undefined}>
@@ -190,13 +218,14 @@ export function QueueBoard({ data, env, onEnv, since, onSince, loading, error, l
             <tr>
               <th scope="col" className="zr-qb-commit-head">
                 <span className="zr-qb-step-name">commit</span>
+                {phased && <span className="zr-qb-phase">{"\u00a0"}</span>}
                 <span className="zr-qb-stat">count</span>
                 <span className="zr-qb-stat">failed</span>
                 <span className="zr-qb-stat">p50</span>
                 <span className="zr-qb-stat">p95</span>
               </th>
-              {DEPLOY_STEPS.map((s) => (
-                <HeadCell key={s} step={s} rollup={rollups.get(s)} />
+              {columns.map((c) => (
+                <HeadCell key={c.key} column={c} rollup={rollups.get(c.key)} phased={phased} />
               ))}
             </tr>
           </thead>
@@ -208,8 +237,8 @@ export function QueueBoard({ data, env, onEnv, since, onSince, loading, error, l
                   <span className="zr-qb-repo">{c.repo && <Plain text={c.repo} />}</span>
                   <span className="zr-qb-ref">{c.ref && <Plain text={c.ref} />}</span>
                 </th>
-                {DEPLOY_STEPS.map((s) => (
-                  <Cell key={s} cell={boardCell(c, s)} />
+                {columns.map((col) => (
+                  <Cell key={col.key} cell={boardCell(c, col.step, col.phase)} />
                 ))}
               </tr>
             ))}
