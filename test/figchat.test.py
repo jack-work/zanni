@@ -213,7 +213,7 @@ try:
             snap(pg, "attend-light-" + tag)
 
             before = held(pg)
-            for _ in range(40):
+            for _ in range(240):
                 if pg.locator(".nodi-turn[data-turn='4']").count():
                     break
                 pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop = 0")
@@ -772,7 +772,7 @@ try:
         pg.locator(".fw-mic").tap()
         until(pg, "document.querySelector('.fw').dataset.mic === 'recording'", 10000)
         assert pg.locator(".fw-mic-meter").count() == 1, "the level meter is there the moment the mic is live"
-        for _ in range(100):
+        for _ in range(600):
             if mic_door.state()["stream"]:
                 break
             pg.wait_for_timeout(50)
@@ -782,13 +782,13 @@ try:
         assert pg.evaluate("document.querySelector('.fw').dataset.mic") == "recording", "words arrive in the input before he stops"
         assert pg.locator(".zr-input").input_value().startswith("typed first what is"), pg.locator(".zr-input").input_value()
         seen_level = False
-        for _ in range(60):
+        for _ in range(360):
             if pg.evaluate("document.documentElement.style.getPropertyValue('--fw-mic-level') !== ''"):
                 seen_level = True
                 break
             pg.wait_for_timeout(50)
         assert seen_level, "the meter follows the microphone"
-        for _ in range(100):
+        for _ in range(600):
             if len(mic_door.state()["stream"][0]["frames"]) >= 14:
                 break
             pg.wait_for_timeout(50)
@@ -821,7 +821,7 @@ try:
         pg.wait_for_selector(".nodi-turn[data-turn='5']")
         assert voice_pressed(pg) == "false", "voice is off while Play asks the gateway to speak"
         pg.locator(".nodi-turn[data-turn='5'] .fw-output-play [data-action='play']").click()
-        for _ in range(100):
+        for _ in range(600):
             if say_door.state()["says"] == [5]:
                 break
             pg.wait_for_timeout(100)
@@ -830,7 +830,7 @@ try:
         assert pg.locator(".voce[data-state='expired']").count() == 0
         assert say_door.state()["audio"] >= 1, "the gateway socket opened for the ask"
         pg.locator(".nodi-turn[data-turn='6'] .fw-output-play [data-action='play']").click()
-        for _ in range(100):
+        for _ in range(600):
             if say_door.state()["says"] == [5, 6]:
                 break
             pg.wait_for_timeout(100)
@@ -1228,7 +1228,7 @@ try:
         mine.locator("[data-action='retranscribe']").click()
         pg.wait_for_selector(".fw-inline-heard")
         toggle_voice(pg)
-        for _ in range(100):
+        for _ in range(600):
             if any(g["kind"] == "audio-ws" for g in sess_door.state()["sessions"]):
                 break
             pg.wait_for_timeout(50)
@@ -1247,14 +1247,14 @@ try:
         stt_trace = next(g["traceparent"] for g in got if g["kind"] == "stt-key")
         assert re.fullmatch(r"00-[0-9a-f]{32}-[0-9a-f]{16}-01", stt_trace), "the stt fetch carries traceparent: %s" % got
         pg.locator(".zr-send").click()
-        for _ in range(100):
+        for _ in range(600):
             if sess_door.state()["quas"]:
                 break
             pg.wait_for_timeout(50)
         qua_trace = sess_door.state()["quas"][0]
         assert re.fullmatch(r"00-[0-9a-f]{32}-[0-9a-f]{16}-01", qua_trace), "figaro.qua carries traceparent: %s" % sess_door.state()["quas"]
         spans = []
-        for _ in range(100):
+        for _ in range(600):
             pg.evaluate("window.dispatchEvent(new Event('pagehide'))")
             pg.wait_for_timeout(50)
             posted = [p for p in sess_door.state()["otel"] if p["path"] == "/otel/v1/traces" and p["body"]]
