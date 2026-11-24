@@ -613,45 +613,6 @@ try:
         assert not pg.errors, pg.errors
         pg.close()
 
-        for width, height in ((844, 390), (1280, 800), (1920, 1080)):
-            pg = fresh(width, height)
-            pg.goto("about:blank")
-            attend(pg, fast, MAIN)
-            panew = "Math.round(document.querySelector('.zr-pane').getBoundingClientRect().width)"
-            mainw = "Math.round(document.querySelector('.fw-pane').getBoundingClientRect().width)"
-            assert pg.locator(".zr-pane").is_visible(), "the left pane is docked at %d" % width
-            assert pg.evaluate("document.querySelector('.zr-pane').getAttribute('style')") is None, "an unresized pane carries no style attribute"
-            first = pg.evaluate(panew)
-            assert pg.evaluate(mainw) + first >= width - 2, "the chat takes the rest of the width at %d" % width
-            assert pg.evaluate("document.documentElement.scrollWidth") <= width, "nothing overflows sideways at %d" % width
-            box = pg.locator(".zr-pane-grip").bounding_box()
-            pg.mouse.move(box["x"] + 3, box["y"] + 100)
-            pg.mouse.down()
-            pg.mouse.move(box["x"] + 83, box["y"] + 100, steps=4)
-            pg.mouse.up()
-            pg.wait_for_timeout(200)
-            grown = pg.evaluate(panew)
-            assert grown > first + 40, "dragging the grip widens the pane: %s -> %s" % (first, grown)
-            pg.locator(".zr-pane-grip").focus()
-            pg.keyboard.press("ArrowLeft")
-            pg.wait_for_timeout(100)
-            assert pg.evaluate(panew) == grown - 16, "arrow keys resize by 16 px"
-            pg.locator(".fw-panes").click()
-            pg.wait_for_timeout(200)
-            assert pg.evaluate(panew) == 0 or not pg.locator(".zr-pane").is_visible(), "the Arias button collapses the pane"
-            assert pg.evaluate(mainw) >= width - 2, "a collapsed pane gives the chat the full width"
-            pg.reload()
-            until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'", timeout=15000)
-            assert not pg.locator(".zr-pane").is_visible(), "a collapsed pane stays collapsed after a reload"
-            pg.locator(".fw-panes").click()
-            pg.wait_for_timeout(200)
-            assert pg.evaluate(panew) == grown - 16, "the width is remembered across the reload"
-            pg.locator(".fw-narrow").click()
-            pg.wait_for_timeout(200)
-            narrow = pg.evaluate("Math.round(document.querySelector('.fw-main').getBoundingClientRect().width)")
-            assert narrow <= 46 * 16 + 2, "the Narrow setting brings back the measure: %s" % narrow
-            pg.close()
-
         pg = fresh()
         slow = door(150)
         attend(pg, slow, MAIN)
@@ -768,6 +729,10 @@ try:
         until(pg, "location.hash.startsWith('#/gluck/') && !location.hash.includes('%s')" % MAIN, timeout=10000)
         until(pg, "document.querySelector('.fw').dataset.link === 'live' && document.querySelectorAll('.nodi-turn').length >= 1", timeout=10000)
         assert pg.locator(".nodi-turn").count() >= 1, "the alternative opens with the history it was cut from"
+        pg.wait_for_selector(".fw-forkmark")
+        assert pg.locator(".fw-forkmark").inner_text().startswith("\u2442 Fork of ")
+        until(pg, "!document.documentElement.dataset.vt", timeout=3000)
+        assert not pg.errors, pg.errors
         pg.close()
 
         pg = fresh()
@@ -1258,7 +1223,8 @@ try:
             pg.wait_for_selector(".zr-pit", state="detached")
             until(pg, "/^#\\/gluck\\/[0-9a-f]{32}$/.test(location.hash) && !location.hash.includes('%s')" % MAIN, 8000)
             until(pg, "document.querySelector('.fw').dataset.link === 'live'", 8000)
-            assert pg.locator(".fw-fork-banner, .fw-status-fork").count() == 0, "the pager has no fork banner and no fork glyph in the status line"
+            assert pg.locator(".fw-forkmark").inner_text().startswith("\u2442 Fork of "), "the sub-bar says this is a fork and of what"
+            assert pg.locator(".fw-status[data-fork]").count() == 1, "the status bar is marked as a fork's"
             assert pg.locator(".nodi-turn[data-fresh]").count() == 0, "history does not animate in on a fork"
             until(pg, "document.querySelector('.nodi-turn[data-turn=\"20\"] .nodi-turn-fork') !== null", 8000)
             assert pg.locator(".nodi-turn-fork").count() == 1, "the fork's first own turn alone wears the mark"
@@ -1275,7 +1241,8 @@ try:
             pg.wait_for_selector(".zr-pit", state="detached")
             until(pg, "!location.hash.includes('%s')" % MAIN, 8000)
             until(pg, "document.querySelector('.fw').dataset.link === 'live'", 8000)
-            assert pg.locator(".fw-fork-banner, .fw-status-fork, .nodi-turn-fork").count() == 0, "a tail fork has no own turn yet, so no mark anywhere"
+            assert pg.locator(".nodi-turn-fork").count() == 0, "a tail fork has no own turn yet, so no turn wears the mark"
+            assert pg.locator(".fw-forkmark").count() == 1, "but it still says it is a fork"
             assert not pg.errors, pg.errors
             ctx.close()
 

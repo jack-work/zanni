@@ -1,15 +1,15 @@
-import { Button, LatestPill, scrollRoot, scrollToBottom, useFollow, useTurnWindow, Plain, TranscriptContext, TurnView } from "../../index";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { Button, LatestPill, glyphs, scrollRoot, scrollToBottom, useFollow, useTurnWindow, Plain, TranscriptContext, TurnView } from "../../index";
+import { useAtomValue, useSetAtom } from "jotai";
 import { ariaAtom } from "figaro-forms/aria/jotai";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useFirstFrame } from "../lib/first-frame";
 import { labelOf } from "../lib/roster";
 import { metricsLineAtom, noteAtom, turnsAtom } from "../state/aria";
-import { treeStateAtom } from "../state/pit";
-import { paneAtom } from "../state/pane";
+import { forkOfAtom, treeStateAtom } from "../state/pit";
+import { routeFor } from "../lib/route";
 import { rosterAtom } from "../state/roster";
 import { composerAtom, forkAtom, keyOf } from "../state/composer";
-import { handsFreeAtom, speakingAtom, toggleHandsFreeAtom } from "../state/audio";
+import { speakingAtom } from "../state/audio";
 import { micCancelAtom } from "../state/mic";
 import { useVoice } from "./use-voice";
 import { linkAtom } from "../state/aria";
@@ -39,7 +39,6 @@ export function AriaView({ attended }: { attended: Attended }) {
   const turns = useAtomValue(turnsAtom(client, aria));
   const note = useAtomValue(noteAtom(client, aria));
   const roster = useAtomValue(rosterAtom);
-  const [pane, setPane] = useAtom(paneAtom);
   const paneRef = useRef<HTMLElement | null>(null);
   const olderRef = useRef<HTMLButtonElement | null>(null);
   const headRef = useRef<HTMLHeadingElement | null>(null);
@@ -58,8 +57,6 @@ export function AriaView({ attended }: { attended: Attended }) {
 
   const link = useAtomValue(linkAtom);
   const fork = useSetAtom(forkAtom);
-  const handsFree = useAtomValue(handsFreeAtom);
-  const toggleHandsFree = useSetAtom(toggleHandsFreeAtom);
   const speaking = useAtomValue(speakingAtom);
   const [spans, jump] = useTurnWindow(turns);
   useLayoutEffect(() => {
@@ -170,6 +167,7 @@ export function AriaView({ attended }: { attended: Attended }) {
     [tree],
   );
   const gone = link === "gone" || link === "refused";
+  const fork_of = useAtomValue(forkOfAtom);
   const status = note || pageError;
   const metrics = useAtomValue(metricsLineAtom(client, aria));
 
@@ -181,14 +179,13 @@ export function AriaView({ attended }: { attended: Attended }) {
             <a className="fw-back" href="#/">
               Arias
             </a>
-            <Button variant="quiet" size="compact" className="fw-panes" aria-controls="fw-arias" aria-expanded={pane.open} onClick={() => setPane({ open: !pane.open })}>
-              Arias
-            </Button>
+            {fork_of && (
+              <a className="fw-forkmark" href={routeFor(attended.store, fork_of.id)} title="The aria this one was forked from">
+                {glyphs.fork + " Fork of " + fork_of.name}
+              </a>
+            )}
             {!gone && (
             <div className="fw-subtools">
-              <Button variant="quiet" size="compact" className="fw-hands" aria-pressed={handsFree} onClick={() => toggleHandsFree()}>
-                Hands-free
-              </Button>
               <Button variant="quiet" size="compact" className="fw-fork" disabled={link !== "live" || forking} onClick={() => void fork(0)}>
                 Fork
               </Button>

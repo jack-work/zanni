@@ -2,7 +2,7 @@ import { atom } from "jotai";
 import { ariaFactsAtom, boundFormAtom, recentAtom, treeAtom } from "figaro-forms/aria/jotai";
 import { troupeFormID, type AriaFacts } from "figaro-forms/aria";
 import type { TopologyForms } from "../lib/topology";
-import type { PitView } from "../lib/pit-rows";
+import { FORKED_FROM_KEY, valueAt, type PitView } from "../lib/pit-rows";
 import { attendedAtom, clientAtom } from "./route";
 
 const USED_KEY = "fw.pit.used";
@@ -60,4 +60,11 @@ export const topologyFormsAtom = atom((get): TopologyForms => {
 export const attendedFactsAtom = atom((get) => {
   const at = get(attendedAtom);
   return at ? get(ariaFactsAtom(at.client, at.aria)) : undefined;
+});
+
+export const forkOfAtom = atom((get) => {
+  const id = valueAt(get(boundStateAtom)?.root, FORKED_FROM_KEY);
+  if (!id) return undefined;
+  const handle = get(treeStateAtom)?.nodes.get(id)?.handle;
+  return { id, name: handle || id.slice(0, 8) };
 });
