@@ -87,6 +87,7 @@
     methods.webauthn = !!info.has_webauthn && typeof window.PublicKeyCredential === 'function';
     show('second');
     if (!methods.totp && !methods.webauthn) {
+      byId('none-setup').href = location.origin + '/2fa/one-time-password';
       byId('none').hidden = false;
       byId('totp').hidden = true;
       byId('passkey').hidden = true;
@@ -227,8 +228,7 @@
 
   function googleHost(host) {
     var listed = window.zanniGoogleHosts;
-    if (Array.isArray(listed)) return listed.indexOf(host) >= 0;
-    return host === 'kelliher.info' || /\.kelliher\.info$/.test(host);
+    return Array.isArray(listed) && listed.indexOf(host) >= 0;
   }
 
   function google() {
