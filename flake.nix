@@ -463,8 +463,11 @@
           cp -r ${./web/vendor} web/vendor
           cp ${./web/package-lock.json} web/package-lock.json
           chmod -R u+w assets examples test bin web
-          python3 test/figchat.test.py ${self.packages.${system}.figchat-shell} 2>&1 | tee $out
-          env LD_LIBRARY_PATH=${pkgs.mesa}/lib:${pkgs.libglvnd}/lib __EGL_VENDOR_LIBRARY_FILENAMES=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless python3 test/ios-composer.test.py ${self.packages.${system}.figchat-shell} 2>&1 | tee -a $out
+          mkdir -p $out
+          export ZANNI_TIMINGS=$TMPDIR/timings.jsonl ZANNI_REV=${self.shortRev or self.dirtyShortRev or "dirty"}
+          python3 test/figchat.test.py ${self.packages.${system}.figchat-shell} 2>&1 | tee $out/log.txt
+          env LD_LIBRARY_PATH=${pkgs.mesa}/lib:${pkgs.libglvnd}/lib __EGL_VENDOR_LIBRARY_FILENAMES=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless python3 test/ios-composer.test.py ${self.packages.${system}.figchat-shell} 2>&1 | tee -a $out/log.txt
+          python3 test/timing.py $ZANNI_TIMINGS $out/timings.json
         '';
 
         checks.figchat-wave1 = pkgs.runCommand "zanni-figchat-wave1-test" {
@@ -479,7 +482,10 @@
           cp -r ${./examples} examples
           cp -r ${./test} test
           chmod -R u+w assets examples test
-          env LD_LIBRARY_PATH=${pkgs.mesa}/lib:${pkgs.libglvnd}/lib __EGL_VENDOR_LIBRARY_FILENAMES=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless bash test/wave1/run.sh ${self.packages.${system}.figchat-shell} 2>&1 | tee $out
+          mkdir -p $out
+          export ZANNI_TIMINGS=$TMPDIR/timings.jsonl ZANNI_REV=${self.shortRev or self.dirtyShortRev or "dirty"}
+          env LD_LIBRARY_PATH=${pkgs.mesa}/lib:${pkgs.libglvnd}/lib __EGL_VENDOR_LIBRARY_FILENAMES=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless bash test/wave1/run.sh ${self.packages.${system}.figchat-shell} 2>&1 | tee $out/log.txt
+          python3 test/timing.py $ZANNI_TIMINGS $out/timings.json
         '';
 
         apps.figchat-fuzz = {
@@ -521,10 +527,12 @@
               export LD_LIBRARY_PATH=${pkgs.mesa}/lib:${pkgs.libglvnd}/lib __EGL_VENDOR_LIBRARY_FILENAMES=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless
               python3 bench/figchat_bench.py "$BUNDLE" --sha ${self.shortRev or self.dirtyShortRev or "dirty"} --out "$work/result.json"
               python3 bench/check.py "$work/result.json" bench/budgets.json
+              export ZANNI_TIMINGS="$work/timings.jsonl" ZANNI_REV=${self.shortRev or self.dirtyShortRev or "dirty"}
               python3 test/fuzz/regress/run.py "$BUNDLE"
               for c in composer gestures network audio paced scale; do
                 python3 test/fuzz/fuzz.py "$BUNDLE" --campaign $c --seed 1 --runs 2 --steps 25 --no-shrink --regress-dir "$work/found"
               done
+              python3 test/timing.py "$work/timings.jsonl" "''${ZANNI_PERF_OUT:-$OLDPWD}/zanni-timings.json"
             ''}
           '');
         };
