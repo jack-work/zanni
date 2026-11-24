@@ -6,6 +6,7 @@ export * from "./jotai/state/mic";
 export * from "./jotai/state/roster";
 export * from "./jotai/state/route";
 export * from "./jotai/state/new-figaro";
+export * from "./jotai/state/pane";
 export * from "./jotai/state/command";
 export * from "./jotai/state/attach";
 export * from "./jotai/lib/audio-session";
