@@ -5,6 +5,9 @@ export interface PitRowProps {
   glyph?: string;
   label: ReactNode;
   meta?: ReactNode;
+  sub?: ReactNode;
+  expanded?: boolean;
+  detail?: ReactNode;
   depth?: number;
   current?: boolean;
   pressed?: boolean;
@@ -15,7 +18,7 @@ export interface PitRowProps {
   onClick: () => void;
 }
 
-export function PitRow({ glyph, label, meta, depth = 0, current, pressed, disabled, id, action, className, onClick }: PitRowProps) {
+export function PitRow({ glyph, label, meta, sub, expanded, detail, depth = 0, current, pressed, disabled, id, action, className, onClick }: PitRowProps) {
   return (
     <li className="zr-pit-li">
       <button
@@ -25,6 +28,7 @@ export function PitRow({ glyph, label, meta, depth = 0, current, pressed, disabl
         data-id={id}
         data-action={action}
         aria-pressed={pressed}
+        aria-expanded={expanded}
         aria-current={current ? "true" : undefined}
         disabled={disabled}
         onClick={onClick}
@@ -32,7 +36,9 @@ export function PitRow({ glyph, label, meta, depth = 0, current, pressed, disabl
         <Glyph glyph={current ? "▸" : (glyph ?? "")} className="zr-pit-row-glyph" />
         <span className="zr-pit-row-label">{label}</span>
         {meta !== undefined && meta !== "" && <span className="zr-pit-row-meta">{meta}</span>}
+        {sub !== undefined && sub !== "" && <span className="zr-pit-row-sub">{sub}</span>}
       </button>
+      {expanded && detail}
     </li>
   );
 }

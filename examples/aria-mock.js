@@ -111,7 +111,7 @@
     var step = o.step == null ? 60 : o.step;
     var clock = o.now || function () { return Date.now(); };
     var timers = o.timers || { set: function (f, ms) { return setTimeout(f, ms); }, clear: function (h) { clearTimeout(h); } };
-    var core = { conns: [], calls: [], arias: {}, order: [], pageBytes: o.pageBytes || 6000, dropped: 0, taps: [], ids: { main: aid(1), lane: aid(2), spain: aid(3), engineer: aid(4), forms: aid(5) } };
+    var core = { conns: [], calls: [], arias: {}, order: [], pageBytes: o.pageBytes || 6000, orders: o.orders || { name: 'figchat-orders', orders: {} }, dropped: 0, taps: [], ids: { main: aid(1), lane: aid(2), spain: aid(3), engineer: aid(4), forms: aid(5) } };
     var metricsOf = {};
     var base = clock() - 4 * 86400000;
     var history = o.history == null ? 26 : o.history;
@@ -569,6 +569,7 @@
       Object.keys(o.Update || {}).forEach(function (k) { base[k] = applyPatch(o.Update[k], base[k]); });
       return base;
     }
+    var ASKS_FORM = '@77074489e3ab40bc4277b7abd23bdd50';
     var formLabel = function (row) { return row.handle || row.mantra || row.short; };
     function windowIds() { return o.window ? core.order.slice(0, o.window) : core.order; }
     function cut() { return Math.max(0, core.order.length - windowIds().length); }
@@ -610,6 +611,7 @@
       if (id === '@arias' && core.fixture) return clone(core.fixture.arias);
       if (id === '@arias') { var root = ariasRoot(); root.roles = {}; return root; }
       if (id === '@recent') return recentRoot();
+      if (id === ASKS_FORM) return clone(core.orders);
       var a = core.arias[id];
       if (!a) return null;
       if (a.edited) return clone(a.edited);
@@ -623,6 +625,7 @@
       core.conns.slice().forEach(function (c) { if (c.open && c.follows[id]) c.sink.text(text); });
     }
     core.pushForm = pushForm;
+    core.setOrders = function (root) { core.orders = clone(root); pushForm(ASKS_FORM); };
 
     core.attach = function (sink) {
       var conn = { sink: sink, follows: {}, open: true };
