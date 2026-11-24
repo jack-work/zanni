@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { ageOf, compareAsks, foldAsk, foldAsks, formatSpan } from "zanni-react/jotai";
-import fixture from "../../test/wave1/fixtures/orders.json";
+import { readFileSync } from "node:fs";
+
+const fixture = JSON.parse(readFileSync(new URL("../../test/wave1/fixtures/orders.json", import.meta.url), "utf8")) as { orders: Record<string, { state: string }> };
 
 const T = (s: string) => Date.parse(s);
 const NOW = T("2026-11-23T21:30:00-05:00");
@@ -129,7 +131,7 @@ describe("the real orders form", () => {
   });
 
   it("agrees with the state each order carries", () => {
-    for (const r of rows) expect(r.stage, r.id).toBe((fixture.orders as Record<string, { state: string }>)[r.id]!.state);
+    for (const r of rows) expect(r.stage, r.id).toBe(fixture.orders[r.id]!.state);
   });
 
   it("is sorted by stage then filed time", () => {

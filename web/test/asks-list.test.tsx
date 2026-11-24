@@ -2,7 +2,9 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { foldAsks } from "zanni-react/jotai";
 import { AsksList } from "../../packages/react/src/jotai/components/asks";
-import fixture from "../../test/wave1/fixtures/orders.json";
+import { readFileSync } from "node:fs";
+
+const fixture = JSON.parse(readFileSync(new URL("../../test/wave1/fixtures/orders.json", import.meta.url), "utf8")) as { orders: Record<string, { state: string }> };
 
 const NOW = Date.parse("2026-11-23T21:30:00-05:00");
 
