@@ -78,18 +78,23 @@ def main():
                 pg.wait_for_selector(".zr-composer .zr-input")
                 pg.wait_for_timeout(800)
                 if hands:
-                    pg.evaluate("document.querySelector('.fw-hands').scrollIntoView({ block: 'center' })")
-                    pg.wait_for_timeout(500)
-                    pg.locator(".fw-hands").click()
-                    try:
-                        pg.wait_for_selector(".fw-hands[aria-pressed='true']", timeout=5000)
-                    except Exception:
+                    for _ in range(4):
+                        pg.evaluate("document.querySelector('.fw-hands').scrollIntoView({ block: 'center' })")
+                        pg.wait_for_timeout(1500)
+                        pg.locator(".fw-hands").click()
+                        if pg.locator(".fw-hands[aria-pressed='true']").count():
+                            break
+                    else:
                         pg.screenshot(path="/tmp/hands-free-%s-pressed.png" % engine)
-                        raise
+                        raise AssertionError("the hands-free button never took the tap")
+                    pg.wait_for_selector(".fw-hands[aria-pressed='true']", timeout=5000)
                 try:
                     work(pg, door)
                 except Exception:
-                    pg.screenshot(path="/tmp/hands-free-%s.png" % engine)
+                    try:
+                        pg.screenshot(path="/tmp/hands-free-%s.png" % engine)
+                    except Exception:
+                        pass
                     raise
                 events = pg.evaluate("window.__au")
                 says = door.state()["says"]
