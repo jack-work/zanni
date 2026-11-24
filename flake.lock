@@ -7,17 +7,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1795500606,
-        "narHash": "sha256-6RCrQAy273Q2Jm3cSQU7kiLdAmsS8W12Yda+ayQQIZM=",
-        "ref": "refs/tags/v0.23.0",
-        "rev": "cd21d5f56e2d29a2a3574e97b7eedb208e65491c",
-        "revCount": 196,
+        "lastModified": 1795525951,
+        "narHash": "sha256-zDfI8Ij3zAPcWiGcqXp3y5/RuOHSpPBZdnPZ2eSS8ws=",
+        "ref": "refs/tags/v0.23.2",
+        "rev": "fcbf14b292f41891e367fc04a4d2183e8f469a0b",
+        "revCount": 208,
         "type": "git",
         "url": "ssh://git@spain/var/lib/keel/jack/figaro-forms.git"
       },
       "original": {
-        "ref": "refs/tags/v0.23.0",
-        "rev": "cd21d5f56e2d29a2a3574e97b7eedb208e65491c",
+        "ref": "refs/tags/v0.23.2",
+        "rev": "fcbf14b292f41891e367fc04a4d2183e8f469a0b",
         "type": "git",
         "url": "ssh://git@spain/var/lib/keel/jack/figaro-forms.git"
       }
