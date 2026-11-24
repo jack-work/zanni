@@ -248,8 +248,12 @@ try:
 
         pg = fresh()
         attend(pg, fast, MAIN)
-        pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop = 0")
-        until(pg, "document.querySelector('.nodi-turn') && Number(document.querySelector('.nodi-turn').dataset.turn) < 20")
+        for _ in range(500):
+            pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop = 0")
+            if pg.evaluate("!!document.querySelector('.nodi-turn') && Number(document.querySelector('.nodi-turn').dataset.turn) < 20"):
+                break
+            pg.wait_for_timeout(120)
+        assert pg.evaluate("!!document.querySelector('.nodi-turn') && Number(document.querySelector('.nodi-turn').dataset.turn) < 20"), "scrolling to the top pages older turns in"
         pg.wait_for_timeout(400)
         anchor = pg.evaluate("document.querySelector('[data-zr-scroll]').scrollTop")
         assert anchor > 0, "paging in older turns keeps the reader where they were, not at the top: %s" % anchor
