@@ -1270,6 +1270,8 @@ body.hefting .heft-lift { z-index: 9999; }
   --parla-mouth: 0.6;
   --parla-tilt: -1.5deg;
   --parla-outline: 3px;
+  --parla-teeter: 1.4deg;
+  --parla-bob: 2px;
   display: flex;
   align-items: flex-start;
   gap: 1.3rem;
@@ -1301,7 +1303,10 @@ body.hefting .heft-lift { z-index: 9999; }
   box-shadow: 5px 5px 0 var(--z-shadow);
   transform: rotate(var(--parla-tilt));
   transform-origin: 0 60%;
-  animation: parla-pop 320ms cubic-bezier(0.2, 1.6, 0.3, 1) both;
+  animation:
+    parla-pop 320ms cubic-bezier(0.2, 1.6, 0.3, 1) both,
+    parla-teeter 5.2s ease-in-out infinite alternate,
+    parla-bob 3.3s ease-in-out infinite alternate;
 }
 
 .parla-bubble::before,
@@ -1326,8 +1331,13 @@ body.hefting .heft-lift { z-index: 9999; }
   border-right-color: var(--z-ground-2);
 }
 
-.parla-bubble.parla-wiggle { animation: parla-wiggle 420ms ease-in-out; }
-.parla-bubble.parla-again { animation-name: parla-pop-again; }
+.parla-bubble.parla-wiggle {
+  animation:
+    parla-wiggle 420ms ease-in-out,
+    parla-teeter 5.2s ease-in-out infinite alternate,
+    parla-bob 3.3s ease-in-out infinite alternate;
+}
+.parla-bubble.parla-again { animation-name: parla-pop-again, parla-teeter, parla-bob; }
 .parla-bubble.parla-ahem { font-family: var(--fontpack-mono, monospace); font-size: 24px; letter-spacing: 0.06em; }
 
 @keyframes parla-pop {
@@ -1338,6 +1348,16 @@ body.hefting .heft-lift { z-index: 9999; }
 @keyframes parla-pop-again {
   from { opacity: 0.4; transform: rotate(var(--parla-tilt)) scale(0.92); }
   to { opacity: 1; transform: rotate(var(--parla-tilt)) scale(1); }
+}
+
+@keyframes parla-teeter {
+  from { rotate: calc(-1 * var(--parla-teeter)); }
+  to { rotate: var(--parla-teeter); }
+}
+
+@keyframes parla-bob {
+  from { translate: 0 calc(0.5 * var(--parla-bob)); }
+  to { translate: 0 calc(-1 * var(--parla-bob)); }
 }
 
 @keyframes parla-wiggle {
@@ -1356,6 +1376,16 @@ body.hefting .heft-lift { z-index: 9999; }
   .parla-bubble.parla-wiggle,
   .parla-bubble.parla-again { animation: none; }
 }
+
+button.parla-bubble {
+  display: block;
+  width: auto;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button.parla-bubble:focus-visible { outline: 3px solid var(--z-focus); outline-offset: 4px; }
 </style>
 <script>
 (function () {

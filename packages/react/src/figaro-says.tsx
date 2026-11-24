@@ -1,9 +1,10 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import figaroHead from "../../../assets/parla/figaro-head.png?inline";
+import figaroHeadUrl from "../../../assets/parla/figaro-head.png?inline";
 import notHere from "../../../assets/parla/not-here.json";
 
 export const notHereLines: readonly string[] = notHere;
+export const figaroHead: string = figaroHeadUrl;
 
 export interface FigaroSaysProps {
   children?: ReactNode;
@@ -36,4 +37,3 @@ export function FigaroSays({ children, lines, start, head = figaroHead, live = f
   );
 }
 
-export { figaroHead };
