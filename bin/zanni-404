@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import base64
+import html
 import io
 import json
 import re
@@ -75,9 +76,11 @@ var at = Math.floor(Math.random() * lines.length);
 function show() { b.textContent = lines[at]; b.classList.remove('parla-again'); void b.offsetWidth; b.classList.add('parla-again'); }
 b.textContent = lines[at];
 b.addEventListener('click', function () { at = (at + 1) %% lines.length; show(); });
-document.querySelector('.back').addEventListener('click', function () { history.back(); });
+var back = document.querySelector('.back');
+if (history.length < 2) back.hidden = true;
+back.addEventListener('click', function () { history.back(); });
 })();
-""" % json.dumps(lines, ensure_ascii=False))
+""") % json.dumps(lines, ensure_ascii=False).replace("</", "<\\/").replace("<!--", "<\\!--")
     return (
         '<!doctype html>\n<html lang="en">\n<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width,initial-scale=1">\n'
@@ -87,7 +90,7 @@ document.querySelector('.back').addEventListener('click', function () { history.
         f"<h1>{TITLE}</h1>\n"
         '<div class="parla">'
         f'<img class="parla-head" src="data:image/png;base64,{head}" alt="Figaro" draggable="false">'
-        f'<button type="button" class="parla-bubble" aria-live="polite">{lines[0]}</button>'
+        f'<button type="button" class="parla-bubble" aria-live="polite">{html.escape(lines[0])}</button>'
         "</div>\n"
         f'<button type="button" class="back">{BACK}</button>\n'
         f"</main>\n<script>\n{script}\n</script>\n</body>\n</html>\n"

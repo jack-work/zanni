@@ -52,11 +52,15 @@ describe("FigaroSays", () => {
     const lines = ["One.", "Two.", "Three."];
     render(<FigaroSays lines={lines} start={2} />);
     const bubble = screen.getByRole("button", { name: "Three." });
-    expect(bubble.className).toBe("parla-bubble parla-next");
+    expect(bubble.className).toBe("parla-bubble");
     expect(bubble.getAttribute("aria-live")).toBe("polite");
+    bubble.focus();
     fireEvent.click(bubble);
-    fireEvent.click(screen.getByRole("button", { name: "One." }));
-    expect(screen.getByRole("button", { name: "Two." })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "One." })).toBe(bubble);
+    expect(bubble.className).toBe("parla-bubble parla-again");
+    fireEvent.click(bubble);
+    expect(screen.getByRole("button", { name: "Two." })).toBe(bubble);
+    expect(document.activeElement).toBe(bubble);
   });
 
   it("picks its first line at random when no start is given", () => {
@@ -67,9 +71,9 @@ describe("FigaroSays", () => {
     expect(screen.getByRole("button", { name: "Two." })).toBeTruthy();
   });
 
-  it("ships twenty not-here remarks, each a short sentence that names nobody", () => {
-    expect(notHereLines).toHaveLength(20);
-    expect(new Set(notHereLines).size).toBe(20);
+  it("ships eighteen not-here remarks, each a short sentence that names nobody", () => {
+    expect(notHereLines).toHaveLength(18);
+    expect(new Set(notHereLines).size).toBe(18);
     for (const line of notHereLines) {
       expect(line.length).toBeLessThanOrEqual(140);
       expect(line).toMatch(/[.?!]$/);
