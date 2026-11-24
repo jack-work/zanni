@@ -56,6 +56,8 @@ def near(a, b, tol=0.6):
 
 def settle(pg):
     pg.wait_for_timeout(500)
+    pg.wait_for_function(f"!{ROOT}.classList.contains('filo-held')", timeout=5000)
+    pg.wait_for_timeout(100)
 
 
 def at(pg, t):
@@ -273,10 +275,11 @@ with sync_playwright() as p:
 
     pg.keyboard.press("f")
     pg.wait_for_function("document.fullscreenElement === document.querySelector('.filo')", timeout=3000)
-    assert has(pg, "filo-fullscreen")
+    pg.wait_for_function(f"{ROOT}.classList.contains('filo-fullscreen')", timeout=3000)
     assert pg.evaluate("document.querySelector('.filo-full').getAttribute('aria-label')") == "Exit fullscreen"
     pg.keyboard.press("f")
     pg.wait_for_function("!document.fullscreenElement", timeout=3000)
+    pg.wait_for_function("events.filter(e => e[0] === 'filo:fullscreen').length >= 2", timeout=10000)
     assert [e["on"] for e in events(pg, "filo:fullscreen")] == [True, False]
 
     ready(pg)

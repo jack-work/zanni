@@ -126,6 +126,10 @@
         pkgs = nixpkgs.legacyPackages.${system};
         gateway = figaro-forms.packages.${system}.bridge;
         fuzzPython = pkgs.python3.withPackages (ps: [ ps.playwright ]);
+        benchPython = pkgs.python3.withPackages (ps: [ ps.playwright ps.brotli ]);
+        tier = name: members: pkgs.linkFarm "zanni-${name}"
+          (pkgs.lib.mapAttrsToList (n: path: { name = n; inherit path; }) members);
+        everyCheck = pkgs.lib.removeAttrs self.checks.${system} [ "quick" "release" ];
         speechKit = pkgs.runCommand "figfuzz-speech-kit" { } ''
           mkdir $out
           cp ${figaro-forms-paced}/packages/bridge/test/fake-speech.ts $out/
@@ -182,12 +186,7 @@
           nodejs = pkgs.nodejs_24;
           npmDepsHash = "sha256-pwNnArG745Li5CnnX3kq94hNEzGbz8CSJ9CGcSNlTuU=";
           makeCacheWritable = true;
-          doCheck = true;
-          checkPhase = ''
-            runHook preCheck
-            npm test
-            runHook postCheck
-          '';
+          doCheck = false;
           installPhase = ''
             runHook preInstall
             node ../bin/figchat-bundle $out dist
@@ -244,28 +243,36 @@
           zanni-check $out/card.html
         '';
 
-        # The renderer is the one component with logic rather than only
-        # declarations, so it carries unit tests and they run in the build.
-        checks.scriba = pkgs.runCommand "zanni-scriba-test" {
-          nativeBuildInputs = [ pkgs.nodejs ];
+        checks.unit = pkgs.runCommand "zanni-unit" {
+          nativeBuildInputs = [ pkgs.nodejs pkgs.python3 ];
         } ''
           cp -r ${./assets} assets
+          cp -r ${./examples} examples
           cp -r ${./test} test
-          node test/scriba.test.js
+          cp -r ${./bin} bin
+          cp -r ${./packages} packages
+          mkdir web
+          cp -r ${./web/vendor} web/vendor
+          cp ${./web/package-lock.json} web/package-lock.json
+          chmod -R u+w assets examples test bin web
+          patchShebangs bin
+          for t in test/*.test.js; do
+            echo "== $t"
+            node $t
+          done
           touch $out
         '';
 
-        checks.strati = pkgs.runCommand "zanni-strati-test" {
-          nativeBuildInputs = [ pkgs.nodejs ];
-        } ''
-          cp -r ${./assets} assets
-          cp -r ${./test} test
-          node test/strati.test.js
-          node test/ordine.test.js
-          node test/ordine-drift.test.js
-          node test/ordine-feed.test.js
-          touch $out
-        '';
+        checks.web-unit = self.packages.${system}.figchat-shell.overrideAttrs (old: {
+          pname = "zanni-web-unit";
+          doCheck = true;
+          checkPhase = ''
+            runHook preCheck
+            npm test
+            runHook postCheck
+          '';
+          installPhase = "touch $out";
+        });
 
         packages.order-site = self.lib.mkBoiledSite {
           inherit pkgs version;
@@ -436,7 +443,6 @@
           cp -r ${./test} test
           cp -r ${./bin} bin
           chmod -R u+w assets examples test bin
-          node test/placet.test.js
           python3 test/placet.test.py examples/placet.html 2>&1 | tee $out
         '';
 
@@ -457,12 +463,11 @@
           cp -r ${./web/vendor} web/vendor
           cp ${./web/package-lock.json} web/package-lock.json
           chmod -R u+w assets examples test bin web
-          node test/voce.test.js
-          node test/nodi.test.js
-          node test/figchat.test.js
-          node test/react-example.test.js
-          python3 test/figchat.test.py ${self.packages.${system}.figchat-shell} 2>&1 | tee $out
-          env LD_LIBRARY_PATH=${pkgs.mesa}/lib:${pkgs.libglvnd}/lib __EGL_VENDOR_LIBRARY_FILENAMES=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless python3 test/ios-composer.test.py ${self.packages.${system}.figchat-shell} 2>&1 | tee -a $out
+          mkdir -p $out
+          export ZANNI_TIMINGS=$TMPDIR/timings.jsonl ZANNI_REV=${self.shortRev or self.dirtyShortRev or "dirty"}
+          python3 test/figchat.test.py ${self.packages.${system}.figchat-shell} 2>&1 | tee $out/log.txt
+          env LD_LIBRARY_PATH=${pkgs.mesa}/lib:${pkgs.libglvnd}/lib __EGL_VENDOR_LIBRARY_FILENAMES=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless python3 test/ios-composer.test.py ${self.packages.${system}.figchat-shell} 2>&1 | tee -a $out/log.txt
+          python3 test/timing.py $ZANNI_TIMINGS $out/timings.json
         '';
 
         checks.figchat-wave1 = pkgs.runCommand "zanni-figchat-wave1-test" {
@@ -477,29 +482,10 @@
           cp -r ${./examples} examples
           cp -r ${./test} test
           chmod -R u+w assets examples test
-          env LD_LIBRARY_PATH=${pkgs.mesa}/lib:${pkgs.libglvnd}/lib __EGL_VENDOR_LIBRARY_FILENAMES=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless bash test/wave1/run.sh ${self.packages.${system}.figchat-shell} 2>&1 | tee $out
-        '';
-
-        checks.figchat-fuzz = pkgs.runCommand "zanni-figchat-fuzz" {
-          nativeBuildInputs = [ pkgs.nodejs fuzzPython ];
-          PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
-          PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
-          FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts pkgs.noto-fonts-color-emoji pkgs.noto-fonts-cjk-sans pkgs.noto-fonts ]; };
-          FIGFUZZ_GATEWAY = "${gateway}/bin/figaro-gateway";
-          FIGFUZZ_SPEECH_KIT = "${speechKit}";
-        } ''
-          set -o pipefail
-          export HOME=$TMPDIR
-          cp -r ${./examples} examples
-          cp -r ${./assets} assets
-          cp -r ${./test} test
-          cp -r ${./bench} bench
-          chmod -R u+w examples assets test bench
-          bundle=${self.packages.${system}.figchat-shell}
-          python3 test/fuzz/regress/run.py $bundle 2>&1 | tee $out
-          for c in composer gestures network audio paced scale; do
-            python3 test/fuzz/fuzz.py $bundle --campaign $c --seed 1 --runs 2 --steps 25 --no-shrink --regress-dir $TMPDIR/found 2>&1 | tee -a $out
-          done
+          mkdir -p $out
+          export ZANNI_TIMINGS=$TMPDIR/timings.jsonl ZANNI_REV=${self.shortRev or self.dirtyShortRev or "dirty"}
+          env LD_LIBRARY_PATH=${pkgs.mesa}/lib:${pkgs.libglvnd}/lib __EGL_VENDOR_LIBRARY_FILENAMES=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless bash test/wave1/run.sh ${self.packages.${system}.figchat-shell} 2>&1 | tee $out/log.txt
+          python3 test/timing.py $ZANNI_TIMINGS $out/timings.json
         '';
 
         apps.figchat-fuzz = {
@@ -516,6 +502,40 @@
           '');
         };
 
+
+        apps.perf = {
+          type = "app";
+          program = toString (pkgs.writeShellScript "zanni-perf" ''
+            export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+            export PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
+            export FONTCONFIG_FILE=${pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts pkgs.noto-fonts-color-emoji pkgs.noto-fonts-cjk-sans pkgs.noto-fonts ]; }}
+            export FIGFUZZ_GATEWAY=${gateway}/bin/figaro-gateway
+            export FIGFUZZ_SPEECH_KIT=${speechKit}
+            export PYTHONDONTWRITEBYTECODE=1
+            export PATH=${pkgs.nodejs}/bin:${benchPython}/bin:$PATH
+            export BUNDLE=${self.packages.${system}.figchat-shell}
+            exec ${pkgs.flock}/bin/flock /tmp/zanni-perf.lock ${pkgs.writeShellScript "zanni-perf-run" ''
+              set -eu -o pipefail
+              work=$(mktemp -d)
+              trap 'rm -rf "$work"' EXIT
+              cd "$work"
+              cp -r ${./assets} assets
+              cp -r ${./examples} examples
+              cp -r ${./test} test
+              cp -r ${./bench} bench
+              chmod -R u+w assets examples test bench
+              export LD_LIBRARY_PATH=${pkgs.mesa}/lib:${pkgs.libglvnd}/lib __EGL_VENDOR_LIBRARY_FILENAMES=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless
+              python3 bench/figchat_bench.py "$BUNDLE" --sha ${self.shortRev or self.dirtyShortRev or "dirty"} --out "$work/result.json"
+              python3 bench/check.py "$work/result.json" bench/budgets.json
+              export ZANNI_TIMINGS="$work/timings.jsonl" ZANNI_REV=${self.shortRev or self.dirtyShortRev or "dirty"}
+              python3 test/fuzz/regress/run.py "$BUNDLE"
+              for c in composer gestures network audio paced scale; do
+                python3 test/fuzz/fuzz.py "$BUNDLE" --campaign $c --seed 1 --runs 2 --steps 25 --no-shrink --regress-dir "$work/found"
+              done
+              python3 test/timing.py "$work/timings.jsonl" "''${ZANNI_PERF_OUT:-$OLDPWD}/zanni-timings.json"
+            ''}
+          '');
+        };
 
         packages.figchat-bench = pkgs.writeShellApplication {
           name = "figchat-bench";
@@ -538,24 +558,6 @@
           '';
         };
 
-        checks.figchat-perf = pkgs.runCommand "zanni-figchat-perf" {
-          nativeBuildInputs = [ pkgs.nodejs (pkgs.python3.withPackages (ps: [ ps.playwright ps.brotli ])) ];
-          PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
-          PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
-          FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
-        } ''
-          set -o pipefail
-          export HOME=$TMPDIR
-          cp -r ${./assets} assets
-          cp -r ${./examples} examples
-          cp -r ${./test} test
-          cp -r ${./bench} bench
-          chmod -R u+w assets examples test bench
-          mkdir -p $out
-          env LD_LIBRARY_PATH=${pkgs.mesa}/lib:${pkgs.libglvnd}/lib __EGL_VENDOR_LIBRARY_FILENAMES=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless python3 bench/figchat_bench.py ${self.packages.${system}.figchat-shell} --sha ${self.shortRev or self.dirtyShortRev or "dirty"} --out $out/result.json
-          python3 bench/check.py $out/result.json bench/budgets.json 2>&1 | tee $out/check.txt
-        '';
-
         checks.rotolo = pkgs.runCommand "zanni-rotolo-test" {
           nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.playwright ps.pillow ])) ];
           PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
@@ -568,6 +570,9 @@
           cp -r ${./examples} examples
           python3 ${./test/rotolo.test.py} examples/rotolo.html 2>&1 | tee $out
         '';
+
+        checks.quick = tier "quick" { inherit (everyCheck) unit web-unit fontpack-stylesheet example; };
+        checks.release = tier "release" everyCheck;
 
         apps.inline = flake-utils.lib.mkApp {
           drv = self.packages.${system}.default;
