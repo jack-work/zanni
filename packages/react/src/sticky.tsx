@@ -55,7 +55,7 @@ export function usePinned(scope: RefObject<HTMLElement | null>, question: RefObj
         alive = e.isIntersecting;
         settle();
       },
-      { root: scroller },
+      { root: scroller, rootMargin: "-" + head.offsetHeight + "px 0px 0px 0px" },
     );
     passed.observe(block);
     seen.observe(turn);
