@@ -98,7 +98,8 @@ class Run:
           };
           const sc = document.querySelector('[data-zr-scroll]');
           grab();
-          for (let step = 0; !peek && sc && step < 60 && Math.min(...seen.keys()) > floor; step++) {
+          const reach = () => Math.ceil(sc.scrollHeight / (sc.clientHeight * 0.8)) + 20;
+          for (let step = 0; !peek && sc && step < reach() && Math.min(...seen.keys()) > floor; step++) {
             const before = sc.scrollTop;
             sc.scrollTop = before - sc.clientHeight * 0.8;
             await new Promise((r) => setTimeout(r, 300));
