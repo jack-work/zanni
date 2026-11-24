@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "tsc -p tsconfig.json --noEmit && vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "parity": "playwright test",
+    "parity:real": "PARITY_REAL=1 playwright test",
+    "parity:sync": "sh parity/sync.sh"
   },
   "dependencies": {
     "figaro-forms": "file:vendor/figaro-forms-0.24.0.tgz",
@@ -16,6 +19,7 @@
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.0",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
     "@types/node": "^26.6.6",
