@@ -279,6 +279,7 @@ with sync_playwright() as p:
     assert pg.evaluate("document.querySelector('.filo-full').getAttribute('aria-label')") == "Exit fullscreen"
     pg.keyboard.press("f")
     pg.wait_for_function("!document.fullscreenElement", timeout=3000)
+    pg.wait_for_function("events.filter(e => e[0] === 'filo:fullscreen').length >= 2", timeout=10000)
     assert [e["on"] for e in events(pg, "filo:fullscreen")] == [True, False]
 
     ready(pg)
