@@ -3,7 +3,7 @@
  "orders": {
   "attend-any-figaro": {
    "filed": "2026-11-20T12:00-05:00",
-   "from": "Gluck via King",
+   "from": "Owner via King",
    "lane": "fleet.lane.figchat.gateway",
    "note": "delivered as figaro web on gluck's store via figaro-gateway",
    "owner": "Figaro Engineer",
@@ -13,11 +13,11 @@
     "live": "2026-11-21T03:30:00-05:00"
    },
    "state": "live",
-   "text": "Attend any figaro in Gluck own store with pager semantics; threads are figaros scoped to a store, no herald side state; figchat figaro knows the hierarchy and reaches the King; order.kelliher.info opens a thread with any worker. Brief: ~/.captains-log/2026/11/20/gluck-figchat-attend-any-figaro.md"
+   "text": "Attend any figaro in the owner's store with pager semantics; threads are figaros scoped to a store, no herald side state; figchat figaro knows the hierarchy and reaches the King; order.kelliher.info opens a thread with any worker. Brief: ~/.captains-log/2026/11/20/gluck-figchat-attend-any-figaro.md"
   },
   "backups": {
    "filed": "2026-11-23T19:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.spain",
    "note": "first snapshot 18.53 GiB on Spain with restore proof; gluck timers wait on the owner-path window (cheroot d26df9c)",
    "owner": "@4f6f262b",
@@ -30,7 +30,7 @@
   },
   "binary-cache": {
    "filed": "2026-11-23T19:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.backend.cache",
    "owner": "@4f6f262b",
    "stages": {
@@ -42,7 +42,7 @@
   },
   "comments-port": {
    "filed": "2026-11-23T15:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.keel.review",
    "owner": "Frontend Engineer",
    "stages": {
@@ -54,7 +54,7 @@
   },
   "compose-full-width": {
    "filed": "2026-11-21T11:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.composer",
    "owner": "Frontend Engineer",
    "stages": {
@@ -69,7 +69,7 @@
   },
   "desktop-panes": {
    "filed": "2026-11-21T00:40:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.layout.wide",
    "owner": "Frontend Engineer",
    "stages": {
@@ -81,7 +81,7 @@
   },
   "dictation": {
    "filed": "2026-11-20T12:30-05:00",
-   "from": "Gluck via King",
+   "from": "Owner via King",
    "lane": "fleet.lane.figchat.voice.stream-stt",
    "note": "streaming STT live; composer side in voice.toggle-mic",
    "owner": "Backend Engineer",
@@ -95,7 +95,7 @@
   },
   "flake-checks": {
    "filed": "2026-11-23T19:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.spain",
    "owner": "Backend Engineer",
    "stages": {
@@ -106,7 +106,7 @@
   },
   "fork-flourish": {
    "filed": "2026-11-21T00:40:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.pits.control",
    "owner": "Frontend Engineer",
    "stages": {
@@ -149,9 +149,9 @@
   },
   "hands-free": {
    "filed": "2026-11-20T20:40-05:00",
-   "from": "Gluck via King",
+   "from": "Owner via King",
    "lane": "fleet.lane.figchat.client.react",
-   "note": "P1-P3 (audio session, hold, ping) and sheet in v0.29.0, queue v0.28.4; iPhone check is Gluck's",
+   "note": "P1-P3 (audio session, hold, ping) and sheet in v0.29.0, queue v0.28.4; iPhone check is Owner's",
    "owner": "Frontend Engineer",
    "stages": {
     "filed": "2026-11-20T20:40:00-05:00",
@@ -160,11 +160,11 @@
     "ready": "2026-11-20T23:30:00-05:00"
    },
    "state": "live",
-   "text": "PRIORITY. Hands-free mode (not just voice). (1) BUG: a new message arriving while a reply is being spoken cuts the spoken output off; queue playback instead. (2) Define semantics for messages that arrive while Gluck is recording in hands-free mode (hold, then ping and play after he stops). (3) A short audible ping when a message arrives in hands-free mode. (4) Tap a message: a bottom-sheet action bar (from the chat libraries we borrow from) with play and re-transcribe for any message. (5) No persistence of voice/hands-free mode in browser cache; he turns it on each time. Primitives first: one playback queue and one audio-session state machine reused by play, replay, ping and recording; one message-action sheet reused by future actions. Big impact first, harder items to the back."
+   "text": "PRIORITY. Hands-free mode (not just voice). (1) BUG: a new message arriving while a reply is being spoken cuts the spoken output off; queue playback instead. (2) Define semantics for messages that arrive while Owner is recording in hands-free mode (hold, then ping and play after he stops). (3) A short audible ping when a message arrives in hands-free mode. (4) Tap a message: a bottom-sheet action bar (from the chat libraries we borrow from) with play and re-transcribe for any message. (5) No persistence of voice/hands-free mode in browser cache; he turns it on each time. Primitives first: one playback queue and one audio-session state machine reused by play, replay, ping and recording; one message-action sheet reused by future actions. Big impact first, harder items to the back."
   },
   "hands-free-autoplay": {
    "filed": "2026-11-20T20:55-05:00",
-   "from": "Gluck via King",
+   "from": "Owner via King",
    "lane": "fleet.lane.figchat.bugs.audio",
    "note": "lane: anchor-banana (Frontend), brief 2026/11/23/figchat-hands-free-autoplay-brief.md",
    "owner": "Frontend Engineer",
@@ -177,7 +177,7 @@
   },
   "incremental-markdown": {
    "filed": "2026-11-21T01:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.messages",
    "note": "messages.stream-markdown v0.32.10, live with v0.33.0",
    "owner": "Frontend Engineer",
@@ -193,9 +193,9 @@
   },
   "ios-audiosession-1795208007": {
    "filed": "2026-11-20T15:53:27-05:00",
-   "from": "Figaro Engineer (145bf3e1) for Gluck",
+   "from": "Figaro Engineer (145bf3e1) for Owner",
    "lane": "fleet.lane.figchat.bugs.audio",
-   "note": "play-and-record in v0.28.3 (fig.kelliher.info), session machine v0.29.0; iPhone check is Gluck's",
+   "note": "play-and-record in v0.28.3 (fig.kelliher.info), session machine v0.29.0; iPhone check is Owner's",
    "owner": "Frontend Engineer",
    "stages": {
     "filed": "2026-11-20T15:53:00-05:00",
@@ -203,11 +203,11 @@
     "live": "2026-11-20T18:30:00-05:00"
    },
    "state": "live",
-   "text": "iPhone Safari: 'Could not record: AudioSession category is not compatible with audio capture'. Cause: zanni voce.js engine.unlock sets navigator.audioSession.type = 'playback', which iOS forbids for mic capture. Fix: set 'play-and-record' before getUserMedia (or whenever voice/mic is on), back to 'playback' after; test on iOS Safari that recording and live reply audio both work. Small, Frontend (zanni voce + figchat mic path). Backlog, not urgent (Gluck)."
+   "text": "iPhone Safari: 'Could not record: AudioSession category is not compatible with audio capture'. Cause: zanni voce.js engine.unlock sets navigator.audioSession.type = 'playback', which iOS forbids for mic capture. Fix: set 'play-and-record' before getUserMedia (or whenever voice/mic is on), back to 'playback' after; test on iOS Safari that recording and live reply audio both work. Small, Frontend (zanni voce + figchat mic path). Backlog, not urgent (Owner)."
   },
   "ios-composer": {
    "filed": "2026-11-21T00:05:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.composer.iphone-scroll",
    "owner": "Frontend Engineer",
    "stages": {
@@ -222,7 +222,7 @@
   },
   "keel-unification": {
    "filed": "2026-11-23T14:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.keel",
    "owner": "Frontend Engineer",
    "stages": {
@@ -234,7 +234,7 @@
   },
   "keep-animations": {
    "filed": "2026-11-21T00:05:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.transitions",
    "owner": "Frontend Engineer",
    "stages": {
@@ -247,7 +247,7 @@
   },
   "keyboard-shortcuts": {
    "filed": "2026-11-23T14:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.keel.keys",
    "owner": "Frontend Engineer",
    "stages": {
@@ -258,7 +258,7 @@
   },
   "landscape-status-bar": {
    "filed": "2026-11-23T17:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.layout.wide",
    "note": "in zanni v0.35.1 (lane/patch-v0351), release checks pending",
    "owner": "Frontend Engineer",
@@ -271,7 +271,7 @@
   },
   "landscape-wide": {
    "filed": "2026-11-23T12:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.layout.wide",
    "owner": "Frontend Engineer",
    "stages": {
@@ -283,7 +283,7 @@
   },
   "latest-true-bottom": {
    "filed": "2026-11-23T17:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.bugs.scroll",
    "note": "in zanni v0.35.1 (lane/patch-v0351), release checks pending",
    "owner": "Frontend Engineer",
@@ -296,7 +296,7 @@
   },
   "mobile-keyboard": {
    "filed": "2026-11-23T17:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.bugs.ios",
    "note": "in zanni v0.35.1 (lane/patch-v0351), release checks pending",
    "owner": "Frontend Engineer",
@@ -309,7 +309,7 @@
   },
   "pager-parity-writes": {
    "filed": "2026-11-20T19:00-05:00",
-   "from": "Gluck via King",
+   "from": "Owner via King",
    "lane": "fleet.lane.figchat.gateway.writes",
    "note": "gluck figaro 0.80.0, gateway set smoke PASS",
    "owner": "Figaro Engineer",
@@ -326,7 +326,7 @@
   },
   "performance-first": {
    "filed": "2026-11-21T02:55:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.perf",
    "note": "perf.cut steps 1-5 v0.33.1, step 6 (virtual window) v0.33.12, live spain-flake 204c681",
    "owner": "Frontend Engineer",
@@ -342,7 +342,7 @@
   },
   "play-buttons-three": {
    "filed": "2026-11-21T11:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.messages",
    "note": "v0.33.6 Part C",
    "owner": "Frontend Engineer",
@@ -359,7 +359,7 @@
   "pretext-retypeset": {
    "box": "spain-flake d156b81 (box mrd1kpkl), zanni v0.35.0",
    "filed": "2026-11-21T11:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.messages.sticky-header",
    "note": "Typeset primitive and sticky header v0.35.0, live d156b81; full-width re-typeset per resize rides v0.35.1",
    "owner": "Frontend Engineer",
@@ -376,7 +376,7 @@
   },
   "prompt-queue": {
    "filed": "2026-11-23T15:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.pits.queue",
    "owner": "Figaro Engineer",
    "stages": {
@@ -392,7 +392,7 @@
   },
   "quality-explore": {
    "filed": "2026-11-23T15:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.quality.explore",
    "note": "standing lane, no ready stage: sessions report to the Engineer; owner isotope-mosquito 7d26c8a0",
    "owner": "Figaro Engineer",
@@ -405,7 +405,7 @@
   },
   "refactor-lanes": {
    "filed": "2026-11-23T19:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.refactor",
    "owner": "Frontend Engineer",
    "stages": {
@@ -416,7 +416,7 @@
   },
   "replay-buttons-subtle": {
    "filed": "2026-11-21T01:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.messages",
    "owner": "Frontend Engineer",
    "stages": {
@@ -431,7 +431,7 @@
   },
   "scroll-snap-back": {
    "filed": "2026-11-23T16:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.bugs.scroll",
    "note": "in zanni v0.35.1 (lane/patch-v0351), release checks pending",
    "owner": "Frontend Engineer",
@@ -444,7 +444,7 @@
   },
   "speaker-glyph": {
    "filed": "2026-11-23T14:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.messages",
    "owner": "Frontend Engineer",
    "stages": {
@@ -456,7 +456,7 @@
   },
   "status-bar-top": {
    "filed": "2026-11-21T00:40:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.pits.header-drop",
    "owner": "Frontend Engineer",
    "stages": {
@@ -469,7 +469,7 @@
   },
   "sticky-header-landscape": {
    "filed": "2026-11-23T17:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.messages.sticky-header",
    "note": "in zanni v0.35.1 (lane/patch-v0351), release checks pending",
    "owner": "Frontend Engineer",
@@ -492,11 +492,11 @@
     "ready": "2026-11-20T11:55:00-05:00"
    },
    "state": "ready",
-   "text": "Gluck gets 502s: POST /chat/api/threads/a021039b/messages -> herald attach da25cf7e: aria not found; thread 29b3be8f too. Thread whose aria is gone must re-fork, never 502; thread arias must not be reaped while the thread lives."
+   "text": "Owner gets 502s: POST /chat/api/threads/a021039b/messages -> herald attach da25cf7e: aria not found; thread 29b3be8f too. Thread whose aria is gone must re-fork, never 502; thread arias must not be reaped while the thread lives."
   },
   "thumb-icons": {
    "filed": "2026-11-21T03:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.messages",
    "owner": "Frontend Engineer",
    "stages": {
@@ -507,7 +507,7 @@
   },
   "tool-bar-compose-glyphs": {
    "filed": "2026-11-21T02:55:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.bugs.wave1",
    "owner": "Frontend Engineer",
    "stages": {
@@ -522,7 +522,7 @@
   },
   "transitions": {
    "filed": "2026-11-23T15:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.transitions",
    "owner": "Frontend Engineer",
    "stages": {
@@ -534,7 +534,7 @@
   },
   "tree-pager-semantics": {
    "filed": "2026-11-21T01:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.pits.control",
    "owner": "Frontend Engineer",
    "stages": {
@@ -548,7 +548,7 @@
   },
   "v0332-knob-latest-audio": {
    "filed": "2026-11-21T09:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.bugs.v0332",
    "owner": "Frontend Engineer",
    "stages": {
@@ -563,7 +563,7 @@
   },
   "v0334-priority-bugs": {
    "filed": "2026-11-21T10:00:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.bugs.v0332",
    "note": "Part B = v0.33.10, live spain-flake 204c681",
    "owner": "Frontend Engineer",
@@ -579,7 +579,7 @@
   },
   "wave1-bugs": {
    "filed": "2026-11-21T02:45:00-05:00",
-   "from": "Gluck (back-filled by the figchat Strategist 11-23)",
+   "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.bugs.wave1",
    "owner": "Frontend Engineer",
    "stages": {
@@ -592,7 +592,7 @@
   },
   "web-ui-react": {
    "filed": "2026-11-20T19:35-05:00",
-   "from": "Gluck via King",
+   "from": "Owner via King",
    "lane": "fleet.lane.figchat.client.react",
    "note": "zanni v0.29.0 to v0.32.1",
    "owner": "Frontend Engineer",
@@ -602,13 +602,13 @@
     "live": "2026-11-21T00:00:00-05:00"
    },
    "state": "live",
-   "text": "FRONTLINE. figaro web UI: convert the client to React with Jotai, binding figaro-forms form state and aria state to atoms used across the app. Borrow freely from existing chat component libraries (Gluck named Volt and others he found) instead of hand-rolling. Fix mobile: the figaro-is-working box overlaps and looks wrong. Overall: modern, bouncy, animation-rich, current standards. Keep zanni theme. Gluck likes the current design as a base."
+   "text": "FRONTLINE. figaro web UI: convert the client to React with Jotai, binding figaro-forms form state and aria state to atoms used across the app. Borrow freely from existing chat component libraries (Owner named Volt and others he found) instead of hand-rolling. Fix mobile: the figaro-is-working box overlaps and looks wrong. Overall: modern, bouncy, animation-rich, current standards. Keep zanni theme. Owner likes the current design as a base."
   },
   "zanni-react-and-style": {
    "filed": "2026-11-20T20:20-05:00",
-   "from": "Gluck via King",
+   "from": "Owner via King",
    "lane": "fleet.lane.figchat.client.react",
-   "note": "(1) control scale v0.30.0 live 11-21; (2) zanni-react packages v0.31.0-v0.32.1, served at /zanni/react/<v>/ since v0.34.0 (204c681); (3) mood boards sent 11-21 (files.kelliher.info/7d/zanni/mood/index.html), restyle waits on Gluck's pick",
+   "note": "(1) control scale v0.30.0 live 11-21; (2) zanni-react packages v0.31.0-v0.32.1, served at /zanni/react/<v>/ since v0.34.0 (204c681); (3) mood boards sent 11-21 (files.kelliher.info/7d/zanni/mood/index.html), restyle waits on Owner's pick",
    "owner": "Frontend Engineer",
    "stages": {
     "filed": "2026-11-20T20:20:00-05:00",
@@ -617,7 +617,7 @@
     "ready": "2026-11-21T00:00:00-05:00"
    },
    "state": "live",
-   "text": "(1) Chat component needs work; buttons are too big and unsightly on EVERY site: shrink them site-wide. (2) zanni provides React components: move as many reusable components as possible into the zanni library and serve its bundles from Spain/keel for all sites. (3) Look up current modern web styles and make mood boards before restyling; show Gluck the mood board link. Fan-out stays at current limits."
+   "text": "(1) Chat component needs work; buttons are too big and unsightly on EVERY site: shrink them site-wide. (2) zanni provides React components: move as many reusable components as possible into the zanni library and serve its bundles from Spain/keel for all sites. (3) Look up current modern web styles and make mood boards before restyling; show Owner the mood board link. Fan-out stays at current limits."
   }
  }
 }

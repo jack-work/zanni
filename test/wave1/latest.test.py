@@ -1,4 +1,4 @@
-"""Gluck v0.33.2 bug 2: the Latest pill is easy to hit.
+"""v0.33.2 bug 2: the Latest pill is easy to hit.
 
 The pill's tap target is at least 44x44 CSS px (the painted pill may be
 smaller), every point of that target hit-tests to the pill, the composer does

@@ -1,4 +1,4 @@
-"""Hands-free autoplay (Gluck 11-20): with hands-free on a newly arrived reply plays by itself and
+"""Hands-free autoplay (11-20): with hands-free on a newly arrived reply plays by itself and
 announces itself with the ping; replies that arrive back to back play in order; a reply that arrives while the
 microphone is recording is held, then plays with the ping when the recording stops. With voice off no reply
 is synthesised until a turn's Play is pressed. Chromium and WebKit with the iPhone profile (the recording case

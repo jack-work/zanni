@@ -753,7 +753,7 @@ try:
         send(pg, "just a [plain] hello")
         until(pg, "document.querySelector('.fw').dataset.audio === 'recording-with-pending'", 15000)
         pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])")
-        assert pg.locator(".nodi-turn[data-turn='27'] .voce").count() == 0, "a reply arriving while Gluck records makes no sound and shows no player yet"
+        assert pg.locator(".nodi-turn[data-turn='27'] .voce").count() == 0, "a reply arriving while the user records makes no sound and shows no player yet"
         pg.locator(".fw-mic").click()
         pg.wait_for_selector(".nodi-turn[data-turn='27'] .voce[data-for='27']")
         until(pg, "document.querySelector('.fw').dataset.audio !== 'recording-with-pending' && document.querySelector('.fw').dataset.audio !== 'recording'", 10000)
@@ -807,7 +807,7 @@ try:
         stream_sessions = [g for g in mic_door.state()["sessions"] if g["kind"] == "stt-ws"]
         assert len(stream_sessions) == 1 and re.fullmatch(r"[A-Za-z0-9_-]{16}", stream_sessions[0]["query"]), stream_sessions
         assert pg.evaluate("document.documentElement.style.getPropertyValue('--fw-mic-level')") == "", "the meter is cleared"
-        assert mic_door.state()["sent"] == [], "the transcript is not sent until Gluck sends it"
+        assert mic_door.state()["sent"] == [], "the transcript is not sent until the user sends it"
         assert pg.evaluate("document.activeElement.className") == "zr-input", "the transcript lands with the cursor in the composer"
         pg.locator(".zr-input").fill("edited words")
         pg.locator(".zr-send").tap()
