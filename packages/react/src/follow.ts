@@ -84,11 +84,22 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
     };
     const intents = ["wheel", "keydown", "touchstart", "touchmove", "pointerdown"];
     for (const t of intents) window.addEventListener(t, intent, { passive: true, capture: true });
+    let size = "";
+    let turned = -Infinity;
+    const resized = () => {
+      const now = root.clientWidth + "x" + root.clientHeight;
+      if (now === size) return false;
+      size = now;
+      turned = performance.now();
+      return true;
+    };
+    resized();
     const onScroll = () => {
       const y = root.scrollTop;
       measure();
+      resized();
       if (y < lastY.current - 1) {
-        if (top - y > AT_END) stuck.current = false;
+        if (top - y > AT_END && performance.now() - turned > 200) stuck.current = false;
         lastY.current = y;
       } else {
         if (top - y <= NEAR_BOTTOM && y > lastY.current) stuck.current = true;
@@ -103,10 +114,10 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
     let watch: ResizeObserver | undefined;
     if (el && typeof ResizeObserver !== "undefined") {
       watch = new ResizeObserver(() => {
-        const h = el.getBoundingClientRect().height;
         measure();
+        const turn = resized();
         if (paging.current) return;
-        if (stuck.current && root.scrollTop >= lastY.current - 1 && root.scrollTop !== top) {
+        if (stuck.current && (turn || root.scrollTop >= lastY.current - 1) && root.scrollTop !== top) {
           root.scrollTop = top;
           lastY.current = root.scrollTop;
         }
