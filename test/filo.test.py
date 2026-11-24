@@ -273,7 +273,7 @@ with sync_playwright() as p:
 
     pg.keyboard.press("f")
     pg.wait_for_function("document.fullscreenElement === document.querySelector('.filo')", timeout=3000)
-    assert has(pg, "filo-fullscreen")
+    pg.wait_for_function(f"{ROOT}.classList.contains('filo-fullscreen')", timeout=3000)
     assert pg.evaluate("document.querySelector('.filo-full').getAttribute('aria-label')") == "Exit fullscreen"
     pg.keyboard.press("f")
     pg.wait_for_function("!document.fullscreenElement", timeout=3000)
