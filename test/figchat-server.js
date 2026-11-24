@@ -16,12 +16,13 @@ for (let i = 2; i < process.argv.length; i++) {
 const dir = positional[0];
 const step = positional[1] ? Number(positional[1]) : 15;
 const fixture = process.env.FIGCHAT_FIXTURE ? JSON.parse(fs.readFileSync(process.env.FIGCHAT_FIXTURE, 'utf8')) : undefined;
+const orders = process.env.FIGCHAT_ORDERS ? JSON.parse(fs.readFileSync(process.env.FIGCHAT_ORDERS, 'utf8')) : undefined;
 const bench = { pageBytes: flags.page || 3000 };
 if (flags.figaros) bench.figaros = flags.figaros;
 if (flags.window) bench.window = flags.window;
 if (flags.history !== undefined) bench.history = flags.history;
 if (['fps', 'bytes', 'chunk'].some((k) => flags[k] !== undefined)) bench.stream = Object.fromEntries(['fps', 'bytes', 'chunk'].filter((k) => flags[k] !== undefined).map((k) => [k, flags[k]]));
-const core = mock.create(Object.assign({ step, fixture }, bench));
+const core = mock.create(Object.assign({ step, fixture, orders }, bench));
 const seen = { otel: [], attach: [], upgrades: 0, refused: 0, audio: 0, stt: [], retranscribed: [], says: [], stream: [] };
 const expired = new Set([5, 6]);
 const sessions = [];
@@ -64,6 +65,16 @@ const server = http.createServer((req, res) => {
     const a = core.arias[url.pathname.slice('/__turns/'.length)];
     res.writeHead(a ? 200 : 404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(a ? a.turns.map((t) => ({ id: t.id, inquiry: t.inquiry, sealed: !!t.sealed, nodes: t.nodes.map((n) => ({ type: n.type, markdown: n.markdown || '' })) })) : []));
+    return;
+  }
+  if (url.pathname === '/__orders' && req.method === 'POST') {
+    const chunks = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', () => {
+      core.setOrders(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end('{}');
+    });
     return;
   }
   if (url.pathname === '/__drop') {
