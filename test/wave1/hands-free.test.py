@@ -2,7 +2,7 @@
 announces itself with the ping; replies that arrive back to back play in order; a reply that arrives while the
 microphone is recording is held, then plays with the ping when the recording stops. With voice off no reply
 is synthesised until a turn's Play is pressed. Chromium and WebKit with the iPhone profile (the recording case
-needs the fake microphone and runs in Chromium only; headless WebKit exposes no audio sources, so there it asserts that a player takes the reply unasked, or does not)."""
+needs the fake microphone and runs in Chromium only; headless WebKit exposes no audio sources and crashes on a stored clip, so there it asserts that a player takes the reply unasked, or does not)."""
 from kit import Door, Report, bundle_arg, until
 
 from playwright.sync_api import sync_playwright
@@ -178,7 +178,8 @@ def main():
                 rep.run(engine + ": hands-free reply autoplays with the ping", check_one)
                 rep.run(engine + ": back-to-back replies play in order", check_two)
                 rep.run(engine + ": voice off, nothing is synthesised unasked", check_silent)
-                rep.run(engine + ": voice off, Play plays the stored copy", check_play)
+                if engine == "chromium":
+                    rep.run(engine + ": voice off, Play plays the stored copy", check_play)
 
             def check_held():
                 events, _, mounted = session("chromium", held, True)
