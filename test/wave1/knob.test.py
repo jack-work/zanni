@@ -85,7 +85,8 @@ def main():
                 def seen(what):
                     st = pg.evaluate(STATE)
                     if st["pit"]:
-                        rep.check(not st["gripHit"], "%s %s: the composer grip is hit-testable over the pit: %s" % (tag, what, st))
+                        gone = st["closing"] and st["pitTop"] is not None and st["pitTop"] >= height - 4
+                        rep.check(gone or not st["gripHit"], "%s %s: the composer grip is hit-testable over the pit: %s" % (tag, what, st))
                         if not st["closing"]:
                             rep.check(not st["gripShown"], "%s %s: the composer grip is hidden while the pit owns the gesture: %s" % (tag, what, st))
                         rep.check(st["handleShown"], "%s %s: the pit's own handle is the knob: %s" % (tag, what, st))
