@@ -34,7 +34,9 @@ describe("QueueBoard", () => {
     expect(cells.map((c) => c.dataset.outcome ?? "empty")).toEqual(["ok", "ok", "ok", "fail", "empty", "empty", "empty"]);
     expect(cells[3]!.querySelector(".zr-qb-dur")!.textContent).toBe("5m41s");
     const skipped = document.querySelector<HTMLElement>(`[data-trace="${data.commits.find((c) => c.ref === "master" && c.repo === "figscope")!.trace}"]`)!;
-    expect(skipped.querySelectorAll<HTMLElement>(".zr-qb-cell")[1]!.dataset.outcome).toBe("skip");
+    const skip = skipped.querySelectorAll<HTMLElement>(".zr-qb-cell")[1]!;
+    expect(skip.dataset.outcome).toBe("skip");
+    expect(skip.querySelector(".zr-qb-dur")!.textContent).toBe("skip");
   });
 
   it("carries site, unit, actor, cand and box in the cell's tooltip", () => {

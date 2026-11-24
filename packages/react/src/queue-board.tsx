@@ -115,7 +115,7 @@ const MARK: Record<DeployOutcome, string> = { ok: glyphs["tool.ok"], fail: glyph
 
 function Cell({ cell }: { cell: BoardCell | null }): ReactNode {
   if (!cell) return <td className="zr-qb-cell" data-empty="" />;
-  const duration = formatDuration(cell.duration_ms);
+  const duration = cell.outcome === "skip" ? "skip" : formatDuration(cell.duration_ms);
   const repeats = cell.spans.length > 1 ? "\u00d7" + cell.spans.length : "";
   return (
     <td className="zr-qb-cell" data-outcome={cell.outcome} title={cellTitle(cell)} tabIndex={0} aria-label={[cell.step, cell.outcome, duration, repeats].filter(Boolean).join(" ")}>
