@@ -276,7 +276,7 @@ with sync_playwright() as p:
         ids = [r["id"] for r in row]
         mids = [(r["t"] + r["b"]) / 2 for r in row]
         check("%d: one row of files, path, comments, more, inside the screen" % w, ids == ["b-tree", "b-crumbs", "b-pane", "more"] and max(mids) - min(mids) < 3 and max(r["r"] for r in row) <= w, row)
-        check("%d: pad, shown and height agree, and the main view is padded by the pad" % w, var(pg, "--proscenio-pad") == var(pg, "--proscenio-shown") == var(pg, "--proscenio-height") != "0px" and pg.evaluate("getComputedStyle(document.querySelector('#main')).paddingTop") == var(pg, "--proscenio-pad"))
+        check("%d: pad, shown and height agree, and the main view is padded by the pad" % w, var(pg, "--proscenio-pad") == var(pg, "--proscenio-shown") == var(pg, "--proscenio-height") != "0px" and pg.evaluate("Math.round(document.querySelector('#doc-head').getBoundingClientRect().top)") == int(var(pg, "--proscenio-pad")[:-2]))
         check("%d: the bar is fixed" % w, pg.evaluate("getComputedStyle(document.querySelector('#bar')).position") == "fixed")
         check("%d: no style attribute anywhere" % w, pg.evaluate("[document.documentElement, document.body, ...document.querySelectorAll('#root *')].filter(n => n.hasAttribute('style')).length") == 0)
         check("%d: nothing overflows sideways" % w, pg.evaluate("document.documentElement.scrollWidth") <= w)
@@ -311,8 +311,10 @@ with sync_playwright() as p:
         check("%d: scrolling down hides the bar" % w, pg.evaluate(HIDDEN))
         check("%d: the bar leaves by transform" % w, pg.evaluate("getComputedStyle(document.querySelector('#bar')).transform") != "none")
         check("%d: shown is 0 while the pad holds" % w, var(pg, "--proscenio-shown") == "0px" and var(pg, "--proscenio-pad") != "0px")
+        check("%d: a sticky rule on --proscenio-shown rides at the top of the view while the bar is away" % w, pg.evaluate("Math.round(document.querySelector('#doc-head').getBoundingClientRect().top)") == 0)
         scroll(pg, 700)
         check("%d: scrolling up shows it" % w, not pg.evaluate(HIDDEN) and var(pg, "--proscenio-shown") == var(pg, "--proscenio-height"))
+        check("%d: and rides below it once it is back" % w, pg.evaluate("Math.round(document.querySelector('#doc-head').getBoundingClientRect().top)") == int(var(pg, "--proscenio-shown")[:-2]))
         scroll(pg, 1400)
         check("%d: down again hides it" % w, pg.evaluate(HIDDEN))
         touch(cdp, pg, 200, 20, hold=700)
