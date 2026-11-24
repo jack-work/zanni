@@ -126,7 +126,7 @@ proscenio tracks it per drawer, starting from the toggle's `aria-expanded`
 the choice (keel's `paperd.tree`, `paperd.pane`). Crossing from narrow to
 wide closes an open drawer and its scrim quietly, with no event, so a wide
 page never reads it as a toggle. aguatv's details drawer uses the same piece from the right
-(`data-side="right"`), which is the real drawer Gluck asked for.
+(`data-side="right"`), which is the real drawer the owner asked for.
 
 ## Keys
 

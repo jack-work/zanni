@@ -11,7 +11,7 @@ same whether the element is still or flying.
 
 ## The correction
 
-An earlier version of `heft.css` and a report to Gluck said that moving a
+An earlier version of `heft.css` and a report to the owner said that moving a
 filtered subtree re-rasterises it every frame, ~60/s against the seed's 5/s,
 and that this was the worst case in the library. **That was wrong.** It was
 reasoned from the SMIL measurement, never measured, and stated as fact.

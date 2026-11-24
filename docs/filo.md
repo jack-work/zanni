@@ -126,7 +126,7 @@ and the menu.
 ## Theater
 
 Audio with `bar: true` is the theater: a panel in the page, laid out as
-Gluck's mockup (files.kelliher.info/7d/zanni/filo-theater-mockup.png). A 220px
+the owner's mockup (files.kelliher.info/7d/zanni/filo-theater-mockup.png). A 220px
 square of artwork on the left, then the kicker (`kicker`, mono, muted), the
 title in the display face, the chapter, the waveform as the scrubber, elapsed
 and remaining, -30 -10 play +10 +30, and a row of chips: speed, sleep, the
@@ -172,7 +172,7 @@ starts playback from its own gesture.
 
 ## Docked
 
-Spotify's pattern: Gluck picked it over YouTube's corner window. `dock(true)`
+Spotify's pattern: the owner picked it over YouTube's corner window. `dock(true)`
 turns the box into a bar along the bottom of the viewport, 64px on a phone and
 72px elsewhere: the same `<video>` as a 16:9 tile (never re-created, so
 nothing rebuffers), title and chapter, -10, play, +10, the time, volume, ⋮,
@@ -236,7 +236,7 @@ Escape goes back, a click outside closes it without also playing.
 `?` lists these from the same table the help dialog renders.
 
 Ctrl+h and Ctrl+l belong to most browsers (history, address bar) and Alt+h
-opens Firefox's Help menu. Both are bound; Alt is the one Gluck accepted, and
+opens Firefox's Help menu. Both are bound; Alt is the one the owner accepted, and
 whether a browser lets a page have either is unmeasured. Alt matches on
 `e.code`, because on a Mac Alt+h types a character.
 

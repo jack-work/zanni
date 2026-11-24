@@ -271,7 +271,7 @@ try:
         deep.wait_for_selector(".nodi-turn[data-turn='12']")
         until(deep, "() => { const r = document.querySelector(\"[data-turn='12']\").getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight; }")
         assert deep.locator(".nodi-said[data-from='you'] .nodi-who").count() >= 1
-        assert "Gluck at the terminal" in deep.locator(".nodi-turn[data-turn='12']").inner_text(), "a terminal caller keeps its name"
+        assert "You at the terminal" in deep.locator(".nodi-turn[data-turn='12']").inner_text(), "a terminal caller keeps its name"
         deep.close()
 
         for width, height in ((390, 844), (1280, 800)):

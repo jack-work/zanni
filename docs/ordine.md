@@ -119,7 +119,7 @@ unavailable view. This input validation is not an authorization layer.
 ## Layout
 
 `ordine.layout(model, { expanded })` is pure and deterministic. It is the
-composition Gluck approved on 2026-11-15 (figaro bb76aea, archived in
+composition the owner approved on 2026-11-15 (figaro bb76aea, archived in
 captains-log `2026/11/15/order-ui-accepted/`), generalized:
 
 - The root card sits top centre. Its direct reports stand on a three-column
