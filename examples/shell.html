@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-+c5UHBAXsdqBc759UJfpZjHOJ8nTgAGKac3YFnGAGHE='; style-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'">
+<title>zanni-react Shell from the served package</title>
+<link rel="stylesheet" href="../assets/v2/z2-tokens.css">
+<link rel="stylesheet" href="../assets/v2/z2-control.css">
+<link rel="stylesheet" href="../assets/fontpack/fonts.css">
+<link rel="stylesheet" href="/zanni/react/0.35.0/index.css">
+<link rel="stylesheet" href="shell.css">
+<script type="importmap">{
+  "imports": {
+    "react": "/zanni/runtime/0.35.0/react.js",
+    "react/jsx-runtime": "/zanni/runtime/0.35.0/jsx-runtime.js",
+    "react-dom/client": "/zanni/runtime/0.35.0/react-dom-client.js",
+    "figaro-forms/glyphs": "/zanni/runtime/0.35.0/figaro-forms-glyphs.js",
+    "@chenglou/pretext": "/zanni/runtime/0.35.0/pretext.js",
+    "zanni-react": "/zanni/react/0.35.0/index.js"
+  }
+}</script>
+<script type="module" src="shell.js"></script>
+</head>
+<body>
+<div id="root"></div>
+</body>
+</html>

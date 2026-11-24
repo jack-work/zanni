@@ -44,4 +44,15 @@ assert.ok(manifest.components.react.bundle.example === "examples/react-bundle.ht
 assert.ok(JSON.stringify(manifest.components.react.bundle.exports["zanni-react"]) !== JSON.stringify(manifest.components.react.bundle.exports["zanni-react/jotai"]), "both bundles list their own exports");
 const wrongMap = mapText.replace(/"react":/, '"reakt":');
 assert.notStrictEqual(crypto.createHash("sha256").update(wrongMap).digest("base64"), hash, "a changed map changes the hash the policy must carry");
+
+const shellPage = fs.readFileSync(path.join(root, "examples/shell.html"), "utf8");
+const shellMap = /<script type="importmap">([\s\S]*?)<\/script>/.exec(shellPage)[1];
+const shellHash = crypto.createHash("sha256").update(shellMap).digest("base64");
+assert.ok(shellPage.includes("script-src 'self' 'sha256-" + shellHash + "'"), "the Shell page's policy names its import map's sha256");
+assert.ok(!/unsafe-inline|unsafe-eval/.test(shellPage) && !/\sstyle=|<style\b|\son[a-z]+=/.test(shellPage), "the Shell page stays strict");
+const shellImports = JSON.parse(shellMap).imports;
+const shellScript = fs.readFileSync(path.join(root, "examples/shell.js"), "utf8");
+assert.deepStrictEqual([...shellScript.matchAll(/from "([^"]+)"/g)].map((m) => m[1]).filter((i) => !(i in shellImports)), [], "every import of the Shell example is in its map");
+for (const spec of ["react", "react/jsx-runtime", "react-dom/client", "figaro-forms/glyphs", "@chenglou/pretext"]) assert.ok(/^\/zanni\/runtime\/\d+\.\d+\.\d+\/[a-z-]+\.js$/.test(shellImports[spec]), spec + " resolves to the served runtime");
+for (const m of shellScript.matchAll(/import \{([^}]*)\} from "zanni-react"/g)) for (const n of m[1].split(",").map((x) => x.trim()).filter(Boolean)) assert.ok(listed.includes(n), "the manifest lists " + n);
 console.log("react-example.test: ok");

@@ -1,0 +1,14 @@
+html, body, #root { height: 100%; margin: 0; }
+body { background: var(--z-ground); color: var(--z-ink); font: 1.0625rem / 1.45 "EB Garamond", Georgia, serif; --zr-mono: "VT323", ui-monospace, monospace; }
+.zr-bar { font-family: var(--zr-mono); font-size: 1.125rem; }
+.zr-bar a { color: var(--z-ink); text-decoration: none; }
+.zr-bar [data-slot="mark"] a { color: var(--z-accent); font-size: 1.375rem; }
+.chip { border: 1px solid var(--z-line); border-radius: 10px; padding: 0 7px; color: var(--z-muted); white-space: nowrap; }
+.crumbs { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--z-muted); }
+.doc { max-width: 46rem; margin: 0 auto; padding: 0 16px 48px; }
+.doc-head { position: sticky; top: var(--proscenio-shown, 0px); z-index: 1; margin: 0; padding: 6px 0; background: var(--z-ground); border-bottom: 1px solid var(--z-line); font-family: var(--zr-mono); }
+.doc [id] { scroll-margin-top: calc(var(--proscenio-shown, 0px) + 8px); }
+.tree-list { margin: 0; padding: 8px; list-style: none; font-family: var(--zr-mono); font-size: 1.125rem; }
+.tree-list li { padding: 2px 4px; }
+.comments { padding: 12px; font-family: var(--zr-mono); }
+.comments textarea { width: 100%; min-height: 4rem; box-sizing: border-box; }
