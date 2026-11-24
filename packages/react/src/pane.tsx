@@ -22,6 +22,7 @@ export interface PaneProps {
 
 const STEP = 16;
 const SWIPE = 60;
+const COLLAPSE_SLACK = 40;
 
 export const PANE_WIDTH_VAR = { left: "--zr-pane-w", right: "--zr-pane-right-w" } as const;
 
@@ -41,10 +42,14 @@ export function Pane({ id, label, open, width, onWidth, onClose, side = "left", 
   }, [varName, docked, open, width, clamp]);
   useDialog(ref, onClose ?? (() => {}), { active: !docked && open && !!onClose, typing: false, root: coarse() });
   const drag = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const rect = ref.current!.getBoundingClientRect();
+    const start = { x: e.clientX, w: ref.current!.getBoundingClientRect().width };
     const target = e.currentTarget;
     target.setPointerCapture(e.pointerId);
-    const move = (m: PointerEvent) => onWidth(clamp(side === "left" ? m.clientX - rect.left : rect.right - m.clientX));
+    const move = (m: PointerEvent) => {
+      const raw = start.w + (side === "left" ? m.clientX - start.x : start.x - m.clientX);
+      if (raw < min - COLLAPSE_SLACK && onClose) onClose();
+      else onWidth(clamp(raw));
+    };
     const done = () => {
       target.removeEventListener("pointermove", move);
       target.removeEventListener("pointerup", done);
@@ -57,6 +62,11 @@ export function Pane({ id, label, open, width, onWidth, onClose, side = "left", 
   const grow = side === "left" ? "ArrowRight" : "ArrowLeft";
   const shrink = side === "left" ? "ArrowLeft" : "ArrowRight";
   const key = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" && onClose) {
+      e.preventDefault();
+      onClose();
+      return;
+    }
     const next = e.key === shrink ? width - STEP : e.key === grow ? width + STEP : e.key === "Home" ? min : e.key === "End" ? max : null;
     if (next === null) return;
     e.preventDefault();

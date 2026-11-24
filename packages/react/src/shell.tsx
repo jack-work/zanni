@@ -207,7 +207,7 @@ export function Shell({ header, left, right, fold = FOLDED, breakpoint = 900, st
           ☰
         </button>
         <div className="zr-bar-brand">{BRAND.filter((s) => present(s) && !inFold(s)).map(slotNode)}</div>
-        <div id={foldId} className="zr-bar-fold" data-open={menu ? "" : undefined}>
+        <div id={foldId} className="zr-bar-fold" data-open={menu ? "" : undefined} onClick={(e) => narrow && (e.target as Element).closest("a, button") && setMenu(false)} onChange={() => narrow && setMenu(false)}>
           {folded.map(slotNode)}
           <button id="b-theme" className="zr-bar-toggle" data-slot="tool" title={"switch to " + nextTheme} onClick={toggleTheme}>
             {theme === "dark" ? "☀" : "☾"}

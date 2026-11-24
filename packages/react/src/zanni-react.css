@@ -395,6 +395,9 @@
   .zr-qb-mark { margin-right: 2px; }
 }
 
+:root:has(.zr-shell-chrome) { color-scheme: light dark; }
+:root[data-theme="light"]:has(.zr-shell-chrome) { color-scheme: light; }
+:root[data-theme="dark"]:has(.zr-shell-chrome) { color-scheme: dark; }
 .zr-shell-chrome { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100%; }
 .zr-bar { position: relative; z-index: 40; display: flex; align-items: center; gap: var(--z-space-3, 8px); min-height: 44px; padding: 0 var(--z-space-3, 8px); border-bottom: 1px solid var(--z-line); background: var(--z-ground); color: var(--z-ink); }
 .zr-bar-brand, .zr-bar-slot, .zr-bar-fold { display: flex; align-items: center; gap: var(--z-space-3, 8px); min-width: 0; }
