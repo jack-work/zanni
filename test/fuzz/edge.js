@@ -7,7 +7,7 @@ const path = require('path');
 const [bundle, gatewayPort, secret, admin] = process.argv.slice(2);
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.woff2': 'font/woff2', '.json': 'application/json' };
 const csp = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; media-src 'self' blob:; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
-const gated = /^\/chat\/(door|audio|stt|attach)(\/|$)/;
+const gated = /^\/chat\/(rpc|audio|stt|attach)(\/|$)/;
 
 function serve(res, rel) {
   const full = path.join(bundle, path.normalize(rel).replace(/^(\.\.[/\\])+/, ''));

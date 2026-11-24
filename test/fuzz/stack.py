@@ -64,7 +64,7 @@ class Stack:
         self.faults = os.path.join(self.tmp, "faults.sock")
         self.gateway_log = open(os.path.join(self.tmp, "gateway.log"), "w")
         self.gateway = subprocess.Popen(
-            [binary, "--upstream-url", "ws://127.0.0.1:%d/door" % self.door_port, "--speech-socket", self.speech_socket,
+            [binary, "--upstream-url", "ws://127.0.0.1:%d/rpc" % self.door_port, "--speech-socket", self.speech_socket,
              "--admin", ADMIN, "--store", "gluck", "--port", str(port), "--peer", "127.0.0.1", "--edge-secret-file", secret_file,
              "--fault-socket", self.faults, "--no-attach"],
             stdout=self.gateway_log, stderr=subprocess.STDOUT, env=dict(os.environ, CREDENTIALS_DIRECTORY=self.tmp))
