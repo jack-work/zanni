@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { useDialog } from "./dialog";
+import { EXIT_MS, reducedMotion } from "./motion";
 import { rootVar } from "./rootvars";
 
 export type PaneForm = "docked" | "drawer" | "sheet";
@@ -23,6 +24,8 @@ export interface PaneProps {
 const STEP = 16;
 const SWIPE = 60;
 const COLLAPSE_SLACK = 40;
+const SLIDE_PX = 24;
+const EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)";
 
 export const PANE_WIDTH_VAR = { left: "--zr-pane-w", right: "--zr-pane-right-w" } as const;
 
@@ -36,14 +39,47 @@ export function Pane({ id, label, open, width, onWidth, onClose, side = "left", 
   const clamp = useCallback((w: number) => Math.min(max, Math.max(min, Math.round(w))), [min, max]);
   const docked = form === "docked";
   const varName = PANE_WIDTH_VAR[side];
-  useEffect(() => {
-    rootVar(varName, docked ? (open ? clamp(width) : 0) + "px" : null);
-    return () => rootVar(varName, null);
-  }, [varName, docked, open, width, clamp]);
+  const [leaving, setLeaving] = useState(false);
+  const dragging = useRef(false);
+  const lastOpen = useRef(open);
+  const was = useRef({ open, width: clamp(width) });
+  const shown = open || leaving;
+  const applied = docked ? (shown ? clamp(width) : 0) : null;
+  const away = side === "left" ? -SLIDE_PX : SLIDE_PX;
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const sibling = side === "left" ? el?.nextElementSibling : el?.previousElementSibling;
+    const before = { pane: el?.getBoundingClientRect(), sibling: sibling?.getBoundingClientRect() };
+    rootVar(varName, applied === null ? null : applied + "px");
+    const prior = was.current;
+    was.current = { open, width: clamp(width) };
+    if (!el || !docked || reducedMotion() || typeof el.animate !== "function") return;
+    const timing = { duration: EXIT_MS, easing: EASE };
+    if (open && !prior.open) {
+      el.animate([{ opacity: 0, transform: "translateX(" + away + "px)" }, { opacity: 1, transform: "none" }], timing);
+    } else if (open && !dragging.current && prior.width !== clamp(width) && before.pane && before.sibling && sibling) {
+      const after = side === "left" ? sibling.getBoundingClientRect() : el.getBoundingClientRect();
+      const dx = side === "left" ? after.left - before.sibling.left : after.left - before.pane.left;
+      if (Math.abs(dx) > 0.5) (side === "left" ? sibling : el).animate([{ transform: "translateX(" + -dx + "px)" }, { transform: "none" }], timing);
+    }
+  }, [varName, docked, open, applied, width, clamp, side, away]);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const closing = lastOpen.current && !open;
+    lastOpen.current = open;
+    if (!docked || !closing || !el || reducedMotion() || typeof el.animate !== "function") return;
+    setLeaving(true);
+    const out = el.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateX(" + away + "px)" }], { duration: EXIT_MS, easing: EASE, fill: "forwards" });
+    const done = () => setLeaving(false);
+    out.finished.then(done, done);
+    return () => out.cancel();
+  }, [docked, open, away]);
+  useEffect(() => () => rootVar(varName, null), [varName]);
   useDialog(ref, onClose ?? (() => {}), { active: !docked && open && !!onClose, typing: false, root: coarse() });
   const drag = (e: ReactPointerEvent<HTMLDivElement>) => {
     const start = { x: e.clientX, w: ref.current!.getBoundingClientRect().width };
     const target = e.currentTarget;
+    dragging.current = true;
     target.setPointerCapture(e.pointerId);
     const move = (m: PointerEvent) => {
       const raw = start.w + (side === "left" ? m.clientX - start.x : start.x - m.clientX);
@@ -51,6 +87,7 @@ export function Pane({ id, label, open, width, onWidth, onClose, side = "left", 
       else onWidth(clamp(raw));
     };
     const done = () => {
+      dragging.current = false;
       target.removeEventListener("pointermove", move);
       target.removeEventListener("pointerup", done);
       target.removeEventListener("pointercancel", done);
@@ -100,6 +137,7 @@ export function Pane({ id, label, open, width, onWidth, onClose, side = "left", 
       data-side={side}
       data-form={form}
       data-open={open ? "" : undefined}
+      data-leaving={leaving && !open ? "" : undefined}
       inert={!open}
       onPointerDown={down}
       onPointerUp={up}

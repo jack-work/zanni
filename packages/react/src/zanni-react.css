@@ -414,7 +414,7 @@
 .zr-pane { position: relative; overflow: auto; min-width: 0; background: var(--z-ground); }
 .zr-pane[data-side="left"] { border-right: 1px solid var(--z-line); }
 .zr-pane[data-side="right"] { border-left: 1px solid var(--z-line); }
-.zr-pane:not([data-open]) { visibility: hidden; border-width: 0; padding: 0; }
+.zr-pane:not([data-open]):not([data-leaving]) { visibility: hidden; border-width: 0; padding: 0; }
 .zr-pane-grip { position: absolute; top: 0; bottom: 0; width: 6px; cursor: col-resize; touch-action: none; z-index: 2; }
 .zr-pane[data-side="left"] > .zr-pane-grip { right: 0; }
 .zr-pane[data-side="right"] > .zr-pane-grip { left: 0; }

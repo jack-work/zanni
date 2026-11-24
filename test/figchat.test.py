@@ -634,7 +634,7 @@ try:
             pg.wait_for_timeout(100)
             assert pg.evaluate(panew) == grown - 16, "arrow keys resize by 16 px"
             pg.locator(".fw-panes").click()
-            pg.wait_for_timeout(200)
+            pg.wait_for_timeout(400)
             assert pg.evaluate(panew) == 0 or not pg.locator(".zr-pane").is_visible(), "the Arias button collapses the pane"
             assert pg.evaluate(mainw) >= width - 2, "a collapsed pane gives the chat the full width"
             pg.reload()

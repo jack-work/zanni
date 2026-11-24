@@ -132,6 +132,14 @@ def scroll(pg, y):
     pg.wait_for_timeout(250)
 
 
+MOTION = """(id) => document.getAnimations().filter(a => a.effect && a.effect.target && a.effect.target.id === id)
+  .flatMap(a => a.effect.getKeyframes().flatMap(k => Object.keys(k))).filter(k => !['offset', 'easing', 'composite', 'computedOffset'].includes(k))"""
+
+
+def props(pg, id):
+    return sorted(set(pg.evaluate(MOTION, id)))
+
+
 def shot(pg, name):
     if SHOTS:
         os.makedirs(SHOTS, exist_ok=True)
@@ -181,7 +189,7 @@ with sync_playwright() as p:
     check("an unresized shell carries no style attribute", pg.evaluate("[document.documentElement, document.body, ...document.querySelectorAll('#root *')].filter(n => n.hasAttribute('style')).length") == 0)
     shot(pg, "wide")
     pg.click("#b-tree")
-    pg.wait_for_timeout(150)
+    pg.wait_for_timeout(300)
     check("the bar toggle collapses the tree", width(pg, "#tree") == 0 and pg.get_attribute("#b-tree", "aria-expanded") == "false", width(pg, "#tree"))
     pg.click("#b-tree")
     pg.wait_for_timeout(150)
@@ -199,7 +207,7 @@ with sync_playwright() as p:
     pg.keyboard.press("ArrowRight")
     check("the separator answers ArrowRight", width(pg, "#tree") == before + 16, (before, width(pg, "#tree")))
     pg.keyboard.press("Enter")
-    pg.wait_for_timeout(120)
+    pg.wait_for_timeout(300)
     check("and Enter collapses", width(pg, "#tree") == 0)
     pg.click("#b-tree")
     pg.wait_for_timeout(120)
@@ -215,6 +223,40 @@ with sync_playwright() as p:
     pg.wait_for_timeout(250)
     check("a collapsed comments pane stays collapsed", width(pg, "#pane") == 0)
     check("the main view takes the room", width(pg, "#main") > 1280 - kept - 4, width(pg, "#main"))
+    c.close()
+
+    c, pg, errors = load(b, 1280, 800)
+    pg.click("#b-tree")
+    check("closing a docked pane animates transform and opacity only", props(pg, "tree") == ["opacity", "transform"], props(pg, "tree"))
+    pg.wait_for_timeout(400)
+    check("and the column is gone once it has left", width(pg, "#tree") == 0 and not pg.evaluate("document.querySelector('#tree').hasAttribute('data-leaving')"))
+    pg.click("#b-tree")
+    check("opening animates transform and opacity only", props(pg, "tree") == ["opacity", "transform"], props(pg, "tree"))
+    pg.wait_for_timeout(400)
+    pg.locator("#tree .zr-pane-grip").focus()
+    pg.keyboard.press("ArrowRight")
+    check("a key resize slides the neighbour by transform only", props(pg, "main") == ["transform"], props(pg, "main"))
+    pg.wait_for_timeout(300)
+    drag(pg, "#tree .zr-pane-grip", 30)
+    check("a drag is direct: no animation follows it", props(pg, "main") == [] and props(pg, "tree") == [])
+    pg.click("#b-pane")
+    check("the right pane closes with transform and opacity too", props(pg, "pane") == ["opacity", "transform"], props(pg, "pane"))
+    c.close()
+
+    c, pg, errors = load(b, 1280, 800, reduced_motion="reduce")
+    pg.click("#b-tree")
+    check("reduced motion: closing a pane starts no animation and the column goes at once", pg.evaluate("document.getAnimations().length") == 0 and width(pg, "#tree") == 0)
+    pg.click("#b-tree")
+    pg.locator("#tree .zr-pane-grip").focus()
+    pg.keyboard.press("ArrowRight")
+    check("reduced motion: opening and resizing start none", pg.evaluate("document.getAnimations().length") == 0)
+    c.close()
+    c, pg, errors = load(b, 390, 844, has_touch=True, is_mobile=True, reduced_motion="reduce")
+    ms = pg.evaluate("(() => { const v = getComputedStyle(document.querySelector('#tree')).transitionDuration.split(',')[0].trim(); return v.endsWith('ms') ? parseFloat(v) : parseFloat(v) * 1000; })()")
+    check("reduced motion: the drawer's transition is instant", ms <= 1, ms)
+    c.close()
+    c, pg, errors = load(b, 390, 844, has_touch=True, is_mobile=True)
+    check("the drawer and the bar move by transform, the sheet too", all(pg.evaluate("(s) => getComputedStyle(document.querySelector(s)).transitionProperty.split(',')[0].trim()", s) == "transform" for s in ["#tree", "#pane", "#bar"]))
     c.close()
 
     c, pg, errors = load(b, 1280, 800)
