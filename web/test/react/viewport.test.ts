@@ -29,6 +29,11 @@ describe("frameOf", () => {
     expect(frameOf({ height: 508, offsetTop: 60, scale: 1 }, 844)).toEqual({ height: 508, top: 60, inset: 276, keyboard: true });
   });
 
+  it("keeps the keyboard up while the visual viewport pans over the page", () => {
+    expect(frameOf({ height: 508, offsetTop: 300, scale: 1 }, 844)).toEqual({ height: 508, top: 300, inset: 36, keyboard: true });
+    expect(frameOf({ height: 508, offsetTop: 336, scale: 1 }, 844).keyboard).toBe(true);
+  });
+
   it("does not mistake a small shrink for a keyboard, or a pinch zoom for either", () => {
     expect(frameOf({ height: 844 - KEYBOARD_MIN + 1, offsetTop: 0, scale: 1 }, 844).keyboard).toBe(false);
     expect(frameOf({ height: 400, offsetTop: 0, scale: 2 }, 844)).toEqual({ height: 844, top: 0, inset: 0, keyboard: false });
