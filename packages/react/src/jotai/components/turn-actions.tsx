@@ -17,7 +17,7 @@ export function TurnActions({ turn, playable, inquiry }: { turn: number; playabl
     <ActionBar>
       {playable && (
         <Button variant="ghost" size="compact" className={handsFree ? "fw-play fw-play-icon fw-play-big" : "fw-play fw-play-icon"} aria-label="Play inquiry and reply" title="Play inquiry and reply" data-action="play" onClick={() => (handsFree || !inquiry ? replay(turn) : playInquiry({ turn, then: true }))}>
-          <Glyph glyph={glyphs["state.running"]} />
+          <Glyph glyph={glyphs["audio.play"]} />
         </Button>
       )}
       <Button variant="ghost" size="compact" className="fw-fork-here" disabled={link !== "live" || forking} onClick={() => void fork(turn)}>

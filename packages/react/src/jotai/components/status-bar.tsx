@@ -43,6 +43,7 @@ function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomVa
         {glyph}
       </span>
       <span className="fw-status-handle">{handle}</span>
+      {link === "signedout" && <span className="fw-status-word">Signed out</span>}
       {mantra && <span className="fw-status-mantra">{mantra}</span>}
       {ctx && <span className="fw-status-ctx">{ctx}</span>}
     </header>
@@ -58,6 +59,7 @@ export function StatusBar() {
         <span className="fw-status-glyph" role="status" aria-label={link}>
           {stateGlyph({ link, running: false, failed: false, frame: 0 })}
         </span>
+        {link === "signedout" && <span className="fw-status-word">Signed out</span>}
       </header>
     );
   return <Bar client={attended.client} aria={attended.aria} />;

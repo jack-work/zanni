@@ -67,9 +67,13 @@ body.fw-page {
   user-select: none;
 }
 .fw-status-glyph { flex: none; width: 1.2ch; text-align: center; color: var(--z-ok); }
-.fw[data-link="offline"] .fw-status-glyph, .fw[data-link="gone"] .fw-status-glyph, .fw[data-link="refused"] .fw-status-glyph { color: var(--z-warn); }
+.fw[data-link="offline"] .fw-status-glyph, .fw[data-link="signedout"] .fw-status-glyph, .fw[data-link="gone"] .fw-status-glyph, .fw[data-link="refused"] .fw-status-glyph { color: var(--z-warn); }
 .fw-status[data-state="running"] .fw-status-glyph { color: var(--z-accent); }
 .fw-status[data-state="error"] .fw-status-glyph { color: var(--z-fail); }
+.fw-status-word { flex: none; color: var(--z-warn); }
+.fw-signedout { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--z-space-3, 8px); padding: var(--z-space-3, 8px) var(--z-space-4, 12px); border-top: 1px solid var(--z-line); color: var(--z-ink); }
+.fw-signedout-line { margin: 0; }
+.fw-signedout-actions { display: flex; gap: var(--z-space-3, 8px); }
 .fw-status-pit { flex: none; color: var(--z-accent); }
 .fw-status-handle { flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; color: var(--z-ink); }
 .fw-status-mantra { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--z-ink); }
@@ -251,6 +255,7 @@ body.fw-page {
 .fw-picker { font-size: 1rem; }
 
 .fw .fw-play .zr-ink { font-size: 1.5rem; }
+.fw .fw-play, .fw .fw-play:hover { border: 0; background: none; box-shadow: none; }
 .fw-inline-heard { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--z-space-2, 4px) var(--z-space-3, 8px); width: 100%; padding: var(--z-space-3, 8px); border: 1px solid var(--z-line); border-radius: var(--z-radius-1, 2px); background: color-mix(in srgb, var(--z-ink) 5%, transparent); }
 .fw-inline-heard-label { grid-column: 1 / -1; font: 400 1.0625rem / 1 var(--fw-mono); letter-spacing: 0.04em; color: var(--z-muted); }
 .fw-inline-heard-text { margin: 0; font-size: 1.1875rem; overflow-wrap: anywhere; }
@@ -260,7 +265,7 @@ body.fw-page {
 .fw-output-play { display: flex; justify-content: flex-start; padding-block: 8px; }
 .fw-output-play .fw-output-btn { min-width: 44px; min-height: 44px; margin-block: -8px; padding: 0; font-size: 1.5rem; }
 .nodi-turn-tools .fw-play-big { min-width: 52px; }
-.nodi-turn-tools .fw-fork-here { min-height: 36px; font-size: 1.1875rem; }
+.nodi-turn-tools .fw-fork-here { min-height: 44px; margin-block: -4px; font-size: 1.1875rem; }
 @media (pointer: coarse) { .fw .fw-stop { min-height: 36px; } }
 .fw-form-edit-key { margin: 0; overflow-wrap: anywhere; color: var(--z-ink); }
 .fw-form-edit-note { color: var(--z-fail); font-style: normal; }

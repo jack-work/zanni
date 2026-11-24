@@ -247,7 +247,7 @@ describe("the buttons under a message", () => {
     expect(document.querySelector(under + ".nodi-turn-body .fw-output-play [data-action=\"play\"]")!.getAttribute("aria-label")).toBe("Play reply");
     expect(document.querySelector(".zr-scrim")).toBeNull();
     expect(document.querySelector(".fw-sheet")).toBeNull();
-    expect(document.querySelector(under + '.fw-inline [data-action="play"]')!.textContent).toBe("▸");
+    expect(document.querySelector(under + '.fw-inline [data-action="play"]')!.textContent).toBe("\uf028");
     expect(document.querySelector(under + '.fw-inline [data-action="retranscribe"]')!.textContent).toBe("↩");
     expect(document.querySelector(".zr-send")!.textContent).toBe("✎");
   });
