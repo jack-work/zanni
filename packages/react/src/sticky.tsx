@@ -7,6 +7,7 @@ import { Plain } from "./text";
 export type HeadMode = "shut" | "open" | "full";
 
 export const DOUBLE_TAP_MS = 300;
+export const FILL_LINES = 3;
 
 export function tapMode(mode: HeadMode, sinceLast: number | null): HeadMode {
   if (mode === "shut") return "open";
@@ -98,6 +99,11 @@ export function Sticky({ heading, tools, text, className, children }: StickyProp
     tapper.current?.focus({ preventScroll: true });
   };
 
+  const jump = (e: MouseEvent) => {
+    e.stopPropagation();
+    question.current?.scrollIntoView({ block: "start", behavior: "auto" });
+  };
+
   const key = (e: KeyboardEvent) => {
     if (!open) return;
     if (e.key === "Escape" || e.key === "F") {
@@ -125,11 +131,16 @@ export function Sticky({ heading, tools, text, className, children }: StickyProp
             {heading}
           </button>
           {tools}
+          {has && (pinned || open) && (
+            <button type="button" className="zr-sticky-jump" aria-label="Jump to the inquiry" title="Jump to the inquiry" onClick={jump}>
+              {glyphs.quote}
+            </button>
+          )}
         </div>
         <div className="zr-sticky-float">
           {showText && (
             <div className="zr-sticky-line" onClick={tap}>
-              <Fit text={text} />
+              <Fit text={text} lines={FILL_LINES} />
             </div>
           )}
           <div id={id} className="zr-sticky-panel" hidden={!open}>

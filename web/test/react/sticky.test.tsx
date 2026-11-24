@@ -142,6 +142,20 @@ describe("the sticky head over a scrolling transcript", () => {
     expect(container.querySelector(".nodi-turn-body")!.parentElement!.classList.contains("zr-sticky-scope")).toBe(true);
   });
 
+  it("offers a jump to the inquiry only while the turn is pinned, and the jump scrolls the question into view", () => {
+    const { container } = transcript([turn(1), turn(2), turn(3)]);
+    const jumped = vi.fn();
+    Element.prototype.scrollIntoView = jumped;
+    expect(head(container, 2).querySelector(".zr-sticky-jump")).toBeNull();
+    scrollTo(TURN_H + PAST);
+    const button = head(container, 2).querySelector<HTMLButtonElement>(".zr-sticky-jump")!;
+    expect(button.getAttribute("aria-label")).toBe("Jump to the inquiry");
+    fireEvent.click(button);
+    expect(jumped).toHaveBeenCalledTimes(1);
+    expect(jumped.mock.contexts[0]).toBe(container.querySelector('.nodi-turn[data-turn="2"] .nodi-input'));
+    expect(head(container, 2).querySelector(".zr-sticky-scroll")!.textContent).toBe("");
+  });
+
   it("rests as a single bar, becomes the double bar with the question under it once its turn scrolls under it, and rests again", () => {
     const { container } = transcript([turn(1), turn(2), turn(3)]);
     for (const n of [1, 2, 3]) {
@@ -153,8 +167,7 @@ describe("the sticky head over a scrolling transcript", () => {
     scrollTo(TURN_H + PAST);
     expect(head(container, 2).hasAttribute("data-pinned")).toBe(true);
     expect(double(head(container, 2))).toBe(true);
-    expect(head(container, 2).querySelector(".zr-sticky-line")!.textContent).toContain("Question 2 first line");
-    expect(head(container, 2).querySelector(".zr-fit-more")!.textContent).toBe(FIT_ELLIPSIS);
+    expect(head(container, 2).querySelector(".zr-sticky-line")!.textContent).toContain("Question 2 first line second line of 2");
     expect(head(container, 1).hasAttribute("data-pinned")).toBe(false);
     expect(head(container, 3).hasAttribute("data-pinned")).toBe(false);
 

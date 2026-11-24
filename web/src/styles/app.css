@@ -117,6 +117,7 @@ body.fw-page {
 .fw-older { display: flex; width: 100%; }
 .fw-metrics { min-height: 1rem; }
 .fw .nodi-turns { margin-top: var(--z-space-4, 12px); }
+.nodi-input { scroll-margin-top: 2.5rem; }
 .nodi-prose[data-speaking] { box-shadow: inset 3px 0 0 var(--z-accent); padding-left: var(--z-space-3, 8px); }
 
 
