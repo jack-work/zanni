@@ -151,6 +151,11 @@
    "margin": 1.0,
    "slack": 10
   },
+  "pane.frame_ms.drag.max": {
+   "budget": 16.8,
+   "margin": 1.0,
+   "slack": 10
+  },
   "pane.frame_ms.open.max": {
    "budget": 16.8,
    "margin": 1.0,
