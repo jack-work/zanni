@@ -158,6 +158,9 @@
 .zr-pit-row-glyph { text-align: center; color: var(--z-muted); }
 .zr-pit-row-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .zr-pit-row-meta { color: var(--z-muted); padding-right: var(--z-space-2, 4px); white-space: nowrap; }
+.zr-pit-row:has(.zr-pit-row-sub) { padding-block: var(--z-space-2, 4px); row-gap: 2px; }
+.zr-pit-row-sub { grid-column: 2 / -1; min-width: 0; padding-right: var(--z-space-2, 4px); color: var(--z-muted); font-size: 1rem; line-height: 1.15; overflow-wrap: anywhere; }
+.zr-pit-detail { padding: var(--z-space-2, 4px) var(--z-space-2, 4px) var(--z-space-4, 12px) calc(2rem + var(--z-space-3, 8px)); min-width: 0; overflow-wrap: anywhere; user-select: text; }
 .zr-pit-glyph { margin-right: 0.5em; color: var(--z-accent); }
 .zr-pit-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: var(--z-space-3, 8px); padding: var(--z-space-3, 8px) var(--zr-edge-r, 16px) calc(var(--z-space-4, 12px) + env(safe-area-inset-bottom)) var(--zr-edge-l, 16px); }
 .zr-composer > .zr-grip { position: absolute; top: -10px; left: 50%; translate: -50% 0; width: 96px; max-width: none; height: 20px; margin: 0; z-index: 1; }

@@ -80,6 +80,9 @@ body.fw-page {
 .fw-pit-fact { display: flex; gap: var(--z-space-4, 12px); }
 .fw-pit-fact dt { flex: none; width: 5rem; color: var(--z-muted); }
 .fw-pit-fact dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.fw-ask-spans { display: block; }
+.fw-ask-stage, .fw-ask-span[data-current] { color: var(--z-accent); }
+.fw-ask-detail .fw-pit-fact dt { width: 4.5rem; }
 
 .fw-body { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
 .fw-side {

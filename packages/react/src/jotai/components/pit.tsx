@@ -3,6 +3,7 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useState } from "react";
 import { PIT_ROWS, EFFORT_KEY, FORKED_FROM_KEY, byLastUsed, valueAt, type PitRowId, type PitView } from "../lib/pit-rows";
 import { PHASE_WORDS, labelOf } from "../lib/roster";
+import { AsksView, useAsks } from "./asks";
 import { OlderArias } from "./older";
 import { TopologyTree, FormTree } from "./tree-view";
 import { FormEdit, type FormEditTarget } from "./form-edit";
@@ -21,6 +22,7 @@ const TITLES: Record<PitView, string> = {
   "fork-at": "Fork at turn",
   tree: "Tree",
   recent: "Recent",
+  asks: "Asks",
   outfits: "Outfits",
 };
 
@@ -30,6 +32,7 @@ const FACE: Record<PitView, string> = {
   "fork-at": glyphs.fork,
   tree: glyphs["pit.troupe"],
   recent: glyphs["pit.form"],
+  asks: glyphs["pit.form"],
   outfits: glyphs["pit.models"],
 };
 
@@ -56,6 +59,7 @@ export function Pit() {
       {view === "fork-at" && <ForkAtView />}
       {view === "tree" && <TreeView />}
       {view === "recent" && <RecentView />}
+      {view === "asks" && <AsksView />}
       {view === "outfits" && <OutfitsView />}
     </ZPit>
   );
@@ -73,6 +77,7 @@ function ControlList() {
   const tree = useAtomValue(treeStateAtom);
   const recent = useAtomValue(recentStateAtom);
   const row = useAtomValue(attendedRowAtom);
+  const asks = useAsks();
   const voice = useAtomValue(voiceAtom);
   const toggleVoice = useSetAtom(toggleVoiceAtom);
   const openNew = useSetAtom(openNewFigaroAtom);
@@ -83,6 +88,7 @@ function ControlList() {
     state: valueAt(bound?.root, EFFORT_KEY) ?? "",
     tree: tree?.nodes.size ? String(tree.nodes.size) : "",
     recent: recent?.rows.length ? String(recent.rows.length) : "",
+    asks: asks.asks.length ? String(asks.asks.length) : "",
     outfits: row?.outfit_name ?? "",
     voice: voice ? "on" : "off",
   };
@@ -99,6 +105,7 @@ function ControlList() {
     "fork-at": () => setView("fork-at"),
     tree: () => setView("tree"),
     recent: () => setView("recent"),
+    asks: () => setView("asks"),
     outfits: () => setView("outfits"),
     voice: () => toggleVoice(),
   };
