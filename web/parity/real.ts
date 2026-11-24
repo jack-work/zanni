@@ -7,6 +7,8 @@ import type { Scenario } from "./check";
 
 export interface Unit {
   aria: string;
+  fig(...args: string[]): string;
+  figJson(...args: string[]): any;
   rpc: string;
   headers: Record<string, string>;
   release(): Promise<void>;
@@ -49,6 +51,15 @@ export async function realUnit(scenario: Scenario): Promise<Unit> {
   });
   return {
     aria: born.aria_id,
+    fig,
+    figJson: (...args: string[]) => {
+      try {
+        const out = fig(...args).trim();
+        return out ? JSON.parse(out) : null;
+      } catch {
+        return null;
+      }
+    },
     rpc: `ws://127.0.0.1:${port}/rpc`,
     headers: { "x-figaro-edge": readFileSync(secretFile, "utf8").trim(), "remote-user": "gluck" },
     release: async () => {
