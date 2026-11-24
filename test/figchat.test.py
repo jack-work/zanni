@@ -567,6 +567,17 @@ try:
 
         for width, height in ((390, 844), (1280, 800)):
             pg = fresh(width, height)
+            attend(pg, door(12), MAIN)
+            pg.wait_for_selector(".nodi-turn-tools .fw-fork-here")
+            small = pg.evaluate("""[...document.querySelectorAll('.nodi-turn-tools button, .fw-inline-btn, .fw-output-btn')].map(b => { const r = b.getBoundingClientRect(); return [b.className, Math.round(r.width), Math.round(r.height)]; }).filter(x => x[2] < 44 || x[1] < 44)""")
+            assert small == [], "every icon under a message is a 44 px target: %s" % small
+            plays = pg.evaluate("[...document.querySelectorAll('.fw-play')].map(b => [b.textContent, getComputedStyle(b).borderTopWidth])")
+            assert plays and all(t == "\uf028" and w == "0px" for t, w in plays), "play is the speaker glyph with no rectangle: %s" % plays
+            snap(pg, "thumbs-%d" % width)
+            pg.close()
+
+        for width, height in ((390, 844), (1280, 800)):
+            pg = fresh(width, height)
             shut_door = door(12)
             shut_door.shut()
             pg.goto(shut_door.url + "#/gluck/" + MAIN)
