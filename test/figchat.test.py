@@ -505,7 +505,8 @@ try:
             assert tbox["height"] <= 24, "the strip text never wraps: %s" % tbox
             assert box["x"] >= 0 and box["x"] + box["width"] <= width, "the composer stays inside the screen: %s" % box
             row = pg.locator(".zr-compose-row").bounding_box()
-            assert row["width"] <= 46 * 16, "the input row sits at the transcript measure: %s" % row
+            measure = 46 * 16 if width < 900 else pg.locator(".fw-pane").bounding_box()["width"]
+            assert row["width"] <= measure, "the input row sits at the transcript measure: %s" % row
             for b in pg.locator(".fw-stop").all():
                 hit_area(pg, b, "stop buttons")
             assert pg.locator(".zr-strip-time").inner_text()[0].isdigit()
@@ -977,7 +978,8 @@ try:
             else:
                 assert pg.locator(".zr-pit-scrim").count() == 0, "the docked drawer has no scrim"
                 box = pg.locator(".zr-pit").bounding_box()
-                assert box["width"] <= 736 + 1 and abs(box["x"] + box["width"] / 2 - (320 + (width - 320) / 2)) <= 1, "docked to the transcript pane: %s" % box
+                pane = pg.locator(".fw-pane").bounding_box()
+                assert abs(box["x"] - pane["x"]) <= 1 and abs(box["x"] + box["width"] - (pane["x"] + pane["width"])) <= 1, "docked across the transcript pane: %s vs %s" % (box, pane)
                 assert pg.locator(".zr-pit[data-docked]").count() == 1
 
             hx, hy = centre(pg.locator(".zr-pit-handle"))
