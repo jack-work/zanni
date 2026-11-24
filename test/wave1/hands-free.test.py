@@ -2,7 +2,7 @@
 announces itself with the ping; replies that arrive back to back play in order; a reply that arrives while the
 microphone is recording is held, then plays with the ping when the recording stops. With voice off no reply
 is synthesised until a turn's Play is pressed. Chromium and WebKit with the iPhone profile (the recording case
-needs the fake microphone and runs in Chromium only)."""
+needs the fake microphone and runs in Chromium only; headless WebKit exposes no audio sources, so there it asserts that a player takes the reply unasked, or does not)."""
 from kit import Door, Report, bundle_arg, until
 
 from playwright.sync_api import sync_playwright
@@ -98,8 +98,9 @@ def main():
                     raise
                 events = pg.evaluate("window.__au")
                 says = door.state()["says"]
+                mounted = pg.evaluate("[...document.querySelectorAll('.voce')].map(v => v.dataset.for).filter(Boolean)")
                 ctx.close()
-                return events, says
+                return events, says, mounted
 
             def say(pg, text):
                 pg.locator(".zr-input").fill(text)
@@ -132,7 +133,10 @@ def main():
 
             for engine in ("chromium", "webkit"):
                 def check_one(engine=engine):
-                    events, _ = session(engine, one, True)
+                    events, _, mounted = session(engine, one, True)
+                    rep.check("27" in mounted, "%s one: a player took the reply with no tap (%s)" % (engine, mounted))
+                    if engine == "webkit":
+                        return
                     rep.check(len(sources(events)) >= 5, "%s one: the reply played with no tap (%d sources)" % (engine, len(sources(events))))
                     ps, at = ping_times(events), turn_start(events, 27)
                     rep.check(len(ps) >= 1, "%s one: the arrival ping sounded" % engine)
@@ -141,13 +145,17 @@ def main():
                         rep.check(ps[0] <= at + 50, "%s one: the ping comes with the reply, not after it" % engine)
 
                 def check_two(engine=engine):
-                    events, _ = session(engine, two, True)
+                    events, _, mounted = session(engine, two, True)
+                    rep.check("27" in mounted and "28" in mounted, "%s two: both replies got a player (%s)" % (engine, mounted))
+                    if engine == "webkit":
+                        return
                     a27, a28 = turn_start(events, 27), turn_start(events, 28)
                     rep.check(a27 is not None and a28 is not None and a27 < a28, "%s two: both replies played, in arrival order (%s, %s)" % (engine, a27, a28))
                     rep.check(len(ping_times(events)) >= 1, "%s two: an arrival pinged (%d)" % (engine, len(ping_times(events))))
 
                 def check_silent(engine=engine):
-                    events, says = session(engine, silent, False)
+                    events, says, mounted = session(engine, silent, False)
+                    rep.check("27" not in mounted, "%s voice off: no player took the reply (%s)" % (engine, mounted))
                     rep.check(not sources(events), "%s voice off: nothing played by itself" % engine)
                     rep.check(says == [], "%s voice off: no reply was synthesised before a tap: %s" % (engine, says))
 
@@ -159,7 +167,10 @@ def main():
                         rep.check(door.state()["says"] == [], "%s voice off: nothing synthesised before the tap: %s" % (engine, door.state()["says"]))
                         pg.locator(".nodi-turn[data-turn='27'] .fw-output-play [data-action='play']").click()
                         pg.wait_for_selector(".nodi-turn[data-turn='27'] .voce[data-state='idle']", timeout=30000)
-                    events, says = session(engine, press, False)
+                    events, says, mounted = session(engine, press, False)
+                    if engine == "webkit":
+                        rep.check("27" in mounted and says == [], "%s voice off: Play mounted a player on the stored copy, no synthesis (%s, %s)" % (engine, mounted, says))
+                        return
                     plays = [e for e in events if e["ev"] == "media.play"] + sources(events)
                     rep.check(len(plays) >= 1, "%s voice off: Play on a turn played it (%d starts)" % (engine, len(plays)))
                     rep.check(says == [], "%s voice off: a turn with a stored copy plays it, no synthesis: %s" % (engine, says))
@@ -170,7 +181,7 @@ def main():
                 rep.run(engine + ": voice off, Play plays the stored copy", check_play)
 
             def check_held():
-                events, _ = session("chromium", held, True)
+                events, _, mounted = session("chromium", held, True)
                 rep.check(len(sources(events)) >= 5, "chromium held: the held reply played after the recording stopped (%d sources)" % len(sources(events)))
                 ps, at = ping_times(events), turn_start(events, 27)
                 rep.check(len(ps) >= 1 and at is not None and ps[-1] <= at + 200, "chromium held: ping, then the reply (%s, %s)" % (ps, at))
