@@ -156,6 +156,16 @@ describe("the sticky head over a scrolling transcript", () => {
     expect(head(container, 2).querySelector(".zr-sticky-scroll")!.textContent).toBe("");
   });
 
+  it("lets go of the pinned line once less than a bar's height of its turn is left, so the line never hangs over the next turn", () => {
+    const { container } = transcript([turn(1), turn(2), turn(3)]);
+    scrollTo(2 * TURN_H - BAR_H - 5);
+    expect(head(container, 2).hasAttribute("data-pinned")).toBe(true);
+    expect(head(container, 2).querySelector(".zr-sticky-line")).not.toBeNull();
+    scrollTo(2 * TURN_H - BAR_H + 5);
+    expect(head(container, 2).hasAttribute("data-pinned")).toBe(false);
+    expect(head(container, 2).querySelector(".zr-sticky-line")).toBeNull();
+  });
+
   it("rests as a single bar, becomes the double bar with the question under it once its turn scrolls under it, and rests again", () => {
     const { container } = transcript([turn(1), turn(2), turn(3)]);
     for (const n of [1, 2, 3]) {
