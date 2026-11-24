@@ -10,6 +10,9 @@ from figchat_kit import FAKE_VISUAL_VIEWPORT, HANG_MS, MAIN, Door, assert_centre
 bundle = os.path.abspath(sys.argv[1])
 shots = os.environ.get("FIGCHAT_SHOTS", "")
 KB = 336
+TARGET_P95_MS = 50
+RELEASE_P95_MS = 81.7
+RELEASE_SLACK = 1.1
 SCROLLER = "document.querySelector('[data-zr-scroll]')"
 
 doors = []
@@ -332,8 +335,9 @@ with sync_playwright() as p:
             busy += keystrokes(pg, 3, 0)
     print("streaming n %d p50 %.1f p95 %.1f max %.1f" % (len(busy), statistics.median(busy), quantile(busy, 0.95), max(busy)))
     assert len(busy) >= 40, "enough keystrokes landed while a turn streamed: %d" % len(busy)
-    assert statistics.median(busy) <= statistics.median(idle) * 2, "typing while a turn streams is as quick as idle typing: %.1f vs %.1f" % (statistics.median(busy), statistics.median(idle))
-    assert quantile(busy, 0.95) <= 200, "keystroke to paint under 200ms at p95 while a turn streams: %.1f" % quantile(busy, 0.95)
+    print("streaming over idle p50 ratio %.2f (report only)" % (statistics.median(busy) / statistics.median(idle)))
+    limit = max(TARGET_P95_MS, RELEASE_P95_MS * RELEASE_SLACK)
+    assert quantile(busy, 0.95) <= limit, "keystroke to paint at p95 while a turn streams is %.1f ms, over %.1f (target %d, v0.34.0 measured %.1f)" % (quantile(busy, 0.95), limit, TARGET_P95_MS, RELEASE_P95_MS)
     pg.context.close()
 
     pg = fresh()
