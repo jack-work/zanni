@@ -66,6 +66,15 @@ describe("QueueBoard", () => {
     expect(boardColumns(null).map((c) => c.key)).toEqual(["queue", "review", "merge", "build", "dev_deploy", "prod_deploy", "cut"]);
   });
 
+  it("gives a step row with no phase its own column beside the phased ones", () => {
+    const old = { ...data.commits[1]!, trace: "0".repeat(32), sha: "0".repeat(40), steps: [{ step: "prod_deploy" as const, duration_ms: 41000, outcome: "ok" as const }] };
+    const mixed = { ...data, commits: [...data.commits, old], steps: [{ step: "prod_deploy" as const, count: 1, ok: 1, fail: 0, skip: 0, p50_ms: 41000, p95_ms: 41000, failure_rate: 0 }, ...data.steps] };
+    expect(boardColumns(mixed).filter((c) => c.step === "prod_deploy").map((c) => c.key)).toEqual(["prod_deploy", "prod_deploy:activate", "prod_deploy:acceptance"]);
+    render(<QueueBoard {...props} data={mixed} />);
+    const cells = [...document.querySelector<HTMLElement>(`[data-trace="${old.trace}"]`)!.querySelectorAll<HTMLElement>(".zr-qb-cell")].map((c) => c.dataset.outcome ?? "empty");
+    expect(cells.slice(5, 8)).toEqual(["ok", "empty", "empty"]);
+  });
+
   it("splits an acceptance failure from a clean activation", () => {
     render(<QueueBoard {...props} />);
     const row = document.querySelector<HTMLElement>(`[data-trace="${data.commits.find((c) => c.ref === "lane/web-resume")!.trace}"]`)!;
