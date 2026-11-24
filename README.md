@@ -55,6 +55,20 @@ which is why the driver is JS and why `heft` drops the filter while held.
 
 Full numbers and the laws for each component are in `docs/`.
 
+## Checks
+
+`nix build .#checks.<system>.release` is the release check: every unit and
+browser test, in the sandbox, with `checks.quick` as the fast subset. Timing
+assertions in it are report-only: they run, print their number and write
+`timings.json` (name, value, limit, unit, over, rev, load) into the check
+output, and never fail the build, because they track the load of the box and
+not a regression. Budgets still fail in one place: `nix run .#perf` takes
+`/tmp/zanni-perf.lock`, runs the figchat bench against `bench/budgets.json`
+and the fuzz campaigns, writes `zanni-timings.json` and `zanni-bench.json`
+to `$ZANNI_PERF_OUT` (default the current directory), and exits non-zero when
+a budget is over or a fuzz campaign finds a real failure. Run it on a quiet
+box.
+
 ## Provenance
 
 Source of truth is keel at `git@spain:jack/zanni.git`, browsable at
