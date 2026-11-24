@@ -17,7 +17,7 @@
    "margin": 0.05
   },
   "bundle.code_gzip": {
-   "budget": 154000,
+   "budget": 155400,
    "margin": 0.05
   },
   "bundle.code_raw": {
@@ -147,6 +147,11 @@
    "slack": 1
   },
   "pane.frame_ms.close.max": {
+   "budget": 16.8,
+   "margin": 1.0,
+   "slack": 10
+  },
+  "pane.frame_ms.drag.max": {
    "budget": 16.8,
    "margin": 1.0,
    "slack": 10

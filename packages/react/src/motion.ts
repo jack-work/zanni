@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 export const EXIT_MS = 160;
+export const EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)";
 
 export function reducedMotion(): boolean {
   return typeof window.matchMedia !== "function" || window.matchMedia("(prefers-reduced-motion: reduce)").matches;

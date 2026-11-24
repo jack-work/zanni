@@ -249,13 +249,21 @@ def run(bundle, quick=False, only=""):
             ctx = browser.new_context(viewport={"width": 1280, "height": 800})
             pg = page(ctx)
             attend(pg, d)
-            gaps = {"open": [], "close": [], "resize": []}
+            gaps = {"open": [], "close": [], "resize": [], "drag": []}
 
             def watch(kind, act):
                 pg.evaluate(RECORD)
                 act()
                 pg.wait_for_timeout(450)
                 gaps[kind] += pg.evaluate("window.__pane()")
+
+            def edge_drag():
+                pg.mouse.move(6, 200)
+                pg.mouse.down()
+                for x in range(6, 200, 8):
+                    pg.mouse.move(x, 200)
+                    pg.wait_for_timeout(16)
+                pg.mouse.up()
 
             for _ in range(reps):
                 watch("close", lambda: pg.locator(".fw-panes").click())
@@ -264,6 +272,9 @@ def run(bundle, quick=False, only=""):
                 watch("resize", lambda: pg.keyboard.press("ArrowRight"))
                 pg.keyboard.press("Home")
                 pg.wait_for_timeout(300)
+                pg.locator(".fw-panes").click()
+                pg.wait_for_timeout(450)
+                watch("drag", edge_drag)
             errors = pg.errors
             ctx.close()
             d.stop()

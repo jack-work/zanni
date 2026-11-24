@@ -565,6 +565,139 @@ try:
             assert narrow <= 46 * 16 + 2, "the Narrow setting brings back the measure: %s" % narrow
             pg.close()
 
+        pane_open = "(document.querySelector('.fw-panes').getAttribute('aria-expanded') === 'true')"
+        pane_box = "(() => { const r = document.querySelector('.zr-pane').getBoundingClientRect(); return { x: r.x, right: r.right, width: r.width }; })()"
+        pane_idle = "(() => { const p = document.querySelector('.zr-pane'); return !p.hasAttribute('data-peek') && p.style.transform === '' && p.style.opacity === '' && p.style.width === ''; })()"
+
+        def crawl(pg, x0, x1, y=200):
+            pg.mouse.move(x0, y)
+            pg.mouse.down()
+            for x in range(x0, x1, 6):
+                pg.mouse.move(x, y)
+                pg.wait_for_timeout(30)
+
+        def collapse(pg):
+            pg.locator(".fw-panes").click()
+            until(pg, "!" + pane_open)
+            pg.wait_for_timeout(300)
+            assert not pg.locator(".zr-pane").is_visible(), "the Arias button collapses the pane"
+
+        def settled_open(pg, what):
+            until(pg, pane_open)
+            pg.wait_for_timeout(300)
+            assert pg.locator(".zr-pane").is_visible(), "%s: the pane is open" % what
+            assert pg.evaluate(pane_idle), "%s: a settled pane carries no gesture residue" % what
+
+        for width, height in ((844, 390), (1280, 800)):
+            pg = fresh(width, height)
+            attend(pg, fast, MAIN)
+            collapse(pg)
+            full = pg.evaluate("Math.round(document.querySelector('.fw-pane').getBoundingClientRect().width)")
+            edge = pg.locator(".zr-pane-edge").bounding_box()
+            assert edge["x"] == 0 and 8 <= edge["width"] <= 16, "a fine pointer gets a thin zone at the very edge: %s" % edge
+
+            crawl(pg, 6, 40)
+            pg.mouse.up()
+            pg.wait_for_timeout(400)
+            assert not pg.locator(".zr-pane").is_visible() and not pg.evaluate(pane_open), "a short drag snaps back closed at %d" % width
+            assert pg.evaluate(pane_idle), "a snapped-back pane carries no gesture residue"
+
+            pg.mouse.move(6, 200)
+            pg.mouse.down()
+            pg.mouse.move(150, 200, steps=6)
+            mid = pg.evaluate(pane_box)
+            assert pg.locator(".zr-pane").is_visible(), "the pane shows while the pointer is down"
+            assert abs(mid["right"] - 144) <= 2, "the pane's edge follows the pointer: %s" % mid
+            assert abs(pg.evaluate("Math.round(document.querySelector('.fw-pane').getBoundingClientRect().width)") - full) <= 1, "the chat does not reflow under the drag"
+            assert pg.evaluate("getComputedStyle(document.querySelector('.zr-pane')).opacity") not in ("0", "1"), "the pane fades in with the drag"
+            snap(pg, "pane-edge-drag-%d" % width)
+            pg.mouse.move(120, 200, steps=3)
+            back = pg.evaluate(pane_box)
+            assert back["right"] < mid["right"] - 10, "dragging back pulls the pane back: %s -> %s" % (mid, back)
+            pg.mouse.move(300, 200, steps=6)
+            pg.mouse.up()
+            settled_open(pg, "a long drag at %d" % width)
+            snap(pg, "pane-edge-open-%d" % width)
+            assert pg.evaluate("Math.round(document.querySelector('.fw-pane').getBoundingClientRect().width)") < full - 100, "the open pane gives the chat its column back"
+
+            collapse(pg)
+            pg.locator(".fw-panes").focus()
+            pg.keyboard.press("Enter")
+            settled_open(pg, "the keyboard path at %d" % width)
+
+            collapse(pg)
+            pg.mouse.move(6, 200)
+            pg.mouse.down()
+            pg.mouse.move(60, 200, steps=3)
+            pg.wait_for_timeout(30)
+            pg.mouse.move(110, 200, steps=2)
+            pg.mouse.up()
+            settled_open(pg, "a flick at %d" % width)
+            assert not pg.errors, pg.errors
+            pg.close()
+
+        ctx = browser.new_context(viewport={"width": 844, "height": 390}, is_mobile=True, has_touch=True)
+        pg = ctx.new_page()
+        pg.errors = []
+        pg.on("pageerror", lambda e: pg.errors.append(str(e)))
+        cdp = ctx.new_cdp_session(pg)
+
+        def touch(kind, x=0, y=200):
+            cdp.send("Input.dispatchTouchEvent", {"type": kind, "touchPoints": [{"x": x, "y": y}] if kind != "touchEnd" else []})
+
+        attend(pg, fast, MAIN)
+        assert pg.evaluate("matchMedia('(pointer: coarse)').matches"), "the touch context is a coarse pointer"
+        collapse(pg)
+        edge = pg.locator(".zr-pane-edge").bounding_box()
+        assert edge["x"] >= 4 and edge["width"] >= 20, "a coarse pointer's zone starts a few px in, leaving iOS its back-swipe strip: %s" % edge
+
+        touch("touchStart", 1)
+        for x in range(1, 260, 20):
+            touch("touchMove", x)
+        touch("touchEnd")
+        pg.wait_for_timeout(400)
+        assert not pg.evaluate(pane_open), "a touch that starts in the back-swipe strip does not open the pane"
+
+        touch("touchStart", 12)
+        for x in range(12, 60, 6):
+            touch("touchMove", x)
+            pg.wait_for_timeout(30)
+        touch("touchEnd")
+        pg.wait_for_timeout(400)
+        assert not pg.evaluate(pane_open) and pg.evaluate(pane_idle), "a short touch drag snaps back closed"
+
+        touch("touchStart", 12)
+        for x in range(12, 170, 14):
+            touch("touchMove", x)
+        mid = pg.evaluate(pane_box)
+        assert 120 <= mid["right"] <= 160, "the pane follows the finger: %s" % mid
+        snap(pg, "pane-edge-touch-844")
+        touch("touchEnd")
+        settled_open(pg, "a long touch drag")
+        pg.close()
+        ctx.close()
+
+        ctx = browser.new_context(viewport={"width": 844, "height": 390}, reduced_motion="reduce")
+        pg = ctx.new_page()
+        pg.errors = []
+        pg.on("pageerror", lambda e: pg.errors.append(str(e)))
+        attend(pg, fast, MAIN)
+        collapse(pg)
+        crawl(pg, 6, 40)
+        pg.mouse.up()
+        pg.wait_for_timeout(60)
+        assert not pg.evaluate(pane_open) and pg.evaluate(pane_idle), "reduced motion: a short drag snaps closed at once"
+        pg.mouse.move(6, 200)
+        pg.mouse.down()
+        pg.mouse.move(250, 200, steps=5)
+        pg.mouse.up()
+        pg.wait_for_timeout(60)
+        assert pg.evaluate(pane_open) and pg.evaluate(pane_idle), "reduced motion: a long drag snaps open at once"
+        assert pg.evaluate("document.querySelector('.zr-pane').getAnimations().length") == 0, "reduced motion: the pane does not animate"
+        assert not pg.errors, pg.errors
+        pg.close()
+        ctx.close()
+
         pg = fresh()
         slow = door(150)
         attend(pg, slow, MAIN)

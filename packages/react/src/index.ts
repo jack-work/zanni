@@ -1,6 +1,7 @@
 export { Button, ButtonGroup } from "./button";
 export type { ButtonGroupProps, ButtonProps, ButtonSize, ButtonVariant } from "./button";
 export { Pane } from "./pane";
+export { EDGE_FLICK, EDGE_OPEN_AT, EDGE_SLOP, edgeSettle } from "./pane-edge";
 export { Shell } from "./shell";
 export type { ShellHosts, ShellPane, ShellProps, ShellSlot, ShellSlots } from "./shell";
 export { useTheme } from "./theme";

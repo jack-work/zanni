@@ -225,7 +225,7 @@ export function Shell({ header, left, right, fold = FOLDED, breakpoint = 900, st
         </button>
       </header>
       <div className="zr-shell-body">
-        <Pane id={left.id} label={left.label} open={leftOpen} width={leftState.width} onWidth={leftState.setWidth} onClose={() => toggleLeft(false)} form={narrow ? "drawer" : "docked"} as="nav" className="zr-shell-left">
+        <Pane id={left.id} label={left.label} open={leftOpen} width={leftState.width} onWidth={leftState.setWidth} onClose={() => toggleLeft(false)} onOpen={() => toggleLeft(true)} form={narrow ? "drawer" : "docked"} as="nav" className="zr-shell-left">
           {left.tabs && (
             <div className="zr-pane-tabs" role="tablist" aria-label={left.label}>
               {left.tabs.map((t) => (
