@@ -125,7 +125,7 @@ body.fw-page {
 
 
 @media (min-width: 900px) {
-  .fw { --zr-pit-left: var(--fw-side); --fw-width: 100%; }
+  .fw { --zr-pit-left: var(--fw-side); --fw-width: 100%; --zr-sticky-measure: 100cqw; }
   .fw-body { display: grid; grid-template-columns: var(--fw-side) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
   .fw[data-route] .fw-side {
     display: block;
