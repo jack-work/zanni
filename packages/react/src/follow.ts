@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
 
 export const NEAR_BOTTOM = 24;
 export const AWAY_FROM_BOTTOM = 96;
+const AT_END = 2;
 
 export function scrollRoot(): HTMLElement {
   return document.querySelector<HTMLElement>("[data-zr-scroll]") ?? (document.scrollingElement as HTMLElement | null) ?? document.documentElement;
@@ -50,7 +51,7 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
 
   const snap = useCallback(() => {
     const root = scrollRoot();
-    if (!stuck.current || paging.current || root.scrollTop < lastY.current) return;
+    if (!stuck.current || paging.current || root.scrollTop < lastY.current - 1) return;
     const end = root.scrollHeight - root.clientHeight;
     if (root.scrollTop === end) return;
     root.scrollTop = end;
@@ -69,9 +70,14 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
     const judge = () => setAway(top - root.scrollTop > AWAY_FROM_BOTTOM);
     const onScroll = () => {
       const y = root.scrollTop;
-      if (y < lastY.current) stuck.current = false;
-      else if (top - y <= NEAR_BOTTOM) stuck.current = true;
-      lastY.current = y;
+      measure();
+      if (y < lastY.current - 1) {
+        if (top - y > AT_END) stuck.current = false;
+        lastY.current = y;
+      } else {
+        if (top - y <= NEAR_BOTTOM && y >= lastY.current) stuck.current = true;
+        lastY.current = Math.max(lastY.current, y);
+      }
       judge();
     };
     judge();
@@ -84,7 +90,7 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
         const h = el.getBoundingClientRect().height;
         measure();
         if (paging.current) return;
-        if (stuck.current && root.scrollTop >= lastY.current && root.scrollTop !== top) {
+        if (stuck.current && root.scrollTop >= lastY.current - 1 && root.scrollTop !== top) {
           root.scrollTop = top;
           lastY.current = root.scrollTop;
         }
