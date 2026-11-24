@@ -1,0 +1,24 @@
+#!/usr/bin/env node
+'use strict';
+const { execFileSync } = require('child_process');
+const path = require('path');
+
+const out = process.argv[2];
+if (!out || process.argv.length > 3) {
+  process.stderr.write('usage: zanni-react-build OUT\n\nRun from web/. Builds every React and runtime entry, the type declarations,\nthen writes the bundle to OUT. The flake and the dev follower both call this.\n');
+  process.exit(2);
+}
+
+const vite = path.join('node_modules', '.bin', 'vite');
+const tsc = path.join('node_modules', '.bin', 'tsc');
+const REACT_ENTRIES = ['react', 'react-jotai'];
+const RUNTIME_ENTRIES = ['react', 'jsx-runtime', 'react-dom-client', 'figaro-forms-glyphs'];
+
+function run(cmd, args, env) {
+  execFileSync(cmd, args, { stdio: 'inherit', env: { ...process.env, ...env } });
+}
+
+for (const entry of REACT_ENTRIES) run(vite, ['build', '-c', 'vite.react.config.ts', '--logLevel', 'error'], { ZANNI_REACT_ENTRY: entry });
+for (const entry of RUNTIME_ENTRIES) run(vite, ['build', '-c', 'vite.runtime.config.ts', '--logLevel', 'error'], { ZANNI_RUNTIME_ENTRY: entry });
+run(tsc, ['-p', 'tsconfig.react-types.json']);
+run('node', [path.join(__dirname, 'zanni-react-bundle'), out, '.']);
