@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ageOf, compareAsks, foldAsk, foldAsks, formatSpan } from "zanni-react/jotai";
 import { readFileSync } from "node:fs";
 
-const fixture = JSON.parse(readFileSync("../test/wave1/fixtures/orders.json", "utf8")) as { orders: Record<string, { state: string }> };
+const fixture = JSON.parse(readFileSync("test/fixtures/orders.json", "utf8")) as { orders: Record<string, { state: string }> };
 
 const T = (s: string) => Date.parse(s);
 const NOW = T("2026-11-23T21:30:00-05:00");
