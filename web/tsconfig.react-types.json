@@ -27,7 +27,7 @@
         "./node_modules/figaro-forms/dist/catalog.d.ts"
       ],
       "figaro-forms/glyphs": [
-        "./node_modules/figaro-forms/dist/glyphs.d.ts"
+        "./node_modules/figaro-forms/dist/glyphs.gen.d.ts"
       ],
       "figaro-forms/aria": [
         "./node_modules/figaro-forms/dist/aria/index.d.ts"

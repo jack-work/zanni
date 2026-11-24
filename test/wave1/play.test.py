@@ -61,7 +61,7 @@ def main():
                     t = ".nodi-turn[data-turn='26']"
                     rep.check(pg.locator(t + " [data-action='play']").count() == 3, "%d: three play buttons on a turn with an inquiry and output (got %d)" % (width, pg.locator(t + " [data-action='play']").count()))
                     labels = pg.evaluate("[...document.querySelectorAll(\"%s [data-action='play']\")].map((b) => [b.getAttribute('aria-label'), b.textContent.trim()])" % t)
-                    rep.check(labels == [["Play inquiry and reply", "▸"], ["Play your message", "▸"], ["Play reply", "▸"]], "%d: top, under the inquiry, under the output, unlabelled but for aria: %s" % (width, labels))
+                    rep.check(labels == [["Play inquiry and reply", "\uf028"], ["Play your message", "\uf028"], ["Play reply", "\uf028"]], "%d: top, under the inquiry, under the output, unlabelled but for aria: %s" % (width, labels))
                     sizes = pg.evaluate("""(() => {
                       const out = [];
                       for (const b of document.querySelectorAll("%s [data-action='play']")) {
