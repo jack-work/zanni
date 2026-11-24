@@ -726,6 +726,10 @@ try:
         until(pg, "location.hash.startsWith('#/gluck/') && !location.hash.includes('%s')" % MAIN, timeout=10000)
         until(pg, "document.querySelector('.fw').dataset.link === 'live' && document.querySelectorAll('.nodi-turn').length >= 1", timeout=10000)
         assert pg.locator(".nodi-turn").count() >= 1, "the alternative opens with the history it was cut from"
+        pg.wait_for_selector(".fw-forkmark")
+        assert pg.locator(".fw-forkmark").inner_text().startswith("\u2442 Fork of ")
+        until(pg, "!document.documentElement.dataset.vt", timeout=3000)
+        assert not pg.errors, pg.errors
         pg.close()
 
         pg = fresh()
@@ -1216,7 +1220,8 @@ try:
             pg.wait_for_selector(".zr-pit", state="detached")
             until(pg, "/^#\\/gluck\\/[0-9a-f]{32}$/.test(location.hash) && !location.hash.includes('%s')" % MAIN, 8000)
             until(pg, "document.querySelector('.fw').dataset.link === 'live'", 8000)
-            assert pg.locator(".fw-fork-banner, .fw-status-fork").count() == 0, "the pager has no fork banner and no fork glyph in the status line"
+            assert pg.locator(".fw-forkmark").inner_text().startswith("\u2442 Fork of "), "the sub-bar says this is a fork and of what"
+            assert pg.locator(".fw-status[data-fork]").count() == 1, "the status bar is marked as a fork's"
             assert pg.locator(".nodi-turn[data-fresh]").count() == 0, "history does not animate in on a fork"
             until(pg, "document.querySelector('.nodi-turn[data-turn=\"20\"] .nodi-turn-fork') !== null", 8000)
             assert pg.locator(".nodi-turn-fork").count() == 1, "the fork's first own turn alone wears the mark"
@@ -1233,7 +1238,8 @@ try:
             pg.wait_for_selector(".zr-pit", state="detached")
             until(pg, "!location.hash.includes('%s')" % MAIN, 8000)
             until(pg, "document.querySelector('.fw').dataset.link === 'live'", 8000)
-            assert pg.locator(".fw-fork-banner, .fw-status-fork, .nodi-turn-fork").count() == 0, "a tail fork has no own turn yet, so no mark anywhere"
+            assert pg.locator(".nodi-turn-fork").count() == 0, "a tail fork has no own turn yet, so no turn wears the mark"
+            assert pg.locator(".fw-forkmark").count() == 1, "but it still says it is a fork"
             assert not pg.errors, pg.errors
             ctx.close()
 
