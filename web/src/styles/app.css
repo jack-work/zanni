@@ -269,3 +269,7 @@ body.fw-page {
 @media (pointer: coarse) { .fw .fw-stop { min-height: 36px; } }
 .fw-form-edit-key { margin: 0; overflow-wrap: anywhere; color: var(--z-ink); }
 .fw-form-edit-note { color: var(--z-fail); font-style: normal; }
+
+.fw-status-hands { flex: none; align-self: stretch; min-width: 36px; margin-block: 0; padding: 0 var(--z-space-2, 4px); border: 0; background: none; color: var(--z-muted); font: inherit; font-size: 1.25rem; cursor: pointer; touch-action: manipulation; }
+.fw-status-hands[aria-pressed="true"] { color: var(--z-accent); }
+.fw-status-hands:focus-visible { outline: 2px solid var(--z-focus); outline-offset: -2px; }

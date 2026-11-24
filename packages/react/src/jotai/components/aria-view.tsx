@@ -8,7 +8,7 @@ import { metricsLineAtom, noteAtom, turnsAtom } from "../state/aria";
 import { treeStateAtom } from "../state/pit";
 import { rosterAtom } from "../state/roster";
 import { composerAtom, forkAtom, keyOf } from "../state/composer";
-import { handsFreeAtom, speakingAtom, toggleHandsFreeAtom } from "../state/audio";
+import { speakingAtom } from "../state/audio";
 import { micCancelAtom } from "../state/mic";
 import { useVoice } from "./use-voice";
 import { linkAtom } from "../state/aria";
@@ -56,8 +56,6 @@ export function AriaView({ attended }: { attended: Attended }) {
 
   const link = useAtomValue(linkAtom);
   const fork = useSetAtom(forkAtom);
-  const handsFree = useAtomValue(handsFreeAtom);
-  const toggleHandsFree = useSetAtom(toggleHandsFreeAtom);
   const speaking = useAtomValue(speakingAtom);
   const [spans, jump] = useTurnWindow(turns);
   useLayoutEffect(() => {
@@ -181,9 +179,6 @@ export function AriaView({ attended }: { attended: Attended }) {
             </a>
             {!gone && (
             <div className="fw-subtools">
-              <Button variant="quiet" size="compact" className="fw-hands" aria-pressed={handsFree} onClick={() => toggleHandsFree()}>
-                Hands-free
-              </Button>
               <Button variant="quiet" size="compact" className="fw-fork" disabled={link !== "live" || forking} onClick={() => void fork(0)}>
                 Fork
               </Button>

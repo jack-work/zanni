@@ -1,6 +1,7 @@
 import { glyphs, usePit } from "../../index";
+import { handsFreeAtom, toggleHandsFreeAtom } from "../state/audio";
 import { ariaFactsAtom } from "figaro-forms/aria/jotai";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useState } from "react";
 import { EFFORT_KEY, valueAt } from "../lib/pit-rows";
 import { STATUS_SPINNER, ctxLine, stateGlyph } from "../lib/status";
@@ -17,6 +18,8 @@ function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomVa
   const facts = useAtomValue(ariaFactsAtom(client, aria));
   const bound = useAtomValue(boundStateAtom);
   const pit = usePit();
+  const handsFree = useAtomValue(handsFreeAtom);
+  const toggleHandsFree = useSetAtom(toggleHandsFreeAtom);
   const [frame, setFrame] = useState(0);
   useEffect(() => {
     if (!running) return;
@@ -45,6 +48,11 @@ function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomVa
       <span className="fw-status-handle">{handle}</span>
       {link === "signedout" && <span className="fw-status-word">Signed out</span>}
       {mantra && <span className="fw-status-mantra">{mantra}</span>}
+      {link !== "gone" && link !== "refused" && (
+      <button type="button" className="fw-hands fw-status-hands" aria-pressed={handsFree} aria-label="Hands-free" title="Hands-free" onClick={() => toggleHandsFree()}>
+        {glyphs["audio.play"]}
+      </button>
+      )}
       {ctx && <span className="fw-status-ctx">{ctx}</span>}
     </header>
   );
