@@ -153,6 +153,15 @@ export function useTranscriptScroll(turns: readonly Held[], pane: RefObject<HTML
     return all[i]?.turn ?? -1;
   };
 
+  const keep = (root: HTMLElement) => {
+    const all = held.current;
+    document.querySelectorAll<HTMLElement>(".nodi-turn").forEach((t) => (heights.current[t.dataset.turn!] = t.offsetHeight + SPACING));
+    const kept = place.current;
+    const at = kept ? all.findIndex((t) => t.turn === kept.turn) : -1;
+    if (kept && at >= 0) put(root, root.scrollTop + originOf(root, listOf()) + offsetIn(heights.current, all, at) - kept.at);
+    mark(root);
+  };
+
   const judge = (root: HTMLElement) => setAway(endOf(root) - root.scrollTop > AWAY_FROM_BOTTOM);
 
   useLayoutEffect(() => {
@@ -196,8 +205,8 @@ export function useTranscriptScroll(turns: readonly Held[], pane: RefObject<HTML
     const intent = (e: Event) => {
       const t = e.target as Node;
       jumped.current = -Infinity;
-      if (e instanceof TouchEvent) {
-        const y = e.touches[0]?.clientY ?? 0;
+      if (e.type === "touchstart" || e.type === "touchmove") {
+        const y = (e as TouchEvent).touches[0]?.clientY ?? 0;
         if (e.type === "touchstart") touchY = y;
         else if (y > touchY + 2 && root.contains(t)) release();
         return;
@@ -226,6 +235,7 @@ export function useTranscriptScroll(turns: readonly Held[], pane: RefObject<HTML
         }
         notice(root);
         if (pinned.current) put(root, endOf(root));
+        else keep(root);
         judge(root);
       });
       watch.observe(el);

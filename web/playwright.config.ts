@@ -27,6 +27,8 @@ export default defineConfig({
   projects: [
     { name: "iphone15", use: { ...devices["iPhone 15"], viewport: { width: 390, height: 844 }, hasTouch: true } },
     { name: "iphone15-chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 3, userAgent: devices["iPhone 15"].userAgent } },
+    { name: "desktop-webkit", use: { ...devices["Desktop Safari"], viewport: { width: 1280, height: 800 } } },
+    { name: "desktop-firefox", use: { ...devices["Desktop Firefox"], viewport: { width: 1280, height: 800 } } },
     { name: "desktop1280", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } } },
   ],
 });
