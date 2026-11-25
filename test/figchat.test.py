@@ -408,7 +408,7 @@ try:
             sendp, field, attach, command = (pg.locator(s).bounding_box() for s in (".zr-send", ".zr-input", ".zr-attach", ".zr-command"))
             assert pg.locator(".zr-pill:disabled").count() == 0, "no pill is drawn disabled"
             assert attach["y"] >= field["y"] + field["height"] - 1 and abs(attach["x"] - field["x"]) <= 1, "attach sits under the input, left-justified: %s %s" % (attach, field)
-            assert command["x"] >= field["x"] + field["width"] - 1 and sendp["x"] >= command["x"] + command["width"] - 2, "command and send sit right of the input, send last: %s" % [command, sendp]
+            assert command["y"] >= field["y"] + field["height"] - 1 and abs(sendp["x"] + sendp["width"] - (field["x"] + field["width"])) <= 2 and sendp["x"] >= command["x"] + command["width"] - 2, "command and send sit under the input, right-justified, send last: %s" % [command, sendp]
             for b in (attach, command, sendp):
                 assert 30 <= b["height"] <= 40 and b["width"] <= 64, "a small pill: %s" % b
             assert [pg.locator(s).inner_text() for s in (".zr-command", ".zr-send")] == ["∴", "✎"], "pager glyphs on the right pills"

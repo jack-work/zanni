@@ -150,7 +150,7 @@ export function Composer(props: ComposerProps) {
     >
       {tray}
       {hints}
-      <div className="zr-compose-row" data-attach={attach ? "" : undefined} data-stack={!prompt && !field ? "" : undefined} data-prompt={prompt ? "" : undefined}>
+      <div className="zr-compose-row" data-attach={attach ? "" : undefined} data-stack={!prompt ? "" : undefined} data-prompt={prompt ? "" : undefined}>
         {attach && <Pill {...attach} className="zr-attach" />}
         {prompt && (
           <span className="zr-prompt" aria-hidden="true">

@@ -283,3 +283,4 @@ body.fw-page {
 .fw-pile-body .zr-pit-li + .zr-pit-li { border-top: 1px solid color-mix(in srgb, currentColor 25%, transparent); }
 .fw-pile-body .fw-stop-all { margin-block: var(--z-space-2, 4px); border-color: currentColor; color: inherit; }
 @media (pointer: coarse) { .fw-pile-head { min-height: 44px; } }
+.zr-compose-row[data-stack] > .fw-mic:not(.zr-input) { grid-area: 1 / 1 / 2 / -1; }
