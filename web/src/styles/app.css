@@ -23,7 +23,6 @@ body.fw-page {
   --zr-edge-l: var(--fw-edge-l);
   --zr-edge-r: var(--fw-edge-r);
   --fw-bar: 28px;
-  --zr-edge-top: calc(var(--fw-bar) + env(safe-area-inset-top));
   --figchat-bar: var(--fw-bar);
   --fw-width: 46rem;
   --fw-caret: polygon(0 0,14.286% 0,14.286% 14.286%,42.857% 14.286%,42.857% 28.571%,71.429% 28.571%,71.429% 42.857%,100% 42.857%,100% 57.143%,71.429% 57.143%,71.429% 71.429%,42.857% 71.429%,42.857% 85.714%,14.286% 85.714%,14.286% 100%,0 100%);
@@ -118,6 +117,7 @@ body.fw-page {
 .fw-main > * + * { margin-top: var(--z-space-4, 12px); }
 .fw-back { display: inline-flex; align-items: center; min-height: var(--z-control-hit); color: var(--accent-ink); font: 400 1.125rem / 1 var(--fw-mono); letter-spacing: 0.04em; text-decoration: none; -webkit-user-select: none; user-select: none; }
 .fw-back::before { content: ""; width: 0.7em; height: 0.7em; margin-right: 8px; background: currentColor; clip-path: var(--fw-caret); rotate: 180deg; }
+@media (min-width: 640px) { .fw-back { display: none; } }
 .fw-h1 { font: 400 2rem / 1.1 var(--fw-display); letter-spacing: 0.02em; overflow-wrap: anywhere; margin-top: 0 !important; }
 .fw-older { display: flex; width: 100%; }
 .fw-metrics { min-height: 1rem; }

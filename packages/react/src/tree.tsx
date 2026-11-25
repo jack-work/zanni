@@ -20,7 +20,6 @@ export interface TreeNodeData {
 
 export interface RowShown {
   label?: ReactNode;
-  role?: ReactNode;
   mantra?: ReactNode;
   value?: ReactNode;
 }
@@ -135,7 +134,7 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, on
   const [find, setFind] = useState<Find | undefined>(undefined);
   const [kit, setKit] = useState<FindKit | undefined>(undefined);
   useEffect(() => {
-    if (!(typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches)) void import("./tree-find").then(setKit);
+    if (!(typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches)) void import("./tree-find").then(setKit, () => {});
   }, []);
   const lastKey = useRef("");
   const box = useRef<HTMLDivElement>(null);
@@ -315,7 +314,7 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, on
               {r.role && (
                 <span className="zr-tree-role" data-tone="holder">
                   {"  "}
-                  {m?.role ?? r.role}
+                  {r.role}
                 </span>
               )}
               {r.mantra && (

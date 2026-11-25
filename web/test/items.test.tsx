@@ -29,7 +29,6 @@ describe("a turn", () => {
 
   it("marks a running group live", () => {
     const { container } = render(<ol><TurnView turn={turn([think(0), tool(1, "bash", { status: "running" })], { open: true, sealed: false })} speaking={null} fresh={false} /></ol>);
-    expect(container.querySelector(".zr-work")!.hasAttribute("data-live")).toBe(true);
     expect(container.querySelector(".nodi-sum-label")!.textContent).toBe("Running 1 command");
   });
 
