@@ -1,6 +1,7 @@
 import { glyphs } from "../../index";
 
-export const PAUSE_GLYPH = "\uf04c";
+export const PAUSE_GLYPH = "\u25ae\u25ae";
+export const QUEUE_GLYPH = "\u2630";
 
 export const STATUS_SPINNER = [...glyphs["tool.running"]];
 

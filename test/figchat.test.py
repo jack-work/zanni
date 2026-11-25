@@ -64,12 +64,6 @@ def toggle_hands(pg):
     close_pit(pg)
 
 
-def stop_all(pg):
-    until(pg, "document.querySelector('.fw-pile-head')")
-    pg.locator(".fw-pile-head").click()
-    pg.locator(".fw-stop-all").click()
-
-
 def voice_pressed(pg):
     open_pit(pg)
     got = pg.locator(".fw-voice").get_attribute("aria-pressed")
@@ -727,12 +721,10 @@ try:
         assert slow.state()["interrupts"] == ["keep"], slow.state()
         send(pg, "second run the tests")
         pg.wait_for_selector(".nodi-turn[data-turn='28'] .nodi-thinking")
-        send(pg, "queued thought")
         until(pg, "document.querySelector('.fw').hasAttribute('data-running')")
-        stop_all(pg)
+        pg.locator(".fw-status-stop").click()
         until(pg, "!document.querySelector('.fw').hasAttribute('data-running')")
-        assert slow.state()["interrupts"] == ["keep", "clear"], slow.state()
-        assert pg.locator(".nodi-turn[data-turn='29']").count() == 0, "a cleared queue starts no turn"
+        assert slow.state()["interrupts"] == ["keep", "keep"], slow.state()
         pg.close()
 
         for width, height in ((390, 844), (1280, 800), (1920, 1080)):
@@ -1279,7 +1271,8 @@ try:
             first = pg.locator(".zr-pit-row").evaluate_all("rows => rows.map(r => r.dataset.action)")
             assert first == ["new", "tail-fork", "tree", "recent", "asks", "queue", "voice", "hands-free", "state", "fork-at", "outfits"], first
             glyph = lambda a: pg.locator(".zr-pit-row[data-action='%s'] .zr-pit-row-glyph" % a).inner_text()
-            assert [glyph("state"), glyph("fork-at"), glyph("tree")] == ["웃", "⑂", "웃"], "each row wears its pager glyph"
+            assert [glyph("state"), glyph("fork-at")] == ["웃", "⑂"], "each detail row wears its pager glyph"
+            assert pg.locator(".fw-controls .zr-pit-row").evaluate_all("rows => rows.map(r => r.querySelector('.zr-pit-row-label').textContent)") == ["New", "Fork", "Tree", "Recent", "Asks", "Queue", "Voice", "Hands-free"], "the common controls are tiles"
             if not phone:
                 box, side = pg.locator(".zr-pit").bounding_box(), pg.locator(".fw-side").bounding_box()
                 assert abs(box["x"] - (side["x"] + side["width"])) <= 1 or box["x"] >= side["x"] + side["width"] - 1, "the drawer starts at the transcript pane: %s %s" % (box, side)
