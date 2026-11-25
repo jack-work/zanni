@@ -368,8 +368,9 @@ with sync_playwright() as p:
     attend(pg, fast)
     rects = lambda: pg.evaluate("""() => { const r = (s) => { const b = document.querySelector(s).getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, b: b.bottom }; }; return { bar: r('.zr-composer'), input: r('.zr-input'), send: r('.zr-send'), attach: r('.zr-attach') }; }""")
     idle = rects()
-    assert idle["input"]["w"] >= idle["bar"]["w"] * 0.45, "the input takes at least 45%% of the bar on one line: %s" % idle
-    assert abs(idle["send"]["y"] - idle["input"]["y"]) < 12, "pills share the line while the text fits: %s" % idle
+    assert idle["input"]["w"] >= idle["bar"]["w"] - 36, "the input takes the full bar width: %s" % idle
+    assert idle["send"]["y"] >= idle["input"]["b"] - 1 and idle["attach"]["y"] >= idle["input"]["b"] - 1, "the pills sit below the input: %s" % idle
+    assert abs(idle["send"]["x"] + idle["send"]["w"] - (idle["input"]["x"] + idle["input"]["w"])) < 2 and abs(idle["attach"]["x"] - idle["input"]["x"]) < 2, "the pair is right-justified and the attachments button left: %s" % idle
     pg.locator(".zr-input").tap()
     pg.keyboard.insert_text("the quick brown fox jumps over the lazy dog " * 3)
     pg.wait_for_timeout(700)
@@ -380,7 +381,7 @@ with sync_playwright() as p:
     pg.locator(".zr-input").fill("")
     pg.wait_for_timeout(700)
     back = rects()
-    assert abs(back["send"]["y"] - back["input"]["y"]) < 12 and back["input"]["w"] < back["bar"]["w"] - 100, "an empty input puts the pills back on its line: %s" % back
+    assert back["send"]["y"] >= back["input"]["b"] - 1 and back["input"]["h"] < over["input"]["h"] - 20, "an empty input shrinks again with the pills still below it: %s" % back
     pg.context.close()
 
     NO_FIELD_SIZING = "(() => { const was = CSS.supports.bind(CSS); CSS.supports = (a, b) => (a === 'field-sizing' ? false : was(a, b)); })();"
