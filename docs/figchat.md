@@ -253,3 +253,9 @@ the pits, and runs once with reduced motion to assert nothing computes a
 duration over 1ms.
 
 Left out: tables in markdown, a preview of a recording before it is sent.
+
+A bare root (no hash) creates an aria: once the link is live and the hash is
+still empty, the page asks the door for a figaro with the `landing` outfit,
+or with no outfit when the door answers that outfit is not declared, and
+attends it. Any other error leaves the page without one; a reload of the bare
+URL makes another.

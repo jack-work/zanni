@@ -74,6 +74,7 @@ export const createFigaroAtom = atom(null, async (get, set, req: { outfits: stri
 });
 
 export const LANDING_OUTFIT = "landing";
+const OUTFIT_REFUSAL = /is not declared/;
 
 export const landAtom = atom(null, async (get, set) => {
   const boot = get(bootAtom);
@@ -81,7 +82,10 @@ export const landAtom = atom(null, async (get, set) => {
   const store = get(storeNameAtom);
   if (!boot.landing || !client) return;
   set(bootAtom, { ...boot, landing: false });
-  const id = await createFigaro(client, [LANDING_OUTFIT]).catch(() => createFigaro(client, [])).catch(() => undefined);
+  if (window.location.hash !== "") return;
+  const id = await createFigaro(client, [LANDING_OUTFIT])
+    .catch((err: unknown) => (OUTFIT_REFUSAL.test(reason(err)) ? createFigaro(client, []) : Promise.reject(err)))
+    .catch(() => undefined);
   if (!id) return;
   set(treeTakesFocusAtom, false);
   set(pitViewAtom, "tree");
