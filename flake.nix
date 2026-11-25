@@ -180,7 +180,8 @@
                 top = builtins.elemAt (pkgs.lib.splitString "/" rel) 1;
                 base = baseNameOf path;
               in
-              rel == "" || (builtins.elem top [ "web" "packages" "assets" "bin" "examples" ] && !(builtins.elem base [ "node_modules" "dist" ]));
+              rel == "" || rel == "/test" || rel == "/test/wave1" || pkgs.lib.hasPrefix "/test/wave1/fixtures" rel
+                || (builtins.elem top [ "web" "packages" "assets" "bin" "examples" ] && !(builtins.elem base [ "node_modules" "dist" ]));
           };
           sourceRoot = "zanni-source/web";
           nodejs = pkgs.nodejs_24;

@@ -5,7 +5,7 @@ import { bytes, clock } from "../../index";
 import { ACCEPT, MAX_FILES, kindWord } from "../lib/attach";
 import { addFilesAtom, attachingAtom, removeAttachmentAtom } from "../state/attach";
 import { voiceAtom } from "../state/audio";
-import { micAtom, micToggleAtom, dictationFocusAtom } from "../state/mic";
+import { micAtom, micToggleAtom, composerFocusAtom } from "../state/mic";
 import { linkAtom, runningAtom } from "../state/aria";
 import { composerAtom, composerNoteAtom, draftAtom, keyOf, sendAtom } from "../state/composer";
 import { COMMAND_OFF, commandAtom, commandSourcesAtom, helpOpenAtom, loadOutfitsAtom, runCommandAtom } from "../state/command";
@@ -75,7 +75,7 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
   const mic = useAtomValue(micAtom);
   const voiceOn = useAtomValue(voiceAtom);
   const toggleMic = useSetAtom(micToggleAtom);
-  const focusTick = useAtomValue(dictationFocusAtom);
+  const focusTick = useAtomValue(composerFocusAtom);
   const live = link === "live";
   const input = useRef<HTMLTextAreaElement | null>(null);
   const [cmd, setCmd] = useAtom(commandAtom(key));

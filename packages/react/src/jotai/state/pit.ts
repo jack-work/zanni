@@ -22,6 +22,8 @@ export const pitViewAtom = atom<PitView>("list");
 
 export const pitSnapAtom = atom<PitSnap>("closed");
 
+export const treeTakesFocusAtom = atom(true);
+
 const usedBase = atom<Record<string, number>>(readUsed());
 
 export const pitUsedAtom = atom((get) => get(usedBase));

@@ -5,7 +5,8 @@ import { goAtom, clientAtom, storeNameAtom } from "./route";
 import { rosterActionAtom } from "./roster";
 import type { Done } from "./composer";
 import { bootAtom } from "./boot";
-import { pitSnapAtom, pitViewAtom } from "./pit";
+import { pitSnapAtom, pitViewAtom, treeTakesFocusAtom } from "./pit";
+import { composerFocusAtom } from "./mic";
 
 export interface NewFigaroState {
   readonly open: boolean;
@@ -73,8 +74,10 @@ export const landAtom = atom(null, async (get, set) => {
   set(bootAtom, { ...boot, landing: false });
   const id = await createFigaro(client, [LANDING_OUTFIT]).catch(() => createFigaro(client, [])).catch(() => undefined);
   if (!id) return;
+  set(treeTakesFocusAtom, false);
   set(pitViewAtom, "tree");
   set(pitSnapAtom, "half");
   void set(rosterActionAtom, "refresh");
   set(goAtom, { store, aria: id });
+  set(composerFocusAtom, (n) => n + 1);
 });
