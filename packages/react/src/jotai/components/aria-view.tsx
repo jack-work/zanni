@@ -195,9 +195,13 @@ export function AriaView({ attended }: { attended: Attended }) {
           </TranscriptContext>
           {status && <p className="fw-note">{status}</p>}
         </main>
+        {away && pitClosed && (
+          <div className="zr-latest-dock">
+            <LatestPill onClick={() => latest(turnsRef.current)} />
+          </div>
+        )}
       </div>
       <Pit head={gone ? undefined : <Composer attended={attended} toBottom={toEnd} />} />
-      {away && pitClosed && <LatestPill onClick={() => latest(turnsRef.current)} />}
       <CommandHelp />
     </section>
   );
