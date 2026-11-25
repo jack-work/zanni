@@ -1,7 +1,6 @@
 """Shell in a real browser, from the served package, row by row against keel's viewer tests
-(theme-toggle.py, panes.py, compact-bar.py): the theme follows the system until a pick that
-differs from it, the pick survives a reload and the system's own scheme forgets it; the panes
-resize by drag and by key, collapse, and are remembered as JSON, with no style attribute; the
+(theme-toggle.py, compact-bar.py): the theme follows the system until a pick that
+differs from it, the pick survives a reload and the system's own scheme forgets it; the
 phone bar is one row that fits, folds the rest into a menu that closes, leaves on scroll down,
 returns on scroll up or a short tap at the top, and a long press, a sideways drag or a tap
 below the top do not bring it back; the header's variables are what keel's sticky rules read.
@@ -84,15 +83,6 @@ def var(pg, name):
     return pg.evaluate("(n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim()", name)
 
 
-def drag(pg, sel, dx):
-    box = pg.locator(sel).bounding_box()
-    x, y = box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
-    pg.mouse.move(x, y)
-    pg.mouse.down()
-    pg.mouse.move(x + dx, y, steps=6)
-    pg.mouse.up()
-    pg.wait_for_timeout(120)
-
 
 def load(b, w, h, **ctx):
     c = b.new_context(viewport={"width": w, "height": h}, **ctx)
@@ -132,16 +122,8 @@ def scroll(pg, y):
     pg.wait_for_timeout(250)
 
 
-MOTION = """(id) => document.getAnimations().filter(a => a.effect && a.effect.target && a.effect.target.id === id)
-  .flatMap(a => a.effect.getKeyframes().flatMap(k => Object.keys(k))).filter(k => !['offset', 'easing', 'composite', 'computedOffset'].includes(k))"""
 
 
-def props(pg, id):
-    return sorted(set(pg.evaluate(MOTION, id)))
-
-
-def settle(pg, sel):
-    pg.evaluate("(sel) => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))).then(() => Promise.all(document.querySelector(sel).getAnimations({ subtree: true }).map((a) => a.finished.catch(() => null))))", sel)
 
 
 def shot(pg, name):
@@ -179,12 +161,9 @@ with sync_playwright() as p:
     c.close()
 
     c, pg, errors = load(b, 1280, 800)
-    check("hosts fired once, naming main, the left pane and the right pane", pg.evaluate("shellLog.filter(e => e[0] === 'hosts').map(e => e[1])") == [{"main": "main", "left": "tree", "right": "pane"}], pg.evaluate("shellLog"))
-    check("the tree opens at 280", width(pg, "#tree") == 280, width(pg, "#tree"))
-    check("the comments pane opens at 360", width(pg, "#pane") == 360, width(pg, "#pane"))
-    check("both columns have a separator", pg.locator("#tree [role=separator], #pane [role=separator]").count() == 2)
-    check("the stable control ids exist", all(pg.locator(s).count() == 1 for s in ["#b-tree", "#b-pane", "#b-theme", "#b-repo", "#b-crumbs"]))
-    order = ["#b-tree", "#b-repo", "#b-crumbs", "#b-nav", "#b-live", "#b-zoom", "#b-theme", "#b-pane"]
+    check("hosts fired once, naming main", pg.evaluate("shellLog.filter(e => e[0] === 'hosts').map(e => e[1])") == [{"main": "main"}], pg.evaluate("shellLog"))
+    check("the stable control ids exist", all(pg.locator(s).count() == 1 for s in ["#b-theme", "#b-repo", "#b-crumbs"]))
+    order = ["#b-repo", "#b-crumbs", "#b-nav", "#b-live", "#b-zoom", "#b-theme"]
     xs = pg.evaluate("(sels) => sels.map(s => document.querySelector(s).getBoundingClientRect().left)", order)
     check("the wide bar keeps keel's order", xs == sorted(xs), list(zip(order, xs)))
     check("no menu button on a wide bar", not pg.locator(".zr-bar-menu").is_visible())
@@ -192,85 +171,10 @@ with sync_playwright() as p:
     check("wide: pad and shown are 0, height is the bar's", var(pg, "--proscenio-pad") == "0px" and var(pg, "--proscenio-shown") == "0px" and var(pg, "--proscenio-height") == bar_h != "0px", (var(pg, "--proscenio-pad"), var(pg, "--proscenio-shown"), var(pg, "--proscenio-height"), bar_h))
     check("an unresized shell carries no style attribute", pg.evaluate("[document.documentElement, document.body, ...document.querySelectorAll('#root *')].filter(n => n.hasAttribute('style')).length") == 0)
     shot(pg, "wide")
-    pg.click("#b-tree")
-    pg.wait_for_timeout(300)
-    check("the bar toggle collapses the tree", width(pg, "#tree") == 0 and pg.get_attribute("#b-tree", "aria-expanded") == "false", width(pg, "#tree"))
-    pg.click("#b-tree")
-    pg.wait_for_timeout(150)
-    check("and brings it back at its width", width(pg, "#tree") == 280)
-    drag(pg, "#tree .zr-pane-grip", 70)
-    check("a drag widens the tree", width(pg, "#tree") == 350, width(pg, "#tree"))
-    drag(pg, "#pane .zr-pane-grip", 60)
-    check("the comments pane drags the other way", width(pg, "#pane") == 300, width(pg, "#pane"))
-    drag(pg, "#tree .zr-pane-grip", -1000)
-    check("a drag far past the minimum collapses it", width(pg, "#tree") == 0 and pg.get_attribute("#b-tree", "aria-expanded") == "false", width(pg, "#tree"))
-    pg.click("#b-tree")
-    pg.wait_for_timeout(150)
-    pg.locator("#tree .zr-pane-grip").focus()
-    before = width(pg, "#tree")
-    pg.keyboard.press("ArrowRight")
-    check("the separator answers ArrowRight", width(pg, "#tree") == before + 16, (before, width(pg, "#tree")))
-    pg.keyboard.press("Enter")
-    pg.wait_for_timeout(300)
-    check("and Enter collapses", width(pg, "#tree") == 0)
-    pg.click("#b-tree")
-    pg.wait_for_timeout(120)
-    kept = width(pg, "#tree")
-    check("pane state is JSON {w, open}", json.loads(stored(pg, "paperd.tree")) == {"w": kept, "open": True} and json.loads(stored(pg, "paperd.pane")) == {"w": 300, "open": True}, (stored(pg, "paperd.tree"), stored(pg, "paperd.pane")))
-    pg.reload()
-    pg.wait_for_selector("#main .doc")
-    pg.wait_for_timeout(250)
-    check("widths survive a reload", width(pg, "#tree") == kept and width(pg, "#pane") == 300, (width(pg, "#tree"), width(pg, "#pane")))
-    pg.click("#b-pane")
-    pg.reload()
-    pg.wait_for_selector("#main .doc")
-    pg.wait_for_timeout(250)
-    check("a collapsed comments pane stays collapsed", width(pg, "#pane") == 0)
-    check("the main view takes the room", width(pg, "#main") > 1280 - kept - 4, width(pg, "#main"))
     c.close()
 
-    c, pg, errors = load(b, 1280, 800)
-    pg.click("#b-tree")
-    check("closing a docked pane animates transform and opacity only", props(pg, "tree") == ["opacity", "transform"], props(pg, "tree"))
-    pg.wait_for_timeout(400)
-    check("and the column is gone once it has left", width(pg, "#tree") == 0 and not pg.evaluate("document.querySelector('#tree').hasAttribute('data-leaving')"))
-    pg.click("#b-tree")
-    check("opening animates transform and opacity only", props(pg, "tree") == ["opacity", "transform"], props(pg, "tree"))
-    pg.wait_for_timeout(400)
-    pg.locator("#tree .zr-pane-grip").focus()
-    pg.keyboard.press("ArrowRight")
-    check("a key resize slides the neighbour by transform only", props(pg, "main") == ["transform"], props(pg, "main"))
-    pg.wait_for_timeout(300)
-    drag(pg, "#tree .zr-pane-grip", 30)
-    check("a drag is direct: no animation follows it", props(pg, "main") == [] and props(pg, "tree") == [])
-    pg.click("#b-pane")
-    check("the right pane closes with transform and opacity too", props(pg, "pane") == ["opacity", "transform"], props(pg, "pane"))
-    c.close()
-
-    c, pg, errors = load(b, 1280, 800, reduced_motion="reduce")
-    pg.click("#b-tree")
-    check("reduced motion: closing a pane starts no animation and the column goes at once", pg.evaluate("document.getAnimations().length") == 0 and width(pg, "#tree") == 0)
-    pg.click("#b-tree")
-    pg.locator("#tree .zr-pane-grip").focus()
-    pg.keyboard.press("ArrowRight")
-    check("reduced motion: opening and resizing start none", pg.evaluate("document.getAnimations().length") == 0)
-    c.close()
-    c, pg, errors = load(b, 390, 844, has_touch=True, is_mobile=True, reduced_motion="reduce")
-    ms = pg.evaluate("(() => { const v = getComputedStyle(document.querySelector('#tree')).transitionDuration.split(',')[0].trim(); return v.endsWith('ms') ? parseFloat(v) : parseFloat(v) * 1000; })()")
-    check("reduced motion: the drawer's transition is instant", ms <= 1, ms)
-    c.close()
     c, pg, errors = load(b, 390, 844, has_touch=True, is_mobile=True)
-    check("the drawer and the bar move by transform, the sheet too", all(pg.evaluate("(s) => getComputedStyle(document.querySelector(s)).transitionProperty.split(',')[0].trim()", s) == "transform" for s in ["#tree", "#pane", "#bar"]))
-    c.close()
-
-    c, pg, errors = load(b, 1280, 800)
-    pg.evaluate("localStorage.setItem('paperd.tree', '0'); localStorage.setItem('paperd.pane', '1')")
-    pg.reload()
-    pg.wait_for_selector("#main .doc")
-    pg.wait_for_timeout(250)
-    check("a stored 0 or 1 is ignored: both columns open at their defaults", width(pg, "#tree") == 280 and width(pg, "#pane") == 360, (width(pg, "#tree"), width(pg, "#pane")))
-    pg.click("#tree [role=tab]:nth-of-type(2)")
-    check("the left tab is remembered", stored(pg, "paperd.tree.tab") == "Pages" and pg.evaluate("shellLog.filter(e => e[0] === 'open').length") == 0)
+    check("the bar moves by transform", pg.evaluate("getComputedStyle(document.querySelector('#bar')).transitionProperty.split(',')[0].trim()") == "transform")
     c.close()
 
     for w, h in ((360, 780), (390, 844)):
@@ -279,7 +183,7 @@ with sync_playwright() as p:
         row = pg.evaluate(ROW)
         ids = [r["id"] for r in row]
         mids = [(r["t"] + r["b"]) / 2 for r in row]
-        check("%d: one row of files, path, comments, more, inside the screen" % w, ids == ["b-tree", "b-crumbs", "b-pane", "more"] and max(mids) - min(mids) < 3 and max(r["r"] for r in row) <= w, row)
+        check("%d: one row of path and more, inside the screen" % w, ids == ["b-crumbs", "more"] and max(mids) - min(mids) < 3 and max(r["r"] for r in row) <= w, row)
         check("%d: pad, shown and height agree, and the main view is padded by the pad" % w, var(pg, "--proscenio-pad") == var(pg, "--proscenio-shown") == var(pg, "--proscenio-height") != "0px" and pg.evaluate("Math.round(document.querySelector('#doc-head').getBoundingClientRect().top)") == int(var(pg, "--proscenio-pad")[:-2]))
         check("%d: the bar is fixed" % w, pg.evaluate("getComputedStyle(document.querySelector('#bar')).position") == "fixed")
         check("%d: no style attribute anywhere" % w, pg.evaluate("[document.documentElement, document.body, ...document.querySelectorAll('#root *')].filter(n => n.hasAttribute('style')).length") == 0)
@@ -331,36 +235,11 @@ with sync_playwright() as p:
         check("%d: a short tap at the top shows it" % w, not pg.evaluate(HIDDEN))
         scroll(pg, 2400)
         pg.wait_for_timeout(200)
-        pg.evaluate("document.querySelector('#b-tree').focus()")
+        pg.evaluate("document.querySelector('.zr-bar-menu').focus()")
         pg.wait_for_timeout(200)
         check("%d: focusing a bar control shows a hidden bar" % w, not pg.evaluate(HIDDEN))
         scroll(pg, 0)
 
-        pg.tap("#b-tree")
-        settle(pg, "#tree")
-        tree = pg.evaluate("(() => { const t = document.querySelector('#tree'); const r = t.getBoundingClientRect(); return { open: t.hasAttribute('data-open'), left: r.left, top: r.top, role: t.getAttribute('role'), modal: t.getAttribute('aria-modal') } })()")
-        check("%d: the files button opens a drawer below the bar" % w, tree["open"] and tree["left"] == 0 and tree["top"] == int(var(pg, "--proscenio-shown")[:-2]) and tree["role"] == "dialog" and tree["modal"] == "true", tree)
-        check("%d: focus moves into the drawer, and a scrim shows" % w, pg.evaluate("document.querySelector('#tree').contains(document.activeElement)") and pg.locator(".zr-scrim").count() == 1)
-        check("%d: opening the drawer left the desktop column state alone" % w, stored(pg, "paperd.tree") is not None and json.loads(stored(pg, "paperd.tree"))["open"] is True)
-        if w == 390:
-            shot(pg, "drawer-390")
-        pg.keyboard.press("Escape")
-        pg.wait_for_timeout(450)
-        check("%d: Escape closes the drawer and focus goes back to its button" % w, not pg.evaluate("document.querySelector('#tree').hasAttribute('data-open')") and pg.evaluate("document.activeElement.id") == "b-tree")
-        pg.tap("#b-pane")
-        pg.wait_for_timeout(500)
-        sheet = pg.evaluate("(() => { const t = document.querySelector('#pane'); const r = t.getBoundingClientRect(); return { open: t.hasAttribute('data-open'), bottom: r.bottom, h: r.height, vh: innerHeight } })()")
-        check("%d: the comments button opens a bottom sheet" % w, sheet["open"] and abs(sheet["bottom"] - sheet["vh"]) < 1 and sheet["h"] > 100, sheet)
-        if w == 390:
-            shot(pg, "sheet-390")
-        touch(cdp, pg, 200, 60)
-        pg.wait_for_timeout(450)
-        check("%d: the scrim closes the sheet" % w, not pg.evaluate("document.querySelector('#pane').hasAttribute('data-open')"))
-        pg.tap("#b-tree")
-        pg.wait_for_timeout(450)
-        pg.tap("#b-pane")
-        pg.wait_for_timeout(450)
-        check("%d: opening the sheet closes the drawer" % w, pg.evaluate("document.querySelector('#pane').hasAttribute('data-open') && !document.querySelector('#tree').hasAttribute('data-open')"))
         check("%d: no page error" % w, not errors, errors)
         c.close()
 
@@ -372,11 +251,10 @@ with sync_playwright() as p:
     c, pg, errors = load(b, 1280, 800)
     pg.set_viewport_size({"width": 700, "height": 800})
     pg.wait_for_timeout(300)
-    check("crossing below the breakpoint turns the columns into overlays and shows the menu", pg.locator(".zr-bar-menu").is_visible() and not pg.evaluate("document.querySelector('#tree').hasAttribute('data-open')"))
-    check("and below the breakpoint no separator shows", not pg.locator("#tree .zr-pane-grip").is_visible())
+    check("crossing below the breakpoint shows the menu", pg.locator(".zr-bar-menu").is_visible())
     pg.set_viewport_size({"width": 1280, "height": 800})
     pg.wait_for_timeout(300)
-    check("crossing back restores the columns", width(pg, "#tree") == 280 and pg.locator(".zr-bar-menu").is_hidden())
+    check("crossing back hides it", pg.locator(".zr-bar-menu").is_hidden())
     check("no page error", not errors, errors)
     c.close()
     b.close()

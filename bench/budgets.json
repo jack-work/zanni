@@ -146,26 +146,6 @@
    "margin": 0,
    "slack": 1
   },
-  "pane.frame_ms.close.max": {
-   "budget": 16.8,
-   "margin": 1.0,
-   "slack": 10
-  },
-  "pane.frame_ms.drag.max": {
-   "budget": 16.8,
-   "margin": 1.0,
-   "slack": 10
-  },
-  "pane.frame_ms.open.max": {
-   "budget": 16.8,
-   "margin": 1.0,
-   "slack": 10
-  },
-  "pane.frame_ms.resize.max": {
-   "budget": 16.8,
-   "margin": 1.0,
-   "slack": 10
-  },
   "scroll.frame_ms.p95": {
    "budget": 16.8,
    "margin": 1.0

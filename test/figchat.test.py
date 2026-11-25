@@ -46,6 +46,12 @@ def open_pit(pg):
     pg.wait_for_selector(".zr-pit[data-snap='half']")
 
 
+def open_tree(pg):
+    open_pit(pg)
+    pg.locator(".zr-pit-row[data-action='tree']").click()
+    pg.wait_for_selector(".zr-pit .zr-tree-row")
+
+
 def close_pit(pg):
     pg.keyboard.press("Escape")
     pg.wait_for_selector(".zr-pit[role=dialog]", state="detached")
@@ -188,10 +194,11 @@ try:
         for width, height in ((390, 844), (1280, 800)):
             pg = fresh(width, height)
             pg.goto(fast.url)
-            pg.wait_for_selector(".zr-tree-row")
+            pg.wait_for_selector(".zr-pit-knob")
             assert pg.title() == "figaro web"
             until(pg, "document.fonts.check('26px \"Jacquard 24\"')")
             assert pg.evaluate("document.querySelectorAll('script:not([src]), style, [style]').length") == 0, "no inline script or style under the CSP"
+            open_tree(pg)
             assert pg.locator(".zr-tree-row").count() >= 5, "the topology is one tree"
             assert pg.locator(".zr-tree th, .zr-tree-toggle").count() == 0, "the pager's tree has no header and no arrow"
             texts = pg.locator(".zr-tree-row").all_text_contents()
@@ -215,14 +222,6 @@ try:
             first = turns_shown(pg)
             assert first and first[-1] == 26 and len(first) < 26, "tail page only: %s" % first
             assert first == sorted(first) and len(set(first)) == len(first), first
-            pg.wait_for_selector(".zr-tree-row", state="attached")
-            if width >= 900:
-                assert pg.locator(".fw-side").is_visible(), "the list sits beside the transcript at 1280"
-            else:
-                assert not pg.locator(".fw-side").is_visible(), "one pane at 390"
-            if width >= 900:
-                assert pg.locator(".zr-tree-row[data-id='%s']" % MAIN).get_attribute("aria-selected") == "true", "the attended aria is the selected row"
-                assert pg.locator(".zr-tree-row[data-id='%s']" % LANE).count() == 1, "the path to the attended aria is open"
             snap(pg, "attend-light-" + tag)
 
             before = held(pg)
@@ -395,7 +394,7 @@ try:
             pg = fresh(width, height, scheme)
             attend(pg, door(45), MAIN)
             idle = pg.locator(".zr-composer").bounding_box()
-            assert idle["height"] <= 76, "an idle composer is at most 76px tall: %s" % idle
+            assert idle["height"] <= 104, "an idle composer is at most 104px tall, an input row over a pill row: %s" % idle
             marks = pg.evaluate("[...document.querySelectorAll('.zr-composer .zr-pill-glyph')].map(n => n.textContent)")
             assert len(marks) >= 3 and not [m for m in marks if re.search("[\U0001F000-\U0001FFFF\uFE0E\uFE0F]", m)], "the compose bar draws no emoji: %s" % marks
             pg.locator(".zr-input").fill("\n".join("line %d of a long note" % i for i in range(14)))
@@ -405,10 +404,10 @@ try:
             assert grown["height"] <= height * 0.32, "the input leaves the transcript room: %s" % grown
             pg.locator(".zr-input").fill("")
             pg.wait_for_timeout(200)
-            assert pg.locator(".zr-composer").bounding_box()["height"] <= 76, "the composer settles back when the text goes"
+            assert pg.locator(".zr-composer").bounding_box()["height"] <= 104, "the composer settles back when the text goes"
             sendp, field, attach, command = (pg.locator(s).bounding_box() for s in (".zr-send", ".zr-input", ".zr-attach", ".zr-command"))
             assert pg.locator(".zr-pill:disabled").count() == 0, "no pill is drawn disabled"
-            assert attach["x"] + attach["width"] <= field["x"] + 1, "attach sits left of the input: %s %s" % (attach, field)
+            assert attach["y"] >= field["y"] + field["height"] - 1 and abs(attach["x"] - field["x"]) <= 1, "attach sits under the input, left-justified: %s %s" % (attach, field)
             assert command["x"] >= field["x"] + field["width"] - 1 and sendp["x"] >= command["x"] + command["width"] - 2, "command and send sit right of the input, send last: %s" % [command, sendp]
             for b in (attach, command, sendp):
                 assert 30 <= b["height"] <= 40 and b["width"] <= 64, "a small pill: %s" % b
@@ -461,7 +460,7 @@ try:
             assert pg.locator(".zr-input").input_value() == ""
             assert pg.locator(".nodi-metrics").inner_text().startswith("ctx"), "metrics sit quietly above the transcript"
             idle = pg.locator(".zr-composer").bounding_box()
-            assert idle["height"] <= 76, "the composer settles back to its idle height: %s" % idle
+            assert idle["height"] <= 104, "the composer settles back to its idle height: %s" % idle
             snap(pg, "live-%s-%d" % (scheme, width))
             sans_free(pg, "live turn %s %d" % (scheme, width))
             no_sideways(pg, width, "live turn")
@@ -534,178 +533,6 @@ try:
         assert EVIL in pg.locator(".nodi-turn[data-turn='27'] .nodi-input").inner_text()
         assert not pg.errors, pg.errors
         pg.close()
-
-        for width, height in ((844, 390), (1280, 800), (1920, 1080)):
-            pg = fresh(width, height)
-            pg.goto("about:blank")
-            attend(pg, fast, MAIN)
-            panew = "Math.round(document.querySelector('.zr-pane').getBoundingClientRect().width)"
-            mainw = "Math.round(document.querySelector('.fw-pane').getBoundingClientRect().width)"
-            assert pg.locator(".zr-pane").is_visible(), "the left pane is docked at %d" % width
-            assert pg.evaluate("document.querySelector('.zr-pane').getAttribute('style')") is None, "an unresized pane carries no style attribute"
-            first = pg.evaluate(panew)
-            assert pg.evaluate(mainw) + first >= width - 2, "the chat takes the rest of the width at %d" % width
-            assert pg.evaluate("document.documentElement.scrollWidth") <= width, "nothing overflows sideways at %d" % width
-            box = pg.locator(".zr-pane-grip").bounding_box()
-            pg.mouse.move(box["x"] + 3, box["y"] + 100)
-            pg.mouse.down()
-            pg.mouse.move(box["x"] + 83, box["y"] + 100, steps=4)
-            pg.mouse.up()
-            pg.wait_for_timeout(200)
-            grown = pg.evaluate(panew)
-            assert grown > first + 40, "dragging the grip widens the pane: %s -> %s" % (first, grown)
-            pg.locator(".zr-pane-grip").focus()
-            pg.keyboard.press("ArrowLeft")
-            pg.wait_for_timeout(100)
-            assert pg.evaluate(panew) == grown - 16, "arrow keys resize by 16 px"
-            pg.locator(".fw-panes").click()
-            pg.wait_for_timeout(400)
-            assert pg.evaluate(panew) == 0 or not pg.locator(".zr-pane").is_visible(), "the Arias button collapses the pane"
-            assert pg.evaluate(mainw) >= width - 2, "a collapsed pane gives the chat the full width"
-            pg.reload()
-            until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'", timeout=15000)
-            assert not pg.locator(".zr-pane").is_visible(), "a collapsed pane stays collapsed after a reload"
-            pg.locator(".fw-panes").click()
-            pg.wait_for_timeout(200)
-            assert pg.evaluate(panew) == grown - 16, "the width is remembered across the reload"
-            pg.locator(".fw-narrow").click()
-            pg.wait_for_timeout(200)
-            narrow = pg.evaluate("Math.round(document.querySelector('.fw-main').getBoundingClientRect().width)")
-            assert narrow <= 46 * 16 + 2, "the Narrow setting brings back the measure: %s" % narrow
-            pg.close()
-
-        pane_open = "(document.querySelector('.fw-panes').getAttribute('aria-expanded') === 'true')"
-        pane_box = "(() => { const r = document.querySelector('.zr-pane').getBoundingClientRect(); return { x: r.x, right: r.right, width: r.width }; })()"
-        pane_idle = "(() => { const p = document.querySelector('.zr-pane'); return !p.hasAttribute('data-peek') && p.style.transform === '' && p.style.opacity === '' && p.style.width === ''; })()"
-
-        def crawl(pg, x0, x1, y=200):
-            pg.mouse.move(x0, y)
-            pg.mouse.down()
-            for x in range(x0, x1, 6):
-                pg.mouse.move(x, y)
-                pg.wait_for_timeout(30)
-
-        def collapse(pg):
-            pg.locator(".fw-panes").click()
-            until(pg, "!" + pane_open)
-            pg.wait_for_timeout(300)
-            assert not pg.locator(".zr-pane").is_visible(), "the Arias button collapses the pane"
-
-        def settled_open(pg, what):
-            until(pg, pane_open)
-            pg.wait_for_timeout(300)
-            assert pg.locator(".zr-pane").is_visible(), "%s: the pane is open" % what
-            assert pg.evaluate(pane_idle), "%s: a settled pane carries no gesture residue" % what
-
-        for width, height in ((844, 390), (1280, 800)):
-            pg = fresh(width, height)
-            attend(pg, fast, MAIN)
-            collapse(pg)
-            full = pg.evaluate("Math.round(document.querySelector('.fw-pane').getBoundingClientRect().width)")
-            edge = pg.locator(".zr-pane-edge").bounding_box()
-            assert edge["x"] == 0 and 8 <= edge["width"] <= 16, "a fine pointer gets a thin zone at the very edge: %s" % edge
-
-            crawl(pg, 6, 40)
-            pg.mouse.up()
-            pg.wait_for_timeout(400)
-            assert not pg.locator(".zr-pane").is_visible() and not pg.evaluate(pane_open), "a short drag snaps back closed at %d" % width
-            assert pg.evaluate(pane_idle), "a snapped-back pane carries no gesture residue"
-
-            pg.mouse.move(6, 200)
-            pg.mouse.down()
-            pg.mouse.move(150, 200, steps=6)
-            mid = pg.evaluate(pane_box)
-            assert pg.locator(".zr-pane").is_visible(), "the pane shows while the pointer is down"
-            assert abs(mid["right"] - 144) <= 2, "the pane's edge follows the pointer: %s" % mid
-            assert abs(pg.evaluate("Math.round(document.querySelector('.fw-pane').getBoundingClientRect().width)") - full) <= 1, "the chat does not reflow under the drag"
-            assert pg.evaluate("getComputedStyle(document.querySelector('.zr-pane')).opacity") not in ("0", "1"), "the pane fades in with the drag"
-            snap(pg, "pane-edge-drag-%d" % width)
-            pg.mouse.move(120, 200, steps=3)
-            back = pg.evaluate(pane_box)
-            assert back["right"] < mid["right"] - 10, "dragging back pulls the pane back: %s -> %s" % (mid, back)
-            pg.mouse.move(300, 200, steps=6)
-            pg.mouse.up()
-            settled_open(pg, "a long drag at %d" % width)
-            snap(pg, "pane-edge-open-%d" % width)
-            assert pg.evaluate("Math.round(document.querySelector('.fw-pane').getBoundingClientRect().width)") < full - 100, "the open pane gives the chat its column back"
-
-            collapse(pg)
-            pg.locator(".fw-panes").focus()
-            pg.keyboard.press("Enter")
-            settled_open(pg, "the keyboard path at %d" % width)
-
-            collapse(pg)
-            pg.mouse.move(6, 200)
-            pg.mouse.down()
-            pg.mouse.move(60, 200, steps=3)
-            pg.wait_for_timeout(30)
-            pg.mouse.move(110, 200, steps=2)
-            pg.mouse.up()
-            settled_open(pg, "a flick at %d" % width)
-            assert not pg.errors, pg.errors
-            pg.close()
-
-        ctx = browser.new_context(viewport={"width": 844, "height": 390}, is_mobile=True, has_touch=True)
-        pg = ctx.new_page()
-        pg.errors = []
-        pg.on("pageerror", lambda e: pg.errors.append(str(e)))
-        cdp = ctx.new_cdp_session(pg)
-
-        def touch(kind, x=0, y=200):
-            cdp.send("Input.dispatchTouchEvent", {"type": kind, "touchPoints": [{"x": x, "y": y}] if kind != "touchEnd" else []})
-
-        attend(pg, fast, MAIN)
-        assert pg.evaluate("matchMedia('(pointer: coarse)').matches"), "the touch context is a coarse pointer"
-        collapse(pg)
-        edge = pg.locator(".zr-pane-edge").bounding_box()
-        assert edge["x"] >= 4 and edge["width"] >= 20, "a coarse pointer's zone starts a few px in, leaving iOS its back-swipe strip: %s" % edge
-
-        touch("touchStart", 1)
-        for x in range(1, 260, 20):
-            touch("touchMove", x)
-        touch("touchEnd")
-        pg.wait_for_timeout(400)
-        assert not pg.evaluate(pane_open), "a touch that starts in the back-swipe strip does not open the pane"
-
-        touch("touchStart", 12)
-        for x in range(12, 60, 6):
-            touch("touchMove", x)
-            pg.wait_for_timeout(30)
-        touch("touchEnd")
-        pg.wait_for_timeout(400)
-        assert not pg.evaluate(pane_open) and pg.evaluate(pane_idle), "a short touch drag snaps back closed"
-
-        touch("touchStart", 12)
-        for x in range(12, 170, 14):
-            touch("touchMove", x)
-        mid = pg.evaluate(pane_box)
-        assert 120 <= mid["right"] <= 160, "the pane follows the finger: %s" % mid
-        snap(pg, "pane-edge-touch-844")
-        touch("touchEnd")
-        settled_open(pg, "a long touch drag")
-        pg.close()
-        ctx.close()
-
-        ctx = browser.new_context(viewport={"width": 844, "height": 390}, reduced_motion="reduce")
-        pg = ctx.new_page()
-        pg.errors = []
-        pg.on("pageerror", lambda e: pg.errors.append(str(e)))
-        attend(pg, fast, MAIN)
-        collapse(pg)
-        crawl(pg, 6, 40)
-        pg.mouse.up()
-        pg.wait_for_timeout(60)
-        assert not pg.evaluate(pane_open) and pg.evaluate(pane_idle), "reduced motion: a short drag snaps closed at once"
-        pg.mouse.move(6, 200)
-        pg.mouse.down()
-        pg.mouse.move(250, 200, steps=5)
-        pg.mouse.up()
-        pg.wait_for_timeout(60)
-        assert pg.evaluate(pane_open) and pg.evaluate(pane_idle), "reduced motion: a long drag snaps open at once"
-        assert pg.evaluate("document.querySelector('.zr-pane').getAnimations().length") == 0, "reduced motion: the pane does not animate"
-        assert not pg.errors, pg.errors
-        pg.close()
-        ctx.close()
 
         pg = fresh()
         slow = door(150)
@@ -849,7 +676,7 @@ try:
         pg.locator(".zr-input").fill("half a thought")
         pg.wait_for_timeout(600)
         pg.locator(".fw-back").click()
-        pg.wait_for_selector(".zr-tree-row")
+        open_tree(pg)
         pg.locator(".zr-tree-row[data-id='%s']" % ("c0ffee04" * 4)).click()
         until(pg, "document.querySelector('.fw').dataset.link === 'live'")
         assert pg.locator(".zr-input").input_value() == "", "another aria has its own draft"
@@ -1212,7 +1039,7 @@ try:
             pg.errors = []
             pg.on("pageerror", lambda e: pg.errors.append(str(e)))
             pg.goto(fast.url)
-            pg.wait_for_selector(".zr-tree-row")
+            pg.wait_for_selector(".zr-pit-knob")
             assert pg.locator(".fw-top, .fw-mark, .fw-title").count() == 0, "the header is gone"
             assert pg.locator(".fw-head").count() == 0, "no logo on the list"
             assert pg.locator(".fw-status").is_visible(), "the slim status bar shows at every width"
@@ -1273,9 +1100,6 @@ try:
             glyph = lambda a: pg.locator(".zr-pit-row[data-action='%s'] .zr-pit-row-glyph" % a).inner_text()
             assert [glyph("state"), glyph("fork-at")] == ["웃", "⑂"], "each detail row wears its pager glyph"
             assert pg.locator(".fw-controls .zr-pit-row").evaluate_all("rows => rows.map(r => r.querySelector('.zr-pit-row-label').textContent)") == ["New", "Fork", "Tree", "Recent", "Asks", "Queue", "Voice", "Hands-free"], "the common controls are tiles"
-            if not phone:
-                box, side = pg.locator(".zr-pit").bounding_box(), pg.locator(".fw-side").bounding_box()
-                assert abs(box["x"] - (side["x"] + side["width"])) <= 1 or box["x"] >= side["x"] + side["width"] - 1, "the drawer starts at the transcript pane: %s %s" % (box, side)
             pg.locator("[data-action='tree']").click()
             until(pg, "document.querySelectorAll('.zr-pit .zr-tree-row').length >= 5", 8000)
             assert pg.evaluate("document.activeElement && document.activeElement.classList.contains('zr-tree')"), "opening the Tree pit focuses the tree"

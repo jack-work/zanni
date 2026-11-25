@@ -1,12 +1,11 @@
 import { Button, LatestPill, glyphs, scrollEdge, scrollRoot, useTranscriptScroll, watchScroll, Plain, TranscriptContext, TurnView } from "../../index";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { ariaAtom } from "figaro-forms/aria/jotai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFirstFrame } from "../lib/first-frame";
 import { labelOf } from "../lib/roster";
 import { metricsLineAtom, noteAtom, seenAtom, turnsAtom } from "../state/aria";
 import { forkOfAtom, pitSnapAtom, treeStateAtom } from "../state/pit";
-import { paneAtom } from "../state/pane";
 import { routeFor } from "../lib/route";
 import { rosterAtom } from "../state/roster";
 import { composerAtom, forkAtom, keyOf } from "../state/composer";
@@ -43,7 +42,6 @@ export function AriaView({ attended }: { attended: Attended }) {
   const note = useAtomValue(noteAtom(client, aria));
   const roster = useAtomValue(rosterAtom);
   useAtomValue(seenAtom(client, aria));
-  const [pane, setPane] = useAtom(paneAtom);
   const paneRef = useRef<HTMLElement | null>(null);
   const turnsRef = useRef<HTMLOListElement | null>(null);
   const olderRef = useRef<HTMLButtonElement | null>(null);
@@ -165,9 +163,6 @@ export function AriaView({ attended }: { attended: Attended }) {
                 {glyphs.fork + " Fork of " + fork_of.name}
               </a>
             )}
-            <Button variant="quiet" size="compact" className="fw-panes" aria-controls="fw-arias" aria-expanded={pane.open} onClick={() => setPane({ open: !pane.open })}>
-              Arias
-            </Button>
             {!gone && (
             <div className="fw-subtools">
               <Button variant="quiet" size="compact" className="fw-fork" disabled={link !== "live" || forking} onClick={() => void fork(0)}>
@@ -195,9 +190,13 @@ export function AriaView({ attended }: { attended: Attended }) {
           </TranscriptContext>
           {status && <p className="fw-note">{status}</p>}
         </main>
+        {away && pitClosed && (
+          <div className="zr-latest-dock">
+            <LatestPill onClick={() => latest(turnsRef.current)} />
+          </div>
+        )}
       </div>
       <Pit head={gone ? undefined : <Composer attended={attended} toBottom={toEnd} />} />
-      {away && pitClosed && <LatestPill onClick={() => latest(turnsRef.current)} />}
       <CommandHelp />
     </section>
   );

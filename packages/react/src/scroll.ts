@@ -249,6 +249,7 @@ export function useTranscriptScroll(turns: readonly Held[], pane: RefObject<HTML
   }, [active, pane]);
 
   const toEnd = useCallback(() => {
+    notice(scrollRoot());
     pinned.current = true;
     aim.current = { end: true };
     setAnchor(-1);

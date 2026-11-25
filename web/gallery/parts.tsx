@@ -13,7 +13,6 @@ import {
   Glyph,
   Hints,
   LatestPill,
-  Pane,
   Pill,
   PillPair,
   Pit,
@@ -363,24 +362,11 @@ function ShellSample() {
     <>
       <Shell
         header={{ mark: <span>fx</span>, identity: <span>src/app.go</span>, nav: <a href="#history">History</a> }}
-        left={{ id: "files", label: "files", defaultOpen: true, defaultWidth: 220 }}
         storage="gallery"
         hosts={setHosts}
       />
       {hosts && createPortal(<p className="gallery-detail">The main column.</p>, hosts.main)}
-      {hosts && createPortal(<p className="gallery-detail">The files pane.</p>, hosts.left)}
     </>
-  );
-}
-
-function PaneSample() {
-  const [width, setWidth] = useState(240);
-  return (
-    <Stage>
-      <Pane id="gallery-pane" label="Arias" open width={width} onWidth={setWidth} form="docked">
-        <p className="gallery-detail">A docked pane, resizable by its edge.</p>
-      </Pane>
-    </Stage>
   );
 }
 
@@ -397,8 +383,7 @@ export const parts: readonly Part[] = [
   { name: "pit-part-closed", group: "Surfaces", width: 390, height: 844, note: "the drawer closed with a head", view: () => <PitAt initial="closed" head /> },
   { name: "pit-part-half", group: "Surfaces", width: 390, height: 844, note: "half height with a head", view: () => <PitAt initial="half" head /> },
   { name: "pit-part-full", group: "Surfaces", width: 390, height: 844, note: "full height with a head", view: () => <PitAt initial="full" head /> },
-  { name: "pane", group: "Surfaces", width: 640, height: 240, note: "a docked pane", view: PaneSample },
-  { name: "shell", group: "Surfaces", width: 900, height: 360, note: "page chrome with a left pane", view: ShellSample },
+  { name: "shell", group: "Surfaces", width: 900, height: 360, note: "page chrome: a header over one main column", view: ShellSample },
   { name: "composer", group: "Composer", width: 390, height: 640, note: "empty, with a draft, command mode, with a tray, running", view: ComposerStates },
   { name: "transcript", group: "Transcript", width: 390, height: 760, note: "the last three turns of the mock aria", view: () => <MockTurns history={6} /> },
   { name: "queue-board", group: "Boards", width: 960, height: 520, note: "the deploy board over web/test/fixtures/deploys.json", view: BoardSample },

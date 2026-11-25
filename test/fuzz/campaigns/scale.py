@@ -81,7 +81,7 @@ class Scale(Campaign):
             if a["to"] == "main":
                 if run.aria() == MAIN:
                     page.evaluate("() => { location.hash = '#/' }")
-                    page.wait_for_selector("[data-testid=topology-row]", timeout=20000)
+                    page.wait_for_selector(".zr-pit-knob", timeout=20000)
                 ms = page.evaluate(WAIT_ATTACH % 1, MAIN)
                 if ms < 0:
                     seen = page.evaluate("({ link: document.querySelector('.fw') && document.querySelector('.fw').dataset.link, turns: document.querySelectorAll('.nodi-turn').length, input: !!document.querySelector('.zr-input'), hash: location.hash.slice(0, 20), running: document.querySelector('.fw') && document.querySelector('.fw').hasAttribute('data-running') })")
@@ -97,7 +97,7 @@ class Scale(Campaign):
         elif k == "list":
             t0 = page.evaluate("performance.now()")
             page.evaluate("() => { location.hash = '#/' }")
-            page.wait_for_selector("[data-testid=topology-row]", timeout=20000)
+            page.wait_for_selector(".zr-pit-knob", timeout=20000)
             st["list_ms"].append(page.evaluate("performance.now()") - t0)
         elif k == "pit":
             grip = page.locator(".zr-pit-knob")

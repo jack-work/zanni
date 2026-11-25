@@ -83,8 +83,7 @@ not in atoms.
   the `role` key, the mantra in quotes, and ● on the attended aria; the cursor
   row adds `Enter attend · x kill`. Indentation and the disclosure caret are DOM
   and CSS, no guide characters. Open on arrival: the node, `arias`, the attended
-  aria's chain and the aria itself (it is remembered when the list is shown
-  after leaving it, at 390). j k l h gg G Enter as the pager; `x` says "press x
+  aria's chain and the aria itself. The tree is the pit's Tree view. j k l h gg G Enter as the pager; `x` says "press x
   again to kill <handle>" and a second `x` asks the door, which the delegated
   gateway refuses, and the refusal is shown.
 - Forks: after one the alternative is attended (`#/<store>/<alt>`, no turn), the

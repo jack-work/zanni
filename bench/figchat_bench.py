@@ -199,7 +199,7 @@ def say(what):
     sys.stderr.flush()
 
 
-def run(bundle, quick=False, only=""):
+def run(bundle, quick=False):
     out = {"bundle": bundle_sizes(bundle)}
     reps = 2 if quick else 5
     keys = 40 if quick else 200
@@ -230,7 +230,7 @@ def run(bundle, quick=False, only=""):
         def load_once(pg, d):
             pg.net.reset()
             pg.goto(d.url + "#/")
-            until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live' && document.querySelector('[data-testid=topology-row]')", 20000)
+            until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live' && document.querySelector('.zr-pit-knob')", 20000)
             ready = pg.evaluate("%s.then(() => performance.now())" % FRAME)
             paint = pg.evaluate("Object.fromEntries(performance.getEntriesByType('paint').map(e => [e.name, e.startTime]))")
             nav = pg.evaluate("(() => { const n = performance.getEntriesByType('navigation')[0]; return { dcl: n.domContentLoadedEventEnd, load: n.loadEventEnd }; })()")
@@ -238,53 +238,6 @@ def run(bundle, quick=False, only=""):
             rows = pg.net.http()
             return {"fp": paint.get("first-paint"), "fcp": paint.get("first-contentful-paint"), "tti": ready, "dcl": nav["dcl"], "blocking": long,
                     "requests": len(rows), "from_cache": sum(1 for r in rows if r["cache"] or r["status"] == 304), "wire": sum(r["wire"] for r in rows), "rows": rows}
-
-        RECORD = """() => { const gaps = []; let last = performance.now(); let on = true;
-          const tick = (t) => { gaps.push(t - last); last = t; if (on) requestAnimationFrame(tick); };
-          requestAnimationFrame(tick);
-          window.__pane = () => { on = false; return gaps.slice(1); }; }"""
-
-        def pane_bench():
-            d = Door(bundle, 40)
-            ctx = browser.new_context(viewport={"width": 1280, "height": 800})
-            pg = page(ctx)
-            attend(pg, d)
-            gaps = {"open": [], "close": [], "resize": [], "drag": []}
-
-            def watch(kind, act):
-                pg.evaluate(RECORD)
-                act()
-                pg.wait_for_timeout(450)
-                gaps[kind] += pg.evaluate("window.__pane()")
-
-            def edge_drag():
-                pg.mouse.move(6, 200)
-                pg.mouse.down()
-                for x in range(6, 200, 8):
-                    pg.mouse.move(x, 200)
-                    pg.wait_for_timeout(16)
-                pg.mouse.up()
-
-            for _ in range(reps):
-                watch("close", lambda: pg.locator(".fw-panes").click())
-                watch("open", lambda: pg.locator(".fw-panes").click())
-                pg.locator(".zr-pane-grip").focus()
-                watch("resize", lambda: pg.keyboard.press("ArrowRight"))
-                pg.keyboard.press("Home")
-                pg.wait_for_timeout(300)
-                pg.locator(".fw-panes").click()
-                pg.wait_for_timeout(450)
-                watch("drag", edge_drag)
-            errors = pg.errors
-            ctx.close()
-            d.stop()
-            return {"frame_ms": {k: stats(v) for k, v in gaps.items()}, "errors": errors}
-
-        say("pane")
-        out["pane"] = pane_bench()
-        if only == "pane":
-            browser.close()
-            return out
 
         say("load")
         d = Door(bundle, 40, asset_cache=GATEWAY_ASSETS)
@@ -310,7 +263,7 @@ def run(bundle, quick=False, only=""):
             for _ in range(reps):
                 pg = page()
                 pg.goto(d.url + "#/")
-                until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live' && document.querySelector('[data-testid=topology-row]')", 20000)
+                until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live' && document.querySelector('.zr-pit-knob')", 20000)
                 pg.evaluate(FRAME)
                 t = pg.evaluate("""(aria) => new Promise((done) => {
                   const t0 = performance.now();
@@ -614,12 +567,11 @@ def main():
     ap.add_argument("bundle")
     ap.add_argument("--out", help="result file; default bench/results/<date>-<sha>.json")
     ap.add_argument("--sha", default=os.environ.get("BENCH_SHA", ""))
-    ap.add_argument("--only", choices=["", "pane"], default="", help="run one section, for a smoke run")
     ap.add_argument("--quick", action="store_true", help="fewer reps and keys, for a smoke run")
     a = ap.parse_args()
     sha = a.sha or subprocess.run(["git", "-C", root, "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip() or "unknown"
     res = {"date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "sha": sha, "browser": "chromium", "viewport": "390x844", "quick": a.quick}
-    res.update(run(os.path.abspath(a.bundle), a.quick, a.only))
+    res.update(run(os.path.abspath(a.bundle), a.quick))
     path = a.out or os.path.join(here, "results", "%s-%s.json" % (res["date"][:10], sha))
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w") as f:

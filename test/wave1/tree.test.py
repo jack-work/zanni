@@ -13,6 +13,15 @@ from kit import BOX_DRAWING, Door, Report, bundle_arg, fixture, until
 
 from playwright.sync_api import sync_playwright
 
+def open_tree(pg):
+    if not pg.locator(".zr-pit[data-snap='half'], .zr-pit[data-snap='full']").count():
+        pg.locator(".zr-pit-knob").focus()
+        pg.keyboard.press("Enter")
+        pg.wait_for_selector(".zr-pit[data-snap='half']")
+    pg.locator(".zr-pit-row[data-action='tree']").click()
+    pg.wait_for_selector(".fw-topology [role=treeitem]", timeout=10000)
+
+
 ROWS_JS = """() => [...document.querySelectorAll('.fw-topology [role=treeitem]')].map((r) => {
   const q = (s) => r.querySelector(s);
   const text = (s) => (q(s) ? q(s).textContent.trim() : null);
@@ -82,14 +91,10 @@ def main():
             browser = p.chromium.launch()
             for width, height in ((1280, 800), (390, 844)):
                 pg = browser.new_page(viewport={"width": width, "height": height})
-                route = "#/gluck/" + topo["attend"] if width >= 900 else "#/"
-
                 def rows_on_open():
                     pg.goto(door.url + "#/gluck/" + topo["attend"])
                     pg.wait_for_selector(".nodi-turn", timeout=10000)
-                    if route == "#/":
-                        pg.goto(door.url + route)
-                    pg.wait_for_selector(".fw-topology [role=treeitem]", timeout=10000)
+                    open_tree(pg)
                     pg.wait_for_timeout(800)
                     compare(rep, want_open, pg.evaluate(ROWS_JS), "%d open" % width)
 
@@ -130,9 +135,7 @@ def main():
                         pg.keyboard.press("j")
                     pg.keyboard.press("Enter")
                     until(pg, "location.hash.endsWith('%s')" % topo["ids"]["tailB"], 5000)
-                    if width < 900:
-                        pg.goto(door.url + "#/")
-                    pg.wait_for_selector(".fw-topology [role=treeitem]")
+                    open_tree(pg)
                     got = pg.evaluate(ROWS_JS)
                     here = [r["label"] for r in got if r["here"] and r["depth"] > 1]
                     rep.check(here == ["settler-siamese"], "%d: after Enter the here mark sits on the attended aria only: %s" % (width, here))

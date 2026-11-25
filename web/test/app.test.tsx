@@ -24,6 +24,16 @@ function open(hash: string, step = 1) {
 const app = () => document.querySelector<HTMLElement>(".fw")!;
 const shown = () => [...document.querySelectorAll<HTMLElement>(".nodi-turn")].map((n) => Number(n.dataset.turn));
 
+async function openTree() {
+  await waitFor(() => expect(document.querySelector(".zr-pit-knob")).toBeTruthy());
+  act(() => {
+    fireEvent.click(screen.getByRole("button", { name: "Open controls" }));
+  });
+  act(() => {
+    fireEvent.click(document.querySelector(".zr-pit-row[data-action='tree']")!);
+  });
+}
+
 afterEach(() => {
   client?.close();
   window.location.hash = "";
@@ -32,6 +42,7 @@ afterEach(() => {
 describe("the list", () => {
   it("draws the topology as one tree, children under their parent, and a tap attends", async () => {
     open("#/");
+    await openTree();
     await waitFor(() => expect(document.querySelectorAll(".zr-tree-row").length).toBeGreaterThan(5));
     expect(app().dataset.route).toBe("list");
     const depths = [...document.querySelectorAll<HTMLElement>(".zr-tree-row")].map((r) => r.dataset.depth);
@@ -49,6 +60,7 @@ describe("the list", () => {
 
   it("a attends the cursor row, x arms a kill and X kills at once, as the pager's pit does", async () => {
     open("#/");
+    await openTree();
     await waitFor(() => expect(document.querySelectorAll(".zr-tree-row").length).toBeGreaterThan(5));
     const main = "c0ffee01".repeat(4);
     const kills = () => core.calls.filter((c) => c.method === "figaro.kill").map((c) => c.params.figaro_id);
@@ -71,6 +83,7 @@ describe("the list", () => {
 
   it("opens only the chain to the attended aria and the attended row itself, as the pager's revealOpen does", async () => {
     open("#/home/" + "c0ffee02".repeat(4));
+    await openTree();
     await waitFor(() => expect(document.querySelectorAll(".zr-tree-row").length).toBeGreaterThan(5));
     const ids = () => [...document.querySelectorAll<HTMLElement>(".zr-tree-row")].map((r) => r.dataset.id);
     const main = "c0ffee01".repeat(4);
@@ -87,6 +100,7 @@ describe("the list", () => {
 
   it("shows a fork in the tree live: the @arias delta is applied and the form is re-read", async () => {
     open("#/home/" + "c0ffee02".repeat(4));
+    await openTree();
     await waitFor(() => expect(document.querySelectorAll(".zr-tree-row").length).toBeGreaterThan(5));
     const reads = core.calls.filter((c) => c.method === "figaro.form" && c.params.figaro_id === "@arias").length;
     const forked = await client.peek("c0ffee02".repeat(4)).fork({ atTurn: 1 });
@@ -96,6 +110,7 @@ describe("the list", () => {
 
   it("counts each row's keys as the pager's :ls does, and takes the bar's mantra from the aria's own facts", async () => {
     open("#/");
+    await openTree();
     await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id='" + "c0ffee08".repeat(4) + "']")).toBeTruthy());
     await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id='" + "c0ffee08".repeat(4) + "']")!.textContent).toMatch(/Scratch 2.*\(6\)/));
     const mains = document.querySelector(".zr-tree-row[data-id='" + "c0ffee01".repeat(4) + "']")!.textContent ?? "";
@@ -108,12 +123,19 @@ describe("the list", () => {
 
   it("counts the troupe row's own keys, not a fixed one", async () => {
     open("#/");
+    await openTree();
     await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id^='@node:']")).toBeTruthy());
     await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id^='@node:']")!.textContent).toContain("(2)"));
   });
 
   it("says what it is waiting on", async () => {
     open("#/");
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Open controls" }));
+    });
+    act(() => {
+      fireEvent.click(document.querySelector(".zr-pit-row[data-action='tree']")!);
+    });
     expect(screen.getByText("Loading the topology.")).toBeTruthy();
     await waitFor(() => expect(document.querySelectorAll(".zr-tree-row").length).toBeGreaterThan(0));
     expect(screen.queryByText("Loading the topology.")).toBeNull();
@@ -130,6 +152,7 @@ describe("attending an aria", () => {
     expect(first.length).toBeLessThan(26);
     expect(first).toEqual([...first].sort((a, b) => a - b));
     expect(app().dataset.route).toBe("aria");
+    await openTree();
     await waitFor(() => expect(document.querySelector(".zr-tree-row[aria-selected='true']")).toBeTruthy());
   });
 
@@ -181,7 +204,8 @@ describe("bench hooks", () => {
     expect(frame[0]!.startTime).toBeGreaterThanOrEqual(attach.startTime);
     expect(Object.keys(window).filter((k) => k.startsWith("__figchat"))).toEqual(["__figchat"]);
     for (const id of ["composer-input", "send", "transcript-scroller", "pit-grip"]) expect(document.querySelectorAll('[data-testid="' + id + '"]').length, id).toBe(1);
-    expect(document.querySelectorAll('[data-testid="topology-row"]').length).toBeGreaterThan(5);
+    await openTree();
+    await waitFor(() => expect(document.querySelectorAll('[data-testid="topology-row"]').length).toBeGreaterThan(5));
     expect(document.querySelector('[data-testid="composer-input"]')!.tagName).toBe("TEXTAREA");
   });
 });

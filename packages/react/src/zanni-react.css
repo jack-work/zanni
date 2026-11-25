@@ -141,8 +141,17 @@
 }
 .zr-pit[data-snap="half"] .zr-pit-body::after { content: ""; flex: none; height: calc(var(--zr-vv-h, 100dvh) / 2); }
 .zr-pit-scrim { transition: opacity var(--zr-d-sheet) var(--zr-sheet-curve); }
-.zr-pit ~ .zr-latest { bottom: calc(var(--zr-kb, 0px) + var(--zr-composer-h, 0px) + var(--fw-pile-h, 0px) + var(--zr-pit-reach) - 2px); }
-.zr-pit:is([data-open], [data-dragging]) ~ .zr-latest { display: none; }
+.zr-latest-dock { position: sticky; bottom: 0; z-index: 2; height: 0; }
+.zr-latest {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--zr-pit-reach) - 2px);
+  margin-inline: auto;
+  width: max-content;
+  animation: zr-swap var(--zr-d-pop) var(--zr-pop) both;
+}
+:has(> .zr-pit:is([data-open], [data-dragging])) .zr-latest-dock { display: none; }
 .zr-tree, .zr-tree-find { width: 100%; font: 400 1.125rem / 1.25 var(--zr-mono, "VT323", "Nerd Icons", ui-monospace, monospace); letter-spacing: 0.04em; color: var(--z-ink); outline: none; }
 .zr-tree:focus-visible { outline: 2px solid var(--z-focus); outline-offset: -2px; }
 .zr-tree { --zr-tree-indent: 2ch; }
@@ -296,16 +305,6 @@
 
 [data-swooping] { will-change: transform, opacity; }
 
-.zr-latest {
-  position: absolute;
-  left: var(--zr-pit-left, 0px);
-  right: var(--zr-pit-right, 0px);
-  margin-inline: auto;
-  width: max-content;
-  bottom: calc(var(--zr-kb, 0px) + var(--zr-composer-h, 0px) + var(--fw-pile-h, 0px) + 12px);
-  z-index: 2;
-  animation: zr-swap var(--zr-d-pop) var(--zr-pop) both;
-}
 .zr-btn.zr-latest[data-variant="accent"] { background: color-mix(in srgb, var(--z-accent) 55%, transparent); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
 .fw .zr-btn.zr-latest:active:not(:disabled) { scale: 1; }
 .zr-btn.zr-latest::after { content: ""; position: absolute; inset: auto; left: 50%; top: 50%; width: max(100%, 48px); height: max(100%, 48px); translate: -50% -50%; }
@@ -372,23 +371,8 @@
 .zr-bar-toggle:focus-visible, .zr-bar-menu:focus-visible { outline: 2px solid var(--z-focus); outline-offset: 2px; }
 .zr-bar-label, .zr-bar-menu { display: none; }
 .zr-bar[data-menu] .zr-bar-label { display: inline; }
-.zr-shell-body { position: relative; display: grid; grid-template-columns: var(--zr-pane-w, 280px) minmax(0, 1fr) var(--zr-pane-right-w, 0px); min-height: 0; }
+.zr-shell-body { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; }
 .zr-shell-main { overflow: auto; min-width: 0; position: relative; overflow-anchor: auto; }
-.zr-shell-host { min-height: 100%; }
-.zr-pane { position: relative; overflow: auto; min-width: 0; background: var(--z-ground); }
-.zr-pane[data-side="left"] { border-right: 1px solid var(--z-line); }
-.zr-pane[data-side="right"] { border-left: 1px solid var(--z-line); }
-.zr-pane:not([data-open]):not([data-leaving]):not([data-peek]) { visibility: hidden; border-width: 0; padding: 0; }
-.zr-pane[data-peek] { z-index: 3; }
-.zr-pane-edge { position: fixed; z-index: 3; top: var(--zr-edge-top, 0px); bottom: 0; left: env(safe-area-inset-left, 0px); width: 12px; touch-action: pan-y; }
-@media (pointer: coarse) { .zr-pane-edge { left: calc(env(safe-area-inset-left, 0px) + 6px); width: 24px; } }
-.zr-pane-grip { position: absolute; top: 0; bottom: 0; width: 6px; cursor: col-resize; touch-action: none; z-index: 2; }
-.zr-pane[data-side="left"] > .zr-pane-grip { right: 0; }
-.zr-pane[data-side="right"] > .zr-pane-grip { left: 0; }
-.zr-pane-grip:hover, .zr-pane-grip:focus-visible, .zr-pane-grip:active { background: var(--z-accent); }
-.zr-pane-tabs { display: flex; gap: var(--z-space-2, 4px); padding: var(--z-space-2, 4px); border-bottom: 1px solid var(--z-line); }
-.zr-pane-tab { min-height: var(--z-control-hit, 36px); padding: 0 var(--z-space-3, 8px); border: 1px solid var(--z-line); border-radius: var(--z-radius-1, 2px); background: none; color: inherit; font: inherit; cursor: pointer; }
-.zr-pane-tab[aria-selected="true"] { border-color: var(--z-accent); background: var(--z-accent); color: var(--z-on-accent); }
 .zr-shell-chrome[data-narrow] { grid-template-rows: minmax(0, 1fr); }
 .zr-shell-chrome[data-narrow] .zr-bar { position: fixed; top: 0; left: 0; right: 0; transform: none; transition: transform var(--zr-d-exit) var(--zr-out); }
 .zr-shell-chrome[data-narrow] .zr-bar[data-hidden] { transform: translateY(-100%); }
@@ -396,11 +380,4 @@
 .zr-shell-chrome[data-narrow] .zr-bar-fold { display: none; }
 .zr-shell-chrome[data-narrow] .zr-bar-fold[data-open] { display: flex; flex-direction: column; align-items: flex-start; flex-wrap: wrap; position: absolute; top: calc(100% + 4px); right: var(--z-space-3, 8px); z-index: 1; min-width: 220px; max-width: calc(100vw - 16px); max-height: calc(100dvh - 60px); overflow: auto; padding: var(--z-space-4, 12px); background: var(--z-ground); border: 1px solid var(--z-line); box-shadow: 4px 4px 0 color-mix(in srgb, var(--z-ink) 25%, transparent); }
 .zr-shell-chrome[data-narrow] .zr-bar-fold > .zr-bar-slot { flex-wrap: wrap; }
-.zr-shell-chrome[data-narrow] .zr-shell-body { grid-template-columns: minmax(0, 1fr); }
 .zr-shell-chrome[data-narrow] .zr-shell-main::before { content: ""; display: block; height: var(--proscenio-pad, 0px); }
-.zr-shell-chrome[data-narrow] .zr-scrim { top: var(--proscenio-shown, 0px); z-index: 25; }
-.zr-shell-chrome[data-narrow] .zr-pane { position: fixed; z-index: 30; visibility: visible; transition: transform var(--zr-d-slide) var(--zr-out); }
-.zr-shell-chrome[data-narrow] .zr-pane[data-form="drawer"] { top: var(--proscenio-shown, 0px); bottom: 0; left: 0; width: min(85vw, 340px); transform: translateX(-100%); border-width: 0 1px 0 0; box-shadow: 4px 0 24px color-mix(in srgb, var(--z-ink) 25%, transparent); }
-.zr-shell-chrome[data-narrow] .zr-pane[data-form="sheet"] { left: 0; right: 0; bottom: 0; height: 55vh; transform: translateY(100%); border-width: 1px 0 0; border-radius: 10px 10px 0 0; box-shadow: 0 -4px 24px color-mix(in srgb, var(--z-ink) 25%, transparent); }
-.zr-shell-chrome[data-narrow] .zr-pane[data-open] { transform: none; }
-.zr-shell-chrome[data-narrow] .zr-pane:not([data-open]) { visibility: hidden; transition: transform var(--zr-d-slide) var(--zr-out), visibility 0s linear var(--zr-d-slide); }
