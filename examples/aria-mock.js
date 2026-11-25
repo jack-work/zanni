@@ -466,6 +466,10 @@
         reply(c, id, { version: 1, capabilities: ['qua.images', 'unfollow', 'follow.channels'], node: core.fixture ? Object.keys(core.fixture.troupe)[0] : 'mock-node', principal: { kind: 'user', id: 'gluck@edge.test' } });
       },
       'figaro.form': function (c, id, p) {
+        if (p.intrinsic === 'queue' && core.arias[p.figaro_id]) {
+          reply(c, id, { snapshot: clone(core.queues[p.figaro_id] || { epoch: 'e0', len: 0, order: [], items: {} }), version: 1, incarnation: formInc[p.figaro_id + '/queue'] || 1, origin: p.client || '' });
+          return;
+        }
         var root = formRoot(p.figaro_id);
         if (!root) { fail(c, id, -32000, 'figaro: form ' + p.figaro_id + ' not found'); return; }
         reply(c, id, { snapshot: root, version: formVer[p.figaro_id] || 1, incarnation: formInc[p.figaro_id] || 1, origin: p.client || '' });
@@ -535,6 +539,27 @@
         }
         core.interrupts = (core.interrupts || []).concat([p.queue]);
         reply(c, id, { ok: true, stopped: stopped, cleared: cleared });
+      },
+      'figaro.queue.delete': function (c, id, p) {
+        var q = core.queues[p.figaro_id];
+        var results = (p.ids || []).map(function (n) {
+          var it = q && q.items[String(n)];
+          if (!it) return { id: n, outcome: 'rejected', reason: 'unknown' };
+          if (it.state !== 'queued') return { id: n, outcome: 'rejected', reason: it.state };
+          it.state = 'dropped';
+          q.order = q.order.filter(function (x) { return x !== n; });
+          return { id: n, outcome: 'deleted' };
+        });
+        reply(c, id, { epoch: q ? q.epoch : '', results: results });
+        pushQueue(p.figaro_id);
+      },
+      'figaro.queue.update': function (c, id, p) {
+        var q = core.queues[p.figaro_id];
+        var it = q && q.items[String(p.id)];
+        if (!it) { reply(c, id, { epoch: q ? q.epoch : '', result: { id: p.id, outcome: 'rejected', reason: 'unknown' } }); return; }
+        it.text = p.text;
+        reply(c, id, { epoch: q.epoch, result: { id: p.id, outcome: 'updated' } });
+        pushQueue(p.figaro_id);
       },
       'figaro.fork': function (c, id, p) {
         if (!core.arias[p.figaro_id]) { fail(c, id, -32000, 'figaro: aria ' + p.figaro_id + ' not found'); return; }
@@ -626,6 +651,14 @@
       core.conns.slice().forEach(function (c) { if (c.open && c.follows[id]) c.sink.text(text); });
     }
     core.pushForm = pushForm;
+    core.queues = {};
+    function pushQueue(aria) {
+      var key = aria + '/queue';
+      formInc[key] = (formInc[key] || 1) + 1;
+      var text = JSON.stringify({ jsonrpc: '2.0', method: 'form.delta', params: { schema: 2, figaro_id: aria, intrinsic: 'queue', version: 1, incarnation: formInc[key], patch: {} } });
+      core.conns.slice().forEach(function (c) { if (c.open && c.follows[aria]) c.sink.text(text); });
+    }
+    core.setQueue = function (aria, root) { core.queues[aria] = clone(root); pushQueue(aria); };
     core.setOrders = function (root) { core.orders = clone(root); pushForm(ASKS_FORM); };
 
     core.attach = function (sink) {

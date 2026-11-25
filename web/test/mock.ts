@@ -18,6 +18,7 @@ export interface MockCore {
   calls: { method: string; params: Record<string, unknown> }[];
   dropped: number;
   drop(): number;
+  setQueue(aria: string, root: unknown): void;
   running(id: string): boolean;
 }
 

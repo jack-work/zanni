@@ -6,6 +6,7 @@ import { PHASE_WORDS, labelOf } from "../lib/roster";
 import { AsksView, useAsks } from "./asks";
 import { ControlStatus } from "./control-status";
 import { OlderArias } from "./older";
+import { QueueView } from "./queue-view";
 import { TopologyTree, FormTree } from "./tree-view";
 import { FormEdit, type FormEditTarget } from "./form-edit";
 import { turnsAtom, linkAtom } from "../state/aria";
@@ -13,7 +14,7 @@ import { toggleVoiceAtom, voiceAtom } from "../state/audio";
 import { bootAtom } from "../state/boot";
 import { composerAtom, forkAtom, keyOf } from "../state/composer";
 import { openNewFigaroAtom } from "../state/new-figaro";
-import { attendedFactsAtom, boundStateAtom, markPitUsedAtom, pitUsedAtom, pitViewAtom, recentStateAtom, treeStateAtom } from "../state/pit";
+import { attendedFactsAtom, boundStateAtom, markPitUsedAtom, pitUsedAtom, pitViewAtom, queueStateAtom, recentStateAtom, treeStateAtom } from "../state/pit";
 import { attendedRowAtom, rosterAtom } from "../state/roster";
 import { attendedAtom, clientAtom, goAtom, storeNameAtom } from "../state/route";
 
@@ -24,6 +25,7 @@ const TITLES: Record<PitView, string> = {
   tree: "Tree",
   recent: "Recent",
   asks: "Asks",
+  queue: "Queue",
   outfits: "Outfits",
 };
 
@@ -34,6 +36,7 @@ const FACE: Record<PitView, string> = {
   tree: glyphs["pit.troupe"],
   recent: glyphs["pit.form"],
   asks: glyphs["pit.form"],
+  queue: glyphs["pit.queue"],
   outfits: glyphs["pit.models"],
 };
 
@@ -62,6 +65,7 @@ export function Pit() {
       {view === "tree" && <TreeView />}
       {view === "recent" && <RecentView />}
       {view === "asks" && <AsksView />}
+      {view === "queue" && <QueueView />}
       {view === "outfits" && <OutfitsView />}
     </ZPit>
   );
@@ -78,6 +82,7 @@ function ControlList() {
   const bound = useAtomValue(boundStateAtom);
   const tree = useAtomValue(treeStateAtom);
   const recent = useAtomValue(recentStateAtom);
+  const queue = useAtomValue(queueStateAtom);
   const row = useAtomValue(attendedRowAtom);
   const asks = useAsks();
   const voice = useAtomValue(voiceAtom);
@@ -91,6 +96,7 @@ function ControlList() {
     tree: tree?.nodes.size ? String(tree.nodes.size) : "",
     recent: recent?.rows.length ? String(recent.rows.length) : "",
     asks: asks.asks.length ? String(asks.asks.length) : "",
+    queue: queue?.rows.length ? String(queue.rows.length) : "",
     outfits: row?.outfit_name ?? "",
     voice: voice ? "on" : "off",
   };
@@ -108,10 +114,11 @@ function ControlList() {
     tree: () => setView("tree"),
     recent: () => setView("recent"),
     asks: () => setView("asks"),
+    queue: () => setView("queue"),
     outfits: () => setView("outfits"),
     voice: () => toggleVoice(),
   };
-  const off = (id: PitRowId): boolean => (id === "tail-fork" ? !attended || !live || forking : id === "state" || id === "fork-at" || id === "outfits" ? !attended : false);
+  const off = (id: PitRowId): boolean => (id === "tail-fork" ? !attended || !live || forking : id === "state" || id === "fork-at" || id === "outfits" || id === "queue" ? !attended : false);
 
   return (
     <PitList label="Controls">
