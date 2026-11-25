@@ -1,0 +1,118 @@
+{
+ "arias": {
+  "arias": {
+   "@d361270718b634c263de8faf8877c225": {
+    "active_at": 1795636768078,
+    "forks": {
+     "pulley-neuron": {
+      "active_at": 1795636768078,
+      "ctx_limit": 200000,
+      "cwd": "/var/tmp/wave1-capture",
+      "forks": {
+       "dryer-coyote": {
+        "active_at": 1795636770438,
+        "ctx_limit": 200000,
+        "cwd": "/var/tmp/wave1-capture",
+        "id": "464c92efaaeacd5cce2b4e9708cc42e9",
+        "mantra": "King of Spain fork two",
+        "recency": 1795636770438,
+        "state": "idle"
+       },
+       "niece-kerosene": {
+        "active_at": 1795636769258,
+        "ctx_limit": 200000,
+        "cwd": "/var/tmp/wave1-capture",
+        "id": "a321fd06abc4d94b333db899643c7071",
+        "mantra": "King of Spain fork one",
+        "recency": 1795636769258,
+        "state": "idle"
+       },
+       "tallness-again": {
+        "active_at": 1795636771618,
+        "ctx_limit": 200000,
+        "cwd": "/var/tmp/wave1-capture",
+        "forks": {
+         "alongside-reentry": {
+          "active_at": 1795636772800,
+          "ctx_limit": 200000,
+          "cwd": "/var/tmp/wave1-capture",
+          "forks": {
+           "optical-jalapeno": {
+            "active_at": 1795636773999,
+            "bound": true,
+            "ctx_limit": 200000,
+            "cwd": "/var/tmp/wave1-capture",
+            "id": "ac9f97a933dc20fe81e2f73b701068af",
+            "mantra": "fig batch B: tree like pager",
+            "recency": 1795636773999,
+            "state": "idle"
+           }
+          },
+          "id": "0a6fda3756536cc1341818c2ddab3790",
+          "mantra": "Frontend Strategist",
+          "recency": 1795636773999,
+          "role": "\"@Frontend Strategist\"",
+          "state": "idle"
+         }
+        },
+        "id": "ddc1770b5e96408b59c43e35bb3bdb7b",
+        "mantra": "Figaro Engineer",
+        "recency": 1795636773999,
+        "role": "\"@Figaro Engineer\"",
+        "state": "idle"
+       }
+      },
+      "id": "baa89025d2afe894de411e6b3253af4d",
+      "mantra": "King of Spain",
+      "recency": 1795636773999,
+      "role": "\"@King of Spain\"",
+      "state": "idle"
+     }
+    },
+    "id": "@d361270718b634c263de8faf8877c225",
+    "kind": "form",
+    "name": "King of Spain",
+    "recency": 1795636773999,
+    "state": "form",
+    "target": "baa89025d2afe894de411e6b3253af4d"
+   },
+   "cement-remote": {
+    "active_at": 1795636766894,
+    "ctx_limit": 200000,
+    "cwd": "/var/tmp/wave1-capture",
+    "id": "2af02f9926cb5449114b27b33e2e1e26",
+    "mantra": "scratch: tree sort",
+    "recency": 1795636766894,
+    "state": "idle"
+   },
+   "circle-jogging": {
+    "active_at": 1795636775202,
+    "ctx_limit": 200000,
+    "cwd": "/var/tmp/wave1-capture",
+    "id": "2d609113fb8997307b3735619da870fe",
+    "mantra": "newest: scratch",
+    "recency": 1795636775202,
+    "state": "idle"
+   },
+   "fasten-decal": {
+    "active_at": 1795636765716,
+    "ctx_limit": 200000,
+    "cwd": "/var/tmp/wave1-capture",
+    "id": "5d4ef1cb3d6ba9209c890bf08a0c9113",
+    "mantra": "older note: spain edge",
+    "recency": 1795636765716,
+    "state": "idle"
+   }
+  }
+ },
+ "attend": "ac9f97a933dc20fe81e2f73b701068af",
+ "ids": {
+  "lane": "ac9f97a933dc20fe81e2f73b701068af"
+ },
+ "troupe": {
+  "a6d1d0ff-5691-4469-ba92-9ac78a496b62": {
+   "form": "@arias",
+   "self": true
+  }
+ }
+}
