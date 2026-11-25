@@ -133,7 +133,7 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
       measure();
       resized();
       if (y < lastY.current - 1) {
-        if (top - y > AT_END && performance.now() - turned > 200) stuck.current = false;
+        if (top - y > AT_END && (performance.now() - turned > 200 || top - y > root.clientHeight)) stuck.current = false;
         lastY.current = y;
       } else {
         if (top - y <= NEAR_BOTTOM && y > lastY.current) stuck.current = true;
