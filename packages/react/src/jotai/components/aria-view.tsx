@@ -43,6 +43,7 @@ export function AriaView({ attended }: { attended: Attended }) {
   useAtomValue(seenAtom(client, aria));
   const [pane, setPane] = useAtom(paneAtom);
   const paneRef = useRef<HTMLElement | null>(null);
+  const turnsRef = useRef<HTMLOListElement | null>(null);
   const olderRef = useRef<HTMLButtonElement | null>(null);
   const headRef = useRef<HTMLHeadingElement | null>(null);
   const anchor = useRef<{ turn: number; top: number } | null>(null);
@@ -208,7 +209,7 @@ export function AriaView({ attended }: { attended: Attended }) {
             </Button>
           )}
           <TranscriptContext value={transcript}>
-            <ol className="nodi-turns" aria-label="Transcript" data-held={turns.length}>
+            <ol ref={turnsRef} className="nodi-turns" aria-label="Transcript" data-held={turns.length}>
               {spans.flatMap(([from, to, gap], k) => [
                 gap && <li key={"g" + k} data-slot={k} />,
                 ...turns.slice(from, to).map((t) => <TurnView key={t.key} turn={t} speaking={speakingHere} fresh={baseline !== null && t.turn > baseline} />),
@@ -219,7 +220,7 @@ export function AriaView({ attended }: { attended: Attended }) {
         </main>
       </div>
       {!gone && <Composer attended={attended} toBottom={toBottom} />}
-      {follow.away && <LatestPill onClick={toBottom} />}
+      {follow.away && <LatestPill onClick={() => follow.latest(turnsRef.current)} />}
     </section>
   );
 }

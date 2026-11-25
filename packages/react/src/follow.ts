@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { reducedMotion } from "./motion";
 
 export const NEAR_BOTTOM = 24;
 export const AWAY_FROM_BOTTOM = 96;
@@ -22,9 +23,39 @@ export function scrollToBottom(): void {
   root.scrollTop = root.scrollHeight;
 }
 
+export const SWOOP_MS = 400;
+export const SWOOP_REACH = 0.35;
+export const SWOOP_EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
+
+const swooping = new WeakMap<HTMLElement, Animation>();
+
+export function swoop(el: HTMLElement | null): void {
+  if (!el || typeof el.animate !== "function" || reducedMotion()) return;
+  swooping.get(el)?.cancel();
+  const reach = Math.round(scrollRoot().clientHeight * SWOOP_REACH);
+  if (reach <= 0) return;
+  el.setAttribute("data-swooping", "");
+  const run = el.animate(
+    [
+      { transform: "translateY(" + -reach + "px)", opacity: 0 },
+      { transform: "translateY(0)", opacity: 1 },
+    ],
+    { duration: SWOOP_MS, easing: SWOOP_EASE },
+  );
+  swooping.set(el, run);
+  const done = () => {
+    if (swooping.get(el) !== run) return;
+    swooping.delete(el);
+    el.removeAttribute("data-swooping");
+  };
+  run.addEventListener("finish", done);
+  run.addEventListener("cancel", done);
+}
+
 export interface Follow {
   readonly away: boolean;
   readonly toBottom: () => void;
+  readonly latest: (content: HTMLElement | null) => void;
   readonly snap: () => void;
   readonly paging: RefObject<boolean>;
 }
@@ -48,6 +79,14 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
     };
     pin();
   }, []);
+
+  const latest = useCallback(
+    (content: HTMLElement | null) => {
+      toBottom();
+      swoop(content);
+    },
+    [toBottom],
+  );
 
   const snap = useCallback(() => {
     const root = scrollRoot();
@@ -133,5 +172,5 @@ export function useFollow(pane: RefObject<HTMLElement | null>, active: boolean):
     };
   }, [active, pane]);
 
-  return { away, toBottom, snap, paging };
+  return { away, toBottom, latest, snap, paging };
 }
