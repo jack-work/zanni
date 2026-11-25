@@ -1,7 +1,7 @@
 import { useAtomValue } from "jotai";
 import { controlRows } from "../lib/control-rows";
 import { pick, valueAt } from "../lib/pit-rows";
-import { endStateAtom, linkAtom, metricsAtom, runningAtom, startedAtom, turnsAtom } from "../state/aria";
+import { endStateAtom, linkAtom, metricsAtom, runningAtom, seenAtom, turnsAtom } from "../state/aria";
 import { attendedFactsAtom, boundStateAtom, treeStateAtom } from "../state/pit";
 import { attendedRowAtom } from "../state/roster";
 import type { Attended } from "../state/route";
@@ -21,7 +21,7 @@ export function ControlStatus({ attended }: { attended: Attended }) {
   const end = useAtomValue(endStateAtom(client, aria));
   const turns = useAtomValue(turnsAtom(client, aria));
   const metrics = useAtomValue(metricsAtom(client, aria));
-  const started = useAtomValue(startedAtom(client, aria));
+  const seen = useAtomValue(seenAtom(client, aria));
   const facts = useAtomValue(attendedFactsAtom);
   const bound = useAtomValue(boundStateAtom);
   const tree = useAtomValue(treeStateAtom);
@@ -39,7 +39,8 @@ export function ControlStatus({ attended }: { attended: Attended }) {
     route: routeOf(bound?.root),
     limit: typeof limit === "number" ? limit : node?.ctxLimit,
     metrics,
-    started,
+    started: row?.created_at,
+    seen,
   });
   return (
     <dl className="fw-pit-state fw-pit-status" aria-label="Status" tabIndex={-1} data-autofocus>

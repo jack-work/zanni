@@ -13,6 +13,7 @@ const base: ControlInput = {
   limit: 1_000_000,
   metrics: { context_tokens: 32, context_exact: true, tokens_in: 12, tokens_out: 20, cache_read_tokens: 0, cache_write_tokens: 0 },
   started: new Date(2026, 10, 24, 18, 52, 42).getTime(),
+  seen: new Date(2026, 10, 25, 9, 0, 1).getTime(),
 };
 
 describe("the control pit rows, as the pager's panel draws them", () => {
@@ -27,6 +28,13 @@ describe("the control pit rows, as the pager's panel draws them", () => {
     const rows = controlRows({ ...base, mantra: " ", route: undefined, limit: undefined, metrics: undefined });
     expect(rows.map((r) => r.label)).toEqual(["aria", "status", "tokens", "cache", "started"]);
     expect(rows.find((r) => r.label === "tokens")!.value).toBe("in 0 · out 0");
+  });
+
+  it("labels the row seen, with the first-seen time, when the daemon gave no start", () => {
+    const rows = controlRows({ ...base, started: undefined });
+    const last = rows[rows.length - 1]!;
+    expect(last).toEqual({ label: "seen", value: "2026-11-25 09:00:01" });
+    expect(rows.map((r) => r.label)).not.toContain("started");
   });
 
   it("folds runs of whitespace in the mantra", () => {

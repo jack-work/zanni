@@ -171,7 +171,7 @@ describe("the control pit", () => {
     act(() => {
       fireEvent.click(screen.getByRole("button", { name: "Open controls" }));
     });
-    await waitFor(() => expect(document.querySelectorAll(".fw-pit-status .fw-pit-fact").length).toBeGreaterThanOrEqual(5));
+    await waitFor(() => expect(document.querySelector(".fw-pit-status .fw-pit-fact[data-key='started']")).toBeTruthy());
     const labels = [...document.querySelectorAll(".fw-pit-status dt")].map((n) => n.textContent);
     expect(labels).toEqual(expect.arrayContaining(["aria", "status", "tokens", "cache", "started"]));
     const order = ["aria", "status", "mantra", "route", "context", "tokens", "cache", "started"].filter((l) => labels.includes(l));

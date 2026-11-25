@@ -28,7 +28,8 @@ export interface ControlInput {
   readonly route: readonly string[] | undefined;
   readonly limit: number | undefined;
   readonly metrics: ControlMetrics | undefined;
-  readonly started: number;
+  readonly started: number | undefined;
+  readonly seen: number;
 }
 
 export function statusWord(i: Pick<ControlInput, "link" | "running" | "end" | "turns">): string {
@@ -53,7 +54,7 @@ export function controlRows(i: ControlInput): ControlRow[] {
   rows.push(
     { label: "tokens", value: `in ${fmtTokens(m?.tokens_in ?? 0)} · out ${fmtTokens(m?.tokens_out ?? 0)}` },
     { label: "cache", value: `read ${fmtTokens(m?.cache_read_tokens ?? 0)} · write ${fmtTokens(m?.cache_write_tokens ?? 0)}` },
-    { label: "started", value: stamp(i.started) },
+    i.started === undefined ? { label: "seen", value: stamp(i.seen) } : { label: "started", value: stamp(i.started) },
   );
   return rows;
 }
