@@ -134,7 +134,7 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, on
   const [find, setFind] = useState<Find | undefined>(undefined);
   const [kit, setKit] = useState<FindKit | undefined>(undefined);
   useEffect(() => {
-    if (!(typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches)) void import("./tree-find").then(setKit);
+    if (!(typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches)) void import("./tree-find").then(setKit, () => {});
   }, []);
   const lastKey = useRef("");
   const box = useRef<HTMLDivElement>(null);
