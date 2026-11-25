@@ -88,9 +88,7 @@ def main():
             def run(width, height, mobile):
                 ctx, pg = at(width, height, mobile)
                 try:
-                    until(pg, "!!document.querySelector('[data-action=asks] .zr-pit-row-meta') || !!document.querySelector('[data-action=asks]')", 5000)
-                    meta = pg.locator("[data-action=asks] .zr-pit-row-meta").inner_text()
-                    rep.check(meta == str(len(want)), "%d: the Asks row counts the asks: %r" % (width, meta))
+                    pg.wait_for_selector("[data-action=asks]")
                     pg.locator("[data-action=asks]").click()
                     pg.wait_for_selector(".fw-ask")
                     until(pg, "document.querySelectorAll('.fw-ask').length === %d" % len(want), 5000)

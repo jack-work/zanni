@@ -1310,7 +1310,8 @@ try:
             until(pg, "document.querySelector('.fw').dataset.link === 'live'", 15000)
             open_pit(pg)
             order = pg.locator(".zr-pit-row").evaluate_all("rows => rows.map(r => r.dataset.action)")
-            assert order[:3] == ["outfits", "recent", "tree"], "last-used order survives a reload: %s" % order
+            tiles = pg.locator(".fw-controls .zr-pit-row").evaluate_all("rows => rows.map(r => r.dataset.action)")
+            assert tiles[:2] == ["recent", "tree"] and order[len(tiles)] == "outfits", "last-used order survives a reload, tiles and detail rows each: %s" % order
             close_pit(pg)
 
             attend(pg, ctl_door, MAIN)
