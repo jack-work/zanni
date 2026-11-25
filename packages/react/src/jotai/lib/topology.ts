@@ -72,10 +72,13 @@ export function topologyNodes(tree: TreeState, here: string | undefined, forms: 
         children: kids,
       };
     }
+    const row = rows.get(n.id);
+    const synthParent = !!n.parent && !row?.parent && tree.nodes.get(n.parent)?.kind !== "role";
+    const own = keyCount(row) + (synthParent ? 1 : 0);
     return {
       id: n.id,
       label: n.handle ?? n.label,
-      count: keyCount(rows.get(n.id)) + (n.parent && !rows.get(n.id)?.parent && tree.nodes.get(n.parent)?.kind !== "role" ? 1 : 0) || kids.length,
+      count: own || kids.length,
       peek: "",
       role: n.roles.join(" "),
       mantra: n.mantra ?? "",
