@@ -3,7 +3,7 @@ announces itself with the ping; replies that arrive back to back play in order; 
 microphone is recording is held, then plays with the ping when the recording stops. With voice off no reply
 is synthesised until a turn's Play is pressed. Chromium and WebKit with the iPhone profile (the recording case
 needs the fake microphone and runs in Chromium only; headless WebKit exposes no audio sources and crashes on a stored clip, so there it asserts that a player takes the reply unasked, or does not)."""
-from kit import Door, Report, bundle_arg, until
+from kit import Door, Report, bundle_arg, draft, until, voice_on
 
 from playwright.sync_api import sync_playwright
 
@@ -78,7 +78,7 @@ def main():
                 pg.wait_for_selector(".zr-composer .zr-input")
                 pg.wait_for_timeout(800)
                 if hands:
-                    pg.locator(".zr-composer .zr-grip").focus()
+                    pg.locator(".zr-pit-knob").focus()
                     pg.keyboard.press("Enter")
                     pg.wait_for_selector(".zr-pit[data-snap='half']")
                     for _ in range(4):
@@ -92,7 +92,7 @@ def main():
                         raise AssertionError("the hands-free row never took the tap")
                     pg.wait_for_selector(".fw-hands[aria-pressed='true']", timeout=5000)
                     pg.keyboard.press("Escape")
-                    pg.wait_for_selector(".zr-pit", state="detached")
+                    pg.wait_for_selector(".zr-pit[role=dialog]", state="detached")
                 try:
                     work(pg, door)
                 except Exception:
@@ -108,7 +108,7 @@ def main():
                 return events, says, mounted
 
             def say(pg, text):
-                pg.locator(".zr-input").fill(text)
+                draft(pg, text)
                 pg.locator(".zr-send").click()
 
             def one(pg, door):

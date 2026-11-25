@@ -24,8 +24,7 @@ export interface ComposerProps {
   enterRuns?: boolean;
   sendDisabled?: boolean;
   running?: boolean;
-  accessory?: ReactNode;
-  stacked?: boolean;
+  field?: ReactNode;
   focusTick?: number;
   inputRef?: Ref<HTMLTextAreaElement>;
   heightVar?: string;
@@ -46,9 +45,14 @@ export function useSizeVar(ref: { current: HTMLElement | null }, name: string): 
     const write = () => root.style.setProperty(name, Math.ceil(el.getBoundingClientRect().height) + "px");
     write();
     if (typeof ResizeObserver === "undefined") return () => root.style.removeProperty(name);
-    const watch = new ResizeObserver(write);
+    let frame = 0;
+    const watch = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(write);
+    });
     watch.observe(el);
     return () => {
+      cancelAnimationFrame(frame);
       watch.disconnect();
       root.style.removeProperty(name);
     };
@@ -60,7 +64,7 @@ function markScrolls(el: HTMLTextAreaElement): void {
 }
 
 export function Composer(props: ComposerProps) {
-  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendGlyph, attach, command, prompt, mode, hints, tray, onEscape, onTab, enterRuns, sendDisabled, running, accessory, stacked, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
+  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendGlyph, attach, command, prompt, mode, hints, tray, onEscape, onTab, enterRuns, sendDisabled, running, field, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
   const form = useRef<HTMLFormElement | null>(null);
   const input = useRef<HTMLTextAreaElement | null>(null);
   const typing = useRef(false);
@@ -93,7 +97,6 @@ export function Composer(props: ComposerProps) {
     if (!el || typeof ResizeObserver === "undefined") return;
     const watch = new ResizeObserver(() => {
       if (el.offsetHeight > ONE_LINE_MAX) setStack(true);
-      markScrolls(el);
     });
     watch.observe(el);
     return () => watch.disconnect();
@@ -162,15 +165,17 @@ export function Composer(props: ComposerProps) {
     >
       {tray}
       {hints}
-      <div className="zr-compose-row" data-attach={attach ? "" : undefined} data-stack={!prompt && (stack || stacked) ? "" : undefined} data-prompt={prompt ? "" : undefined}>
+      <div className="zr-compose-row" data-attach={attach ? "" : undefined} data-stack={!prompt && !field && stack ? "" : undefined} data-prompt={prompt ? "" : undefined}>
         {attach && <Pill {...attach} className="zr-attach" />}
         {prompt && (
           <span className="zr-prompt" aria-hidden="true">
             {prompt}
           </span>
         )}
+        {field}
         <textarea
           ref={setInput}
+          hidden={!!field}
           className={["zr-input", inputClassName].filter(Boolean).join(" ")}
           data-testid="composer-input"
           rows={1}
@@ -184,7 +189,6 @@ export function Composer(props: ComposerProps) {
           spellCheck={false}
           enterKeyHint={coarse && !enterRuns ? "enter" : "send"}
         />
-        {accessory}
         <PillPair label="Send">
           {command && <Pill {...command} className="zr-command" />}
           <Pill glyph={sendGlyph} label={sendLabel} type="submit" disabled={sendDisabled} className={["zr-send", sendClassName].filter(Boolean).join(" ")} data-testid="send" data-swapped={swap.current.swapped ? "" : undefined} key={sendLabel} />

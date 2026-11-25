@@ -9,7 +9,7 @@ import urllib.request
 from playwright.sync_api import sync_playwright
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from figchat_kit import HANG_MS, assert_centred, until
+from figchat_kit import HANG_MS, assert_centred, draft, until, voice_on
 
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 shots = os.environ.get("FIGCHAT_SHOTS", "")
@@ -40,15 +40,15 @@ def settle_motion(pg):
 
 
 def open_pit(pg):
-    if not pg.locator(".zr-pit").count():
-        pg.locator(".zr-composer .zr-grip").focus()
+    if not pg.locator(".zr-pit[role=dialog]").count():
+        pg.locator(".zr-pit-knob").focus()
         pg.keyboard.press("Enter")
     pg.wait_for_selector(".zr-pit[data-snap='half']")
 
 
 def close_pit(pg):
     pg.keyboard.press("Escape")
-    pg.wait_for_selector(".zr-pit", state="detached")
+    pg.wait_for_selector(".zr-pit[role=dialog]", state="detached")
 
 
 def hands_pressed(pg):
@@ -384,7 +384,7 @@ try:
         pg.close()
 
         def send(pg, text):
-            pg.locator(".zr-input").fill(text)
+            draft(pg, text)
             pg.wait_for_timeout(450)
             pg.locator(".zr-send").click()
 
@@ -396,7 +396,7 @@ try:
             attend(pg, door(45), MAIN)
             idle = pg.locator(".zr-composer").bounding_box()
             assert idle["height"] <= 76, "an idle composer is at most 76px tall: %s" % idle
-            marks = pg.evaluate("[...document.querySelectorAll('.zr-composer .zr-pill-glyph, .zr-composer .fw-mic-glyph')].map(n => n.textContent)")
+            marks = pg.evaluate("[...document.querySelectorAll('.zr-composer .zr-pill-glyph')].map(n => n.textContent)")
             assert len(marks) >= 3 and not [m for m in marks if re.search("[\U0001F000-\U0001FFFF\uFE0E\uFE0F]", m)], "the compose bar draws no emoji: %s" % marks
             pg.locator(".zr-input").fill("\n".join("line %d of a long note" % i for i in range(14)))
             pg.wait_for_timeout(200)
@@ -417,8 +417,6 @@ try:
             assert pg.locator(".zr-command").get_attribute("aria-pressed") == "false"
             for sel, what in ((".zr-send", "send"), (".zr-attach", "attach"), (".zr-command", "command")):
                 assert_centred(pg.locator(sel), "the %s pill's glyph at %d %s" % (what, width, scheme), blank_ok=(what == "attach"))
-            if pg.locator(".fw-mic-glyph").count():
-                assert_centred(pg.locator(".fw-mic"), "the record button's glyph at %d %s" % (width, scheme), tol=2.0, blank_ok=True)
             assert pg.locator(".zr-send").get_attribute("aria-label") == "Send"
             send(pg, "please run the tests")
             pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='running']")
@@ -858,21 +856,18 @@ try:
         door_v = door(12)
         attend(pg, door_v, MAIN)
         assert voice_pressed(pg) == "false", "voice starts off"
-        idle_width = pg.locator(".fw-mic").bounding_box()["width"]
-        assert pg.locator(".fw-mic .fw-mic-glyph").inner_text() != "", "the record button always wears a glyph"
+        assert pg.locator(".fw-mic").count() == 0, "with voice off there is no record button, only the field"
+        field = pg.locator(".zr-input").bounding_box()
         open_pit(pg)
-        pg.evaluate("""() => { window.__widths = []; const mic = document.querySelector('.fw-mic'); const t0 = performance.now(); const tick = () => { window.__widths.push(mic.getBoundingClientRect().width); if (performance.now() - t0 < 1500) requestAnimationFrame(tick); }; requestAnimationFrame(tick); }""")
         pg.locator(".fw-voice").click()
         close_pit(pg)
-        pg.wait_for_timeout(1600)
-        widths = pg.evaluate("window.__widths")
         settle_motion(pg)
         assert voice_pressed(pg) == "true"
         assert pg.locator(".fw[data-voice]").count() == 1
-        final_width = pg.locator(".fw-mic").bounding_box()["width"]
-        assert final_width > idle_width + 20, "turning voice on grows the input bar's record button"
-        mid = [w for w in widths if idle_width + 4 < w < final_width - 4]
-        assert len(mid) >= 2, "the width glides through intermediate values, it does not jump: %s" % sorted(set(round(w) for w in widths))
+        record = pg.locator(".zr-compose-row > .fw-mic").bounding_box()
+        assert not pg.locator(".zr-input").is_visible(), "voice mode puts the record button in the field's place"
+        assert abs(record["x"] - field["x"]) <= 1 and abs(record["width"] - field["width"]) <= 2 and abs(record["height"] - field["height"]) <= 2, "the record button takes the field's pill: %s %s" % (record, field)
+        assert pg.locator(".fw-mic .fw-mic-glyph").inner_text() != "", "the record button wears a glyph"
         send(pg, "just a [plain] hello")
         pg.wait_for_selector(".nodi-turn[data-turn='27'] .voce[data-for='27']")
         assert pg.locator(".nodi-turn[data-turn='27'] .nodi-prose .voce").count() == 1, "one player per turn, inside a prose node"
@@ -919,8 +914,10 @@ try:
         pg.errors = []
         pg.on("pageerror", lambda e: pg.errors.append(str(e)))
         attend(pg, mic_door, MAIN)
-        assert pg.locator(".fw-mic").is_enabled()
         pg.locator(".zr-input").fill("typed first")
+        voice_on(pg)
+        assert pg.locator(".fw-mic").is_enabled()
+        assert pg.locator(".fw-mic-label").inner_text() == "typed first", "the record button shows the draft it will add to"
         pg.locator(".fw-mic").tap()
         until(pg, "document.querySelector('.fw').dataset.mic === 'recording'", 10000)
         assert pg.locator(".fw-mic-meter").count() == 1, "the level meter is there the moment the mic is live"
@@ -956,8 +953,8 @@ try:
         assert len(stream_sessions) == 1 and re.fullmatch(r"[A-Za-z0-9_-]{16}", stream_sessions[0]["query"]), stream_sessions
         assert pg.evaluate("document.documentElement.style.getPropertyValue('--fw-mic-level')") == "", "the meter is cleared"
         assert mic_door.state()["sent"] == [], "the transcript is not sent until the user sends it"
-        assert pg.evaluate("document.activeElement.className") == "zr-input", "the transcript lands with the cursor in the composer"
-        pg.locator(".zr-input").fill("edited words")
+        assert pg.locator(".fw-mic-label").inner_text() == "typed first what is the crossing count please", "the record button shows the transcript"
+        draft(pg, "edited words")
         pg.locator(".zr-send").tap()
         until(pg, "document.querySelector(\"[data-turn='27']\")", 10000)
         assert mic_door.state()["sent"][0]["text"] == "edited words"
@@ -1069,19 +1066,21 @@ try:
                         pg.mouse.up()
             return Finger()
 
-        PIT = "() => { const p = document.querySelector('.zr-pit'); if (!p) return null; const b = p.getBoundingClientRect(); return { snap: p.dataset.snap, dragging: p.hasAttribute('data-dragging'), top: b.top, height: b.height, bottom: b.bottom, left: b.left, width: b.width }; }"
+        PIT = "() => { const p = document.querySelector('.zr-pit'); const b = p.getBoundingClientRect(); return { snap: p.dataset.snap, dragging: p.hasAttribute('data-dragging'), dialog: p.getAttribute('role') === 'dialog', top: b.top, bottom: b.bottom, left: b.left, width: b.width }; }"
 
-        def pit_at(pg, snap, height_px, what):
-            until(pg, "(() => { const p = document.querySelector('.zr-pit'); return !!p && p.dataset.snap === '%s' && !p.hasAttribute('data-dragging'); })()" % snap, 3000)
+        def pit_at(pg, snap, top_px, what):
+            until(pg, "(() => { const p = document.querySelector('.zr-pit'); return p.dataset.snap === '%s' && !p.hasAttribute('data-dragging'); })()" % snap, 3000)
             settle_motion(pg)
             got = pg.evaluate(PIT)
-            assert abs(got["height"] - height_px) <= 2, "%s: expected a pit %dpx tall, got %s" % (what, height_px, got)
-            assert abs(got["bottom"] - pg.evaluate("innerHeight")) <= 1, "%s: the pit sits on the bottom edge: %s" % (what, got)
+            assert abs(got["top"] - top_px) <= 2, "%s: expected the drawer's top edge at %dpx, got %s" % (what, top_px, got)
+            assert got["dialog"], "%s: the open drawer is a dialog" % what
             return got
 
         def pit_gone(pg, what):
-            pg.wait_for_selector(".zr-pit", state="detached")
-            assert pg.evaluate("document.documentElement.style.getPropertyValue('--zr-pit-h')") == "", what
+            pg.wait_for_selector(".zr-pit[role=dialog]", state="detached")
+            settle_motion(pg)
+            got = pg.evaluate(PIT)
+            assert got["snap"] == "closed" and abs(got["bottom"] - pg.evaluate("innerHeight")) <= 1, "%s: the drawer rests on the bottom edge: %s" % (what, got)
 
         def centre(loc):
             b = loc.bounding_box()
@@ -1098,28 +1097,25 @@ try:
             cdp = ctx.new_cdp_session(pg)
             attend(pg, pit_door, MAIN)
             f = finger(pg, cdp, phone)
-            grip = pg.locator(".zr-composer .zr-grip")
-            assert grip.is_visible() and pg.locator(".zr-pit").count() == 0
-            gb, cb, fb = grip.bounding_box(), pg.locator(".zr-composer").bounding_box(), pg.locator(".zr-composer .zr-input").bounding_box()
-            if width < 600:
-                assert gb["y"] + gb["height"] <= fb["y"], "on a phone the grip stays off the field: %s %s" % (gb, fb)
-            else:
-                assert abs((gb["y"] + gb["height"] / 2) - cb["y"]) <= 4, "the grip sits on the composer's top edge: %s %s" % (gb, cb)
-            bar = pg.locator(".zr-composer .zr-grip .zr-grip-bar").bounding_box()
-            assert abs((bar["y"] + bar["height"] / 2) - cb["y"]) <= 2, "the grip's bar sits on the composer's top edge: %s %s" % (bar, cb)
-            half, full = round(height / 2), height
+            knob = pg.locator(".zr-pit-knob")
+            assert knob.is_visible() and pg.locator(".zr-pit[role=dialog]").count() == 0
+            assert pg.locator(".zr-pit .zr-pit-head .zr-composer").count() == 1, "the composer is the drawer's head"
+            kb, db, fb = knob.bounding_box(), pg.evaluate(PIT), pg.locator(".zr-composer .zr-input").bounding_box()
+            assert kb["y"] + kb["height"] <= fb["y"], "the tab stays off the field: %s %s" % (kb, fb)
+            bar = pg.locator(".zr-pit-knob .zr-pit-knob-bar").bounding_box()
+            assert abs((bar["y"] + bar["height"] / 2) - db["top"]) <= 2, "the tab's bar sits on the drawer's top border: %s %s" % (bar, db)
+            half = round(height / 2)
 
-            gx, gy = centre(grip)
-            f.down(gx, gy)
+            fx, fy = fb["x"] + fb["width"] * 0.8, fb["y"] + fb["height"] / 2
+            f.down(fx, fy)
             f.move(height * 0.5)
-            assert pg.evaluate(PIT) and pg.evaluate(PIT)["dragging"], "the pit follows the finger at %d" % width
             mid = pg.evaluate(PIT)
-            assert abs(mid["top"] - height * 0.5) <= 2, "the pit's top edge is under the finger: %s" % mid
+            assert mid["dragging"], "the drawer follows the finger at %d" % width
+            assert abs(mid["top"] - (db["top"] + height * 0.5 - fy)) <= 2, "the drawer moves one to one with the finger: %s" % mid
             f.hold()
             f.up()
-            pit_at(pg, "half", half, "dragged from the composer edge to the middle")
-            assert pg.locator(".zr-pit").get_attribute("role") == "dialog"
-            assert pg.locator("#app [style]").count() == 0, "dragging writes no style attribute under the CSP"
+            pit_at(pg, "half", half, "dragged from the input bar to the middle")
+            assert pg.locator("#app [style]").count() == 0, "a drag leaves no style attribute behind under the CSP"
             snap(pg, "pit-half-%d" % width)
             sans_free(pg, "the pit at %d" % width)
             if phone:
@@ -1132,75 +1128,73 @@ try:
                 assert abs(box["x"] - pane["x"]) <= 1 and abs(box["x"] + box["width"] - (pane["x"] + pane["width"])) <= 1, "docked across the transcript pane: %s vs %s" % (box, pane)
                 assert pg.locator(".zr-pit[data-docked]").count() == 1
 
-            hx, hy = centre(pg.locator(".zr-pit-handle"))
-            f.down(hx, hy)
-            f.move(height * 0.2)
-            f.hold()
-            f.up()
-            pit_at(pg, "half", half, "released above half but short of the top 15 percent, it stays half")
+            def grab():
+                b = pg.locator(".zr-composer .zr-input").bounding_box()
+                f.down(b["x"] + b["width"] * 0.8, b["y"] + b["height"] / 2)
+                return b["y"] + b["height"] / 2
 
-            hx, hy = centre(pg.locator(".zr-pit-handle"))
-            f.down(hx, hy)
-            f.move(height * 0.1)
+            y = grab()
+            f.move(y - height * 0.2)
             f.hold()
             f.up()
-            pit_at(pg, "full", full, "past the top 15 percent it snaps full")
+            pit_at(pg, "half", half, "a slow release nearer half than full stays half")
+
+            y = grab()
+            f.move(y - height * 0.4)
+            f.hold()
+            f.up()
+            pit_at(pg, "full", 0, "a slow release near the top goes full")
             snap(pg, "pit-full-%d" % width)
 
-            hx, hy = centre(pg.locator(".zr-pit-handle"))
-            f.down(hx, hy)
-            f.move(height * 0.55)
+            y = grab()
+            f.move(y + height * 0.55)
             f.hold()
             f.up()
             pit_at(pg, "half", half, "dragged down from full to just past half, it settles half")
 
-            hx, hy = centre(pg.locator(".zr-pit-handle"))
-            f.down(hx, hy)
-            f.move(height * 0.95)
+            y = grab()
+            f.move(y + height * 0.45)
             f.hold()
             f.up()
-            pit_gone(pg, "dragged down past the bottom quarter, it closes")
+            pit_gone(pg, "dragged down near the bottom, it closes")
 
-            gx, gy = centre(grip)
-            f.down(gx, gy)
-            f.move(gy - 150, steps=5, gap=0)
+            y = grab()
+            f.move(y - 100, steps=5, gap=16)
             f.up()
-            pit_at(pg, "half", half, "a flick up from the composer edge lands on half")
-            hx, hy = centre(pg.locator(".zr-pit-handle"))
-            f.down(hx, hy)
-            f.move(hy - 150, steps=4, gap=0)
+            pit_at(pg, "half", half, "a flick up from the input bar lands on half")
+            y = grab()
+            f.move(y - 100, steps=5, gap=16)
             f.up()
-            pit_at(pg, "full", full, "a flick up from half lands on full")
-            hx, hy = centre(pg.locator(".zr-pit-handle"))
-            f.down(hx, hy)
-            f.move(hy + 200, steps=4, gap=0)
+            pit_at(pg, "full", 0, "a flick up from half lands on full")
+            y = grab()
+            f.move(y + 100, steps=5, gap=16)
             f.up()
             pit_at(pg, "half", half, "a flick down from full lands on half")
-            hx, hy = centre(pg.locator(".zr-pit-handle"))
-            f.down(hx, hy)
-            f.move(hy + 200, steps=4, gap=0)
+            y = grab()
+            f.move(y + 100, steps=5, gap=16)
             f.up()
             pit_gone(pg, "a flick down from half closes")
 
-            grip.focus()
+            knob.focus()
             pg.keyboard.press("Enter")
-            pit_at(pg, "half", half, "Enter on the grip opens half")
-            assert pg.evaluate("!!document.activeElement.closest('.zr-pit')"), "focus moves into the pit"
-            pg.locator(".zr-pit-handle").focus()
+            pit_at(pg, "half", half, "Enter on the tab opens half")
+            assert pg.evaluate("!!document.activeElement.closest('.zr-pit-body')"), "focus moves into the pit"
+            knob.focus()
             pg.keyboard.press("ArrowUp")
-            pit_at(pg, "full", full, "ArrowUp on the handle goes full")
+            pit_at(pg, "full", 0, "ArrowUp on the tab goes full")
             pg.keyboard.press("ArrowDown")
-            pit_at(pg, "half", half, "ArrowDown on the handle goes back to half")
+            pit_at(pg, "half", half, "ArrowDown on the tab goes back to half")
             pg.keyboard.press("Escape")
             pit_gone(pg, "Escape closes")
-            assert pg.evaluate("document.activeElement.className") == "zr-grip", "focus returns to the grip"
-            grip.click()
-            pit_at(pg, "half", half, "a tap on the grip opens half")
+            assert pg.evaluate("document.activeElement.className") == "zr-pit-knob", "focus returns to the tab"
+            assert pg.locator(".zr-pit button", has_text="Close").count() == 0, "there is no close button"
+            knob.click()
+            pit_at(pg, "half", half, "a tap on the tab opens half")
             if phone:
                 pg.locator(".zr-pit-scrim").click(position={"x": 10, "y": 10})
             else:
-                pg.locator(".zr-pit-head button", has_text="Close").click()
-            pit_gone(pg, "scrim or Close closes")
+                knob.click()
+            pit_gone(pg, "the scrim or the tab closes")
             assert not pg.errors, pg.errors
             ctx.close()
 
@@ -1242,17 +1236,16 @@ try:
             assert "Live" in joined and MAIN in joined and "Zanni" in joined, facts
             pg.locator(".fw-pit-back").click()
             assert pg.locator(".fw-head").count() == 0, "no logo below full screen"
-            pg.locator(".zr-pit-handle").focus()
+            pg.locator(".zr-pit-knob").focus()
             pg.keyboard.press("ArrowUp")
-            pit_at(pg, "full", height, "full screen pit")
+            pit_at(pg, "full", 0, "full screen pit")
             assert pg.locator(".zr-pit .fw-head").count() == 1, "the logo appears only in the full-screen pit"
-            assert pg.locator(".zr-pit-bar .zr-btn").evaluate("n => getComputedStyle(n).display") == "none", "the full pit's head is the icon and the title"
-            assert pg.locator(".zr-pit-title").inner_text().strip() != ""
+            assert pg.locator(".fw-pit-title").inner_text().strip() != ""
             snap(pg, "header-drop-full-%d" % width)
             pg.keyboard.press("ArrowDown")
             pit_at(pg, "half", round(height / 2), "back to half")
             pg.locator("[data-action='new']").click()
-            pg.wait_for_selector(".zr-pit", state="detached")
+            pg.wait_for_selector(".zr-pit[role=dialog]", state="detached")
             pg.wait_for_selector(".fw-new-form")
             snap(pg, "header-drop-new-%d" % width)
             assert not pg.errors, pg.errors
@@ -1293,7 +1286,7 @@ try:
             assert pg.locator(".zr-pit .zr-tree-row[data-id='%s'] .zr-tree-here" % MAIN).text_content().strip() == "●", "the attended row wears the pager's here mark"
             assert not any(c in pg.locator(".zr-pit .zr-tree").inner_text() for c in "│├└─"), "no guide characters, the tree is rendered"
             pg.locator(".zr-pit .zr-tree-row[data-id='%s']" % LANE).click()
-            pg.wait_for_selector(".zr-pit", state="detached")
+            pg.wait_for_selector(".zr-pit[role=dialog]", state="detached")
             until(pg, "location.hash.includes('%s')" % LANE, 5000)
             until(pg, "document.querySelector('.fw').dataset.link === 'live'", 8000)
             open_pit(pg)
@@ -1310,14 +1303,15 @@ try:
             assert pg.locator(".fw-new-form input").input_value() == "opus5-ant", "an outfit from the list is chosen for the new figaro"
             pg.keyboard.press("Escape")
             pg.wait_for_selector(".fw-new-form", state="detached")
-            pg.wait_for_selector(".zr-pit", state="detached")
+            pg.wait_for_selector(".zr-pit[role=dialog]", state="detached")
             open_pit(pg)
             close_pit(pg)
             pg.reload()
             until(pg, "document.querySelector('.fw').dataset.link === 'live'", 15000)
             open_pit(pg)
             order = pg.locator(".zr-pit-row").evaluate_all("rows => rows.map(r => r.dataset.action)")
-            assert order[:3] == ["outfits", "recent", "tree"], "last-used order survives a reload: %s" % order
+            tiles = pg.locator(".fw-controls .zr-pit-row").evaluate_all("rows => rows.map(r => r.dataset.action)")
+            assert tiles[:2] == ["recent", "tree"] and order[len(tiles)] == "outfits", "last-used order survives a reload, tiles and detail rows each: %s" % order
             close_pit(pg)
 
             attend(pg, ctl_door, MAIN)
@@ -1326,7 +1320,7 @@ try:
             pg.locator(".fw-forkat-form input").fill("20")
             pg.locator(".fw-forkat-form textarea").fill("what if we waited")
             pg.locator(".fw-forkat-form button[type=submit]").click()
-            pg.wait_for_selector(".zr-pit", state="detached")
+            pg.wait_for_selector(".zr-pit[role=dialog]", state="detached")
             until(pg, "/^#\\/gluck\\/[0-9a-f]{32}$/.test(location.hash) && !location.hash.includes('%s')" % MAIN, 8000)
             until(pg, "document.querySelector('.fw').dataset.link === 'live'", 8000)
             assert pg.locator(".fw-forkmark").inner_text().startswith("\u2442 Fork of "), "the sub-bar says this is a fork and of what"
@@ -1344,7 +1338,7 @@ try:
             attend(pg, ctl_door, MAIN)
             open_pit(pg)
             pg.locator("[data-action='tail-fork']").click()
-            pg.wait_for_selector(".zr-pit", state="detached")
+            pg.wait_for_selector(".zr-pit[role=dialog]", state="detached")
             until(pg, "!location.hash.includes('%s')" % MAIN, 8000)
             until(pg, "document.querySelector('.fw').dataset.link === 'live'", 8000)
             assert pg.locator(".nodi-turn-fork").count() == 0, "a tail fork has no own turn yet, so no turn wears the mark"
@@ -1359,15 +1353,15 @@ try:
         cdp = ctx.new_cdp_session(pg)
         attend(pg, door(12), MAIN)
         f = finger(pg, cdp, True)
-        gx, gy = centre(pg.locator(".zr-composer .zr-grip"))
+        gx, gy = centre(pg.locator(".zr-composer .zr-input"))
         f.down(gx, gy)
-        f.move(300)
+        f.move(gy - 380)
         f.hold()
         f.up()
         pit_at(pg, "half", 422, "reduced motion still drags")
         assert pg.evaluate("parseFloat(getComputedStyle(document.querySelector('.zr-pit')).transitionDuration) * 1000") <= 1
         pg.keyboard.press("Escape")
-        pg.wait_for_selector(".zr-pit", state="detached")
+        pg.wait_for_selector(".zr-pit[role=dialog]", state="detached")
         assert not pg.errors, pg.errors
         ctx.close()
 

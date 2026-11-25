@@ -35,7 +35,7 @@ def geometry(pg):
       const last = turns.length ? turns[turns.length - 1].getBoundingClientRect() : null;
       const vv = window.visualViewport;
       return {
-        shell: r('.zr-shell'), composer: r('.zr-composer'), input: r('.zr-input'), scroller: r('[data-zr-scroll]'),
+        shell: r('.zr-shell'), pit: r('.zr-pit'), composer: r('.zr-composer'), input: r('.zr-input'), scroller: r('[data-zr-scroll]'),
         lastBottom: last && last.bottom,
         vvBottom: vv.offsetTop + vv.height, vvTop: vv.offsetTop, innerHeight: innerHeight,
         docScroll: [document.documentElement.scrollTop, document.body.scrollTop, scrollY],
@@ -120,7 +120,7 @@ with sync_playwright() as p:
     assert "maximum-scale" not in meta(pg) and "user-scalable" not in meta(pg), "pinch zoom stays available: " + meta(pg)
     sizes = pg.evaluate("[...document.querySelectorAll('textarea, input, select')].map(n => [n.className, parseFloat(getComputedStyle(n).fontSize)])")
     assert sizes and all(px >= 16 for _, px in sizes), "an input under 16px makes iOS zoom on focus: %s" % sizes
-    pg.locator(".zr-composer .zr-grip").focus()
+    pg.locator(".zr-pit-knob").focus()
     pg.keyboard.press("Enter")
     pg.wait_for_selector(".zr-pit[data-snap='half']")
     pg.locator("[data-action='new']").tap()
@@ -147,10 +147,11 @@ with sync_playwright() as p:
         want = 844 - KB
         near(g["vvBottom"], top + want, "the fake keyboard moved the visual viewport")
         near(g["shell"]["top"], top, "the shell follows visualViewport.offsetTop (%d)" % top)
-        near(g["shell"]["bottom"], g["vvBottom"], "the shell ends where the keyboard begins (%d)" % top)
+        near(g["pit"]["bottom"], g["vvBottom"], "the drawer rests where the keyboard begins (%d)" % top)
+        assert g["shell"]["bottom"] >= g["vvBottom"] - 1, "the shell reaches under the keyboard so its surface shows there (%d): %s" % (top, g["shell"])
         near(g["composer"]["bottom"], g["vvBottom"], "the composer sits right above the keyboard (%d)" % top)
         pad = pg.evaluate("parseFloat(getComputedStyle(document.querySelector('.zr-composer')).paddingBottom)")
-        assert pad == 8, "no safe-area padding above the keyboard: %s" % pad
+        assert pad == 4, "a slim pad and no safe area above the keyboard: %s" % pad
         assert g["fromBottom"] <= 1, "the transcript stayed at its end: %s" % g
         near(g["lastBottom"], g["composer"]["top"], "nothing hides under the composer", 40)
         assert g["lastBottom"] <= g["composer"]["top"] + 1
@@ -196,7 +197,7 @@ with sync_playwright() as p:
     g = geometry(pg)
     near(g["composer"]["bottom"], 844, "the composer returns to the bottom once the keyboard goes")
     near(g["shell"]["bottom"], 844, "the shell returns to full height")
-    assert pg.evaluate("parseFloat(getComputedStyle(document.querySelector('.zr-composer')).paddingBottom)") >= 8
+    assert pg.evaluate("parseFloat(getComputedStyle(document.querySelector('.zr-composer')).paddingBottom)") >= 4
     assert g["docFits"] and g["docScroll"] == [0, 0, 0]
     pg.context.close()
 
@@ -286,7 +287,7 @@ with sync_playwright() as p:
     pg.evaluate("window.__kb.open(200, 0)")
     pg.wait_for_timeout(300)
     g = geometry(pg)
-    near(g["shell"]["bottom"], 190, "landscape with a keyboard: the shell is the strip above it")
+    near(g["pit"]["bottom"], 190, "landscape with a keyboard: the drawer rests on the strip above it")
     near(g["composer"]["bottom"], 190, "landscape: the composer is above the keyboard")
     assert g["input"]["top"] >= g["shell"]["top"], "the input is on screen in landscape: %s" % g
     assert pg.evaluate("document.documentElement.scrollWidth") <= 844
@@ -441,19 +442,13 @@ with sync_playwright() as p:
     attend(pg, fast)
     pg.evaluate("window.__kb.open(%d, 0)" % KB)
     pg.wait_for_timeout(150)
-    pg.locator(".zr-composer .zr-grip").focus()
+    pg.locator(".zr-pit-knob").focus()
     pg.keyboard.press("Enter")
-    pg.wait_for_selector(".zr-pit[data-snap='half']")
+    pg.wait_for_selector(".zr-pit[data-snap='full']")
     pg.evaluate("Promise.all(document.getAnimations().map(a => a.finished.catch(() => null)))")
-    pit = pg.evaluate("(() => { const b = document.querySelector('.zr-pit').getBoundingClientRect(); return [b.bottom, b.height]; })()")
-    near(pit[0], 844 - KB, "the pit sits on the keyboard's edge, not behind it")
-    near(pit[1], (844 - KB) / 2, "half is half of what the keyboard leaves", 2)
-    pg.keyboard.press("ArrowUp")
-    pg.wait_for_timeout(100)
-    pg.evaluate("Promise.all(document.getAnimations().map(a => a.finished.catch(() => null)))")
-    pit = pg.evaluate("(() => { const b = document.querySelector('.zr-pit').getBoundingClientRect(); return [b.top, b.bottom, b.height]; })()")
-    near(pit[1], 844 - KB, "the full pit ends at the keyboard")
-    assert pit[0] >= -1 and pit[2] <= 844 - KB + 1, "the full pit fits above the keyboard: %s" % pit
+    pit = pg.evaluate("(() => { const p = document.querySelector('.zr-pit').getBoundingClientRect(); const b = document.querySelector('.zr-pit-body').getBoundingClientRect(); return [p.top, b.bottom]; })()")
+    near(pit[0], 0, "with the keyboard up there is no room for half, so the pit opens full")
+    near(pit[1], 844 - KB, "the full pit ends at the keyboard's edge, not behind it")
     assert not pg.errors, pg.errors
     pg.context.close()
 
@@ -471,7 +466,7 @@ with sync_playwright() as p:
     assert got["sendUp"] and got["sendDown"], "Send keeps a 44px hit area: %s" % got
     assert got["fieldTop"], "the grip does not cover the top of the field: %s" % got
     assert_centred(pg.locator(".zr-send"), "the send pill's glyph on an iPhone")
-    assert_centred(pg.locator(".fw-mic"), "the record button's glyph on an iPhone", tol=2.0, blank_ok=True)
+    assert pg.locator(".fw-mic").count() == 0, "no mic button beside the field"
     pg.locator(".zr-input").tap()
     pg.keyboard.type("first")
     pg.locator(".zr-send").tap()

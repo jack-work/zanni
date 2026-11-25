@@ -166,25 +166,21 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
       running={running}
       focusTick={focusTick}
       inputRef={input}
-      stacked={voiceOn || (mic.state !== "idle" && mic.state !== "unsupported")}
-      accessory={
-        cmd.on ? undefined : (
-        <Button
-          variant="outline"
-          className="fw-mic"
-          aria-pressed={mic.state === "recording"}
-          aria-label={micLabel}
-          disabled={mic.state === "unsupported" || mic.state === "asking" || mic.state === "transcribing"}
-          title={mic.state === "unsupported" ? "This browser cannot record audio." : undefined}
-          onClick={() => {
-            if (mic.state === "recording") input.current?.focus({ preventScroll: true });
-            toggleMic();
-          }}
-        >
-          {voiceGlyph && <Glyph glyph={voiceGlyph} className="fw-mic-glyph" />}
-          <span className="fw-mic-label">{micLabel}</span>
-          {mic.state === "recording" && <span className="fw-mic-meter" aria-hidden="true" />}
-        </Button>
+      field={
+        cmd.on || !voiceOn ? undefined : (
+          <Button
+            variant="outline"
+            className="fw-mic"
+            aria-pressed={mic.state === "recording"}
+            aria-label={micLabel}
+            disabled={mic.state === "unsupported" || mic.state === "asking" || mic.state === "transcribing"}
+            title={mic.state === "unsupported" ? "This browser cannot record audio." : undefined}
+            onClick={() => toggleMic()}
+          >
+            {voiceGlyph && <Glyph glyph={voiceGlyph} className="fw-mic-glyph" />}
+            <span className="fw-mic-label">{mic.state !== "recording" && mic.state !== "transcribing" && draft ? draft : micLabel}</span>
+            {mic.state === "recording" && <span className="fw-mic-meter" aria-hidden="true" />}
+          </Button>
         )
       }
     />

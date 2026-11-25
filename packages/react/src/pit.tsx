@@ -197,7 +197,12 @@ export function Pit({ snap: asked, onSnapChange, label, detents = ALL, head, kno
     const next = pitSettle(g.y, cancelled ? 0 : velocityOf(g.samples, t), g.frame, g.snaps);
     el.style.transition = "";
     el.style.transform = "";
-    if (scrim.current) scrim.current.style.opacity = "";
+    if (!el.getAttribute("style")) el.removeAttribute("style");
+    const s = scrim.current;
+    if (s) {
+      s.style.opacity = "";
+      if (!s.getAttribute("style")) s.removeAttribute("style");
+    }
     el.setAttribute("data-snap", next);
     setDragging(false);
     if (next !== live.current.snap) live.current.onSnapChange(next);

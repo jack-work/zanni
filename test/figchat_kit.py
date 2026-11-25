@@ -53,6 +53,32 @@ def until(pg, js, timeout=HANG_MS):
     raise AssertionError("timed out waiting for: %s (last %r)" % (js, last))
 
 
+DRAFT = """(t) => {
+  const el = document.querySelector('.zr-input');
+  Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(el, t);
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+}"""
+
+
+def draft(pg, text):
+    box = pg.locator(".zr-input")
+    if box.is_visible():
+        box.fill(text)
+    else:
+        pg.evaluate(DRAFT, text)
+
+
+def voice_on(pg):
+    pg.locator(".zr-pit-knob").focus()
+    pg.keyboard.press("Enter")
+    pg.wait_for_selector(".zr-pit[role=dialog] .fw-voice")
+    if pg.locator(".fw-voice").get_attribute("aria-pressed") != "true":
+        pg.locator(".fw-voice").click()
+    pg.keyboard.press("Escape")
+    pg.wait_for_selector(".zr-pit[role=dialog]", state="detached")
+    pg.wait_for_selector(".zr-compose-row > .fw-mic")
+
+
 def keystrokes(pg, count, gap=25):
     marks = []
     for i in range(count):

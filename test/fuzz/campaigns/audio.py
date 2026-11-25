@@ -277,8 +277,8 @@ class Audio(Network):
         return {"k": "fault", "op": {"op": "clear"}}
 
     def open_pit(self, page):
-        if page.locator(".zr-pit").count() == 0:
-            page.locator(".zr-grip").first.click(timeout=1500)
+        if page.locator(".zr-pit[role=dialog]").count() == 0:
+            page.locator(".zr-pit-knob").first.click(timeout=1500)
             page.wait_for_selector(".fw-voice", timeout=2000)
 
     def set_voice(self, run, page, to):

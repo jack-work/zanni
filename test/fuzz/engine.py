@@ -113,9 +113,9 @@ class Run:
     def pit_facts(self):
         return self.page.evaluate("""() => {
           const pit = document.querySelector('.zr-pit');
-          const grip = document.querySelector('.zr-grip');
-          return { open: !!pit, snap: pit ? pit.dataset.snap : null, dragging: !!(pit && pit.hasAttribute('data-dragging')),
-                   grip: grip ? grip.dataset.snap : null, h: document.documentElement.style.getPropertyValue('--zr-pit-h'),
+          const grip = document.querySelector('.zr-pit-knob');
+          return { open: !!pit && pit.getAttribute('role') === 'dialog', snap: pit ? pit.dataset.snap : null, dragging: !!(pit && pit.hasAttribute('data-dragging')),
+                   grip: grip ? (grip.getAttribute('aria-expanded') === 'true') : null, inline: pit ? pit.getAttribute('style') || '' : '',
                    scrim: !!document.querySelector('.zr-pit-scrim') };
         }""")
 
@@ -179,8 +179,8 @@ def check_always(run):
     if not f["connected"] or (f["tag"] not in ("BODY", "HTML") and not f["inApp"]):
         raise Failure("focus", "focus sits on %r (connected=%s, in app=%s)" % (f["tag"], f["connected"], f["inApp"]))
     p = run.pit_facts()
-    if not p["open"] and p["h"].strip() not in ("", "0px", "0"):
-        raise Failure("stuck-pit", "the pit is closed but --zr-pit-h is still %r" % p["h"])
+    if not p["dragging"] and p["inline"]:
+        raise Failure("stuck-pit", "the drawer keeps an inline position with no drag: %r" % p["inline"])
     if p["open"] and p["snap"] not in ("half", "full", "closed"):
         raise Failure("stuck-pit", "pit snap %r" % p["snap"])
     if p["scrim"] and not p["open"]:

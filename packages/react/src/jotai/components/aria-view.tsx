@@ -5,7 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useFirstFrame } from "../lib/first-frame";
 import { labelOf } from "../lib/roster";
 import { metricsLineAtom, noteAtom, seenAtom, turnsAtom } from "../state/aria";
-import { forkOfAtom, treeStateAtom } from "../state/pit";
+import { forkOfAtom, pitSnapAtom, treeStateAtom } from "../state/pit";
 import { paneAtom } from "../state/pane";
 import { routeFor } from "../lib/route";
 import { rosterAtom } from "../state/roster";
@@ -173,6 +173,7 @@ export function AriaView({ attended }: { attended: Attended }) {
     [tree],
   );
   const gone = link === "gone" || link === "refused";
+  const pitClosed = useAtomValue(pitSnapAtom) === "closed";
   const fork_of = useAtomValue(forkOfAtom);
   const status = note || pageError;
   const metrics = useAtomValue(metricsLineAtom(client, aria));
@@ -222,7 +223,7 @@ export function AriaView({ attended }: { attended: Attended }) {
         </main>
       </div>
       <Pit head={gone ? undefined : <Composer attended={attended} toBottom={toBottom} />} />
-      {follow.away && <LatestPill onClick={() => follow.latest(turnsRef.current)} />}
+      {follow.away && pitClosed && <LatestPill onClick={() => follow.latest(turnsRef.current)} />}
       <CommandHelp />
     </section>
   );

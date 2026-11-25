@@ -385,7 +385,21 @@ describe("the composer's pills", () => {
     expect(g.getAttribute("aria-hidden")).toBe("true");
     expect(g.hasAttribute("style")).toBe(false);
     expect(g.hasAttribute("data-ink")).toBe(false);
-    expect(document.querySelector(".fw-mic .zr-ink")!.textContent).toBe(glyphs.voice);
+    expect(document.querySelector(".fw-mic")).toBeNull();
+  });
+
+  it("puts one wide record button in the input's place in voice mode, and keeps the draft", async () => {
+    attend(1);
+    await live();
+    fireEvent.change(input(), { target: { value: "half a thought" } });
+    act(() => (document.querySelector(".zr-pit-knob") as HTMLElement).click());
+    await waitFor(() => expect(document.querySelector(".fw-voice")).toBeTruthy());
+    act(() => (document.querySelector(".fw-voice") as HTMLElement).click());
+    const record = await waitFor(() => document.querySelector<HTMLElement>(".zr-compose-row > .fw-mic")!);
+    expect(record.querySelector(".zr-ink")!.textContent).toBe(glyphs.voice);
+    expect(record.querySelector(".fw-mic-label")!.textContent).toBe("half a thought");
+    expect(input().hidden).toBe(true);
+    expect(input().value).toBe("half a thought");
   });
 });
 

@@ -13,7 +13,7 @@ import json
 import math
 import struct
 
-from kit import Door, Report, bundle_arg, until
+from kit import Door, Report, bundle_arg, draft, until, voice_on
 
 import timing
 
@@ -122,12 +122,12 @@ def main():
                 until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'", 15000)
                 pg.wait_for_selector(".zr-composer .zr-input")
                 pg.wait_for_timeout(800)
-                pg.locator(".zr-composer .zr-grip").focus()
+                pg.locator(".zr-pit-knob").focus()
                 pg.keyboard.press("Enter")
                 pg.wait_for_selector(".zr-pit[data-snap='half']")
                 pg.locator(".fw-voice").click()
                 pg.keyboard.press("Escape")
-                pg.wait_for_selector(".zr-pit", state="detached")
+                pg.wait_for_selector(".zr-pit[role=dialog]", state="detached")
                 pg.wait_for_timeout(400)
                 work(pg)
                 events = pg.evaluate("window.__au")
@@ -135,7 +135,7 @@ def main():
                 return events
 
             def say(pg, text):
-                pg.locator(".zr-input").fill(text)
+                draft(pg, text)
                 pg.locator(".zr-send").click()
 
             def paced(pg):

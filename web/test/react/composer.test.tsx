@@ -4,9 +4,9 @@ import { describe, expect, it, vi } from "vitest";
 import { act } from "@testing-library/react";
 import { Button, Composer, KEYBOARD_CLOSE_SETTLE_MS, trackViewport } from "zanni-react";
 
-function Harness({ submit = () => {}, running = false, onAttach = () => {}, onCommand = () => {}, commandOn = false }: { submit?: () => void; onAttach?: () => void; onCommand?: () => void; commandOn?: boolean; running?: boolean }) {
+function Harness({ submit = () => {}, running = false, onAttach = () => {}, onCommand = () => {}, commandOn = false, field = false }: { submit?: () => void; onAttach?: () => void; onCommand?: () => void; commandOn?: boolean; running?: boolean; field?: boolean }) {
   const [v, setV] = useState("");
-  return <Composer value={v} onChange={setV} onSubmit={submit} sendLabel={running ? "Steer" : "Send"} sendGlyph={running ? "↳" : "✎"} attach={{ glyph: "❝", label: "Attach", onClick: onAttach }} command={{ glyph: "∴", label: "Command", pressed: commandOn, onClick: onCommand }} running={running} accessory={<Button>Record</Button>} heightVar="--test-h" />;
+  return <Composer value={v} onChange={setV} onSubmit={submit} sendLabel={running ? "Steer" : "Send"} sendGlyph={running ? "↳" : "✎"} attach={{ glyph: "❝", label: "Attach", onClick: onAttach }} command={{ glyph: "∴", label: "Command", pressed: commandOn, onClick: onCommand }} running={running} field={field ? <Button>Record</Button> : undefined} heightVar="--test-h" />;
 }
 
 const box = () => screen.getByLabelText("Message", { selector: "textarea" }) as HTMLTextAreaElement;
@@ -80,15 +80,21 @@ describe("Composer", () => {
     vi.useRealTimers();
   });
 
-  it("submits from the send button, which says Steer while running, and shows the accessory", () => {
+  it("submits from the send button, which says Steer while running", () => {
     const submit = vi.fn();
     const { rerender } = render(<Harness submit={submit} />);
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
     expect(submit).toHaveBeenCalledTimes(1);
     rerender(<Harness submit={submit} running />);
     expect(screen.getByRole("button", { name: "Steer" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Record" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Record" })).toBeNull();
     expect(document.querySelector("form")!.hasAttribute("data-running")).toBe(true);
+  });
+
+  it("puts a field in the input's place and keeps the draft", () => {
+    render(<Harness field />);
+    expect(screen.getByRole("button", { name: "Record" })).toBeTruthy();
+    expect(screen.getByTestId("composer-input").hidden).toBe(true);
   });
 
   it("writes its height to a CSS variable and draws no strip", () => {

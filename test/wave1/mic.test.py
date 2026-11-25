@@ -12,7 +12,7 @@ import struct
 import tempfile
 import time
 
-from kit import Door, Report, bundle_arg, until
+from kit import Door, Report, bundle_arg, draft, until, voice_on
 
 from playwright.sync_api import sync_playwright
 
@@ -64,7 +64,7 @@ def main():
             def run():
                 pg.goto(door.url + "#/gluck/" + MAIN)
                 until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'", 15000)
-                pg.wait_for_selector(".fw-mic")
+                voice_on(pg)
                 pg.wait_for_timeout(600)
                 pg.locator(".fw-mic").click()
                 until(pg, "document.querySelector('.fw').dataset.mic === 'recording'", 10000)
