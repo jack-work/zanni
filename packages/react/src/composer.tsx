@@ -24,8 +24,7 @@ export interface ComposerProps {
   enterRuns?: boolean;
   sendDisabled?: boolean;
   running?: boolean;
-  accessory?: ReactNode;
-  stacked?: boolean;
+  field?: ReactNode;
   focusTick?: number;
   inputRef?: Ref<HTMLTextAreaElement>;
   heightVar?: string;
@@ -60,7 +59,7 @@ function markScrolls(el: HTMLTextAreaElement): void {
 }
 
 export function Composer(props: ComposerProps) {
-  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendGlyph, attach, command, prompt, mode, hints, tray, onEscape, onTab, enterRuns, sendDisabled, running, accessory, stacked, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
+  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendGlyph, attach, command, prompt, mode, hints, tray, onEscape, onTab, enterRuns, sendDisabled, running, field, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
   const form = useRef<HTMLFormElement | null>(null);
   const input = useRef<HTMLTextAreaElement | null>(null);
   const typing = useRef(false);
@@ -162,15 +161,17 @@ export function Composer(props: ComposerProps) {
     >
       {tray}
       {hints}
-      <div className="zr-compose-row" data-attach={attach ? "" : undefined} data-stack={!prompt && (stack || stacked) ? "" : undefined} data-prompt={prompt ? "" : undefined}>
+      <div className="zr-compose-row" data-attach={attach ? "" : undefined} data-stack={!prompt && !field && stack ? "" : undefined} data-prompt={prompt ? "" : undefined}>
         {attach && <Pill {...attach} className="zr-attach" />}
         {prompt && (
           <span className="zr-prompt" aria-hidden="true">
             {prompt}
           </span>
         )}
+        {field}
         <textarea
           ref={setInput}
+          hidden={!!field}
           className={["zr-input", inputClassName].filter(Boolean).join(" ")}
           data-testid="composer-input"
           rows={1}
@@ -184,7 +185,6 @@ export function Composer(props: ComposerProps) {
           spellCheck={false}
           enterKeyHint={coarse && !enterRuns ? "enter" : "send"}
         />
-        {accessory}
         <PillPair label="Send">
           {command && <Pill {...command} className="zr-command" />}
           <Pill glyph={sendGlyph} label={sendLabel} type="submit" disabled={sendDisabled} className={["zr-send", sendClassName].filter(Boolean).join(" ")} data-testid="send" data-swapped={swap.current.swapped ? "" : undefined} key={sendLabel} />
