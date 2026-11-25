@@ -1,10 +1,10 @@
-"""Fuzz bug 3: the pit never keeps data-dragging or a stale height after a gesture.
+"""Fuzz bug 3: the pit never keeps data-dragging or a stale position after a gesture.
 
 Every way a gesture can end clears it: a cancelled touch right after the drag
-starts (the browser took the pointer), a pointer released far from the grip,
+starts (the browser took the pointer), a pointer released far from the tab,
 and the pit closed by Escape while a finger is still down. After each, the pit
-is not dragging, --zr-pit-h agrees with the snap (absent when closed), and the
-next drag from the grip works.
+is not dragging, no inline transform is left on the drawer, and the next drag
+from the tab works.
 """
 from kit import Door, Report, bundle_arg, until
 
@@ -14,8 +14,7 @@ MAIN = "c0ffee01" * 4
 
 FACTS = """() => {
   const p = document.querySelector('.zr-pit');
-  return { open: !!p, snap: p && p.dataset.snap, dragging: !!p && p.hasAttribute('data-dragging'),
-           h: document.documentElement.style.getPropertyValue('--zr-pit-h'), px: p ? Math.round(p.getBoundingClientRect().height) : 0 };
+  return { open: p.getAttribute('role') === 'dialog', snap: p.dataset.snap, dragging: p.hasAttribute('data-dragging'), inline: p.getAttribute('style') || '' };
 }"""
 
 
@@ -38,20 +37,17 @@ def main():
                 pg.wait_for_timeout(700)
                 f = pg.evaluate(FACTS)
                 rep.check(not f["dragging"], "%s: the pit is still dragging: %s" % (what, f))
-                if f["open"] and f["snap"] != "closed":
-                    rep.check(f["h"].endswith("px") and abs(int(f["h"][:-2]) - f["px"]) <= 2, "%s: --zr-pit-h %s disagrees with the pit %s" % (what, f["h"], f))
-                else:
-                    rep.check(f["h"] in ("", "0px"), "%s: the pit is closed but --zr-pit-h is %r" % (what, f["h"]))
+                rep.check(f["inline"] == "", "%s: the drawer keeps an inline position: %s" % (what, f))
                 return f
 
             def grip_centre():
-                b = pg.locator(".zr-composer .zr-grip").bounding_box()
+                b = pg.locator(".zr-pit-knob").bounding_box()
                 return b["x"] + b["width"] / 2, b["y"] + b["height"] / 2
 
             def run():
                 pg.goto(door.url + "#/gluck/" + MAIN)
                 until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'", 15000)
-                pg.wait_for_selector(".zr-composer .zr-grip")
+                pg.wait_for_selector(".zr-pit-knob")
                 pg.wait_for_timeout(600)
                 x, y = grip_centre()
                 touch("touchStart", y, x)
@@ -79,18 +75,18 @@ def main():
                 rep.check(f["open"] and f["snap"] in ("half", "full"), "the next drag opens the pit: %s" % f)
 
                 pg.keyboard.press("Escape")
-                pg.wait_for_selector(".zr-pit", state="detached", timeout=3000)
+                pg.wait_for_selector(".zr-pit[role=dialog]", state="detached", timeout=3000)
 
             def same_frame():
                 pg.goto(door.url + "#/gluck/" + MAIN)
                 until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'", 15000)
-                pg.wait_for_selector(".zr-composer .zr-grip")
+                pg.wait_for_selector(".zr-pit-knob")
                 pg.wait_for_timeout(600)
                 x, y = grip_centre()
                 pg.mouse.move(x, y)
                 pg.evaluate(
                     """([x, y]) => {
-                      const grip = document.querySelector('.zr-composer .zr-grip');
+                      const grip = document.querySelector('.zr-pit-knob');
                       const fire = (type, dy) => grip.dispatchEvent(new PointerEvent(type, { pointerId: 1, pointerType: 'mouse', button: 0, bubbles: true, cancelable: true, clientX: x, clientY: y + dy }));
                       fire('pointerdown', 0);
                       fire('pointermove', -30);

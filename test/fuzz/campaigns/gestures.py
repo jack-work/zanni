@@ -1,15 +1,14 @@
 from engine import Campaign, Failure
 
-TARGETS = ["grip", "send", "input", "scroll", "turn-head", "fold", "pit-handle", "pit-close", "scrim", "older", "status"]
+TARGETS = ["grip", "send", "input", "scroll", "turn-head", "fold", "pit-body", "scrim", "older", "status"]
 SELECTORS = {
-    "grip": ".zr-grip",
+    "grip": ".zr-pit-knob",
     "send": ".zr-send",
     "input": ".zr-input",
     "scroll": ".fw-scroll",
     "turn-head": ".nodi-turn-head",
     "fold": ".zr-fold > summary, .nodi-sum",
-    "pit-handle": ".zr-pit-handle",
-    "pit-close": ".zr-pit-bar button",
+    "pit-body": ".zr-pit-body",
     "scrim": ".zr-pit-scrim",
     "older": ".fw-older",
     "status": ".fw-status",
@@ -35,7 +34,7 @@ class Gestures(Campaign):
         if r < 0.64:
             return {"k": "fling", "t": "scroll", "dy": rng.choice([-1500, -600, 600, 1500, 4000]), "speed": rng.choice([400, 1200, 3000])}
         if r < 0.80:
-            return {"k": "pit", "how": rng.choice(["grip-tap", "grip-key", "drag-up", "drag-down", "escape", "scrim", "close", "handle-up", "handle-down", "snap-full"])}
+            return {"k": "pit", "how": rng.choice(["grip-tap", "grip-key", "drag-up", "drag-down", "escape", "scrim", "handle-up", "handle-down", "snap-full"])}
         if r < 0.88:
             return {"k": "send", "text": rng.choice(["hi [plain]", "run the tests", "[long] go", "x"])}
         if r < 0.94:
@@ -133,7 +132,7 @@ class Gestures(Campaign):
     def pit(self, run, how):
         page = run.page
         if how == "grip-tap":
-            loc = page.locator(".zr-grip")
+            loc = page.locator(".zr-pit-knob")
             if loc.count():
                 b = loc.first.bounding_box()
                 if b:
@@ -143,11 +142,11 @@ class Gestures(Campaign):
                     else:
                         page.mouse.click(x, y)
         elif how == "grip-key":
-            if page.locator(".zr-grip").count():
-                page.locator(".zr-grip").first.focus()
+            if page.locator(".zr-pit-knob").count():
+                page.locator(".zr-pit-knob").first.focus()
                 page.keyboard.press("Enter")
         elif how in ("drag-up", "drag-down"):
-            b = page.locator(".zr-pit-handle, .zr-grip").first.bounding_box() if page.locator(".zr-pit-handle, .zr-grip").count() else None
+            b = page.locator(".zr-pit-head .zr-input").first.bounding_box() if page.locator(".zr-pit-head .zr-input:visible").count() else page.locator(".zr-pit-knob").first.bounding_box()
             if b:
                 dy = -300 if how == "drag-up" else 300
                 self.swipe(run, {"t": None, "x": (b["x"] + b["width"] / 2) / page.viewport_size["width"], "y": (b["y"] + b["height"] / 2) / page.viewport_size["height"], "dx": 0, "dy": dy, "ms": 200, "steps": 8, "release": "up"})
@@ -159,21 +158,14 @@ class Gestures(Campaign):
                 b = loc.first.bounding_box()
                 if b:
                     page.mouse.click(b["x"] + 5, b["y"] + 5)
-        elif how == "close":
-            loc = page.locator(".zr-pit-bar button")
-            if loc.count():
-                try:
-                    loc.last.click(timeout=1000)
-                except Exception:
-                    pass
         elif how in ("handle-up", "handle-down"):
-            loc = page.locator(".zr-pit-handle")
+            loc = page.locator(".zr-pit-knob")
             if loc.count():
                 loc.first.focus()
                 page.keyboard.press("ArrowUp" if how == "handle-up" else "ArrowDown")
         elif how == "snap-full":
-            if page.locator(".zr-grip").count():
-                page.locator(".zr-grip").first.focus()
+            if page.locator(".zr-pit-knob").count():
+                page.locator(".zr-pit-knob").first.focus()
                 page.keyboard.press("ArrowUp")
                 page.keyboard.press("ArrowUp")
         page.wait_for_timeout(350)
@@ -184,8 +176,8 @@ class Gestures(Campaign):
             run.page.wait_for_timeout(400)
             if run.pit_facts()["dragging"]:
                 raise Failure("stuck-pit", "the pit still reads dragging with every pointer up")
-        if p["open"] and p["grip"] is not None and p["grip"] != p["snap"]:
-            raise Failure("pit-grip-mismatch", "grip says %s, the pit says %s" % (p["grip"], p["snap"]))
+        if p["grip"] is not None and p["grip"] != (p["snap"] != "closed"):
+            raise Failure("pit-grip-mismatch", "the tab says expanded=%s, the pit says %s" % (p["grip"], p["snap"]))
         sc = run.page.evaluate("(() => { const s = document.querySelector('.fw-scroll'); return s ? [s.scrollTop, s.scrollHeight, s.clientHeight] : null; })()")
         if sc and not (sc[0] == sc[0] and -1 <= sc[0] <= sc[1]):
             raise Failure("scroll-range", "scrollTop %s of %s" % (sc[0], sc[1]))
@@ -194,7 +186,7 @@ class Gestures(Campaign):
         run.page.keyboard.press("Escape")
         run.page.wait_for_timeout(700)
         if run.pit_facts()["open"] and run.profile == "phone":
-            for sel in (".zr-pit-bar button", ".zr-pit-scrim"):
+            for sel in (".zr-pit-scrim",):
                 if run.page.locator(sel).count():
                     if sel.endswith("button"):
                         try:

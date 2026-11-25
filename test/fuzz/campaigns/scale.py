@@ -100,12 +100,12 @@ class Scale(Campaign):
             page.wait_for_selector("[data-testid=topology-row]", timeout=20000)
             st["list_ms"].append(page.evaluate("performance.now()") - t0)
         elif k == "pit":
-            grip = page.locator(".zr-grip")
+            grip = page.locator(".zr-pit-knob")
             if grip.count():
                 t0 = page.evaluate("performance.now()")
                 try:
                     grip.first.click(timeout=1500)
-                    page.wait_for_selector(".zr-pit", timeout=3000)
+                    page.wait_for_selector(".zr-pit[role=dialog]", timeout=3000)
                     st["pit_ms"].append(page.evaluate("performance.now()") - t0)
                     page.wait_for_timeout(a["hold"])
                     page.keyboard.press("Escape")

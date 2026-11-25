@@ -120,7 +120,7 @@ with sync_playwright() as p:
     assert "maximum-scale" not in meta(pg) and "user-scalable" not in meta(pg), "pinch zoom stays available: " + meta(pg)
     sizes = pg.evaluate("[...document.querySelectorAll('textarea, input, select')].map(n => [n.className, parseFloat(getComputedStyle(n).fontSize)])")
     assert sizes and all(px >= 16 for _, px in sizes), "an input under 16px makes iOS zoom on focus: %s" % sizes
-    pg.locator(".zr-composer .zr-grip").focus()
+    pg.locator(".zr-pit-knob").focus()
     pg.keyboard.press("Enter")
     pg.wait_for_selector(".zr-pit[data-snap='half']")
     pg.locator("[data-action='new']").tap()
@@ -441,19 +441,13 @@ with sync_playwright() as p:
     attend(pg, fast)
     pg.evaluate("window.__kb.open(%d, 0)" % KB)
     pg.wait_for_timeout(150)
-    pg.locator(".zr-composer .zr-grip").focus()
+    pg.locator(".zr-pit-knob").focus()
     pg.keyboard.press("Enter")
-    pg.wait_for_selector(".zr-pit[data-snap='half']")
+    pg.wait_for_selector(".zr-pit[data-snap='full']")
     pg.evaluate("Promise.all(document.getAnimations().map(a => a.finished.catch(() => null)))")
-    pit = pg.evaluate("(() => { const b = document.querySelector('.zr-pit').getBoundingClientRect(); return [b.bottom, b.height]; })()")
-    near(pit[0], 844 - KB, "the pit sits on the keyboard's edge, not behind it")
-    near(pit[1], (844 - KB) / 2, "half is half of what the keyboard leaves", 2)
-    pg.keyboard.press("ArrowUp")
-    pg.wait_for_timeout(100)
-    pg.evaluate("Promise.all(document.getAnimations().map(a => a.finished.catch(() => null)))")
-    pit = pg.evaluate("(() => { const b = document.querySelector('.zr-pit').getBoundingClientRect(); return [b.top, b.bottom, b.height]; })()")
-    near(pit[1], 844 - KB, "the full pit ends at the keyboard")
-    assert pit[0] >= -1 and pit[2] <= 844 - KB + 1, "the full pit fits above the keyboard: %s" % pit
+    pit = pg.evaluate("(() => { const p = document.querySelector('.zr-pit').getBoundingClientRect(); const b = document.querySelector('.zr-pit-body').getBoundingClientRect(); return [p.top, b.bottom]; })()")
+    near(pit[0], 0, "with the keyboard up there is no room for half, so the pit opens full")
+    near(pit[1], 844 - KB, "the full pit ends at the keyboard's edge, not behind it")
     assert not pg.errors, pg.errors
     pg.context.close()
 
@@ -471,7 +465,7 @@ with sync_playwright() as p:
     assert got["sendUp"] and got["sendDown"], "Send keeps a 44px hit area: %s" % got
     assert got["fieldTop"], "the grip does not cover the top of the field: %s" % got
     assert_centred(pg.locator(".zr-send"), "the send pill's glyph on an iPhone")
-    assert_centred(pg.locator(".fw-mic"), "the record button's glyph on an iPhone", tol=2.0, blank_ok=True)
+    assert pg.locator(".fw-mic").count() == 0, "no mic button beside the field"
     pg.locator(".zr-input").tap()
     pg.keyboard.type("first")
     pg.locator(".zr-send").tap()

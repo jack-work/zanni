@@ -6,7 +6,7 @@ import traceback
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 
-from figchat_kit import Door, until  # noqa: E402
+from figchat_kit import Door, draft, until, voice_on  # noqa: E402
 
 FIXTURES = os.path.join(HERE, "fixtures")
 BOX_DRAWING = "│├└─┌┐┘┬┴┼╰╭"

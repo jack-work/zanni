@@ -45,8 +45,8 @@ FACTS_JS = """(main) => {
 
 
 def open_pit(pg):
-    if not pg.locator(".zr-pit").count():
-        pg.locator(".zr-composer .zr-grip").focus()
+    if not pg.locator(".zr-pit[role=dialog]").count():
+        pg.locator(".zr-pit-knob").focus()
         pg.keyboard.press("Enter")
     pg.wait_for_selector(".zr-pit[data-snap='half']")
 
