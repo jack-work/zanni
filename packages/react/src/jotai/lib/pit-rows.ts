@@ -1,7 +1,7 @@
 import { glyphs, voiceGlyph } from "../../index";
 
-export type PitRowId = "new" | "outfits" | "state" | "tail-fork" | "fork-at" | "tree" | "recent" | "asks" | "voice";
-export type PitView = "list" | "outfits" | "state" | "fork-at" | "tree" | "recent" | "asks";
+export type PitRowId = "new" | "outfits" | "state" | "tail-fork" | "fork-at" | "tree" | "recent" | "asks" | "queue" | "voice";
+export type PitView = "list" | "outfits" | "state" | "fork-at" | "tree" | "recent" | "asks" | "queue";
 
 export interface PitRowSpec {
   readonly id: PitRowId;
@@ -17,6 +17,7 @@ export const PIT_ROWS: readonly PitRowSpec[] = [
   { id: "tree", label: "Tree", glyph: glyphs["pit.troupe"] },
   { id: "recent", label: "Recent", glyph: glyphs["pit.form"] },
   { id: "asks", label: "Asks", glyph: glyphs["pit.form"] },
+  { id: "queue", label: "Queue", glyph: glyphs["pit.queue"] },
   { id: "outfits", label: "Outfits", glyph: glyphs["pit.models"] },
   { id: "voice", label: "Voice", glyph: voiceGlyph },
 ];

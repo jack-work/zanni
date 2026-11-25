@@ -187,6 +187,64 @@ describe("the control pit", () => {
   });
 });
 
+describe("the queue pit", () => {
+  const main = "c0ffee01".repeat(4);
+  const filled = {
+    epoch: "e1",
+    len: 2,
+    order: [5, 6],
+    items: { "5": { state: "queued", text: "first thing\nmore" }, "6": { state: "committing", text: "second" } },
+  };
+  const openQueue = async () => {
+    open("#/gluck/" + main);
+    await waitFor(() => expect(document.querySelector(".fw-status-handle")).toBeTruthy());
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Open controls" }));
+    });
+    act(() => {
+      fireEvent.click(document.querySelector(".zr-pit-row[data-action='queue']")!);
+    });
+  };
+
+  it("says the message queue is empty when nothing waits", async () => {
+    await openQueue();
+    await waitFor(() => expect(screen.getByText("message queue is empty")).toBeTruthy());
+  });
+
+  it("lists the queued prompts with the pager's marks and drops one by id", async () => {
+    await openQueue();
+    act(() => core.setQueue(main, filled));
+    await waitFor(() => expect(document.querySelectorAll(".zr-queue-row").length).toBe(2));
+    const rows = [...document.querySelectorAll(".zr-queue-row")].map((r) => r.textContent);
+    expect(rows).toEqual(["·first thing", "→second"]);
+    fireEvent.click(document.querySelector(".zr-queue-row[data-id='5']")!);
+    fireEvent.click(screen.getByRole("button", { name: "Drop" }));
+    await waitFor(() => expect(document.querySelectorAll(".zr-queue-row").length).toBe(1));
+    expect(core.calls.find((c) => c.method === "figaro.queue.delete")!.params).toEqual({ figaro_id: main, epoch: "e1", ids: [5] });
+  });
+
+  it("edits a prompt in place", async () => {
+    await openQueue();
+    act(() => core.setQueue(main, filled));
+    await waitFor(() => expect(document.querySelectorAll(".zr-queue-row").length).toBe(2));
+    fireEvent.click(document.querySelector(".zr-queue-row[data-id='5']")!);
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Queued message" }), { target: { value: "better words" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(document.querySelector(".zr-queue-row[data-id='5']")!.textContent).toContain("better words"));
+    expect(core.calls.find((c) => c.method === "figaro.queue.update")!.params).toEqual({ figaro_id: main, epoch: "e1", id: 5, text: "better words" });
+  });
+
+  it("says why when the daemon refuses a drop", async () => {
+    await openQueue();
+    act(() => core.setQueue(main, filled));
+    await waitFor(() => expect(document.querySelectorAll(".zr-queue-row").length).toBe(2));
+    fireEvent.click(document.querySelector(".zr-queue-row[data-id='6']")!);
+    fireEvent.click(screen.getByRole("button", { name: "Drop" }));
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toBe("queue rm 6: committing"));
+  });
+});
+
 describe("the state pit writes", () => {
   const openState = async () => {
     open("#/gluck/" + "c0ffee01".repeat(4));

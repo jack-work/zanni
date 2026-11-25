@@ -1,5 +1,5 @@
 import { atom } from "jotai";
-import { ariaFactsAtom, boundFormAtom, recentAtom, treeAtom } from "figaro-forms/aria/jotai";
+import { ariaFactsAtom, boundFormAtom, queueAtom, recentAtom, treeAtom } from "figaro-forms/aria/jotai";
 import { troupeFormID, type AriaFacts } from "figaro-forms/aria";
 import type { TopologyForms } from "../lib/topology";
 import { FORKED_FROM_KEY, valueAt, type PitView } from "../lib/pit-rows";
@@ -36,6 +36,11 @@ export const markPitUsedAtom = atom(null, (get, set, id: string) => {
 export const boundStateAtom = atom((get) => {
   const at = get(attendedAtom);
   return at ? get(boundFormAtom(at.client, at.aria)) : undefined;
+});
+
+export const queueStateAtom = atom((get) => {
+  const at = get(attendedAtom);
+  return at ? get(queueAtom(at.client, at.aria)) : undefined;
 });
 
 export const treeStateAtom = atom((get) => {

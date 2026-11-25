@@ -14,6 +14,8 @@ export type { TreeNodeData, TreeProps, TreeRowData } from "./tree";
 export { Pill, PillPair } from "./pill";
 export type { PillSpec } from "./pill";
 export { PitList, PitRow } from "./pit-row";
+export { QueueList, QUEUE_ARRIVAL_GRACE_MS, firstLine } from "./queue-list";
+export type { QueueListProps, QueueListRow, QueueOutcome } from "./queue-list";
 export type { PitRowProps } from "./pit-row";
 export { Pit, PitGrip, PitProvider, PIT_FLICK, PIT_FULL_ZONE, PIT_HEIGHT_VAR, pitHeight, pitSettle, pitStep, usePit } from "./pit";
 export type { PitGripProps, PitProps, PitProviderProps, PitSnap } from "./pit";
