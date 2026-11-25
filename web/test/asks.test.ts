@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { askedLabel, dwellLabel, ageOf, compareAsks, foldAsk, foldAsks, formatSpan } from "zanni-react/jotai";
+import { askedLabel, dwellLabel, ageOf, compareAsks, foldAsk, foldAsks, lapse } from "zanni-react/jotai";
 import { readFileSync } from "node:fs";
 
 const fixture = JSON.parse(readFileSync("test/fixtures/orders.json", "utf8")) as { orders: Record<string, { state: string }> };
@@ -7,17 +7,17 @@ const fixture = JSON.parse(readFileSync("test/fixtures/orders.json", "utf8")) as
 const T = (s: string) => Date.parse(s);
 const NOW = T("2026-11-23T21:30:00-05:00");
 
-describe("formatSpan", () => {
-  it("keeps two units at most and floors", () => {
-    expect(formatSpan(0)).toBe("<1m");
-    expect(formatSpan(59_999)).toBe("<1m");
-    expect(formatSpan(60_000)).toBe("1m");
-    expect(formatSpan(59 * 60_000 + 59_999)).toBe("59m");
-    expect(formatSpan(3_600_000)).toBe("1h");
-    expect(formatSpan(3_600_000 + 10 * 60_000)).toBe("1h 10m");
-    expect(formatSpan(24 * 3_600_000)).toBe("1d");
-    expect(formatSpan(26 * 3_600_000 + 59 * 60_000)).toBe("1d 2h");
-    expect(formatSpan(-5)).toBe("<1m");
+describe("lapse", () => {
+  it("says under a minute as a floor and otherwise as duration", () => {
+    expect(lapse(0)).toBe("<1m");
+    expect(lapse(59_999)).toBe("<1m");
+    expect(lapse(60_000)).toBe("1m");
+    expect(lapse(90_000)).toBe("1m 30s");
+    expect(lapse(3_600_000)).toBe("1h");
+    expect(lapse(3_600_000 + 10 * 60_000)).toBe("1h 10m");
+    expect(lapse(24 * 3_600_000)).toBe("1d");
+    expect(lapse(26 * 3_600_000 + 59 * 60_000)).toBe("1d 2h");
+    expect(lapse(-5)).toBe("<1m");
   });
 });
 

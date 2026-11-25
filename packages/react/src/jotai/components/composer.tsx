@@ -1,8 +1,8 @@
 import { Button, Composer as ZComposer, Glyph, Hints, Tray, attachGlyph, glyphs, voiceGlyph } from "../../index";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { clock } from "../../index";
-import { ACCEPT, MAX_FILES, kindWord, sizeLabel } from "../lib/attach";
+import { bytes, clock } from "../../index";
+import { ACCEPT, MAX_FILES, kindWord } from "../lib/attach";
 import { addFilesAtom, attachingAtom, removeAttachmentAtom } from "../state/attach";
 import { voiceAtom } from "../state/audio";
 import { micAtom, micToggleAtom, dictationFocusAtom } from "../state/mic";
@@ -151,7 +151,7 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
       tray={
         cmd.on ? undefined : (
           <Tray
-            items={attached.items.map((a) => ({ key: a.key, name: a.name, kind: kindWord(a.kind), size: a.bytes ? sizeLabel(a.bytes) : "", status: a.status, error: a.error }))}
+            items={attached.items.map((a) => ({ key: a.key, name: a.name, kind: kindWord(a.kind), size: a.bytes ? bytes(a.bytes) : "", status: a.status, error: a.error }))}
             onRemove={(item) => removeFile({ key, item })}
           />
         )

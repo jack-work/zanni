@@ -1,7 +1,7 @@
 import { PitList, PitRow, glyphs } from "../../index";
 import { useAtomValue } from "jotai";
 import { useEffect, useMemo, useState } from "react";
-import { ageOf, askedLabel, dwellLabel, formatSpan, foldAsks, type Ask, type Stage } from "../lib/asks";
+import { ageOf, askedLabel, dwellLabel, foldAsks, lapse, type Ask, type Stage } from "../lib/asks";
 import { asksStateAtom } from "../state/asks";
 
 const STAGE_GLYPH: Record<Stage, string> = {
@@ -67,7 +67,7 @@ function Detail({ ask }: { ask: Ask }) {
         {ask.spans.map((s) => (
           <div key={s.stage} className="fw-pit-fact" data-stage={s.stage}>
             <dt>{s.stage}</dt>
-            <dd>{when(s.at) + (s.ms !== undefined ? "  " + formatSpan(s.ms) : "")}</dd>
+            <dd>{when(s.at) + (s.ms !== undefined ? "  " + lapse(s.ms) : "")}</dd>
           </div>
         ))}
       </dl>

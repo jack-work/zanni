@@ -42,12 +42,6 @@ export const VALUE_COLUMNS = 120;
 
 const width = (s: string): number => [...s].length;
 
-export function clipEllipsis(s: string, max: number): string {
-  const r = [...s];
-  if (r.length <= max) return s;
-  return r.slice(0, Math.max(max - 1, 0)).join("") + "…";
-}
-
 export function branchPeek(kids: readonly TreeNodeData[]): string {
   if (kids.length === 0) return "";
   const names = kids.slice(0, PEEK_KEYS).map((k) => k.label).join(" · ");

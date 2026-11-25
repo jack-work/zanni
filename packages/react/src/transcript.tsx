@@ -1,4 +1,5 @@
-import { formatWorkedTime, groupWork, stepsTitle, type Work } from "./work";
+import { groupWork, stepsTitle, type Work } from "./work";
+import { duration, time } from "./lib/format";
 import { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Fold } from "./fold";
 import { reducedMotion } from "./motion";
@@ -27,17 +28,12 @@ function settled(item: { settled: boolean }): { "data-settled"?: "" } {
   return item.settled ? { "data-settled": "" } : {};
 }
 
-function stamp(ms: unknown): string {
-  const t = Number(ms);
-  return isFinite(t) && t > 0 ? new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
-}
-
 export function InputView({ input, turn }: { input: InputModel; turn: number }) {
   const first = input.parts[0];
   return (
     <div className="nodi-input" data-from={first ? first.role : "you"}>
       {input.parts.map((p, i) => {
-        const when = i === 0 ? stamp(input.at) : "";
+        const when = i === 0 ? time(Number(input.at)) : "";
         return (
           <div key={i} className="nodi-said" data-from={p.role}>
             <div className="nodi-by">
@@ -230,7 +226,7 @@ export function WorkGroup({ items }: { items: Work[] }) {
       summary={
         <>
           <span className="nodi-sum-label">{stepsTitle(items, live)}</span>
-          {ms >= 1000 && <span className="zr-work-time">{formatWorkedTime(ms)}</span>}
+          {ms >= 1000 && <span className="zr-work-time">{duration(ms)}</span>}
         </>
       }
     >

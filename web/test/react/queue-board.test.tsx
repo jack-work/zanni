@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { QueueBoard, boardCell, boardColumns, formatDuration, formatRate, sinceOf, type DeploysResponse } from "zanni-react";
+import { QueueBoard, boardCell, boardColumns, duration, formatRate, sinceOf, type DeploysResponse } from "zanni-react";
 import fixture from "../fixtures/deploys.json";
 
 const data = fixture as DeploysResponse;
@@ -32,7 +32,7 @@ describe("QueueBoard", () => {
     const row = document.querySelector<HTMLElement>(`[data-trace="${failed.trace}"]`)!;
     const cells = [...row.querySelectorAll<HTMLElement>(".zr-qb-cell")];
     expect(cells.map((c) => c.dataset.outcome ?? "empty")).toEqual(["ok", "ok", "ok", "fail", "empty", "empty", "empty", "empty"]);
-    expect(cells[3]!.querySelector(".zr-qb-dur")!.textContent).toBe("5m41s");
+    expect(cells[3]!.querySelector(".zr-qb-dur")!.textContent).toBe("5m 41s");
     const skipped = document.querySelector<HTMLElement>(`[data-trace="${data.commits.find((c) => c.ref === "master" && c.repo === "figscope")!.trace}"]`)!;
     const skip = skipped.querySelectorAll<HTMLElement>(".zr-qb-cell")[1]!;
     expect(skip.dataset.outcome).toBe("skip");
@@ -92,8 +92,8 @@ describe("QueueBoard", () => {
     const r = data.steps.find((s) => s.step === "build")!;
     expect(build.querySelector('[data-stat="count"]')!.textContent).toBe(String(r.count));
     expect(build.querySelector('[data-stat="rate"]')!.textContent).toBe(formatRate(r.failure_rate));
-    expect(build.querySelector('[data-stat="p50"]')!.textContent).toBe(formatDuration(r.p50_ms));
-    expect(build.querySelector('[data-stat="p95"]')!.textContent).toBe(formatDuration(r.p95_ms));
+    expect(build.querySelector('[data-stat="p50"]')!.textContent).toBe(duration(r.p50_ms));
+    expect(build.querySelector('[data-stat="p95"]')!.textContent).toBe(duration(r.p95_ms));
     expect(build.hasAttribute("data-failing")).toBe(true);
     expect(document.querySelector('thead [data-step="queue"]')!.hasAttribute("data-failing")).toBe(false);
   });
@@ -132,10 +132,6 @@ describe("QueueBoard", () => {
 });
 
 describe("queue board numbers", () => {
-  it("formats durations at each scale", () => {
-    expect([0, 850, 1200, 12000, 61000, 341000, 3_720_000].map(formatDuration)).toEqual(["0ms", "850ms", "1.2s", "12s", "1m01s", "5m41s", "1h02m"]);
-  });
-
   it("formats rates, keeping a decimal below ten percent", () => {
     expect([0, 0.04, 0.25, 0.5, 1].map(formatRate)).toEqual(["0%", "4%", "25%", "50%", "100%"]);
     expect(formatRate(1 / 24)).toBe("4.2%");

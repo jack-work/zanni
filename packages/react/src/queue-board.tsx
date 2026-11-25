@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Button, ButtonGroup } from "./button";
 import { glyphs } from "./glyphs";
 import { Plain } from "./text";
+import { duration } from "./lib/format";
 
 export const DEPLOY_STEPS = ["queue", "review", "merge", "build", "dev_deploy", "prod_deploy", "cut"] as const;
 export type DeployStepName = (typeof DEPLOY_STEPS)[number];
@@ -69,17 +70,6 @@ export function sinceOf(key: SinceKey, now: number): string {
   return new Date(now - w.ms).toISOString();
 }
 
-export function formatDuration(ms: number): string {
-  if (!Number.isFinite(ms) || ms < 0) return "";
-  if (ms < 1000) return Math.round(ms) + "ms";
-  const s = ms / 1000;
-  if (s < 10) return s.toFixed(1) + "s";
-  if (s < 60) return Math.round(s) + "s";
-  const m = Math.floor(s / 60);
-  if (m < 60) return m + "m" + String(Math.round(s - m * 60)).padStart(2, "0") + "s";
-  return Math.floor(m / 60) + "h" + String(m % 60).padStart(2, "0") + "m";
-}
-
 export function formatRate(rate: number): string {
   if (!Number.isFinite(rate) || rate <= 0) return "0%";
   const pct = rate * 100;
@@ -124,7 +114,7 @@ const ATTRS = ["site", "unit", "actor", "cand", "box"] as const;
 
 export function cellTitle(cell: BoardCell): string {
   return cell.spans
-    .map((s) => [s.step + (s.phase ? " " + s.phase : "") + " " + s.outcome + " " + formatDuration(s.duration_ms), ...ATTRS.filter((k) => s[k]).map((k) => k + " " + s[k])].join("\n"))
+    .map((s) => [s.step + (s.phase ? " " + s.phase : "") + " " + s.outcome + " " + duration(s.duration_ms), ...ATTRS.filter((k) => s[k]).map((k) => k + " " + s[k])].join("\n"))
     .join("\n\n");
 }
 
@@ -136,14 +126,14 @@ const MARK: Record<DeployOutcome, string> = { ok: glyphs["tool.ok"], fail: glyph
 
 function Cell({ cell }: { cell: BoardCell | null }): ReactNode {
   if (!cell) return <td className="zr-qb-cell" data-empty="" />;
-  const duration = cell.outcome === "skip" ? "skip" : formatDuration(cell.duration_ms);
+  const took = cell.outcome === "skip" ? "skip" : duration(cell.duration_ms);
   const repeats = cell.spans.length > 1 ? "\u00d7" + cell.spans.length : "";
   return (
-    <td className="zr-qb-cell" data-outcome={cell.outcome} title={cellTitle(cell)} tabIndex={0} aria-label={[cell.step, cell.phase, cell.outcome, duration, repeats].filter(Boolean).join(" ")}>
+    <td className="zr-qb-cell" data-outcome={cell.outcome} title={cellTitle(cell)} tabIndex={0} aria-label={[cell.step, cell.phase, cell.outcome, took, repeats].filter(Boolean).join(" ")}>
       <span className="zr-qb-mark" aria-hidden="true">
         {MARK[cell.outcome]}
       </span>
-      <span className="zr-qb-dur">{duration}</span>
+      <span className="zr-qb-dur">{took}</span>
       {repeats && <span className="zr-qb-n">{repeats}</span>}
     </td>
   );
@@ -166,10 +156,10 @@ function HeadCell({ column, rollup, phased }: { column: BoardColumn; rollup: Ste
         {rollup ? formatRate(rollup.failure_rate) : "\u2013"}
       </span>
       <span className="zr-qb-stat" data-stat="p50">
-        {rollup && rollup.count ? formatDuration(rollup.p50_ms) : "\u2013"}
+        {rollup && rollup.count ? duration(rollup.p50_ms) : "\u2013"}
       </span>
       <span className="zr-qb-stat" data-stat="p95">
-        {rollup && rollup.count ? formatDuration(rollup.p95_ms) : "\u2013"}
+        {rollup && rollup.count ? duration(rollup.p95_ms) : "\u2013"}
       </span>
     </th>
   );

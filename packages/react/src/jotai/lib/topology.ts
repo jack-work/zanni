@@ -1,15 +1,8 @@
-import { clipEllipsis, VALUE_COLUMNS, type TreeNodeData } from "../../index";
+import { VALUE_COLUMNS, clip, stamp, type TreeNodeData } from "../../index";
 import type { TreeNode, TreeState } from "figaro-forms/aria";
 
 const EPOCH_MS_LOW = 1_000_000_000_000;
 const EPOCH_MS_HIGH = 100_000_000_000_000;
-
-const pad2 = (n: number): string => String(n).padStart(2, "0");
-
-export function stamp(ms: number): string {
-  const d = new Date(ms);
-  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds());
-}
 
 function epochText(label: string, raw: unknown): string | undefined {
   if (label !== "at" && !label.endsWith("_at")) return undefined;
@@ -21,7 +14,7 @@ export function leafPreview(label: string, v: unknown): string {
   const at = epochText(label, v);
   if (at) return at;
   const raw = JSON.stringify(v) ?? "null";
-  return clipEllipsis(raw.replace(/\s+/g, " ").trim(), VALUE_COLUMNS);
+  return clip(raw.replace(/\s+/g, " ").trim(), VALUE_COLUMNS);
 }
 
 export const REFUSED = "not available to you";

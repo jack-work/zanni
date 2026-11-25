@@ -22,19 +22,6 @@ export function toolKind(name: string): ToolKind {
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? `1 ${one}` : `${n} ${many}`);
 
-export function formatWorkedTime(ms: number): string {
-  const total = Math.max(1, Math.round(ms / 1000));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  return h ? `${h}h ${m}m` : m ? `${m}m ${s}s` : `${s}s`;
-}
-
-export function clock(ms: number): string {
-  const s = Math.max(0, Math.floor(ms / 1000));
-  return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2);
-}
-
 export function stepsTitle(items: readonly Work[], live: boolean): string {
   let edits = 0;
   let reads = 0;
