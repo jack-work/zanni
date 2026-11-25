@@ -163,11 +163,12 @@ describe("command mode in the composer", () => {
     expect(window.location.hash).toBe("#/home/" + MAIN);
   });
 
-  it(":new mints a figaro and attends it", async () => {
+  it(":new creates a figaro and attends it", async () => {
     await attend();
     await run("new -O sonn5-kic");
-    await waitFor(() => expect(core.calls.some((c) => c.method === "figaro.fork")).toBe(true));
-    expect(core.calls.find((c) => c.method === "figaro.fork")!.params).toMatchObject({ outfits: ["sonn5-kic"] });
+    await waitFor(() => expect(core.calls.some((c) => c.method === "figaro.create")).toBe(true));
+    expect(core.calls.find((c) => c.method === "figaro.create")!.params).toEqual({ outfits: ["sonn5-kic"] });
+    expect(core.calls.some((c) => c.method === "figaro.fork" && c.params.outfits)).toBe(false);
     await waitFor(() => expect(window.location.hash).not.toBe("#/home/" + MAIN));
   });
 

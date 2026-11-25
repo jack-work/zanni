@@ -1,7 +1,7 @@
 import { Button, Sheet as ZSheet } from "../../index";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useState } from "react";
-import { closeNewFigaroAtom, createFigaroAtom, newFigaroAtom, rootsAtom } from "../state/new-figaro";
+import { closeNewFigaroAtom, createFigaroAtom, newFigaroAtom } from "../state/new-figaro";
 
 export function NewFigaro() {
   const state = useAtomValue(newFigaroAtom);
@@ -15,27 +15,15 @@ export function NewFigaro() {
 
 function NewFigaroBody() {
   const state = useAtomValue(newFigaroAtom);
-  const roots = useAtomValue(rootsAtom);
   const create = useSetAtom(createFigaroAtom);
-  const [root, setRoot] = useState(roots[0]?.id ?? "");
   const [outfits, setOutfits] = useState(state.outfits ?? "");
   const [text, setText] = useState("");
   const submit = (ev: { preventDefault: () => void }) => {
     ev.preventDefault();
-    void create({ root, outfits, text });
+    void create({ outfits, text });
   };
   return (
     <form className="fw-new-form" onSubmit={submit}>
-      <label className="fw-field">
-        <span className="fw-field-label">From</span>
-        <select value={root} onChange={(e) => setRoot(e.target.value)} disabled={state.creating || !roots.length}>
-          {roots.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.label}
-            </option>
-          ))}
-        </select>
-      </label>
       <label className="fw-field">
         <span className="fw-field-label">Outfits</span>
         <input value={outfits} onChange={(e) => setOutfits(e.target.value)} placeholder="optional, e.g. sonn5-kic" disabled={state.creating} autoCapitalize="off" autoCorrect="off" spellCheck={false} />
@@ -50,7 +38,7 @@ function NewFigaroBody() {
         </p>
       )}
       <div className="fw-new-actions">
-        <Button type="submit" variant="accent" disabled={state.creating || !root}>
+        <Button type="submit" variant="accent" disabled={state.creating}>
           {state.creating ? "Creating" : "Create"}
         </Button>
       </div>

@@ -35,6 +35,17 @@ ROWS_JS = """() => [...document.querySelectorAll('.fw-topology [role=treeitem]')
 })"""
 
 
+def open_tree(pg):
+    if pg.locator(".fw-topology [role=treeitem]").count():
+        return
+    if not pg.locator(".zr-pit[data-snap='half'], .zr-pit[data-snap='full']").count():
+        pg.locator(".zr-pit-knob").focus()
+        pg.keyboard.press("Enter")
+        pg.wait_for_selector(".zr-pit[data-snap='half']")
+    pg.locator(".zr-pit-row[data-action='tree']").click()
+    pg.wait_for_selector(".fw-topology [role=treeitem]", timeout=10000)
+
+
 def pager(name):
     with open(os.path.join(HERE, "fixtures", "pager-find", name + ".txt")) as fh:
         lines = [ln.rstrip("\n") for ln in fh]
@@ -72,9 +83,7 @@ def main():
                 def to_tree():
                     pg.goto(door.url + "#/gluck/" + topo["attend"])
                     pg.wait_for_selector(".nodi-turn", timeout=10000)
-                    if width < 900:
-                        pg.goto(door.url + "#/")
-                    pg.wait_for_selector(".fw-topology [role=treeitem]", timeout=10000)
+                    open_tree(pg)
                     pg.wait_for_timeout(500)
                     pg.locator(".fw-topology").focus()
 

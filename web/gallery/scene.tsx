@@ -1,7 +1,7 @@
 import { createStore, Provider } from "jotai";
 import { createRoot } from "react-dom/client";
 import { AriaClient } from "figaro-forms/aria";
-import { bootAtom, configureTraces, parseTemplates } from "zanni-react/jotai";
+import { bootAtom, configureTraces } from "zanni-react/jotai";
 import ariaMock from "../../examples/aria-mock.js";
 import head from "../../assets/parla/figaro-head.png";
 import "../src/styles/index.css";
@@ -100,7 +100,6 @@ async function boot(): Promise<void> {
     sttUrl: "/gallery/none/stt",
     attachUrl: "/gallery/none/attach",
     mark: head,
-    templates: parseTemplates("25b2c127e6f10f67c853417a77b41de4=New figaro"),
   });
   await scene.setup?.(core, store);
   host.replaceChildren();

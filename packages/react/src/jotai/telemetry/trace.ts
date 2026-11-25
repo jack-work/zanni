@@ -1,7 +1,7 @@
 import type { Dial } from "figaro-forms";
 import { sessionHeaders, sessionId } from "./session";
 
-export type ActionName = "send" | "speak" | "dictate" | "fork" | "attach";
+export type ActionName = "send" | "speak" | "dictate" | "fork" | "create" | "attach";
 
 export const SERVICE_NAME = "figaro-web";
 export const FLUSH_MS = 10_000;

@@ -193,7 +193,7 @@ try:
 
         for width, height in ((390, 844), (1280, 800)):
             pg = fresh(width, height)
-            pg.goto(fast.url)
+            pg.goto(fast.url + "#/")
             pg.wait_for_selector(".zr-pit-knob")
             assert pg.title() == "figaro web"
             until(pg, "document.fonts.check('26px \"Jacquard 24\"')")
@@ -1038,7 +1038,7 @@ try:
             pg = ctx.new_page()
             pg.errors = []
             pg.on("pageerror", lambda e: pg.errors.append(str(e)))
-            pg.goto(fast.url)
+            pg.goto(fast.url + "#/")
             pg.wait_for_selector(".zr-pit-knob")
             assert pg.locator(".fw-top, .fw-mark, .fw-title").count() == 0, "the header is gone"
             assert pg.locator(".fw-head").count() == 0, "no logo on the list"

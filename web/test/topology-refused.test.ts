@@ -39,6 +39,6 @@ describe("a role row in the tree feed", () => {
     const vacant = { ...node("@qa", "alpha"), kind: "role", roleName: "qa", target: undefined } as unknown as TreeNode;
     const state = { ...twoNodes(), roots: ["@frontend", "@qa", "aria-a"], nodes: new Map([["aria-a", holder], ["@frontend", role], ["@qa", vacant]]) } as unknown as TreeState;
     const rows = topologyNodes(state, undefined, { troupe: {}, arias: {} })[0]!.children![0]!.children!;
-    expect(rows.map((r) => [r.label, r.mantra])).toEqual([["@frontend", "\u2192 aria-a"], ["@qa", "vacant"], ["aria-a", ""]]);
+    expect(rows.map((r) => [r.label, r.role])).toEqual([["@frontend", "\u2192 aria-a"], ["@qa", "vacant"], ["aria-a", ""]]);
   });
 });

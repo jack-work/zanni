@@ -29,17 +29,6 @@ describe("roster", () => {
   });
 });
 
-import { parseTemplates } from "zanni-react/jotai";
-describe("templates", () => {
-  it("reads id=Label pairs from data-templates and drops anything that is not an aria id", () => {
-    expect(parseTemplates("c0ffee01c0ffee01c0ffee01c0ffee01=New figaro; deadbeef ; nope=X")).toEqual([
-      { id: "c0ffee01c0ffee01c0ffee01c0ffee01", label: "New figaro" },
-      { id: "deadbeef", label: "New figaro" },
-    ]);
-    expect(parseTemplates(null)).toEqual([]);
-  });
-});
-
 describe("status bar", () => {
   it("formats context like the pager's formatContextUsage", () => {
     expect(ctxLine(31000, 936000)).toBe("31.0k/936.0k 3.3%");
