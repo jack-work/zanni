@@ -143,7 +143,7 @@
 .zr-pit-scrim { transition: opacity var(--zr-d-sheet) var(--zr-sheet-curve); }
 .zr-pit ~ .zr-latest { bottom: calc(var(--zr-kb, 0px) + var(--zr-composer-h, 0px) + var(--fw-pile-h, 0px) + var(--zr-pit-reach) - 2px); }
 .zr-pit:is([data-open], [data-dragging]) ~ .zr-latest { display: none; }
-.zr-tree { width: 100%; font: 400 1.125rem / 1.25 var(--zr-mono, "VT323", "Nerd Icons", ui-monospace, monospace); letter-spacing: 0.04em; color: var(--z-ink); outline: none; }
+.zr-tree, .zr-tree-find { width: 100%; font: 400 1.125rem / 1.25 var(--zr-mono, "VT323", "Nerd Icons", ui-monospace, monospace); letter-spacing: 0.04em; color: var(--z-ink); outline: none; }
 .zr-tree:focus-visible { outline: 2px solid var(--z-focus); outline-offset: -2px; }
 .zr-tree { --zr-tree-indent: 2ch; }
 .zr-tree-row { display: block; min-height: 28px; line-height: 28px; white-space: pre; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
@@ -154,7 +154,10 @@
 .zr-tree-disclosure, .zr-tree-pad { display: inline-block; width: 0.7em; height: 0.7em; margin-right: 0.6ch; }
 .zr-tree-disclosure { background: var(--z-muted); clip-path: polygon(0 0, 100% 50%, 0 100%); transition: rotate var(--zr-d-press, 90ms) var(--zr-out, ease-out); }
 .zr-tree-row[aria-expanded="true"] .zr-tree-disclosure { rotate: 90deg; }
-.zr-tree-colon, .zr-tree-count, .zr-tree-peek, .zr-tree-hint { color: var(--z-muted); }
+.zr-tree-colon, .zr-tree-count, .zr-tree-peek, .zr-tree-hint, .zr-tree-tally { color: var(--z-muted); }
+.zr-tree-find { position: sticky; top: 0; z-index: 1; display: flex; gap: 1ch; padding: 0 2ch; background: var(--z-ground); line-height: 28px; }
+.zr-tree-find input { flex: 1; min-width: 0; padding: 0; font: inherit; letter-spacing: inherit; color: inherit; background: none; border: 0; outline: none; caret-color: var(--z-accent); }
+.zr-tree-hit { color: inherit; background: color-mix(in srgb, var(--z-accent) 30%, transparent); }
 .zr-tree-label, .zr-tree-value { color: var(--z-ink); }
 [data-tone="body"] { color: var(--z-ink); }
 [data-tone="quiet"], [data-tone="label"] { color: var(--z-muted); }

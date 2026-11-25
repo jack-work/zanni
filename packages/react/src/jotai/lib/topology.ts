@@ -19,6 +19,8 @@ export function leafPreview(label: string, v: unknown): string {
 
 export const REFUSED = "not available to you";
 
+const FORKS = "forks";
+
 export interface TopologyForms {
   readonly troupe: unknown;
   readonly arias: Readonly<Record<string, unknown>>;
@@ -28,15 +30,17 @@ function keyCount(v: unknown): number {
   return v !== null && typeof v === "object" && !Array.isArray(v) ? Object.keys(v).length : 0;
 }
 
-export function ariaKeyCounts(root: unknown): Map<string, number> {
-  const out = new Map<string, number>();
+type Row = Record<string, unknown>;
+
+export function ariaRows(root: unknown): Map<string, Row> {
+  const out = new Map<string, Row>();
   const walk = (level: unknown) => {
     if (level === null || typeof level !== "object") return;
     for (const row of Object.values(level as Record<string, unknown>)) {
       if (row === null || typeof row !== "object") continue;
-      const id = (row as { id?: unknown }).id;
-      if (typeof id === "string") out.set(id, keyCount(row));
-      walk((row as { forks?: unknown }).forks);
+      const id = (row as Row).id;
+      if (typeof id === "string") out.set(id, row as Row);
+      walk((row as Row).forks);
     }
   };
   walk((root as { arias?: unknown } | undefined)?.arias);
@@ -44,8 +48,8 @@ export function ariaKeyCounts(root: unknown): Map<string, number> {
 }
 
 export function topologyNodes(tree: TreeState, here: string | undefined, forms: TopologyForms): TreeNodeData[] {
-  const counts = new Map<string, number>();
-  for (const root of Object.values(forms.arias)) for (const [id, n] of ariaKeyCounts(root)) counts.set(id, n);
+  const rows = new Map<string, Row>();
+  for (const root of Object.values(forms.arias)) for (const [id, row] of ariaRows(root)) rows.set(id, row);
   const make = (n: TreeNode): TreeNodeData => {
     const kids = n.children.flatMap((c) => {
       const k = tree.nodes.get(c);
@@ -57,23 +61,28 @@ export function topologyNodes(tree: TreeState, here: string | undefined, forms: 
       return {
         id: n.id,
         label: name.startsWith("@") ? name : "@" + name,
+        key: n.id,
         count: kids.length,
         peek: "",
         mantra: n.target ? "\u2192 " + (holder?.handle ?? holder?.label ?? n.target.slice(0, 8)) : "vacant",
         here: false,
         hint: n.target ? "Enter attend the holder" : "",
+        row: rows.get(n.id),
+        childKey: FORKS,
         children: kids,
       };
     }
     return {
       id: n.id,
       label: n.handle ?? n.label,
-      count: counts.get(n.id) ?? kids.length,
+      count: keyCount(rows.get(n.id)) || kids.length,
       peek: "",
       role: n.roles.join(" "),
       mantra: n.mantra ?? "",
       here: n.id === here,
       hint: "Enter attend · x kill",
+      row: rows.get(n.id),
+      childKey: FORKS,
       children: kids,
     };
   };

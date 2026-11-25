@@ -1,0 +1,13 @@
+/spain  2/6
+  e3eadfbd-b5fc-4578-b86f-3acab8f411d5: {form: "@arias", self: true}
+  └─ arias (5)
+     ├─ @744a27e38ebd91da1988a0445709fb7e (6)
+     │  ├─ forks (1)
+     │  │  └─ utopia-magazine (8)  "@King of Spain"  "King of Spain"
+     │  │     ├─ forks (3)
+▸    │  │     │  ├─ amplifier-rocket (7)  "King of Spain fork two"
+     │  │     │  └─ giftshop-handgun (7)  "King of Spain fork one"
+     │  │     └─ role: "@King of Spain"
+     │  └─ name: King of Spain
+     └─ dominoes-kamikaze (6)  "older note: spain edge"
+⌕ · wrangle-buffalo · fig batch B: tree like pager                                                         0/200.0k 0.0%

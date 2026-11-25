@@ -1,0 +1,115 @@
+{
+ "arias": {
+  "arias": {
+   "@744a27e38ebd91da1988a0445709fb7e": {
+    "forks": {
+     "utopia-magazine": {
+      "active_at": 1795633869876,
+      "ctx_limit": 200000,
+      "cwd": "/var/tmp/wave1-capture",
+      "forks": {
+       "amplifier-rocket": {
+        "active_at": 1795633872145,
+        "ctx_limit": 200000,
+        "cwd": "/var/tmp/wave1-capture",
+        "id": "0db18bf026544348761a8caa6f62bcc6",
+        "mantra": "King of Spain fork two",
+        "state": "dormant"
+       },
+       "cymbal-pry": {
+        "active_at": 1795633873279,
+        "ctx_limit": 200000,
+        "cwd": "/var/tmp/wave1-capture",
+        "forks": {
+         "puzzle-croissant": {
+          "active_at": 1795633874413,
+          "ctx_limit": 200000,
+          "cwd": "/var/tmp/wave1-capture",
+          "forks": {
+           "wrangle-buffalo": {
+            "active_at": 1795633875549,
+            "bound": true,
+            "ctx_limit": 200000,
+            "cwd": "/var/tmp/wave1-capture",
+            "id": "fb0937ea5122998248bef8ad29a9a0cb",
+            "mantra": "fig batch B: tree like pager",
+            "state": "dormant"
+           }
+          },
+          "id": "bc0cdc692d2a8fb86c8fab44a5176f34",
+          "mantra": "Frontend Strategist",
+          "role": "\"@Frontend Strategist\"",
+          "state": "dormant"
+         }
+        },
+        "id": "372e67b1c408b17da00e346a3b1db24a",
+        "mantra": "Figaro Engineer",
+        "role": "\"@Figaro Engineer\"",
+        "state": "dormant"
+       },
+       "giftshop-handgun": {
+        "active_at": 1795633871011,
+        "ctx_limit": 200000,
+        "cwd": "/var/tmp/wave1-capture",
+        "id": "699cdeadfc5f3bd7abdf5d5d80c163bf",
+        "mantra": "King of Spain fork one",
+        "state": "dormant"
+       }
+      },
+      "id": "f02581432bbcf87908043da8570f3c2c",
+      "mantra": "King of Spain",
+      "role": "\"@King of Spain\"",
+      "state": "dormant"
+     }
+    },
+    "id": "@744a27e38ebd91da1988a0445709fb7e",
+    "kind": "form",
+    "name": "King of Spain",
+    "state": "form",
+    "target": "f02581432bbcf87908043da8570f3c2c"
+   },
+   "atypical-lasagna": {
+    "active_at": 1795633868741,
+    "ctx_limit": 200000,
+    "cwd": "/var/tmp/wave1-capture",
+    "id": "1823184277da9d625d82cb39dbcce382",
+    "mantra": "scratch: tree sort",
+    "state": "dormant"
+   },
+   "avalanche-owlish": {
+    "active_at": 1795633852694,
+    "ctx_limit": 200000,
+    "cwd": "/var/tmp/wave1-capture",
+    "id": "18eb960dfd183d8538edbd7dbd2246bc",
+    "state": "dormant"
+   },
+   "dominoes-kamikaze": {
+    "active_at": 1795633867606,
+    "ctx_limit": 200000,
+    "cwd": "/var/tmp/wave1-capture",
+    "id": "43a1991cf5b9f788b612bb1bcb26c7e9",
+    "mantra": "older note: spain edge",
+    "state": "dormant"
+   },
+   "hydrant-pueblo": {
+    "active_at": 1795633876682,
+    "ctx_limit": 200000,
+    "cwd": "/var/tmp/wave1-capture",
+    "id": "786e9b5088604db4318fa8ba98e01209",
+    "mantra": "newest: scratch",
+    "state": "dormant"
+   }
+  }
+ },
+ "attend": "fb0937ea5122998248bef8ad29a9a0cb",
+ "ids": {
+  "king": "f02581432bbcf87908043da8570f3c2c",
+  "lane": "fb0937ea5122998248bef8ad29a9a0cb"
+ },
+ "troupe": {
+  "e3eadfbd-b5fc-4578-b86f-3acab8f411d5": {
+   "form": "@arias",
+   "self": true
+  }
+ }
+}

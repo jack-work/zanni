@@ -12,7 +12,17 @@ export interface TreeNodeData {
   mantra?: string;
   here?: boolean;
   hint?: string;
+  key?: string;
+  row?: Readonly<Record<string, unknown>>;
+  childKey?: string;
   children?: readonly TreeNodeData[];
+}
+
+export interface RowShown {
+  label?: ReactNode;
+  role?: ReactNode;
+  mantra?: ReactNode;
+  value?: ReactNode;
 }
 
 export interface TreeRowData {
@@ -32,6 +42,7 @@ export interface TreeRowData {
   hint: string;
   expandable: boolean;
   open: boolean;
+  shown?: RowShown;
 }
 
 export const LABEL_PAD_MAX = 24;
@@ -39,6 +50,7 @@ export const INLINE_MAX = 3;
 export const INLINE_COLUMNS = 60;
 export const PEEK_KEYS = 4;
 export const VALUE_COLUMNS = 120;
+export const SNIPPET_SEP = "\u001f";
 
 const width = (s: string): number => [...s].length;
 
@@ -108,17 +120,33 @@ export interface TreeProps {
 
 const never = () => false;
 
+interface Find {
+  query: string;
+  flat: boolean;
+  at: number;
+  from: string | undefined;
+}
+
+type FindKit = typeof import("./tree-find");
+
 export function Tree({ roots, mark, current, defaultOpen = never, onActivate, onEdit, autoFocus, onRows, keys, label, testid, className, empty }: TreeProps) {
   const [chosen, setChosen] = useState<ReadonlyMap<string, boolean>>(new Map());
   const [cursorId, setCursorId] = useState<string | undefined>(undefined);
+  const [find, setFind] = useState<Find | undefined>(undefined);
+  const [kit, setKit] = useState<FindKit | undefined>(undefined);
+  useEffect(() => {
+    if (!(typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches)) void import("./tree-find").then(setKit);
+  }, []);
   const lastKey = useRef("");
   const box = useRef<HTMLDivElement>(null);
   const isOpen = (id: string, depth: number) => chosen.get(id) ?? defaultOpen(id, depth);
-  const rows = useMemo(() => treeRows(roots, isOpen), [roots, chosen, defaultOpen]);
-  const at = Math.max(
-    rows.findIndex((r) => r.id === (cursorId ?? current)),
-    0,
-  );
+  const plain = useMemo(() => treeRows(roots, isOpen), [roots, chosen, defaultOpen]);
+  const found = useMemo(() => (find?.query && kit ? kit.search(roots, find.query, find.flat) : undefined), [roots, kit, find?.query, find?.flat]);
+  const rows = found?.rows ?? plain;
+  const step = found && found.steps.length > 0 ? (find!.at < 0 ? found.best : Math.min(find!.at, found.steps.length - 1)) : -1;
+  const there = found ? found.steps[step] : cursorId ?? current;
+  const hit = rows.findIndex((r) => r.id === there);
+  const at = hit < 0 && !find ? 0 : hit;
   const cursor = rows[at];
 
   const shown = rows.map((r) => r.id).join("\n");
@@ -128,7 +156,7 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, on
 
   useEffect(() => {
     if (autoFocus) box.current?.focus({ preventScroll: true });
-  }, [autoFocus, rows.length > 0]);
+  }, [autoFocus, plain.length > 0]);
 
   useEffect(() => {
     if (!cursor) return;
@@ -136,15 +164,31 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, on
     el?.scrollIntoView?.({ block: "nearest" });
   }, [cursor?.id]);
 
-  if (rows.length === 0) return <>{empty ?? null}</>;
+  if (plain.length === 0) return <>{empty ?? null}</>;
 
   const set = (id: string, open: boolean) => setChosen((prev) => new Map(prev).set(id, open));
   const toggle = (r: TreeRowData) => r.expandable && set(r.id, !r.open);
-  const activate = (r: TreeRowData) => (onActivate ? onActivate(r.id) : toggle(r));
+  const owner = (id: string) => id.split(SNIPPET_SEP)[0] as string;
+  const activate = (r: TreeRowData) => (onActivate ? onActivate(owner(r.id)) : toggle(r));
   const moveTo = (i: number) => setCursorId(rows[Math.min(Math.max(i, 0), rows.length - 1)]?.id);
+  const begin = () => setFind({ query: "", flat: false, at: -1, from: cursor?.id });
+  const end = (keep: string | undefined) => {
+    const open = new Map(chosen);
+    for (let up = keep && found?.parent.get(owner(keep)); up; up = found?.parent.get(up)) open.set(up, true);
+    if (keep) {
+      setChosen(open);
+      setCursorId(owner(keep));
+    } else if (find?.from) setCursorId(find.from);
+    setFind(undefined);
+    box.current?.focus({ preventScroll: true });
+  };
+  const hop = (by: number) => {
+    const n = found?.steps.length ?? 0;
+    if (n > 0) setFind((f) => f && { ...f, at: (((step + by) % n) + n) % n });
+  };
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.metaKey || e.altKey || !cursor) return;
+    if (find || e.metaKey || e.altKey || !cursor) return;
     const key = e.ctrlKey ? "^" + e.key : e.key;
     const prev = lastKey.current;
     lastKey.current = key;
@@ -167,6 +211,15 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, on
       case "u":
       case "PageUp":
         moveTo(at - page);
+        break;
+      case "e":
+      case "^e":
+      case "^y":
+        kit?.scroll(box.current, key === "^y" ? -28 : 28);
+        break;
+      case "/":
+      case "?":
+        if (kit) begin();
         break;
       case "G":
       case "End":
@@ -207,67 +260,76 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, on
   };
 
   return (
-    <div ref={box} className={["zr-tree", className].filter(Boolean).join(" ")} role="tree" aria-label={label} data-testid={testid} tabIndex={0} aria-activedescendant={cursor ? "zr-tree-" + cursor.id : undefined} onKeyDown={onKeyDown}>
-      {rows.map((r, i) => {
-        const selected = i === at;
-        return (
-          <div
-            key={r.id}
-            id={"zr-tree-" + r.id}
-            className="zr-tree-row"
-            role="treeitem"
-            aria-level={r.depth + 1}
-            aria-expanded={r.expandable ? r.open : undefined}
-            aria-selected={selected}
-            data-id={r.id}
-            data-testid={testid && testid + "-row"}
-            data-depth={r.depth}
-            data-leaf={r.expandable ? undefined : ""}
-            data-here={r.here ? "" : undefined}
-            data-cursor={selected ? "true" : undefined}
-            onClick={() => {
-              setCursorId(r.id);
-              if (onEdit && r.leaf) onEdit(r.id);
-              else activate(r);
-            }}
-          >
-            <Glyph glyph={selected ? mark : ""} className="zr-tree-mark" />
-            {Array.from({ length: r.depth }, (_, i) => (
-              <span key={i} className="zr-tree-indent" aria-hidden="true" />
-            ))}
-            <span className={r.expandable ? "zr-tree-disclosure" : "zr-tree-pad"} aria-hidden="true" />
-            <span className="zr-tree-label" data-tone="body">
-              {r.label}
-            </span>
-            {r.leaf ? (
-              <>
-                <span className="zr-tree-colon">: </span>
-                {r.gap}
-                <span className="zr-tree-value">{r.value}</span>
-              </>
-            ) : r.inline ? (
-              <span className="zr-tree-peek">{": " + r.inline}</span>
-            ) : (
-              <>
-                <span className="zr-tree-count">{" (" + r.count + ")"}</span>
-                {r.peek && <span className="zr-tree-peek">{"  " + r.peek}</span>}
-              </>
-            )}
-            {r.role && (
-              <span className="zr-tree-role" data-tone="holder">
-                {"  " + r.role}
+    <>
+      {find && kit && <kit.Bar query={find.query} tally={found ? (step < 0 ? "none" : step + 1 + "/" + found.steps.length) : ""} edit={(query) => setFind({ ...find, query, at: -1 })} hop={hop} flip={() => setFind({ ...find, flat: !find.flat, at: -1 })} end={(keep) => end(keep ? there : undefined)} />}
+      <div ref={box} className={["zr-tree", className].filter(Boolean).join(" ")} role="tree" aria-label={label} data-testid={testid} tabIndex={0} aria-activedescendant={cursor ? "zr-tree-" + cursor.id : undefined} onKeyDown={onKeyDown}>
+        {rows.map((r, i) => {
+          const selected = i === at;
+          const m = r.shown;
+          return (
+            <div
+              key={r.id}
+              id={"zr-tree-" + r.id}
+              className="zr-tree-row"
+              role="treeitem"
+              aria-level={r.depth + 1}
+              aria-expanded={r.expandable ? r.open : undefined}
+              aria-selected={selected}
+              data-id={r.id}
+              data-testid={testid && testid + "-row"}
+              data-depth={r.depth}
+              data-leaf={r.expandable ? undefined : ""}
+              data-here={r.here ? "" : undefined}
+              data-cursor={selected ? "true" : undefined}
+              onClick={() => {
+                if (find) return end(r.id);
+                setCursorId(r.id);
+                if (onEdit && r.leaf) onEdit(r.id);
+                else activate(r);
+              }}
+            >
+              <Glyph glyph={selected ? mark : ""} className="zr-tree-mark" />
+              {Array.from({ length: r.depth }, (_, i) => (
+                <span key={i} className="zr-tree-indent" aria-hidden="true" />
+              ))}
+              <span className={r.expandable ? "zr-tree-disclosure" : "zr-tree-pad"} aria-hidden="true" />
+              <span className="zr-tree-label" data-tone="body">
+                {m?.label ?? r.label}
               </span>
-            )}
-            {r.mantra && (
-              <span className="zr-tree-mantra" data-tone="quiet">
-                {"  " + JSON.stringify(r.mantra)}
-              </span>
-            )}
-            {r.here && <Glyph glyph={glyphs["state.here"]} className="zr-tree-here" tone="label" />}
-            {selected && r.hint && <span className="zr-tree-hint">{"  " + r.hint}</span>}
-          </div>
-        );
-      })}
-    </div>
+              {r.leaf ? (
+                <>
+                  <span className="zr-tree-colon">: </span>
+                  {r.gap}
+                  <span className="zr-tree-value">
+                    {m?.value ?? r.value}
+                  </span>
+                </>
+              ) : r.inline ? (
+                <span className="zr-tree-peek">{": " + r.inline}</span>
+              ) : (
+                <>
+                  <span className="zr-tree-count">{" (" + r.count + ")"}</span>
+                  {r.peek && <span className="zr-tree-peek">{"  " + r.peek}</span>}
+                </>
+              )}
+              {r.role && (
+                <span className="zr-tree-role" data-tone="holder">
+                  {"  "}
+                  {m?.role ?? r.role}
+                </span>
+              )}
+              {r.mantra && (
+                <span className="zr-tree-mantra" data-tone="quiet">
+                  {"  "}
+                  {m?.mantra ?? JSON.stringify(r.mantra)}
+                </span>
+              )}
+              {r.here && <Glyph glyph={glyphs["state.here"]} className="zr-tree-here" tone="label" />}
+              {selected && r.hint && <span className="zr-tree-hint">{"  " + r.hint}</span>}
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 }
