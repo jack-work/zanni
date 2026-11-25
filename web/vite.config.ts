@@ -8,7 +8,7 @@ const pkg = resolve(import.meta.dirname, "../packages/react/src");
 const door = process.env.FIGCHAT_DOOR ?? "http://127.0.0.1:8099";
 
 function zanniModules(): Plugin {
-  const files = new Set(["nodi/nodi.js", "voce/voce.js", "figchat/speech.js"].map((f) => resolve(assets, f)));
+  const files = new Set(["nodi/nodi.js", "voce/voce.js", "figchat/speech.js", "../examples/aria-mock.js"].map((f) => resolve(assets, f)));
   return {
     name: "zanni-modules",
     enforce: "pre",
