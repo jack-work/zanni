@@ -6,7 +6,7 @@ import { attendedRunningAtom } from "../state/aria";
 import { queueStateAtom } from "../state/pit";
 import { attendedAtom } from "../state/route";
 
-function refusal(verb: string, id: number, r: QueueResult | undefined): QueueOutcome {
+export function refusal(verb: string, id: number, r: QueueResult | undefined): QueueOutcome {
   if (!r || r.outcome === "deleted" || r.outcome === "updated") return undefined;
   return `queue ${verb} ${id}: ${r.reason ?? r.outcome}${r.detail ? ` (${r.detail})` : ""}`;
 }

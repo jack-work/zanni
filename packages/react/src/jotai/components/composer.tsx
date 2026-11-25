@@ -12,6 +12,7 @@ import { COMMAND_OFF, commandAtom, commandSourcesAtom, helpOpenAtom, loadOutfits
 import { pitViewAtom } from "../state/pit";
 import { applyCandidate, suggest, type Candidate } from "../lib/command";
 import { CommandHelp } from "./command-help";
+import { QueuePile } from "./queue-pile";
 import { SignedOut } from "./signed-out";
 import type { Attended } from "../state/route";
 
@@ -163,6 +164,7 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
         } }}
       sendDisabled={cmd.on ? !cmd.line.trim() : comp.sending || !live || attached.uploading}
       running={running}
+      queue={pit && pit.snap !== "closed" ? undefined : <QueuePile />}
       focusTick={focusTick}
       inputRef={input}
       grip={<PitGrip />}

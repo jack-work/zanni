@@ -3,7 +3,7 @@ import { ariaFactsAtom } from "figaro-forms/aria/jotai";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useState } from "react";
 import { EFFORT_KEY, valueAt } from "../lib/pit-rows";
-import { STATUS_SPINNER, ctxLine, stateGlyph } from "../lib/status";
+import { PAUSE_GLYPH, STATUS_SPINNER, ctxLine, stateGlyph } from "../lib/status";
 import { contextTokensAtom, endStateAtom, linkAtom, runningAtom, workAtom } from "../state/aria";
 import { composerAtom, interruptAtom, keyOf } from "../state/composer";
 import { micAtom } from "../state/mic";
@@ -67,8 +67,8 @@ function Bar({ attended }: { attended: Attended }) {
         mantra && <span className="fw-status-mantra">{mantra}</span>
       )}
       {running && link === "live" && (
-        <button type="button" className="fw-status-stop" onClick={() => void interrupt("keep")}>
-          Stop
+        <button type="button" className="fw-status-stop" aria-label="Stop" title="Stop" onClick={() => void interrupt("keep")}>
+          {PAUSE_GLYPH}
         </button>
       )}
       {ctx && <span className="fw-status-ctx">{ctx}</span>}

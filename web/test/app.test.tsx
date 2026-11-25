@@ -183,7 +183,7 @@ describe("the control pit", () => {
     const status = document.querySelector(".fw-pit-status")!;
     const actions = document.querySelector(".zr-pit-list")!;
     expect(status.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByText("New figaro")).toBeTruthy();
+    expect(document.querySelector('.fw-controls [data-action="new"]')!.textContent).toBe("New");
   });
 });
 

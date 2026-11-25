@@ -105,10 +105,39 @@ describe("the composer", () => {
     fireEvent.change(input(), { target: { value: "again" } });
     act(() => screen.getByRole("button", { name: "Send" }).click());
     await waitFor(() => expect(document.querySelector(".fw-status-stop")).toBeTruthy(), { timeout: 5000 });
+  });
+
+  it("piles the queue above the input, expands it, stops all from there, and hides it while the pit is open", async () => {
+    attend(150);
+    await live();
+    expect(document.querySelector(".fw-pile")).toBeNull();
+    fireEvent.change(input(), { target: { value: "please run the build" } });
+    act(() => screen.getByRole("button", { name: "Send" }).click());
+    await waitFor(() => expect(document.querySelector(".fw-status-stop")).toBeTruthy(), { timeout: 5000 });
+    act(() =>
+      core.setQueue(MAIN, {
+        epoch: "e1",
+        len: 2,
+        order: [5, 6],
+        items: { "5": { state: "queued", text: "first thing\nmore" }, "6": { state: "queued", text: "second" } },
+      }),
+    );
+    await waitFor(() => expect(document.querySelector(".fw-pile")).toBeTruthy());
+    expect(document.querySelector(".fw-pile-text")!.textContent).toBe("first thing");
+    expect(document.querySelector(".fw-pile-count")!.textContent).toBe("x2");
+    expect(document.querySelectorAll(".fw-pile .zr-queue-row").length).toBe(0);
+    act(() => (document.querySelector(".fw-pile-head") as HTMLElement).click());
+    expect(document.querySelectorAll(".fw-pile .zr-queue-row").length).toBe(2);
     act(() => (document.querySelector(".zr-grip") as HTMLElement).click());
-    await waitFor(() => expect(document.querySelector('[data-action="stop-all"]')).toBeTruthy());
-    act(() => (document.querySelector('[data-action="stop-all"]') as HTMLElement).click());
-    await waitFor(() => expect(core.interrupts).toEqual(["keep", "clear"]));
+    await waitFor(() => expect(document.querySelector(".zr-pit")).toBeTruthy());
+    expect(document.querySelector(".fw-pile")).toBeNull();
+    act(() => {
+      fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    });
+    await waitFor(() => expect(document.querySelector(".fw-pile")).toBeTruthy());
+    act(() => (document.querySelector(".fw-pile-head") as HTMLElement).click());
+    act(() => (document.querySelector(".fw-stop-all") as HTMLElement).click());
+    await waitFor(() => expect(core.interrupts).toEqual(["clear"]));
   });
   it("forks at the end from the header and at a turn from its action bar, and opens the alternative", async () => {
     attend(1);

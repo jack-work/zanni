@@ -3,7 +3,6 @@ import { ariaFactsAtom, boundFormAtom, queueAtom, recentAtom, treeAtom } from "f
 import { troupeFormID, type AriaFacts } from "figaro-forms/aria";
 import type { TopologyForms } from "../lib/topology";
 import { FORKED_FROM_KEY, valueAt, type PitView } from "../lib/pit-rows";
-import { runningAtom } from "./aria";
 import { attendedAtom, clientAtom } from "./route";
 
 const USED_KEY = "fw.pit.used";
@@ -19,11 +18,6 @@ function readUsed(): Record<string, number> {
 }
 
 export const pitViewAtom = atom<PitView>("list");
-
-export const attendedRunningAtom = atom((get) => {
-  const at = get(attendedAtom);
-  return at ? get(runningAtom(at.client, at.aria)) : false;
-});
 
 const usedBase = atom<Record<string, number>>(readUsed());
 
