@@ -940,7 +940,7 @@ try:
             assert abs((bar["y"] + bar["height"] / 2) - db["top"]) <= 2, "the tab's bar sits on the drawer's top border: %s %s" % (bar, db)
             half = round(height / 2)
 
-            fx, fy = fb["x"] + fb["width"] * 0.8, fb["y"] + fb["height"] / 2
+            fx, fy = (fb["x"] + fb["width"] * 0.8, fb["y"] + fb["height"] / 2) if phone else centre(knob)
             f.down(fx, fy)
             f.move(height * 0.5)
             mid = pg.evaluate(PIT)
@@ -963,9 +963,11 @@ try:
                 assert pg.locator(".zr-pit[data-docked]").count() == 1
 
             def grab():
-                b = pg.locator(".zr-composer .zr-input").bounding_box()
-                f.down(b["x"] + b["width"] * 0.8, b["y"] + b["height"] / 2)
-                return b["y"] + b["height"] / 2
+                b = pg.locator(".zr-composer .zr-input" if phone else ".zr-pit-knob").bounding_box()
+                top = max(b["y"], 0)
+                y = (top + b["y"] + b["height"]) / 2
+                f.down(b["x"] + b["width"] * (0.8 if phone else 0.5), y)
+                return y
 
             y = grab()
             f.move(y - height * 0.2)

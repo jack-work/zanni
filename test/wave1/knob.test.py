@@ -3,7 +3,8 @@
 The composer is the drawer's head, so there is no second grip to float over
 the pit. At closed, mid-drag, half, full and while closing, the tab's bar sits
 on the drawer's top edge and nothing covers the tab. Chromium as a phone with
-touch and at 1280x800 with a mouse.
+touch and at 1280x800 with a mouse, which drags by the tab because a mouse
+drag over the field selects text.
 """
 from kit import Door, Report, bundle_arg, until
 
@@ -88,7 +89,7 @@ def main():
                     pg.wait_for_timeout(600)
                     seen("closed")
                     f = finger(pg, cdp, phone)
-                    gx, gy = centre(pg.locator(".zr-composer .zr-input"))
+                    gx, gy = centre(pg.locator(".zr-composer .zr-input" if phone else ".zr-pit-knob"))
                     f.down(gx, gy)
                     f.move(gy - 12, steps=3)
                     seen("just past the slop of the drag")
@@ -99,7 +100,7 @@ def main():
                     until(pg, "(() => { const p = document.querySelector('.zr-pit'); return !!p && p.dataset.snap === 'half' && !p.hasAttribute('data-dragging'); })()", 4000)
                     pg.evaluate("Promise.all(document.getAnimations().map(a => a.finished.catch(() => null)))")
                     seen("half")
-                    hx, hy = centre(pg.locator(".zr-composer .zr-input"))
+                    hx, hy = centre(pg.locator(".zr-composer .zr-input" if phone else ".zr-pit-knob"))
                     f.down(hx, hy)
                     f.move(height * 0.05)
                     seen("drag toward full")
