@@ -7,10 +7,10 @@ describe("PlayerIsland", () => {
     const src = (k: string) => "/audio/" + k;
     const { container, rerender, unmount } = render(<PlayerIsland request={null} src={src} />);
     expect(container.querySelector(".voce")).toBeNull();
-    act(() => rerender(<PlayerIsland request={{ key: "gluck/a:1/in" }} src={src} />));
+    act(() => rerender(<PlayerIsland request={{ key: "home/a:1/in" }} src={src} />));
     expect(container.querySelectorAll(".voce")).toHaveLength(1);
     const first = container.querySelector(".voce");
-    act(() => rerender(<PlayerIsland request={{ key: "gluck/a:1/in" }} src={src} />));
+    act(() => rerender(<PlayerIsland request={{ key: "home/a:1/in" }} src={src} />));
     expect(container.querySelectorAll(".voce")).toHaveLength(1);
     expect(container.querySelector(".voce")).not.toBe(first);
     unmount();

@@ -32,9 +32,9 @@ async function attend() {
       return new Response(JSON.stringify(out.body), { status: out.status });
     }),
   );
-  window.location.hash = "#/gluck/" + MAIN;
+  window.location.hash = "#/home/" + MAIN;
   const store = createStore();
-  store.set(bootAtom, { stores: { gluck: client }, store: "gluck", audioUrl: "audio", sttUrl: "stt", attachUrl: "attach", mark: "" });
+  store.set(bootAtom, { stores: { home: client }, store: "home", audioUrl: "audio", sttUrl: "stt", attachUrl: "attach", mark: "" });
   render(
     <Provider store={store}>
       <App />

@@ -83,9 +83,9 @@ describe("streaming dictation", () => {
     const r = rig();
     const got: [string, boolean][] = [];
     expect(r.mic.snapshot().state).toBe("idle");
-    r.mic.toggle("gluck/a", (t, f) => got.push([t, f]));
+    r.mic.toggle("home/a", (t, f) => got.push([t, f]));
     expect(r.sockets).toHaveLength(1);
-    expect(r.sockets[0]!.target).toBe("gluck/a");
+    expect(r.sockets[0]!.target).toBe("home/a");
     expect(r.sockets[0]!.binaryType).toBe("arraybuffer");
     expect(r.mic.snapshot().state).toBe("asking");
     await flush();
@@ -110,11 +110,11 @@ describe("streaming dictation", () => {
   it("on stop sends end, waits for done, then hands over the settled text and lets everything go", async () => {
     const r = rig();
     const got: [string, boolean, string | undefined][] = [];
-    r.mic.toggle("gluck/a", (t, f, id) => got.push([t, f, id]));
+    r.mic.toggle("home/a", (t, f, id) => got.push([t, f, id]));
     await flush();
     r.sockets[0]!.open();
     r.frame();
-    r.mic.toggle("gluck/a", () => {});
+    r.mic.toggle("home/a", () => {});
     expect(r.sockets[0]!.texts()).toEqual([{ type: "end" }]);
     expect(r.mic.snapshot().state).toBe("transcribing");
     expect(r.stopped).toEqual(["capture"]);
@@ -230,8 +230,8 @@ describe("streaming dictation", () => {
 
 describe("dictation helpers", () => {
   it("builds the stream url on the gateway's stt route with the aria, a valid language and the session", () => {
-    const u = dictationSocketUrl("stt", "gluck/abc", "en-US", "https://fig.example/chat/");
-    expect(u.href).toBe("wss://fig.example/chat/stt/stream?aria=gluck%2Fabc&lang=en-US");
+    const u = dictationSocketUrl("stt", "home/abc", "en-US", "https://fig.example/chat/");
+    expect(u.href).toBe("wss://fig.example/chat/stt/stream?aria=home%2Fabc&lang=en-US");
     expect(dictationSocketUrl("stt/", "g/a", "zh-Hans-CN", "http://h/chat/").searchParams.get("lang")).toBe("en-US");
   });
 
@@ -244,8 +244,8 @@ describe("dictation helpers", () => {
   });
 
   it("re-transcribes a stored clip by key", async () => {
-    const f = (async (url: string) => (url === "stt/key/gluck/a%3A1/in" ? new Response(JSON.stringify({ text: "hi" }), { status: 200 }) : new Response(JSON.stringify({ error: "nope" }), { status: 404 }))) as unknown as typeof fetch;
-    expect((await retranscribe("stt", "gluck/a:1/in", f)).text).toBe("hi");
-    await expect(retranscribe("stt", "gluck/a:1/out", f)).rejects.toBeInstanceOf(SttError);
+    const f = (async (url: string) => (url === "stt/key/home/a%3A1/in" ? new Response(JSON.stringify({ text: "hi" }), { status: 200 }) : new Response(JSON.stringify({ error: "nope" }), { status: 404 }))) as unknown as typeof fetch;
+    expect((await retranscribe("stt", "home/a:1/in", f)).text).toBe("hi");
+    await expect(retranscribe("stt", "home/a:1/out", f)).rejects.toBeInstanceOf(SttError);
   });
 });

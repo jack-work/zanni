@@ -13,7 +13,7 @@ function open(hash: string, step = 1) {
   ({ core, client } = mockDoor(step));
   window.location.hash = hash;
   const store = createStore();
-  store.set(bootAtom, { stores: { gluck: client }, store: "gluck", audioUrl: "audio", sttUrl: "stt", mark: "" });
+  store.set(bootAtom, { stores: { home: client }, store: "home", audioUrl: "audio", sttUrl: "stt", mark: "" });
   return render(
     <Provider store={store}>
       <App />
@@ -44,11 +44,11 @@ describe("the list", () => {
     expect(document.querySelectorAll(".zr-tree th, .zr-tree button").length).toBe(0);
     const main = document.querySelector<HTMLElement>(".zr-tree-row[data-id='" + "c0ffee01".repeat(4) + "']")!;
     act(() => main.click());
-    await waitFor(() => expect(window.location.hash).toBe("#/gluck/" + "c0ffee01".repeat(4)));
+    await waitFor(() => expect(window.location.hash).toBe("#/home/" + "c0ffee01".repeat(4)));
   });
 
   it("opens only the chain to the attended aria and the attended row itself, as the pager's revealOpen does", async () => {
-    open("#/gluck/" + "c0ffee02".repeat(4));
+    open("#/home/" + "c0ffee02".repeat(4));
     await waitFor(() => expect(document.querySelectorAll(".zr-tree-row").length).toBeGreaterThan(5));
     const ids = () => [...document.querySelectorAll<HTMLElement>(".zr-tree-row")].map((r) => r.dataset.id);
     const main = "c0ffee01".repeat(4);
@@ -64,7 +64,7 @@ describe("the list", () => {
   });
 
   it("shows a fork in the tree live: the @arias delta is applied and the form is re-read", async () => {
-    open("#/gluck/" + "c0ffee02".repeat(4));
+    open("#/home/" + "c0ffee02".repeat(4));
     await waitFor(() => expect(document.querySelectorAll(".zr-tree-row").length).toBeGreaterThan(5));
     const reads = core.calls.filter((c) => c.method === "figaro.form" && c.params.figaro_id === "@arias").length;
     const forked = await client.peek("c0ffee02".repeat(4)).fork({ atTurn: 1 });
@@ -79,7 +79,7 @@ describe("the list", () => {
     const mains = document.querySelector(".zr-tree-row[data-id='" + "c0ffee01".repeat(4) + "']")!.textContent ?? "";
     expect(mains).toMatch(/\(8\)/);
     act(() => {
-      window.location.hash = "#/gluck/" + "c0ffee08".repeat(4);
+      window.location.hash = "#/home/" + "c0ffee08".repeat(4);
     });
     await waitFor(() => expect(document.querySelector(".fw-status-mantra")?.textContent).toBe("Scratch 2"));
   });
@@ -100,7 +100,7 @@ describe("the list", () => {
 
 describe("attending an aria", () => {
   it("reads the tail, goes live, and marks the aria current in the list", async () => {
-    open("#/gluck/" + "c0ffee01".repeat(4));
+    open("#/home/" + "c0ffee01".repeat(4));
     await waitFor(() => expect(app().dataset.link).toBe("live"));
     await waitFor(() => expect(shown().length).toBeGreaterThan(0));
     const first = shown();
@@ -112,7 +112,7 @@ describe("attending an aria", () => {
   });
 
   it("draws unknown nodes by name, who said what, and tool blocks open", async () => {
-    open("#/gluck/" + "c0ffee01".repeat(4) + ":7");
+    open("#/home/" + "c0ffee01".repeat(4) + ":7");
     await waitFor(() => expect(document.querySelector('.nodi-turn[data-turn="7"]')).toBeTruthy(), { timeout: 5000 });
     const turn = document.querySelector<HTMLElement>('.nodi-turn[data-turn="7"]')!;
     const tool = turn.querySelector<HTMLDetailsElement>(".nodi-tool")!;
@@ -123,7 +123,7 @@ describe("attending an aria", () => {
   });
 
   it("shows hostile text as the characters it is and boxes bidi and zero width marks", async () => {
-    open("#/gluck/" + "c0ffee01".repeat(4) + ":3");
+    open("#/home/" + "c0ffee01".repeat(4) + ":3");
     await waitFor(() => expect(document.querySelector('.nodi-turn[data-turn="3"]')).toBeTruthy(), { timeout: 5000 });
     const turn = document.querySelector<HTMLElement>('.nodi-turn[data-turn="3"]')!;
     expect(turn.textContent).toContain('<img src=x onerror="window.__pwned=1">');
@@ -135,7 +135,7 @@ describe("attending an aria", () => {
   });
 
   it("says so when the aria is not there", async () => {
-    open("#/gluck/" + "f".repeat(32));
+    open("#/home/" + "f".repeat(32));
     await waitFor(() => expect(app().dataset.link).toBe("gone"));
     expect(document.querySelector(".fw-main")!.textContent).toContain("No such aria");
   });
@@ -149,7 +149,7 @@ describe("attending an aria", () => {
 describe("bench hooks", () => {
   it("marks the attach start and the first painted frame, and carries the stable test ids", async () => {
     performance.clearMarks();
-    open("#/gluck/" + "c0ffee01".repeat(4));
+    open("#/home/" + "c0ffee01".repeat(4));
     expect(performance.getEntriesByName("figchat:attach").length).toBe(1);
     expect(window.__figchat).toEqual({});
     await waitFor(() => expect(window.__figchat?.firstFrame).toBeGreaterThan(0));
@@ -166,7 +166,7 @@ describe("bench hooks", () => {
 
 describe("the control pit", () => {
   it("shows the status rows from the aria's metrics and bound form above the actions", async () => {
-    open("#/gluck/" + "c0ffee01".repeat(4));
+    open("#/home/" + "c0ffee01".repeat(4));
     await waitFor(() => expect(document.querySelector(".fw-status-handle")).toBeTruthy());
     act(() => {
       fireEvent.click(screen.getByRole("button", { name: "Open controls" }));
@@ -196,7 +196,7 @@ describe("the queue pit", () => {
     items: { "5": { state: "queued", text: "first thing\nmore" }, "6": { state: "committing", text: "second" } },
   };
   const openQueue = async () => {
-    open("#/gluck/" + main);
+    open("#/home/" + main);
     await waitFor(() => expect(document.querySelector(".fw-status-handle")).toBeTruthy());
     act(() => {
       fireEvent.click(screen.getByRole("button", { name: "Open controls" }));
@@ -247,7 +247,7 @@ describe("the queue pit", () => {
 
 describe("the state pit writes", () => {
   const openState = async () => {
-    open("#/gluck/" + "c0ffee01".repeat(4));
+    open("#/home/" + "c0ffee01".repeat(4));
     await waitFor(() => expect(document.querySelector(".fw-status-handle")).toBeTruthy());
     act(() => {
       fireEvent.click(screen.getByRole("button", { name: "Open controls" }));

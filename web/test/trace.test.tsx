@@ -55,9 +55,9 @@ describe("browser spans", () => {
   it("send: one root span reaches /chat/otel with the session, and the same trace rides figaro.qua", async () => {
     const { core, client } = mockDoor(1);
     const traced = new AriaClient({ dial: traceDial(core.dial), pageBytes: 24000, retryMinMs: 20, retryMaxMs: 40 });
-    window.location.hash = "#/gluck/" + MAIN;
+    window.location.hash = "#/home/" + MAIN;
     const store = createStore();
-    store.set(bootAtom, { stores: { gluck: traced }, store: "gluck", audioUrl: "audio", sttUrl: "stt", mark: "" });
+    store.set(bootAtom, { stores: { home: traced }, store: "home", audioUrl: "audio", sttUrl: "stt", mark: "" });
     render(
       <Provider store={store}>
         <App />
@@ -92,7 +92,7 @@ describe("browser spans", () => {
   });
 
   it("fetches to stt carry traceparent and the session header", async () => {
-    await traced("dictate", { "figaro.aria": MAIN }, () => retranscribe("stt", "gluck/abc:1/in"));
+    await traced("dictate", { "figaro.aria": MAIN }, () => retranscribe("stt", "home/abc:1/in"));
     expect(seen[0]!.traceparent).toMatch(SHAPE);
     expect(seen[0]![SESSION_HEADER]).toBe(sessionId);
     flushTraces();

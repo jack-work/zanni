@@ -5,6 +5,7 @@ import { check, type Doc, type Step } from "./check";
 import { readFacts, type Facts } from "./facts";
 import { fakeRpc, fakeSpeech, newFakeAria, relayRpc, test, expect } from "./fixtures";
 import { realUnit, type Unit } from "./real";
+import { store } from "./store";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const doc: Doc = JSON.parse(readFileSync(join(here, "scenarios.json"), "utf8"));
@@ -50,7 +51,7 @@ for (const scenario of doc.scenarios) {
     const act = async (d: Step["do"]): Promise<void> => {
       if (d.attend) {
         attended = d.attend;
-        await page.goto(`/#/gluck/${route(d.attend)}`);
+        await page.goto(`/#/${store}/${route(d.attend)}`);
         await page.locator(".fw[data-link='live']").waitFor({ timeout: 20000 });
       }
       if (d.set) unit!.fig("set", "--id", current(), d.set.key, d.set.value);
