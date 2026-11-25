@@ -43,6 +43,10 @@ export function TopologyTree({ onVisit, autoFocus, className }: { onVisit?: () =
     const node = tree.nodes.get(id);
     if (!node || !client) return;
     const name = node.handle ?? node.label;
+    if (node.kind === "role") {
+      setNote(name + " is a role; kill the aria it points at.");
+      return;
+    }
     if (now || armed.current?.id === id) {
       clearTimeout(armed.current?.timer);
       armed.current = null;

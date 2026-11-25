@@ -41,20 +41,29 @@ export async function createFigaro(client: AriaClient, outfits: readonly string[
   }
 }
 
+const reason = (err: unknown): string => (err instanceof Error ? err.message : String(err));
+
 export const mintFigaroAtom = atom(null, async (get, set, req: { outfits: string; text: string }): Promise<Done> => {
   const client = get(clientAtom);
   const store = get(storeNameAtom);
   if (!client) return { ok: false, why: "Not created: no store." };
+  let id: string;
   try {
-    const id = await createFigaro(client, splitOutfits(req.outfits));
-    const text = req.text.trim();
-    if (text) await client.peek(id).qua(text);
-    void set(rosterActionAtom, "refresh");
-    set(goAtom, { store, aria: id });
-    return { ok: true, done: "Created " + id.slice(0, 8) + "." };
+    id = await createFigaro(client, splitOutfits(req.outfits));
   } catch (err) {
-    return { ok: false, why: "Not created: " + (err instanceof Error ? err.message : String(err)) };
+    return { ok: false, why: "Not created: " + reason(err) };
   }
+  void set(rosterActionAtom, "refresh");
+  set(goAtom, { store, aria: id });
+  const text = req.text.trim();
+  if (text) {
+    try {
+      await client.peek(id).qua(text);
+    } catch (err) {
+      return { ok: false, why: "Created " + id.slice(0, 8) + "; first message failed: " + reason(err) };
+    }
+  }
+  return { ok: true, done: "Created " + id.slice(0, 8) + "." };
 });
 
 export const createFigaroAtom = atom(null, async (get, set, req: { outfits: string; text: string }) => {
@@ -65,6 +74,7 @@ export const createFigaroAtom = atom(null, async (get, set, req: { outfits: stri
 });
 
 export const LANDING_OUTFIT = "landing";
+const OUTFIT_REFUSAL = /is not declared/;
 
 export const landAtom = atom(null, async (get, set) => {
   const boot = get(bootAtom);
@@ -72,7 +82,10 @@ export const landAtom = atom(null, async (get, set) => {
   const store = get(storeNameAtom);
   if (!boot.landing || !client) return;
   set(bootAtom, { ...boot, landing: false });
-  const id = await createFigaro(client, [LANDING_OUTFIT]).catch(() => createFigaro(client, [])).catch(() => undefined);
+  if (window.location.hash !== "") return;
+  const id = await createFigaro(client, [LANDING_OUTFIT])
+    .catch((err: unknown) => (OUTFIT_REFUSAL.test(reason(err)) ? createFigaro(client, []) : Promise.reject(err)))
+    .catch(() => undefined);
   if (!id) return;
   set(treeTakesFocusAtom, false);
   set(pitViewAtom, "tree");
