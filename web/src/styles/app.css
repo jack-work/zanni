@@ -267,6 +267,7 @@ body.fw-page {
 .fw-status-line { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--z-muted); }
 .fw-status-line[data-kind="note"] { color: var(--z-warn); }
 .fw-status-stop { flex: none; align-self: stretch; margin-block: 0; padding: 0 var(--z-space-2, 4px); border: 0; background: none; color: var(--z-ink); font: inherit; font-size: 0.875rem; cursor: pointer; touch-action: manipulation; }
+@media (pointer: coarse) { .fw-status-stop { min-width: 44px; } }
 .fw-status-stop:focus-visible { outline: 2px solid var(--z-focus); outline-offset: -2px; }
 
 .fw-pile { position: relative; z-index: 1; display: flex; flex-direction: column; color: var(--z-muted); border-bottom: 1px solid color-mix(in srgb, currentColor 35%, transparent); }

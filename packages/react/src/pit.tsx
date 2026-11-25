@@ -7,6 +7,7 @@ export type PitSnap = "closed" | "half" | "full";
 
 export const PIT_HALF_MIN = 640;
 export const PIT_SLOP = 6;
+export const PIT_TOUCH_SLOP = 10;
 export const PIT_FLICK = 0.4;
 export const PIT_PROJECT_MS = 240;
 export const PIT_SETTLE_MS = 500;
@@ -99,6 +100,7 @@ interface Drag {
   from: number;
   y: number;
   moved: boolean;
+  slop: number;
   frame: PitFrame;
   snaps: PitSnap[];
   samples: { t: number; y: number }[];
@@ -111,13 +113,14 @@ export interface PitProps {
   detents?: readonly PitSnap[];
   head?: ReactNode;
   knobLabel?: string;
+  closeLabel?: string;
   docked?: boolean;
   className?: string;
   data?: Record<`data-${string}`, string | undefined>;
   children: ReactNode;
 }
 
-export function Pit({ snap: asked, onSnapChange, label, detents = ALL, head, knobLabel = "Open controls", docked, className, data, children }: PitProps) {
+export function Pit({ snap: asked, onSnapChange, label, detents = ALL, head, knobLabel = "Open controls", closeLabel = "Close controls", docked, className, data, children }: PitProps) {
   const wide = useWide();
   const side = docked ?? wide;
   const drawer = useRef<HTMLDivElement | null>(null);
@@ -143,7 +146,7 @@ export function Pit({ snap: asked, onSnapChange, label, detents = ALL, head, kno
   }, []);
 
   const begin = useCallback(
-    (x: number, y: number, t: number) => {
+    (x: number, y: number, t: number, slop: number = PIT_SLOP) => {
       const el = drawer.current;
       if (!el || drag.current) return false;
       const f = frame();
@@ -151,7 +154,7 @@ export function Pit({ snap: asked, onSnapChange, label, detents = ALL, head, kno
       const options = cur.snap === "closed" ? pitDetents(cur.detents, f.view) : cur.snaps;
       if (cur.snap === "closed") decided.current = options;
       const from = translateOf(el) ?? pitStop(cur.snap, f);
-      drag.current = { startY: y, startX: x, from, y: from, moved: false, frame: f, snaps: options, samples: [{ t, y }] };
+      drag.current = { startY: y, startX: x, from, y: from, moved: false, slop, frame: f, snaps: options, samples: [{ t, y }] };
       return true;
     },
     [frame],
@@ -173,7 +176,7 @@ export function Pit({ snap: asked, onSnapChange, label, detents = ALL, head, kno
     if (!g.moved) {
       const dy = y - g.startY;
       const dx = x - g.startX;
-      if (Math.abs(dy) < PIT_SLOP && Math.abs(dx) < PIT_SLOP) return "wait";
+      if (Math.abs(dy) < g.slop && Math.abs(dx) < g.slop) return "wait";
       if (Math.abs(dx) > Math.abs(dy)) {
         drag.current = null;
         return "drop";
@@ -212,7 +215,8 @@ export function Pit({ snap: asked, onSnapChange, label, detents = ALL, head, kno
     if (ev.button !== 0 || ev.isPrimary === false) return;
     const target = ev.target as HTMLElement;
     if (body.current?.contains(target) || selecting(target)) return;
-    if (!begin(ev.clientX, ev.clientY, ev.timeStamp)) return;
+    if (ev.pointerType === "mouse" && target.closest("textarea, input")) return;
+    if (!begin(ev.clientX, ev.clientY, ev.timeStamp, ev.pointerType === "touch" ? PIT_TOUCH_SLOP : PIT_SLOP)) return;
     const id = ev.pointerId;
     const el = ev.currentTarget;
     const move = (e: PointerEvent) => {
@@ -337,13 +341,14 @@ export function Pit({ snap: asked, onSnapChange, label, detents = ALL, head, kno
           type="button"
           className="zr-pit-knob"
           data-testid="pit-grip"
-          aria-label={knobLabel}
+          aria-label={snap === "closed" ? knobLabel : closeLabel}
           aria-haspopup="dialog"
           aria-expanded={snap !== "closed"}
           onKeyDown={onKnobKey}
           onPointerDown={(ev) => {
             keepTyping(ev);
-            touch.current = ev.pointerType === "mouse" ? null : { id: ev.pointerId, x: ev.clientX, y: ev.clientY };
+            tapped.current = false;
+            touch.current = ev.pointerType === "touch" ? { id: ev.pointerId, x: ev.clientX, y: ev.clientY } : null;
           }}
           onPointerUp={(ev) => {
             const t = touch.current;
@@ -365,6 +370,11 @@ export function Pit({ snap: asked, onSnapChange, label, detents = ALL, head, kno
         {mounted && (
           <div ref={body} className="zr-pit-body" {...leave}>
             {open ? children : last.current}
+            {open && (
+              <button type="button" className="zr-pit-close" onClick={close}>
+                Close
+              </button>
+            )}
           </div>
         )}
       </div>

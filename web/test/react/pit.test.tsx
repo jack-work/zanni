@@ -91,6 +91,28 @@ describe("Pit", () => {
     expect(screen.queryByRole("button", { name: "Close" })).toBeNull();
   });
 
+  it("names the knob for what it will do, and offers a visible Close while open", () => {
+    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+    render(<Harness />);
+    const knob = drawer().querySelector<HTMLElement>(".zr-pit-knob")!;
+    expect(knob.getAttribute("aria-label")).toBe("Open controls");
+    fireEvent.click(knob);
+    expect(knob.getAttribute("aria-label")).toBe("Close controls");
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(drawer().getAttribute("data-snap")).toBe("closed");
+    expect(knob.getAttribute("aria-label")).toBe("Open controls");
+  });
+
+  it("opens once from a pen tap and does not toggle back on the click that follows", () => {
+    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+    render(<Harness />);
+    const knob = drawer().querySelector<HTMLElement>(".zr-pit-knob")!;
+    fireEvent.pointerDown(knob, { pointerId: 4, pointerType: "pen", button: 0, isPrimary: true, clientX: 100, clientY: 100 });
+    fireEvent.pointerUp(knob, { pointerId: 4, pointerType: "pen", clientX: 100, clientY: 100 });
+    fireEvent.click(knob);
+    expect(drawer().getAttribute("data-snap")).toBe("half");
+  });
+
   it("opens from the knob, steps with the arrows, and closes on Escape", () => {
     Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
     render(<Harness />);
@@ -111,7 +133,7 @@ describe("Pit", () => {
     expect(knob.getAttribute("aria-expanded")).toBe("false");
   });
 
-  it("toggles closed from the knob, with no close button", () => {
+  it("toggles closed from the knob", () => {
     Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
     render(<Harness />);
     const knob = screen.getByRole("button", { name: "Open controls" });
@@ -162,6 +184,32 @@ describe("Pit", () => {
     expect(drawer().getAttribute("data-snap")).toBe("full");
     expect(drawer().hasAttribute("data-dragging")).toBe(false);
     expect(drawer().style.transform).toBe("");
+  });
+
+  it("leaves a mouse drag over the text field to the text selection", () => {
+    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+    render(<Harness />);
+    const box = screen.getByRole("textbox", { name: "Message" });
+    fireEvent.pointerDown(box, { pointerId: 5, pointerType: "mouse", button: 0, isPrimary: true, clientX: 100, clientY: 780, timeStamp: 0 });
+    act(() => {
+      fireEvent.pointerMove(window, { pointerId: 5, clientX: 100, clientY: 700, timeStamp: 100 });
+    });
+    expect(drawer().hasAttribute("data-dragging")).toBe(false);
+  });
+
+  it("waits out a touch slop of 10 px before it takes the drag", () => {
+    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+    render(<Harness />);
+    const box = screen.getByRole("textbox", { name: "Message" });
+    fireEvent.pointerDown(box, { pointerId: 6, pointerType: "touch", button: 0, isPrimary: true, clientX: 100, clientY: 780, timeStamp: 0 });
+    act(() => {
+      fireEvent.pointerMove(window, { pointerId: 6, clientX: 100, clientY: 771, timeStamp: 30 });
+    });
+    expect(drawer().hasAttribute("data-dragging")).toBe(false);
+    act(() => {
+      fireEvent.pointerMove(window, { pointerId: 6, clientX: 100, clientY: 765, timeStamp: 60 });
+    });
+    expect(drawer().hasAttribute("data-dragging")).toBe(true);
   });
 
   it("leaves a sideways swipe on the head alone", () => {
