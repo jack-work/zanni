@@ -14,7 +14,7 @@
   },
   {
    "k": "swipe",
-   "t": "pit-handle",
+   "t": "grip",
    "dx": -120,
    "dy": 80,
    "ms": 30,
