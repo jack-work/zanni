@@ -4,6 +4,8 @@ import type { AriaClient } from "figaro-forms/aria";
 import { goAtom, clientAtom, storeNameAtom } from "./route";
 import { rosterActionAtom } from "./roster";
 import type { Done } from "./composer";
+import { bootAtom } from "./boot";
+import { pitSnapAtom, pitViewAtom } from "./pit";
 
 export interface NewFigaroState {
   readonly open: boolean;
@@ -59,4 +61,20 @@ export const createFigaroAtom = atom(null, async (get, set, req: { outfits: stri
   set(newFigaroAtom, { open: true, creating: true, note: "" });
   const made = await set(mintFigaroAtom, req);
   set(newFigaroAtom, made.ok ? { open: false, creating: false, note: "" } : { open: true, creating: false, note: made.why });
+});
+
+export const LANDING_OUTFIT = "landing";
+
+export const landAtom = atom(null, async (get, set) => {
+  const boot = get(bootAtom);
+  const client = get(clientAtom);
+  const store = get(storeNameAtom);
+  if (!boot.landing || !client) return;
+  set(bootAtom, { ...boot, landing: false });
+  const id = await createFigaro(client, [LANDING_OUTFIT]).catch(() => createFigaro(client, [])).catch(() => undefined);
+  if (!id) return;
+  set(pitViewAtom, "tree");
+  set(pitSnapAtom, "half");
+  void set(rosterActionAtom, "refresh");
+  set(goAtom, { store, aria: id });
 });

@@ -1,7 +1,7 @@
-import { useAtomValue } from "jotai";
-import { useSyncExternalStore } from "react";
+import { useAtomValue, useSetAtom } from "jotai";
+import { useEffect, useSyncExternalStore } from "react";
 import { useViewport } from "zanni-react";
-import { AriaView, BoundPit, NewFigaro, attendedAtom, attendedRunningAtom, audioSessionAtom, linkAtom, voiceAtom, micAtom, routeAtom, routeKindAtom, SignedOut, StatusBar } from "zanni-react/jotai";
+import { AriaView, BoundPit, NewFigaro, attendedAtom, attendedRunningAtom, audioSessionAtom, bootAtom, landAtom, linkAtom, voiceAtom, micAtom, routeAtom, routeKindAtom, SignedOut, StatusBar } from "zanni-react/jotai";
 
 function ListHint() {
   return (
@@ -33,6 +33,11 @@ export function App() {
   const mic = useAtomValue(micAtom);
   const voice = useAtomValue(voiceAtom);
   const session = useAtomValue(audioSessionAtom);
+  const landing = useAtomValue(bootAtom).landing;
+  const land = useSetAtom(landAtom);
+  useEffect(() => {
+    if (landing && link === "live") void land();
+  }, [landing, link === "live"]);
   useViewport();
   const phase = useSyncExternalStore(
     (fn) => session.subscribe(fn),

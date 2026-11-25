@@ -8,6 +8,7 @@ export interface Boot {
   readonly sttUrl: string;
   readonly attachUrl?: string;
   readonly mark: string;
+  readonly landing?: boolean;
 }
 
 export const bootAtom = atom<Boot>({ stores: {}, store: "local", audioUrl: "audio", sttUrl: "stt", mark: "" });

@@ -351,3 +351,40 @@ describe("the state pit writes", () => {
     expect(screen.getByRole("tree", { name: "Bound form" })).toBeTruthy();
   });
 });
+
+describe("the landing", () => {
+  function land(declared?: string[]) {
+    ({ core, client } = mockDoor(1, 3000, declared));
+    window.location.hash = "";
+    const store = createStore();
+    store.set(bootAtom, { stores: { home: client }, store: "home", audioUrl: "audio", sttUrl: "stt", mark: "", landing: true });
+    render(
+      <Provider store={store}>
+        <App />
+      </Provider>,
+    );
+    return store;
+  }
+  const created = () => core.calls.filter((c) => c.method === "figaro.create");
+
+  it("creates one figaro with the landing outfit, attends it and opens the pit on the tree", async () => {
+    land();
+    await waitFor(() => expect(window.location.hash).toMatch(/^#\/home\/[0-9a-f]{32}$/));
+    expect(created().map((c) => c.params)).toEqual([{ outfits: ["landing"] }]);
+    await waitFor(() => expect(document.querySelector(".zr-pit[data-snap='half']")).toBeTruthy());
+    await waitFor(() => expect(document.querySelector(".zr-pit .zr-tree")).toBeTruthy());
+    expect(created()).toHaveLength(1);
+  });
+
+  it("falls back to no outfit when the daemon does not declare landing", async () => {
+    land(["default"]);
+    await waitFor(() => expect(window.location.hash).toMatch(/^#\/home\/[0-9a-f]{32}$/));
+    expect(created().map((c) => c.params)).toEqual([{ outfits: ["landing"] }, {}]);
+  });
+
+  it("an explicit #/ stays the list and nothing is created", async () => {
+    open("#/");
+    await waitFor(() => expect(document.querySelector(".zr-pit-knob")).toBeTruthy());
+    expect(created()).toEqual([]);
+  });
+});

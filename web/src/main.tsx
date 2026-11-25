@@ -25,6 +25,7 @@ jotai.set(bootAtom, {
   sttUrl: host.getAttribute("data-stt") || "stt",
   attachUrl: host.getAttribute("data-attach") || "attach",
   mark: host.getAttribute("data-mark") || head,
+  landing: window.location.hash === "",
 });
 host.replaceChildren();
 createRoot(host).render(
