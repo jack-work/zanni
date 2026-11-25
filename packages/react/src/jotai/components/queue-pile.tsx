@@ -36,7 +36,7 @@ function Pile({ rows, first, open, toggle, actions, stopAll }: PileProps) {
   useSizeVar(box, "--fw-pile-h");
   return (
     <div ref={box} className="fw-pile" data-open={open ? "" : undefined}>
-      <button type="button" className="fw-pile-head" aria-expanded={open} aria-label="Queue" onClick={toggle}>
+      <button type="button" className="fw-pile-head" aria-expanded={open} onClick={toggle}>
         <span className="fw-pile-mark"><Glyph glyph={QUEUE_GLYPH} className="fw-pile-glyph" /></span>
         <span className="fw-pile-text">{open ? "Queued" : clip(first.text)}</span>
         <span className="fw-pile-count">{"x" + rows.length}</span>
