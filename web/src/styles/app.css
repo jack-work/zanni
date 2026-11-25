@@ -1,4 +1,4 @@
-:where(:root[data-theme="registro"]) { color-scheme: light dark; }
+:where(:root[data-theme="registro"]) { color-scheme: dark; }
 
 html.fw-html { height: 100%; overflow: hidden; overscroll-behavior: none; }
 body.fw-page {
