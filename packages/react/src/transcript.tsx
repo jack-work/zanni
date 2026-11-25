@@ -210,7 +210,6 @@ export function WorkGroup({ items }: { items: Work[] }) {
     <Fold
       open
       className="zr-work"
-      {...(live ? { "data-live": "" } : {})}
       summary={
         <>
           <span className="nodi-sum-label">{stepsTitle(items, live)}</span>

@@ -94,7 +94,7 @@
 .zr-pit {
   box-sizing: border-box;
   position: absolute;
-  left: var(--zr-pit-left, 0px);
+  left: 0;
   right: var(--zr-pit-right, 0px);
   bottom: var(--zr-kb, 0px);
   z-index: 5;
