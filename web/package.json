@@ -8,7 +8,7 @@
     "build": "tsc -p tsconfig.json --noEmit && vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "gallery": "vite --open /gallery/scene.html",
+    "gallery": "vite --open /gallery/index.html",
     "gallery:shot": "node gallery/shot.mjs",
     "parity": "playwright test",
     "parity:real": "PARITY_REAL=1 playwright test",
