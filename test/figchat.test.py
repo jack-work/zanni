@@ -1252,7 +1252,7 @@ try:
             attend(pg, ctl_door, MAIN)
             open_pit(pg)
             first = pg.locator(".zr-pit-row").evaluate_all("rows => rows.map(r => r.dataset.action)")
-            assert first == ["new", "state", "tail-fork", "fork-at", "tree", "recent", "asks", "outfits", "voice"], first
+            assert first == ["new", "state", "tail-fork", "fork-at", "tree", "recent", "asks", "queue", "outfits", "voice"], first
             glyph = lambda a: pg.locator(".zr-pit-row[data-action='%s'] .zr-pit-row-glyph" % a).inner_text()
             assert [glyph("state"), glyph("fork-at"), glyph("tree")] == ["웃", "⑂", "웃"], "each row wears its pager glyph"
             if not phone:
