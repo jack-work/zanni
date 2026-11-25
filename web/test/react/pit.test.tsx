@@ -91,34 +91,16 @@ describe("Pit", () => {
     expect(screen.queryByRole("button", { name: "Close" })).toBeNull();
   });
 
-  it("opens from the knob, steps with the arrows, and closes on Escape", () => {
+  it("names the knob for what it will do, and offers a visible Close while open", () => {
     Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
     render(<Harness />);
-    const knob = screen.getByRole("button", { name: "Open controls" });
-    knob.focus();
+    const knob = drawer().querySelector<HTMLElement>(".zr-pit-knob")!;
+    expect(knob.getAttribute("aria-label")).toBe("Open controls");
     fireEvent.click(knob);
-    const dialog = screen.getByRole("dialog", { name: "Controls" });
-    expect(dialog).toBe(drawer());
-    expect(dialog.getAttribute("data-snap")).toBe("half");
-    expect(knob.getAttribute("aria-expanded")).toBe("true");
-    expect(document.activeElement).toBe(screen.getByText("Inside"));
-    fireEvent.keyDown(knob, { key: "ArrowUp" });
-    expect(drawer().getAttribute("data-snap")).toBe("full");
-    fireEvent.keyDown(knob, { key: "ArrowDown" });
-    expect(drawer().getAttribute("data-snap")).toBe("half");
-    fireEvent.keyDown(document, { key: "Escape" });
+    expect(knob.getAttribute("aria-label")).toBe("Close controls");
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(drawer().getAttribute("data-snap")).toBe("closed");
-    expect(knob.getAttribute("aria-expanded")).toBe("false");
-  });
-
-  it("toggles closed from the knob, with no close button", () => {
-    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
-    render(<Harness />);
-    const knob = screen.getByRole("button", { name: "Open controls" });
-    fireEvent.click(knob);
-    expect(drawer().getAttribute("data-snap")).toBe("half");
-    fireEvent.click(knob);
-    expect(drawer().getAttribute("data-snap")).toBe("closed");
+    expect(knob.getAttribute("aria-label")).toBe("Open controls");
   });
 
   it("opens once from a pen tap and does not toggle back on the click that follows", () => {

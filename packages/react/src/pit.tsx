@@ -111,13 +111,14 @@ export interface PitProps {
   detents?: readonly PitSnap[];
   head?: ReactNode;
   knobLabel?: string;
+  closeLabel?: string;
   docked?: boolean;
   className?: string;
   data?: Record<`data-${string}`, string | undefined>;
   children: ReactNode;
 }
 
-export function Pit({ snap: asked, onSnapChange, label, detents = ALL, head, knobLabel = "Open controls", docked, className, data, children }: PitProps) {
+export function Pit({ snap: asked, onSnapChange, label, detents = ALL, head, knobLabel = "Open controls", closeLabel = "Close controls", docked, className, data, children }: PitProps) {
   const wide = useWide();
   const side = docked ?? wide;
   const drawer = useRef<HTMLDivElement | null>(null);
@@ -337,7 +338,7 @@ export function Pit({ snap: asked, onSnapChange, label, detents = ALL, head, kno
           type="button"
           className="zr-pit-knob"
           data-testid="pit-grip"
-          aria-label={knobLabel}
+          aria-label={snap === "closed" ? knobLabel : closeLabel}
           aria-haspopup="dialog"
           aria-expanded={snap !== "closed"}
           onKeyDown={onKnobKey}
@@ -366,6 +367,11 @@ export function Pit({ snap: asked, onSnapChange, label, detents = ALL, head, kno
         {mounted && (
           <div ref={body} className="zr-pit-body" {...leave}>
             {open ? children : last.current}
+            {open && (
+              <button type="button" className="zr-pit-close" onClick={close}>
+                Close
+              </button>
+            )}
           </div>
         )}
       </div>
