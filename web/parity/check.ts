@@ -18,6 +18,7 @@ export interface Scenario {
 export interface Doc {
   version: number;
   labels?: Record<string, string>;
+  system?: Record<string, unknown>;
   provider: unknown;
   scenarios: Scenario[];
 }

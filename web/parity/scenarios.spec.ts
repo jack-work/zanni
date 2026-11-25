@@ -14,16 +14,28 @@ const real = process.env.PARITY_REAL === "1";
 const FAKE_SCENARIOS = new Set(["attend", "send", "streamed", "steering"]);
 const shots = process.env.PARITY_SHOTS ?? join(here, "..", "test-results", "parity");
 
+const flatten = (v: unknown): Record<string, unknown> => {
+  const flat: Record<string, unknown> = {};
+  const walk = (prefix: string, x: unknown) => {
+    if (x && typeof x === "object" && !Array.isArray(x)) for (const [k, y] of Object.entries(x)) walk(prefix ? `${prefix}.${k}` : k, y);
+    else flat[prefix] = x;
+  };
+  walk("", v);
+  return flat;
+};
+
 for (const scenario of doc.scenarios) {
   test(`${real ? "real" : "fake"}: ${scenario.id} (${scenario.slice})`, async ({ page }, info) => {
     test.skip(!real && !FAKE_SCENARIOS.has(scenario.id), "the mock aria does not model this scenario");
     const unit: Unit | null = real ? await realUnit(scenario) : null;
     let aria: string;
+    let fake_core: ReturnType<typeof newFakeAria>["core"] | null = null;
     if (unit) {
       aria = unit.aria;
       await relayRpc(page, unit.rpc, unit.headers);
     } else {
-      const fake = newFakeAria();
+      const fake = newFakeAria(doc);
+      fake_core = fake.core;
       aria = fake.id;
       await fakeRpc(page, fake.core);
     }
@@ -111,16 +123,11 @@ for (const scenario of doc.scenarios) {
         }
         const facts: Facts = await readFacts(page);
         if (unit) {
-          const flat: Record<string, unknown> = {};
-          const walk = (prefix: string, v: unknown) => {
-            if (v && typeof v === "object" && !Array.isArray(v)) for (const [k, x] of Object.entries(v)) walk(prefix ? `${prefix}.${k}` : k, x);
-            else flat[prefix] = v;
-          };
-          walk("", unit.figJson("state", "show", "--id", current(), "-j") ?? {});
-          facts.state = flat;
+          facts.state = flatten(unit.figJson("state", "show", "--id", current(), "-j") ?? {});
           const byId = new Map(Object.entries(ids).map(([name, id]) => [id, name]));
           facts.tree = { edges: (unit.figJson("list", "-j") ?? []).filter((a: { id: string; parent?: string }) => byId.has(a.id) && byId.has(a.parent ?? "")).map((a: { id: string; parent: string }) => [byId.get(a.parent)!, byId.get(a.id)!]).sort() };
         }
+        if (fake_core) facts.state = flatten(fake_core.formOf(current()) ?? {});
         const problems = check(want, facts, glyphs, !real, doc.labels);
         expect.soft(problems, `${scenario.id}/${step.id}`).toEqual([]);
       }
