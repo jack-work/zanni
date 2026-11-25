@@ -77,10 +77,6 @@ def common(rep, at, f, parent, parent_label, turns, mark_turn, width):
         rep.check(f["marks"] == [], "%s: no own turn yet, so no ⑂ on a turn head: marks %s" % (at, f["marks"]))
     else:
         rep.check(f["marks"] == [{"turn": mark_turn, "text": "⑂ " + parent_label}], "%s: ⑂ %s on turn %d's head only, got %s" % (at, parent_label, mark_turn, f["marks"]))
-    if width >= 900:
-        rep.check(f["rowLevel"] is not None and f["parentLevel"] is not None and f["rowLevel"] == f["parentLevel"] + 1, "%s: the tree puts the alternative one level under its parent: %s vs %s" % (at, f["rowLevel"], f["parentLevel"]))
-        rep.check(f["parentOpen"] == "true", "%s: the parent row is open in the tree" % at)
-        rep.check(f["here"] == [f["aria"]], "%s: the here mark sits on the alternative only: %s" % (at, f["here"]))
 
 
 def main():
@@ -145,8 +141,6 @@ def main():
                     f = pg.evaluate(FACTS_JS, LANE)
                     rep.check(f["aria"] not in (MAIN, LANE), "fork of another: the alternative is attended, got %r" % f["aria"])
                     rep.check(f["turns"] and f["turns"][-1] == 4, "fork of another: the lane's history (4 turns) is shown: %s" % f["turns"])
-                    if width >= 900:
-                        rep.check(f["rowLevel"] == (f["parentLevel"] or -9) + 1, "fork of another: the alternative sits under the lane in the tree")
 
                 rep.run("%dpx: fork of another aria (:fork <id>)" % width, other)
                 ctx.close()

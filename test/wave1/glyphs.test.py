@@ -127,6 +127,9 @@ def main():
 
                     def list_view():
                         pg.goto(door.url + "#/")
+                        until(pg, "document.querySelector('.fw') && document.querySelector('.fw').dataset.link === 'live'", 15000)
+                        open_pit(pg)
+                        pg.locator(".zr-pit-row[data-action='tree']").click()
                         pg.wait_for_selector("[role=treeitem]")
                         pg.wait_for_timeout(400)
                         measure("list")

@@ -21,6 +21,17 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROLE_FORM = "@744a27e38ebd91da1988a0445709fb7e"
 ROLE_LABEL = "@King of Spain"
 
+def open_tree(pg):
+    if pg.locator(".zr-pit .fw-topology [role=treeitem]").count():
+        return
+    if not pg.locator(".zr-pit[data-snap='half'], .zr-pit[data-snap='full']").count():
+        pg.locator(".zr-pit-knob").focus()
+        pg.keyboard.press("Enter")
+        pg.wait_for_selector(".zr-pit[data-snap='half']")
+    pg.locator(".zr-pit-row[data-action='tree']").click(timeout=5000)
+    pg.wait_for_selector(".fw-topology [role=treeitem]", timeout=10000)
+
+
 ROWS_JS = """() => [...document.querySelectorAll('.fw-topology [role=treeitem]')].map((r) => {
   const text = (s) => { const e = r.querySelector(s); return e ? e.textContent.trim() : null; };
   return {
