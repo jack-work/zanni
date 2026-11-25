@@ -78,6 +78,9 @@ def main():
                 pg.wait_for_selector(".zr-composer .zr-input")
                 pg.wait_for_timeout(800)
                 if hands:
+                    pg.locator(".zr-composer .zr-grip").focus()
+                    pg.keyboard.press("Enter")
+                    pg.wait_for_selector(".zr-pit[data-snap='half']")
                     for _ in range(4):
                         pg.evaluate("document.querySelector('.fw-hands').scrollIntoView({ block: 'center' })")
                         pg.wait_for_timeout(1500)
@@ -86,8 +89,10 @@ def main():
                             break
                     else:
                         pg.screenshot(path="/tmp/hands-free-%s-pressed.png" % engine)
-                        raise AssertionError("the hands-free button never took the tap")
+                        raise AssertionError("the hands-free row never took the tap")
                     pg.wait_for_selector(".fw-hands[aria-pressed='true']", timeout=5000)
+                    pg.keyboard.press("Escape")
+                    pg.wait_for_selector(".zr-pit", state="detached")
                 try:
                     work(pg, door)
                 except Exception:

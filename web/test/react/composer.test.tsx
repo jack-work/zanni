@@ -2,11 +2,11 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { act } from "@testing-library/react";
-import { Button, Composer, KEYBOARD_CLOSE_SETTLE_MS, Strip, trackViewport } from "zanni-react";
+import { Button, Composer, KEYBOARD_CLOSE_SETTLE_MS, trackViewport } from "zanni-react";
 
-function Harness({ submit = () => {}, running = false, strip = null, onAttach = () => {}, onCommand = () => {}, commandOn = false }: { submit?: () => void; onAttach?: () => void; onCommand?: () => void; commandOn?: boolean; running?: boolean; strip?: { kind: "running" | "note"; text: string; time?: string } | null }) {
+function Harness({ submit = () => {}, running = false, onAttach = () => {}, onCommand = () => {}, commandOn = false }: { submit?: () => void; onAttach?: () => void; onCommand?: () => void; commandOn?: boolean; running?: boolean }) {
   const [v, setV] = useState("");
-  return <Composer value={v} onChange={setV} onSubmit={submit} sendLabel={running ? "Steer" : "Send"} sendGlyph={running ? "↳" : "✎"} attach={{ glyph: "❝", label: "Attach", onClick: onAttach }} command={{ glyph: "∴", label: "Command", pressed: commandOn, onClick: onCommand }} running={running} strip={strip} stripActions={<Button>Stop</Button>} accessory={<Button>Record</Button>} heightVar="--test-h" />;
+  return <Composer value={v} onChange={setV} onSubmit={submit} sendLabel={running ? "Steer" : "Send"} sendGlyph={running ? "↳" : "✎"} attach={{ glyph: "❝", label: "Attach", onClick: onAttach }} command={{ glyph: "∴", label: "Command", pressed: commandOn, onClick: onCommand }} running={running} accessory={<Button>Record</Button>} heightVar="--test-h" />;
 }
 
 const box = () => screen.getByLabelText("Message", { selector: "textarea" }) as HTMLTextAreaElement;
@@ -91,25 +91,14 @@ describe("Composer", () => {
     expect(document.querySelector("form")!.hasAttribute("data-running")).toBe(true);
   });
 
-  it("draws the strip only when given one, with its actions for a running turn", () => {
-    const { rerender } = render(<Harness />);
+  it("writes its height to a CSS variable and draws no strip", () => {
+    render(<Harness running />);
     expect(document.querySelector(".zr-strip")).toBeNull();
-    rerender(<Harness running strip={{ kind: "running", text: "Running go test", time: "0:12" }} />);
-    expect(document.querySelector(".zr-strip-text")!.textContent).toBe("Running go test");
-    expect(document.querySelector(".zr-strip-time")!.textContent).toBe("0:12");
-    expect(screen.getByRole("button", { name: "Stop" })).toBeTruthy();
     expect(document.documentElement.style.getPropertyValue("--test-h")).toMatch(/px$/);
   });
 });
 
-describe("Strip", () => {
-  it("a note strip has no glyph and no time", () => {
-    render(<Strip kind="note" text="Transcribing." />);
-    expect(document.querySelector(".zr-glyph")).toBeNull();
-    expect(document.querySelector(".zr-strip-time")).toBeNull();
-    expect(screen.getByRole("status").textContent).toBe("Transcribing.");
-  });
-
+describe("the composer row", () => {
   it("draws attach on the left and command and send as one pair on the right, each a glyph pill with a name", () => {
     render(<Harness />);
     const row = document.querySelector(".zr-compose-row")!;

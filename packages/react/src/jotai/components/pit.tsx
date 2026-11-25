@@ -10,11 +10,11 @@ import { QueueView } from "./queue-view";
 import { TopologyTree, FormTree } from "./tree-view";
 import { FormEdit, type FormEditTarget } from "./form-edit";
 import { turnsAtom, linkAtom } from "../state/aria";
-import { toggleVoiceAtom, voiceAtom } from "../state/audio";
+import { handsFreeAtom, toggleHandsFreeAtom, toggleVoiceAtom, voiceAtom } from "../state/audio";
 import { bootAtom } from "../state/boot";
-import { composerAtom, forkAtom, keyOf } from "../state/composer";
+import { composerAtom, forkAtom, interruptAtom, keyOf } from "../state/composer";
 import { openNewFigaroAtom } from "../state/new-figaro";
-import { attendedFactsAtom, boundStateAtom, markPitUsedAtom, pitUsedAtom, pitViewAtom, queueStateAtom, recentStateAtom, treeStateAtom } from "../state/pit";
+import { attendedFactsAtom, attendedRunningAtom, boundStateAtom, markPitUsedAtom, pitUsedAtom, pitViewAtom, queueStateAtom, recentStateAtom, treeStateAtom } from "../state/pit";
 import { attendedRowAtom, rosterAtom } from "../state/roster";
 import { attendedAtom, clientAtom, goAtom, storeNameAtom } from "../state/route";
 
@@ -87,6 +87,10 @@ function ControlList() {
   const asks = useAsks();
   const voice = useAtomValue(voiceAtom);
   const toggleVoice = useSetAtom(toggleVoiceAtom);
+  const handsFree = useAtomValue(handsFreeAtom);
+  const toggleHandsFree = useSetAtom(toggleHandsFreeAtom);
+  const interrupt = useSetAtom(interruptAtom);
+  const running = useAtomValue(attendedRunningAtom);
   const openNew = useSetAtom(openNewFigaroAtom);
   const fork = useSetAtom(forkAtom);
   const live = link === "live";
@@ -99,6 +103,7 @@ function ControlList() {
     queue: queue?.rows.length ? String(queue.rows.length) : "",
     outfits: row?.outfit_name ?? "",
     voice: voice ? "on" : "off",
+    "hands-free": handsFree ? "on" : "off",
   };
   const act: Record<PitRowId, () => void> = {
     new: () => {
@@ -117,8 +122,10 @@ function ControlList() {
     queue: () => setView("queue"),
     outfits: () => setView("outfits"),
     voice: () => toggleVoice(),
+    "hands-free": () => toggleHandsFree(),
+    "stop-all": () => void interrupt("clear"),
   };
-  const off = (id: PitRowId): boolean => (id === "tail-fork" ? !attended || !live || forking : id === "state" || id === "fork-at" || id === "outfits" || id === "queue" ? !attended : false);
+  const off = (id: PitRowId): boolean => (id === "tail-fork" ? !attended || !live || forking : id === "stop-all" ? !live || !running : id === "state" || id === "fork-at" || id === "outfits" || id === "queue" || id === "hands-free" ? !attended : false);
 
   return (
     <PitList label="Controls">
@@ -129,8 +136,8 @@ function ControlList() {
           label={r.label}
           meta={meta[r.id]}
           action={r.id}
-          className={r.id === "voice" ? "fw-voice" : "fw-pit-act"}
-          pressed={r.id === "voice" ? voice : undefined}
+          className={r.id === "voice" ? "fw-voice" : r.id === "hands-free" ? "fw-hands" : r.id === "stop-all" ? "fw-stop-all" : "fw-pit-act"}
+          pressed={r.id === "voice" ? voice : r.id === "hands-free" ? handsFree : undefined}
           disabled={off(r.id)}
           onClick={() => {
             markUsed(r.id);

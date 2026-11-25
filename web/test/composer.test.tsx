@@ -85,30 +85,31 @@ describe("the composer", () => {
     expect(core.sent ?? []).toEqual([]);
   });
 
-  it("shows the strip while a turn runs, steers, and stops with or without the queue", async () => {
+  it("carries the working line and Stop in the status bar while a turn runs, and the pit stops and clears the queue", async () => {
     attend(150);
     await live();
     expect(document.querySelector(".zr-strip")).toBeNull();
+    expect(document.querySelector(".fw-status-line")).toBeNull();
+    expect(document.querySelector(".fw-status-stop")).toBeNull();
     fireEvent.change(input(), { target: { value: "please run the build" } });
     act(() => screen.getByRole("button", { name: "Send" }).click());
-    await waitFor(() => expect(document.querySelector(".zr-strip[data-kind='running']")).toBeTruthy(), { timeout: 5000 });
+    await waitFor(() => expect(document.querySelector(".fw-status[data-state='running'] .fw-status-line")).toBeTruthy(), { timeout: 5000 });
+    expect(document.querySelector(".zr-strip")).toBeNull();
     expect(document.querySelector(".fw")!.hasAttribute("data-running")).toBe(true);
     expect(screen.getByRole("button", { name: "Steer" })).toBeTruthy();
     expect(input().placeholder).toBe("Steer figaro");
-    expect(document.querySelector(".zr-strip-text")!.textContent).not.toBe("");
-    expect(document.querySelector(".zr-strip-time")!.textContent).toMatch(/^\d+:\d\d$/);
-    act(() => (document.querySelector(".fw-stop:not(.fw-stop-clear)") as HTMLElement).click());
+    expect(document.querySelector(".fw-status-line")!.textContent).not.toBe("");
+    act(() => (document.querySelector(".fw-status-stop") as HTMLElement).click());
     await waitFor(() => expect(core.interrupts).toEqual(["keep"]));
-    await waitFor(() => expect(document.querySelector(".zr-strip")).toBeNull(), { timeout: 5000 });
+    await waitFor(() => expect(document.querySelector(".fw-status-stop")).toBeNull(), { timeout: 5000 });
     fireEvent.change(input(), { target: { value: "again" } });
     act(() => screen.getByRole("button", { name: "Send" }).click());
-    await waitFor(() => expect(document.querySelector(".zr-strip[data-kind='running']")).toBeTruthy(), { timeout: 5000 });
-    const all = document.querySelector<HTMLElement>(".fw-stop-clear")!;
-    expect(all.getAttribute("aria-label")).toBe("Stop and clear the queue");
-    act(() => all.click());
+    await waitFor(() => expect(document.querySelector(".fw-status-stop")).toBeTruthy(), { timeout: 5000 });
+    act(() => (document.querySelector(".zr-grip") as HTMLElement).click());
+    await waitFor(() => expect(document.querySelector('[data-action="stop-all"]')).toBeTruthy());
+    act(() => (document.querySelector('[data-action="stop-all"]') as HTMLElement).click());
     await waitFor(() => expect(core.interrupts).toEqual(["keep", "clear"]));
   });
-
   it("forks at the end from the header and at a turn from its action bar, and opens the alternative", async () => {
     attend(1);
     await live();
@@ -302,6 +303,8 @@ describe("the buttons under a message", () => {
   it("give way to the large Play in hands-free mode", async () => {
     await ready();
     expect(document.querySelector(".fw-play-big")).toBeNull();
+    act(() => (document.querySelector(".zr-grip") as HTMLElement).click());
+    await waitFor(() => expect(document.querySelector(".fw-hands")).toBeTruthy());
     press(".fw-hands");
     await waitFor(() => expect(document.querySelector(".fw-inline")).toBeNull());
     expect(document.querySelectorAll(".fw-play-big").length).toBeGreaterThan(0);
@@ -330,7 +333,7 @@ describe("the composer's pills", () => {
 });
 
 describe("a missing aria", () => {
-  it("offers neither the composer nor Hands-free, only the way back", async () => {
+  it("offers no composer, only the way back", async () => {
     ({ core, client } = mockDoor(1));
     window.location.hash = "#/home/" + "f".repeat(32);
     const store = createStore();

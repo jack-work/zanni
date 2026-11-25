@@ -1,15 +1,17 @@
 import { glyphs, usePit } from "../../index";
-import { handsFreeAtom, toggleHandsFreeAtom } from "../state/audio";
 import { ariaFactsAtom } from "figaro-forms/aria/jotai";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useState } from "react";
 import { EFFORT_KEY, valueAt } from "../lib/pit-rows";
 import { STATUS_SPINNER, ctxLine, stateGlyph } from "../lib/status";
-import { contextTokensAtom, endStateAtom, linkAtom, runningAtom } from "../state/aria";
+import { contextTokensAtom, endStateAtom, linkAtom, runningAtom, workAtom } from "../state/aria";
+import { composerAtom, interruptAtom, keyOf } from "../state/composer";
+import { micAtom } from "../state/mic";
 import { boundStateAtom, forkOfAtom, treeStateAtom } from "../state/pit";
-import { attendedAtom } from "../state/route";
+import { attendedAtom, type Attended } from "../state/route";
 
-function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomValue<typeof attendedAtom>>>["client"]; aria: string }) {
+function Bar({ attended }: { attended: Attended }) {
+  const { client, aria, store } = attended;
   const link = useAtomValue(linkAtom);
   const running = useAtomValue(runningAtom(client, aria));
   const endState = useAtomValue(endStateAtom(client, aria));
@@ -19,8 +21,11 @@ function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomVa
   const bound = useAtomValue(boundStateAtom);
   const forkOf = useAtomValue(forkOfAtom);
   const pit = usePit();
-  const handsFree = useAtomValue(handsFreeAtom);
-  const toggleHandsFree = useSetAtom(toggleHandsFreeAtom);
+  const work = useAtomValue(workAtom(client, aria));
+  const composerNote = useAtomValue(composerAtom(keyOf(store, aria))).note;
+  const micNote = useAtomValue(micAtom).note;
+  const note = composerNote || micNote;
+  const interrupt = useSetAtom(interruptAtom);
   const [frame, setFrame] = useState(0);
   useEffect(() => {
     if (!running) return;
@@ -36,6 +41,7 @@ function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomVa
   const ctx = ctxLine(used, node?.ctxLimit);
   const glyph = stateGlyph({ link, running, failed, interrupted, frame });
   const open = pit && pit.snap !== "closed";
+  const line = note || (running ? work.verb : "");
   return (
     <header className="fw-status" data-link={link} data-state={running ? "running" : failed ? "error" : interrupted ? "interrupted" : "done"} data-effort={valueAt(bound?.root, EFFORT_KEY)} data-fork={forkOf ? "" : undefined}>
       {open && (
@@ -53,11 +59,17 @@ function Bar({ client, aria }: { client: NonNullable<ReturnType<typeof useAtomVa
       )}
       <span className="fw-status-handle">{handle}</span>
       {link === "signedout" && <span className="fw-status-word">Signed out</span>}
-      {mantra && <span className="fw-status-mantra">{mantra}</span>}
-      {link !== "gone" && link !== "refused" && (
-      <button type="button" className="fw-hands fw-status-hands" aria-pressed={handsFree} aria-label="Hands-free" title="Hands-free" onClick={() => toggleHandsFree()}>
-        {glyphs["audio.play"]}
-      </button>
+      {line ? (
+        <span className="fw-status-line" data-kind={note ? "note" : "running"} role="status">
+          {line}
+        </span>
+      ) : (
+        mantra && <span className="fw-status-mantra">{mantra}</span>
+      )}
+      {running && link === "live" && (
+        <button type="button" className="fw-status-stop" onClick={() => void interrupt("keep")}>
+          Stop
+        </button>
       )}
       {ctx && <span className="fw-status-ctx">{ctx}</span>}
     </header>
@@ -76,5 +88,5 @@ export function StatusBar() {
         {link === "signedout" && <span className="fw-status-word">Signed out</span>}
       </header>
     );
-  return <Bar client={attended.client} aria={attended.aria} />;
+  return <Bar attended={attended} />;
 }

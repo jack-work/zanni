@@ -47,7 +47,7 @@ const picker = () => document.querySelector<HTMLInputElement>(".fw-picker")!;
 const pick = (...files: File[]) => act(async () => void fireEvent.change(picker(), { target: { files } }));
 const box = () => screen.getByLabelText("Message", { selector: "textarea" }) as HTMLTextAreaElement;
 const items = () => [...document.querySelectorAll<HTMLElement>(".zr-tray-item")];
-const note = () => document.querySelector(".zr-strip-text")?.textContent ?? "";
+const note = () => document.querySelector(".fw-status-line")?.textContent ?? "";
 const sendText = async (text: string) => {
   fireEvent.change(box(), { target: { value: text } });
   await act(async () => void fireEvent.click(screen.getByRole("button", { name: "Send" })));

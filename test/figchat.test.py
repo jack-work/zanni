@@ -51,6 +51,25 @@ def close_pit(pg):
     pg.wait_for_selector(".zr-pit", state="detached")
 
 
+def hands_pressed(pg):
+    open_pit(pg)
+    got = pg.locator(".fw-hands").get_attribute("aria-pressed")
+    close_pit(pg)
+    return got
+
+
+def toggle_hands(pg):
+    open_pit(pg)
+    pg.locator(".fw-hands").click()
+    close_pit(pg)
+
+
+def stop_all(pg):
+    open_pit(pg)
+    pg.locator(".fw-stop-all").click()
+    close_pit(pg)
+
+
 def voice_pressed(pg):
     open_pit(pg)
     got = pg.locator(".fw-voice").get_attribute("aria-pressed")
@@ -412,23 +431,21 @@ try:
             thinking = pg.locator(".nodi-turn[data-turn='27'] .nodi-thinking")
             assert thinking.evaluate("n => n.open") is True, "thinking is open while it streams"
             assert pg.locator(".nodi-turn[data-turn='27'][data-state='open']").count() == 1
-            strip = pg.locator(".zr-strip")
-            assert strip.is_visible(), "the strip says a turn is running"
+            assert pg.locator(".zr-strip").count() == 0, "no strip above the input"
+            line = pg.locator(".fw-status-line")
+            assert line.is_visible() and line.inner_text().strip(), "the status bar says a turn is running"
             assert pg.locator(".zr-input").get_attribute("placeholder") == "Steer figaro"
             assert pg.locator(".zr-send").get_attribute("aria-label") == "Steer" and pg.locator(".zr-send").inner_text() == "↳", "the send pill steers with the steering glyph"
             box = pg.locator(".zr-composer").bounding_box()
             assert box["height"] <= 120, "a running composer is at most 120px tall: %s" % box
-            sbox = strip.bounding_box()
-            assert sbox["height"] <= 44, "the strip is one line high: %s" % sbox
-            tbox = pg.locator(".zr-strip-text").bounding_box()
-            assert tbox["height"] <= 24, "the strip text never wraps: %s" % tbox
+            lbox = line.bounding_box()
+            assert lbox["height"] <= 28, "the working line is one line high: %s" % lbox
+            stopb = pg.locator(".fw-status-stop").bounding_box()
+            assert stopb["x"] + stopb["width"] <= width and lbox["x"] + lbox["width"] <= stopb["x"] + 1, "Stop sits at the right of the line: %s %s" % (lbox, stopb)
             assert box["x"] >= 0 and box["x"] + box["width"] <= width, "the composer stays inside the screen: %s" % box
             row = pg.locator(".zr-compose-row").bounding_box()
             measure = 46 * 16 if width < 900 else pg.locator(".fw-pane").bounding_box()["width"]
             assert row["width"] <= measure, "the input row sits at the transcript measure: %s" % row
-            for b in pg.locator(".fw-stop").all():
-                hit_area(pg, b, "stop buttons")
-            assert pg.locator(".zr-strip-time").inner_text()[0].isdigit()
             for _ in range(60):
                 pg.evaluate("(() => { const s = document.querySelector('[data-zr-scroll]'); s.scrollTop = s.scrollHeight; })()")
                 pg.wait_for_timeout(50)
@@ -441,7 +458,7 @@ try:
             snap(pg, "running-%s-%d" % (scheme, width))
             pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool[data-status='ok']")
             pg.wait_for_selector(".nodi-turn[data-turn='27']:not([data-state='open'])")
-            until(pg, "!document.querySelector('.zr-strip')")
+            until(pg, "!document.querySelector('.fw-status-stop')")
             assert thinking.evaluate("n => n.open") is True, "thinking is still open once the turn settles"
             until(pg, "document.querySelector(\".nodi-turn[data-turn='27'] .nodi-thought\").innerText.includes('answer plainly')", 5000)
             thinking.locator("summary").click()
@@ -703,7 +720,7 @@ try:
         attend(pg, slow, MAIN)
         send(pg, "please run the build")
         pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-tool")
-        pg.locator(".fw-stop:not(.fw-stop-clear)").click()
+        pg.locator(".fw-status-stop").click()
         pg.wait_for_selector(".nodi-turn[data-turn='27'] .nodi-end")
         assert "interrupted" in pg.locator(".nodi-turn[data-turn='27'] .nodi-end").inner_text()
         until(pg, "!document.querySelector('.fw').hasAttribute('data-running')")
@@ -712,7 +729,7 @@ try:
         pg.wait_for_selector(".nodi-turn[data-turn='28'] .nodi-thinking")
         send(pg, "queued thought")
         until(pg, "document.querySelector('.fw').hasAttribute('data-running')")
-        pg.locator(".fw-stop-clear").click()
+        stop_all(pg)
         until(pg, "!document.querySelector('.fw').hasAttribute('data-running')")
         assert slow.state()["interrupts"] == ["keep", "clear"], slow.state()
         assert pg.locator(".nodi-turn[data-turn='29']").count() == 0, "a cleared queue starts no turn"
@@ -877,8 +894,8 @@ try:
         pg.goto("about:blank")
         door_h = door(12)
         attend(pg, door_h, MAIN)
-        pg.locator(".fw-hands").click()
-        assert pg.locator(".fw-hands").get_attribute("aria-pressed") == "true"
+        toggle_hands(pg)
+        assert hands_pressed(pg) == "true"
         assert pg.locator(".fw-inline").count() == 0 and pg.locator(".fw-play-big").count() > 0, "hands-free keeps the large Play and drops the small buttons"
         assert voice_pressed(pg) == "true", "hands-free turns the voice on"
         pg.locator(".fw-mic").click()
@@ -891,11 +908,11 @@ try:
         pg.wait_for_selector(".nodi-turn[data-turn='27'] .voce[data-for='27']")
         until(pg, "document.querySelector('.fw').dataset.audio !== 'recording-with-pending' && document.querySelector('.fw').dataset.audio !== 'recording'", 10000)
         until(pg, "['live','draining','idle','playing'].includes(document.querySelector('.voce').dataset.state)", 15000)
-        pg.locator(".fw-hands").click()
-        assert pg.locator(".fw-hands").get_attribute("aria-pressed") == "false"
+        toggle_hands(pg)
+        assert hands_pressed(pg) == "false"
         pg.goto("about:blank")
         attend(pg, door_h, MAIN)
-        assert pg.locator(".fw-hands").get_attribute("aria-pressed") == "false" and voice_pressed(pg) == "false", "a reload starts with hands-free and voice off"
+        assert hands_pressed(pg) == "false" and voice_pressed(pg) == "false", "a reload starts with hands-free and voice off"
         pg.close()
 
         mic_door = door(12)
@@ -1472,12 +1489,11 @@ try:
         attend(pg, door(150), MAIN)
         assert press_ms(pg) <= 1, "reduced motion sets the press release to 1ms: %s" % press_ms(pg)
         send(pg, "please run the build")
-        pg.wait_for_selector(".zr-strip[data-kind='running']")
+        pg.wait_for_selector(".fw-status[data-state='running'] .fw-status-line")
         pg.wait_for_timeout(300)
-        assert pg.locator(".zr-glyph i").first.evaluate("n => getComputedStyle(n).animationName") == "none", "the glyph is still under reduced motion"
         assert pg.evaluate(MOTION) == [], pg.evaluate(MOTION)
-        pg.locator(".fw-stop-clear").click()
-        pg.wait_for_selector(".zr-strip", state="detached")
+        pg.locator(".fw-status-stop").click()
+        pg.wait_for_selector(".fw-status-stop", state="detached")
         ctx.close()
 
         pg = fresh()
@@ -1485,12 +1501,10 @@ try:
         assert press_ms(pg) == 320, "the press releases on the pop token: %s" % press_ms(pg)
         assert pg.locator(".nodi-turn[data-fresh]").count() == 0, "history does not animate in"
         send(pg, "please run the build")
-        pg.wait_for_selector(".zr-strip[data-kind='running']")
+        pg.wait_for_selector(".fw-status[data-state='running'] .fw-status-line")
         assert pg.locator(".nodi-turn[data-turn='27'][data-fresh]").count() == 1, "the new turn is the one that arrives with motion"
-        assert pg.locator(".zr-glyph i").first.evaluate("n => getComputedStyle(n).animationName") == "zr-glyph"
-        assert pg.evaluate("[...document.querySelectorAll('.zr-glyph i')].every(n => getComputedStyle(n).animationTimingFunction.startsWith('steps'))"), "the glyph steps, it does not glide"
-        pg.locator(".fw-stop-clear").click()
-        pg.wait_for_selector(".zr-strip", state="detached")
+        pg.locator(".fw-status-stop").click()
+        pg.wait_for_selector(".fw-status-stop", state="detached")
         pg.close()
 
         refused = fresh()

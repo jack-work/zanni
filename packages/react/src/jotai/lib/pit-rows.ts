@@ -1,6 +1,6 @@
 import { glyphs, voiceGlyph } from "../../index";
 
-export type PitRowId = "new" | "outfits" | "state" | "tail-fork" | "fork-at" | "tree" | "recent" | "asks" | "queue" | "voice";
+export type PitRowId = "new" | "outfits" | "state" | "tail-fork" | "fork-at" | "tree" | "recent" | "asks" | "queue" | "voice" | "hands-free" | "stop-all";
 export type PitView = "list" | "outfits" | "state" | "fork-at" | "tree" | "recent" | "asks" | "queue";
 
 export interface PitRowSpec {
@@ -20,6 +20,8 @@ export const PIT_ROWS: readonly PitRowSpec[] = [
   { id: "queue", label: "Queue", glyph: glyphs["pit.queue"] },
   { id: "outfits", label: "Outfits", glyph: glyphs["pit.models"] },
   { id: "voice", label: "Voice", glyph: voiceGlyph },
+  { id: "hands-free", label: "Hands-free", glyph: glyphs["audio.play"] },
+  { id: "stop-all", label: "Stop and clear the queue", glyph: glyphs["session.interrupted"] },
 ];
 
 export function byLastUsed(rows: readonly PitRowSpec[], used: Readonly<Record<string, number>>): PitRowSpec[] {

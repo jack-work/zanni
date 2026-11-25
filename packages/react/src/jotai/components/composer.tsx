@@ -6,8 +6,8 @@ import { ACCEPT, MAX_FILES, kindWord, sizeLabel } from "../lib/attach";
 import { addFilesAtom, attachingAtom, removeAttachmentAtom } from "../state/attach";
 import { voiceAtom } from "../state/audio";
 import { micAtom, micToggleAtom, dictationFocusAtom } from "../state/mic";
-import { linkAtom, runningAtom, workAtom } from "../state/aria";
-import { composerAtom, composerNoteAtom, draftAtom, interruptAtom, keyOf, sendAtom } from "../state/composer";
+import { linkAtom, runningAtom } from "../state/aria";
+import { composerAtom, composerNoteAtom, draftAtom, keyOf, sendAtom } from "../state/composer";
 import { COMMAND_OFF, commandAtom, commandSourcesAtom, helpOpenAtom, loadOutfitsAtom, runCommandAtom } from "../state/command";
 import { pitViewAtom } from "../state/pit";
 import { applyCandidate, suggest, type Candidate } from "../lib/command";
@@ -24,21 +24,6 @@ function useNow(period: number | null): number {
     return () => clearInterval(id);
   }, [period]);
   return now;
-}
-
-function Elapsed({ since }: { since: number }) {
-  const now = useNow(1000);
-  return <>{clock(now - since)}</>;
-}
-
-function useWorkLine(attended: Attended, note: string, running: boolean) {
-  const { client, aria } = attended;
-  const work = useAtomValue(workAtom(client, aria));
-  const seen = useRef(Date.now());
-  const wasRunning = useRef(false);
-  if (running && !wasRunning.current) seen.current = Date.now();
-  wasRunning.current = running;
-  return { text: note || work.verb, time: running ? <Elapsed since={work.startedAt ?? seen.current} /> : undefined };
 }
 
 function CommandHints({ line, why, shut, onPick, onShut, onOpen, tab, esc }: { line: string; why: string; shut: boolean; onPick: (item: Candidate) => void; onShut: () => void; onOpen: () => void; tab: { current: (() => void) | undefined }; esc: { current: (() => boolean) | undefined } }) {
@@ -86,7 +71,6 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
   const running = useAtomValue(runningAtom(client, aria));
   const link = useAtomValue(linkAtom);
   const send = useSetAtom(sendAtom);
-  const interrupt = useSetAtom(interruptAtom);
   const clearNote = useSetAtom(composerNoteAtom);
   const mic = useAtomValue(micAtom);
   const voiceOn = useAtomValue(voiceAtom);
@@ -142,9 +126,6 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
 
   const micNow = useNow(mic.state === "recording" ? 250 : null);
   const micLabel = mic.state === "recording" ? "Stop " + clock(micNow - mic.began) : mic.state === "transcribing" ? "Wait" : "Record";
-  const note = comp.note || mic.note;
-  const showStrip = running || !!note;
-  const line = useWorkLine(attended, note, running);
 
   if (link === "signedout") return <SignedOut />;
 
@@ -185,17 +166,6 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
       focusTick={focusTick}
       inputRef={input}
       grip={<PitGrip />}
-      strip={showStrip ? { kind: running ? "running" : "note", text: line.text, time: line.time } : null}
-      stripActions={
-        <>
-          <Button variant="quiet" size="compact" className="fw-stop" disabled={!live} onClick={() => void interrupt("keep")}>
-            Stop
-          </Button>
-          <Button variant="quiet" size="compact" className="fw-stop fw-stop-clear" aria-label="Stop and clear the queue" disabled={!live} onClick={() => void interrupt("clear")}>
-            Stop all
-          </Button>
-        </>
-      }
       stacked={voiceOn || (mic.state !== "idle" && mic.state !== "unsupported")}
       accessory={
         cmd.on ? undefined : (

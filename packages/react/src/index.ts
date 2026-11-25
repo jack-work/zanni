@@ -25,8 +25,6 @@ export { SESSION_HEADER, SESSION_PARAM, audioKeyUrl, mintSessionId, sessionHeade
 export { ACTION_CAP_MS, BATCH, FLUSH_MS, JOIN_WINDOW_MS, KEEP, SERVICE_NAME, beginAction, configureTraces, failureKind, flushTraces, latestAction, logEvent, settleSpeak, settleSpeakFor, traceDial, traceHeaders, traced } from "./trace";
 export type { Action, ActionName } from "./trace";
 export { EXIT_MS, reducedMotion, transition, useLinger } from "./motion";
-export { Strip } from "./strip";
-export type { StripProps } from "./strip";
 export { KEYBOARD_CLOSE_SETTLE_MS, Composer, useCoarsePointer, useSizeVar } from "./composer";
 export type { ComposerProps } from "./composer";
 export { ActionBar } from "./actions";
