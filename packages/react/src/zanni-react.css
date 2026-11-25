@@ -6,6 +6,10 @@
   --zr-d-pop: 320ms;
   --zr-d-slide: 420ms;
   --zr-d-exit: 160ms;
+  --zr-grip-reach: 10px;
+}
+@media (pointer: coarse) {
+  :root { --zr-grip-reach: 44px; }
 }
 @media (prefers-reduced-motion: reduce) {
   :root { --zr-d-press: 1ms; --zr-d-pop: 1ms; --zr-d-slide: 1ms; --zr-d-exit: 1ms; }
@@ -171,7 +175,7 @@
 .zr-pit-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: var(--z-space-3, 8px); padding: var(--z-space-3, 8px) var(--zr-edge-r, 16px) calc(var(--z-space-4, 12px) + env(safe-area-inset-bottom)) var(--zr-edge-l, 16px); }
 .zr-composer > .zr-grip { position: absolute; top: -10px; left: 50%; translate: -50% 0; width: 96px; max-width: none; height: 20px; margin: 0; z-index: 1; }
 @media (pointer: coarse) {
-  .zr-composer > .zr-grip { top: -44px; width: 120px; height: 44px; }
+  .zr-composer > .zr-grip { top: calc(-1 * var(--zr-grip-reach)); width: 120px; height: calc(var(--zr-grip-reach) + 6px); padding-bottom: 4px; align-items: flex-end; }
   .zr-pit-handle { height: 44px; }
   .zr-pill::after { content: ""; position: absolute; inset: -4px; }
   .zr-strip { height: 44px; }
@@ -312,7 +316,7 @@
   right: 0;
   margin-inline: auto;
   width: max-content;
-  bottom: calc(var(--zr-composer-h, 0px) + 12px);
+  bottom: calc(var(--zr-composer-h, 0px) + var(--zr-grip-reach) + 12px);
   z-index: 2;
   animation: zr-swap var(--zr-d-pop) var(--zr-pop) both;
 }

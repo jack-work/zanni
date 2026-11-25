@@ -1085,11 +1085,13 @@ try:
             f = finger(pg, cdp, phone)
             grip = pg.locator(".zr-composer .zr-grip")
             assert grip.is_visible() and pg.locator(".zr-pit").count() == 0
-            gb, cb = grip.bounding_box(), pg.locator(".zr-composer").bounding_box()
+            gb, cb, fb = grip.bounding_box(), pg.locator(".zr-composer").bounding_box(), pg.locator(".zr-composer .zr-input").bounding_box()
             if width < 600:
-                assert gb["y"] + gb["height"] <= cb["y"] + 1, "on a phone the grip is wholly above the composer, not over the field: %s %s" % (gb, cb)
+                assert gb["y"] + gb["height"] <= fb["y"], "on a phone the grip stays off the field: %s %s" % (gb, fb)
             else:
                 assert abs((gb["y"] + gb["height"] / 2) - cb["y"]) <= 4, "the grip sits on the composer's top edge: %s %s" % (gb, cb)
+            bar = pg.locator(".zr-composer .zr-grip .zr-grip-bar").bounding_box()
+            assert abs((bar["y"] + bar["height"] / 2) - cb["y"]) <= 2, "the grip's bar sits on the composer's top edge: %s %s" % (bar, cb)
             half, full = round(height / 2), height
 
             gx, gy = centre(grip)

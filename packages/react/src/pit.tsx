@@ -225,6 +225,9 @@ export function PitGrip({ label = "Open controls", className }: PitGripProps) {
       onClick={(ev) => {
         if (ev.detail === 0) pit.setSnap(pit.snap === "closed" ? "half" : "closed");
       }}
+      onTouchEnd={(ev) => {
+        if (ev.cancelable) ev.preventDefault();
+      }}
       {...pit.grab(true)}
     >
       <span className="zr-grip-bar" aria-hidden="true" />
