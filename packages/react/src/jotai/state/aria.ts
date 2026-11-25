@@ -68,8 +68,8 @@ export function metricsAtom(client: AriaClient, aria: string): Atom<Metrics | un
   return memo(client, `metrics-of\0${aria}`, () => atom((get) => get(ariaAtom(client, aria)).metrics));
 }
 
-export function startedAtom(client: AriaClient, aria: string): Atom<number> {
-  return memo(client, `started\0${aria}`, () => atom(Date.now()));
+export function seenAtom(client: AriaClient, aria: string): Atom<number> {
+  return memo(client, `seen\0${aria}`, () => atom(Date.now()));
 }
 
 export function metricsLineAtom(client: AriaClient, aria: string): Atom<string> {

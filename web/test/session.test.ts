@@ -27,14 +27,14 @@ describe("session id", () => {
     expect(withSession("audio/key/a?x=1#t")).toBe("audio/key/a?x=1&session=" + sessionId + "#t");
     expect(withSession(withSession("audio/key/a"))).toBe("audio/key/a?session=" + sessionId);
     expect(sessionUrl(new URL("wss://h/chat/rpc?token=1")).href).toBe("wss://h/chat/rpc?token=1&session=" + sessionId);
-    expect(audioKeyUrl("audio/", "gluck/ab:3/out")).toBe("audio/key/gluck/ab%3A3/out");
+    expect(audioKeyUrl("audio/", "home/ab:3/out")).toBe("audio/key/home/ab%3A3/out");
   });
 });
 
 describe("stt calls", () => {
   it("send the header on re-transcription", async () => {
     const f = vi.fn(async () => new Response(JSON.stringify({ text: "hi" }), { status: 200 }));
-    await retranscribe("stt", "gluck/abc:1/in", f as unknown as typeof fetch);
+    await retranscribe("stt", "home/abc:1/in", f as unknown as typeof fetch);
     const calls = f.mock.calls as unknown as [string, RequestInit][];
     expect(calls).toHaveLength(1);
     expect((calls[0]![1].headers as Record<string, string>)[SESSION_HEADER]).toBe(sessionId);

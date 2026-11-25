@@ -390,8 +390,8 @@
 .zr-pane[data-side="right"] { border-left: 1px solid var(--z-line); }
 .zr-pane:not([data-open]):not([data-leaving]):not([data-peek]) { visibility: hidden; border-width: 0; padding: 0; }
 .zr-pane[data-peek] { z-index: 3; }
-.zr-pane-edge { position: fixed; z-index: 3; top: var(--zr-edge-top, 0px); bottom: 0; left: 0; width: 12px; touch-action: pan-y; }
-@media (pointer: coarse) { .zr-pane-edge { left: 6px; width: 24px; } }
+.zr-pane-edge { position: fixed; z-index: 3; top: var(--zr-edge-top, 0px); bottom: 0; left: env(safe-area-inset-left, 0px); width: 12px; touch-action: pan-y; }
+@media (pointer: coarse) { .zr-pane-edge { left: calc(env(safe-area-inset-left, 0px) + 6px); width: 24px; } }
 .zr-pane-grip { position: absolute; top: 0; bottom: 0; width: 6px; cursor: col-resize; touch-action: none; z-index: 2; }
 .zr-pane[data-side="left"] > .zr-pane-grip { right: 0; }
 .zr-pane[data-side="right"] > .zr-pane-grip { left: 0; }

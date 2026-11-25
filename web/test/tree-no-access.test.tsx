@@ -38,7 +38,7 @@ describe("a topology the door refuses", () => {
     const client = narrowGrantDoor();
     window.location.hash = "#/";
     const store = createStore();
-    store.set(bootAtom, { stores: { gluck: client }, store: "gluck", audioUrl: "audio", sttUrl: "stt", mark: "" });
+    store.set(bootAtom, { stores: { home: client }, store: "home", audioUrl: "audio", sttUrl: "stt", mark: "" });
     render(
       <Provider store={store}>
         <App />

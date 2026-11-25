@@ -8,10 +8,12 @@ export function fmtTokens(n: number): string {
   return (n / 1e6).toFixed(1) + "m";
 }
 
-export function ctxLine(used: number | undefined, limit: number | undefined): string {
+export function ctxLine(used: number | undefined, limit: number | undefined, exact = true): string {
   if (used === undefined) return "";
-  if (!limit) return fmtTokens(used) + " (capacity unknown)";
-  return fmtTokens(used) + "/" + fmtTokens(limit) + " " + ((used / limit) * 100).toFixed(1) + "%";
+  const tokens = Math.max(0, used);
+  const shown = (exact || tokens === 0 ? "" : "~") + fmtTokens(tokens);
+  if (!limit || limit <= 0) return shown + " (capacity unknown)";
+  return shown + "/" + fmtTokens(limit) + " " + ((tokens * 100) / limit).toFixed(1) + "%";
 }
 
 export function stateGlyph(o: { link: string; running: boolean; failed: boolean; interrupted?: boolean; frame: number }): string {

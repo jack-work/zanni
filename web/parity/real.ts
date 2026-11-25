@@ -2,6 +2,7 @@ import { execFileSync, spawn, type ChildProcess } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { createServer } from "node:net";
 import { edgeProxy } from "./edge";
+import { store } from "./store";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import type { Scenario } from "./check";
 
@@ -39,10 +40,10 @@ export async function realUnit(scenario: Scenario): Promise<Unit> {
   writeFileSync(secretFile, randomBytes(40).toString("base64"), { mode: 0o600 });
   const port = await freePort();
   const edgeSock = `${unit.root}/edge-${randomBytes(4).toString("hex")}.sock`;
-  const proxy = await edgeProxy(edgeSock, `${unit.env.FIGARO_RUNTIME_DIR}/door.sock`, "gluck");
+  const proxy = await edgeProxy(edgeSock, `${unit.env.FIGARO_RUNTIME_DIR}/door.sock`, store);
   const gateway: ChildProcess = spawn(
     gatewayBin(),
-    ["--upstream-url", `ws+unix://${edgeSock}:/rpc`, "--speech-socket", `${unit.root}/no-speech.sock`, "--admin", "gluck", "--store", "gluck", "--port", String(port), "--peer", "127.0.0.1", "--edge-secret-file", secretFile],
+    ["--upstream-url", `ws+unix://${edgeSock}:/rpc`, "--speech-socket", `${unit.root}/no-speech.sock`, "--admin", store, "--store", store, "--port", String(port), "--peer", "127.0.0.1", "--edge-secret-file", secretFile],
     { env, stdio: ["ignore", "ignore", "pipe"] },
   );
   await new Promise<void>((resolve, reject) => {
@@ -61,7 +62,7 @@ export async function realUnit(scenario: Scenario): Promise<Unit> {
       }
     },
     rpc: `ws://127.0.0.1:${port}/rpc`,
-    headers: { "x-figaro-edge": readFileSync(secretFile, "utf8").trim(), "remote-user": "gluck" },
+    headers: { "x-figaro-edge": readFileSync(secretFile, "utf8").trim(), "remote-user": store },
     release: async () => {
       gateway.kill();
       proxy.close();

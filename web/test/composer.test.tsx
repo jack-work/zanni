@@ -15,10 +15,10 @@ let held: ReturnType<typeof createStore>;
 
 function attend(step: number) {
   ({ core, client } = mockDoor(step));
-  window.location.hash = "#/gluck/" + MAIN;
+  window.location.hash = "#/home/" + MAIN;
   const store = createStore();
   held = store;
-  store.set(bootAtom, { stores: { gluck: client }, store: "gluck", audioUrl: "audio", sttUrl: "stt", mark: "" });
+  store.set(bootAtom, { stores: { home: client }, store: "home", audioUrl: "audio", sttUrl: "stt", mark: "" });
   return render(
     <Provider store={store}>
       <App />
@@ -52,13 +52,13 @@ describe("the composer", () => {
   it("names the dictation clip when the sent text is the dictated text, and only then", async () => {
     attend(1);
     await live();
-    held.set(dictatedAtom("gluck/" + MAIN), { id: "202611-0123456789abcdef", text: "say this" });
+    held.set(dictatedAtom("home/" + MAIN), { id: "202611-0123456789abcdef", text: "say this" });
     fireEvent.change(input(), { target: { value: "say this " } });
     fireEvent.keyDown(input(), { key: "Enter" });
     await waitFor(() => expect(core.calls.filter((c) => c.method === "figaro.qua")).toHaveLength(1));
     expect(core.calls.find((c) => c.method === "figaro.qua")!.params.dictation).toBe("202611-0123456789abcdef");
-    await waitFor(() => expect(held.get(dictatedAtom("gluck/" + MAIN))).toBeNull());
-    held.set(dictatedAtom("gluck/" + MAIN), { id: "202611-0123456789abcdef", text: "say this" });
+    await waitFor(() => expect(held.get(dictatedAtom("home/" + MAIN))).toBeNull());
+    held.set(dictatedAtom("home/" + MAIN), { id: "202611-0123456789abcdef", text: "say this" });
     fireEvent.change(input(), { target: { value: "say this, edited" } });
     fireEvent.keyDown(input(), { key: "Enter" });
     await waitFor(() => expect(core.calls.filter((c) => c.method === "figaro.qua")).toHaveLength(2));
@@ -115,7 +115,7 @@ describe("the composer", () => {
     await waitFor(() => expect(document.querySelector(".fw-fork")).toBeTruthy());
     act(() => (document.querySelector(".fw-fork") as HTMLElement).click());
     await waitFor(() => expect(window.location.hash).not.toContain(MAIN));
-    expect(window.location.hash.startsWith("#/gluck/")).toBe(true);
+    expect(window.location.hash.startsWith("#/home/")).toBe(true);
     const calls = core.calls.filter((c) => c.method === "figaro.fork");
     expect(calls).toHaveLength(1);
     expect(calls[0]!.params.at_turn).toBeUndefined();
@@ -167,7 +167,7 @@ describe("drafts", () => {
   it("save after the delay, come back for a new page load, and clear on empty", () => {
     vi.useFakeTimers();
     const store = createStore();
-    const key = "gluck/aria-one";
+    const key = "home/aria-one";
     store.set(draftAtom(key), "half a thought");
     expect(window.localStorage.getItem("fw.draft." + key)).toBeNull();
     vi.advanceTimersByTime(SAVE_DELAY_MS - 1);
@@ -180,7 +180,7 @@ describe("drafts", () => {
 
   it("save at once when the page is closed or hidden", () => {
     const store = createStore();
-    const key = "gluck/aria-three";
+    const key = "home/aria-three";
     store.set(draftAtom(key), "typed a moment ago");
     expect(window.localStorage.getItem("fw.draft." + key)).toBeNull();
     window.dispatchEvent(new Event("pagehide"));
@@ -190,7 +190,7 @@ describe("drafts", () => {
   it("hold the sent text until the door has taken it", async () => {
     attend(1);
     await live();
-    const held = "fw.unsent.gluck/" + MAIN;
+    const held = "fw.unsent.home/" + MAIN;
     fireEvent.change(input(), { target: { value: "please run the tests" } });
     act(() => screen.getByRole("button", { name: "Send" }).click());
     expect(window.localStorage.getItem(held)).toBe("please run the tests");
@@ -200,21 +200,21 @@ describe("drafts", () => {
   });
 
   it("bring back a send the page was closed on, until the draft is cleared", async () => {
-    window.localStorage.setItem("fw.unsent.gluck/aria-two", "never sent");
+    window.localStorage.setItem("fw.unsent.home/aria-two", "never sent");
     vi.resetModules();
     const fresh = await import("zanni-react/jotai");
     const store = createStore();
-    expect(store.get(fresh.draftAtom("gluck/aria-two"))).toBe("never sent");
-    store.set(fresh.draftAtom("gluck/aria-two"), "");
-    expect(window.localStorage.getItem("fw.unsent.gluck/aria-two")).toBeNull();
+    expect(store.get(fresh.draftAtom("home/aria-two"))).toBe("never sent");
+    store.set(fresh.draftAtom("home/aria-two"), "");
+    expect(window.localStorage.getItem("fw.unsent.home/aria-two")).toBeNull();
   });
 
   it("one draft per aria", () => {
     const store = createStore();
-    store.set(draftAtom("gluck/a"), "for a");
-    store.set(draftAtom("gluck/b"), "for b");
-    expect(store.get(draftAtom("gluck/a"))).toBe("for a");
-    expect(store.get(draftAtom("gluck/b"))).toBe("for b");
+    store.set(draftAtom("home/a"), "for a");
+    store.set(draftAtom("home/b"), "for b");
+    expect(store.get(draftAtom("home/a"))).toBe("for a");
+    expect(store.get(draftAtom("home/b"))).toBe("for b");
   });
 });
 
@@ -264,7 +264,7 @@ describe("the buttons under a message", () => {
     fireEvent.change(input(), { target: { value: "typed" } });
     press(under + '.fw-inline[data-kind="input"] [data-action="retranscribe"]');
     await waitFor(() => expect(document.querySelector(".fw-inline-heard")!.textContent).toContain("re-heard words"));
-    expect(calls[0]).toBe("stt/key/gluck/" + MAIN + "%3A26/in");
+    expect(calls[0]).toBe("stt/key/home/" + MAIN + "%3A26/in");
     press('.fw-inline-heard [data-action="use"]');
     expect(document.querySelector(".fw-inline-heard")).toBeNull();
     expect(input().value).toBe("typed re-heard words");
@@ -332,9 +332,9 @@ describe("the composer's pills", () => {
 describe("a missing aria", () => {
   it("offers neither the composer nor Hands-free, only the way back", async () => {
     ({ core, client } = mockDoor(1));
-    window.location.hash = "#/gluck/" + "f".repeat(32);
+    window.location.hash = "#/home/" + "f".repeat(32);
     const store = createStore();
-    store.set(bootAtom, { stores: { gluck: client }, store: "gluck", audioUrl: "audio", sttUrl: "stt", mark: "" });
+    store.set(bootAtom, { stores: { home: client }, store: "home", audioUrl: "audio", sttUrl: "stt", mark: "" });
     render(
       <Provider store={store}>
         <App />

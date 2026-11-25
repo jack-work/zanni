@@ -6,7 +6,7 @@ const crypto = require('crypto');
 
 const dir = process.argv[2];
 if (!dir || dir === '-h' || dir === '--help') {
-  process.stdout.write('usage: zanni-react-check BUNDLE_DIR\n\nChecks the output of zanni-react-bundle: each of react and react-jotai holds exactly the manifest version, whose\nSHA256SUMS matches its files; no file carries inline script or style, a data: or blob: module, eval or Function;\nreact, react-dom, jotai and figaro-forms are imports and not copies; the runtime holds exactly the five ESM files and their SHA256SUMS, with react.js, jsx-runtime.js and the glyphs standing alone and react-dom-client.js importing react only; react-jotai imports zanni-react only for names\nthe react bundle exports; index.d.ts declares its module; the react bundle exports listed in the manifest are the bundles exports.\n');
+  process.stdout.write('usage: zanni-react-check BUNDLE_DIR\n\nChecks the output of zanni-react-bundle: each of react and react-jotai holds exactly the manifest version (react with its parla.css beside index.css), whose\nSHA256SUMS matches its files; no file carries inline script or style, a data: or blob: module, eval or Function;\nreact, react-dom, jotai and figaro-forms are imports and not copies; the runtime holds exactly the five ESM files and their SHA256SUMS, with react.js, jsx-runtime.js and the glyphs standing alone and react-dom-client.js importing react only; react-jotai imports zanni-react only for names\nthe react bundle exports; index.d.ts declares its module; the react bundle exports listed in the manifest are the bundles exports.\n');
   process.exit(dir ? 0 : 2);
 }
 const root = path.join(__dirname, '..');
@@ -34,7 +34,7 @@ const reactCopies = [
   [/hydrateRoot|createRoot\s*[:(]/, 'react-dom client'],
 ];
 
-const expect = { react: ['SHA256SUMS', 'index.css', 'index.d.ts', 'index.js'], 'react-jotai': ['SHA256SUMS', 'index.css', 'index.d.ts', 'index.js', 'pcm-worklet.js'] };
+const expect = { react: ['SHA256SUMS', 'index.css', 'index.d.ts', 'index.js', 'parla.css'], 'react-jotai': ['SHA256SUMS', 'index.css', 'index.d.ts', 'index.js', 'pcm-worklet.js'] };
 const bundles = {};
 for (const name of Object.keys(expect)) {
   const top = path.join(dir, name);
@@ -59,6 +59,10 @@ for (const name of Object.keys(expect)) {
     if (f === 'SHA256SUMS') continue;
     src[f] = read(path.join(here, f));
     if (f.endsWith('.js') || f.endsWith('.css')) for (const [re, what] of inlineScript) if (re.test(src[f])) fail(name + '/' + f + ' carries ' + what);
+  }
+  if (name === 'react') {
+    if (!/\.parla-bubble\b/.test(src['parla.css'])) fail('react/parla.css does not style .parla-bubble');
+    if (/\.parla\b/.test(src['index.css'])) fail('react/index.css carries parla rules and must leave them to parla.css');
   }
   const js = src['index.js'];
   for (const [re, what] of reactCopies) if (re.test(js)) fail(name + '/index.js bundles ' + what);

@@ -70,12 +70,12 @@ function rig(opts: { slots?: boolean; locked?: boolean; played?: Map<string, Pla
       note: (t) => notes.push(t),
     },
     ARIA,
-    "gluck",
+    "home",
     transport,
   );
   hub.voice(true);
   log.length = 0;
-  const start = (turn: number, node = 1, say = false) => handlers.start!({ aria: ARIA, turn, key: "gluck/" + ARIA + ":" + turn + "/out", node, cursor: turn + ".2", ...(say ? { say: true } : {}), ...FMT });
+  const start = (turn: number, node = 1, say = false) => handlers.start!({ aria: ARIA, turn, key: "home/" + ARIA + ":" + turn + "/out", node, cursor: turn + ".2", ...(say ? { say: true } : {}), ...FMT });
   const sent = new Map<string, number>();
   const chunk = (turn: number, node = 1, chars = 5, from?: number) => {
     const k = turn + ":" + node;
@@ -83,7 +83,7 @@ function rig(opts: { slots?: boolean; locked?: boolean; played?: Map<string, Pla
     sent.set(k, offset + 4);
     handlers.chunk!({ aria: ARIA, turn, node, chars, cursor: "x", offset, bytes: 4, pcm: new ArrayBuffer(4) });
   };
-  const end = (turn: number) => handlers.end!({ aria: ARIA, turn, key: "gluck/" + ARIA + ":" + turn + "/out" });
+  const end = (turn: number) => handlers.end!({ aria: ARIA, turn, key: "home/" + ARIA + ":" + turn + "/out" });
   return { hub, session, log, spoken, notes, slots, addSlot, handlers: () => handlers, start, chunk, end, expire, created };
 }
 
@@ -114,9 +114,9 @@ describe("the voice hub", () => {
 
   it("asks for a say, not the stored copy, to replay a turn it only heard the end of", async () => {
     const r = rig();
-    r.handlers().start!({ aria: ARIA, turn: 27, key: "gluck/" + ARIA + ":27/out", node: 1, cursor: "27.2", partial: true, ...FMT });
+    r.handlers().start!({ aria: ARIA, turn: 27, key: "home/" + ARIA + ":27/out", node: 1, cursor: "27.2", partial: true, ...FMT });
     r.chunk(27);
-    r.handlers().end!({ aria: ARIA, turn: 27, key: "gluck/" + ARIA + ":27/out", partial: true });
+    r.handlers().end!({ aria: ARIA, turn: 27, key: "home/" + ARIA + ":27/out", partial: true });
     await settle();
     r.hub.voice(false);
     r.hub.replay(27);
@@ -141,7 +141,7 @@ describe("the voice hub", () => {
     r.chunk(27, 1, 12);
     r.end(27);
     await settle();
-    expect(r.log).toEqual(["p1 start", "p1 push", "p1 push", "p1 end gluck/" + ARIA + ":27/out"]);
+    expect(r.log).toEqual(["p1 start", "p1 push", "p1 push", "p1 end home/" + ARIA + ":27/out"]);
     expect(r.slots.get("27:1")!.querySelector("[data-for='27']")).toBeTruthy();
     expect(r.spoken).toEqual([{ turn: 27, node: 1, chars: 5 }, { turn: 27, node: 1, chars: 12 }, null]);
   });
@@ -191,7 +191,7 @@ describe("the voice hub", () => {
     expect(r.log.filter((l) => l === "ping")).toHaveLength(1);
     const played = r.log.slice(1);
     expect(played.indexOf("p1 start")).toBeLessThan(played.indexOf("p2 start"));
-    expect(played.filter((l) => l.startsWith("p1"))).toEqual(["p1 start", "p1 push", "p1 end gluck/" + ARIA + ":27/out"]);
+    expect(played.filter((l) => l.startsWith("p1"))).toEqual(["p1 start", "p1 push", "p1 end home/" + ARIA + ":27/out"]);
     expect(played.filter((l) => l.startsWith("p2"))).toEqual(["p2 start", "p2 push"]);
     expect(r.session.heldKeys()).toEqual([]);
   });
@@ -258,7 +258,7 @@ describe("the voice hub", () => {
   it("plays a turn by its key, and plays the live player again when it is there", async () => {
     const r = rig();
     r.hub.replay(28);
-    expect(r.created[0]!.audioId).toBe("gluck/" + ARIA + ":28/out");
+    expect(r.created[0]!.audioId).toBe("home/" + ARIA + ":28/out");
     expect(r.log).toEqual(["p1 play"]);
     r.hub.replay(28);
     expect(r.created).toHaveLength(1);
@@ -279,7 +279,7 @@ describe("the voice hub", () => {
     r.end(28);
     await settle();
     expect(r.log.filter((l) => l === "ping")).toHaveLength(0);
-    expect(r.log.slice(3)).toEqual(["p2 start", "p2 push", "p2 end gluck/" + ARIA + ":28/out"]);
+    expect(r.log.slice(3)).toEqual(["p2 start", "p2 push", "p2 end home/" + ARIA + ":28/out"]);
   });
 
   it("plays a spoken turn from its stored copy when the audio context would not start the stream", async () => {
@@ -290,7 +290,7 @@ describe("the voice hub", () => {
     r.chunk(28);
     r.end(28);
     await settle();
-    expect(r.log.slice(3)).toEqual(["p2 start", "p2 push", "p2 end gluck/" + ARIA + ":28/out", "p2 play"]);
+    expect(r.log.slice(3)).toEqual(["p2 start", "p2 push", "p2 end home/" + ARIA + ":28/out", "p2 play"]);
   });
 
   it("plays the stored copy when the gateway says it has one, and does not ask twice", async () => {

@@ -12,9 +12,9 @@ let client: AriaClient;
 
 async function attend() {
   ({ core, client } = mockDoor(1));
-  window.location.hash = "#/gluck/" + MAIN;
+  window.location.hash = "#/home/" + MAIN;
   const store = createStore();
-  store.set(bootAtom, { stores: { gluck: client }, store: "gluck", audioUrl: "audio", sttUrl: "stt", mark: "" });
+  store.set(bootAtom, { stores: { home: client }, store: "home", audioUrl: "audio", sttUrl: "stt", mark: "" });
   render(
     <Provider store={store}>
       <App />
@@ -102,7 +102,7 @@ describe("command mode in the composer", () => {
     await waitFor(() => expect(core.calls.some((c) => c.method === "figaro.fork")).toBe(true));
     const call = core.calls.find((c) => c.method === "figaro.fork")!;
     expect(call.params).toMatchObject({ figaro_id: MAIN });
-    await waitFor(() => expect(window.location.hash).toMatch(new RegExp("^#/gluck/[0-9a-f]{32}$")));
+    await waitFor(() => expect(window.location.hash).toMatch(new RegExp("^#/home/[0-9a-f]{32}$")));
     expect(window.location.hash).not.toContain(MAIN);
     expect(pill().getAttribute("aria-pressed")).toBe("false");
   });
@@ -160,7 +160,7 @@ describe("command mode in the composer", () => {
     await run("fork --stay :12");
     await waitFor(() => expect(core.calls.some((c) => c.method === "figaro.fork")).toBe(true));
     await waitFor(() => expect(pill().getAttribute("aria-pressed")).toBe("false"));
-    expect(window.location.hash).toBe("#/gluck/" + MAIN);
+    expect(window.location.hash).toBe("#/home/" + MAIN);
   });
 
   it(":new mints a figaro and attends it", async () => {
@@ -168,7 +168,7 @@ describe("command mode in the composer", () => {
     await run("new -O sonn5-kic");
     await waitFor(() => expect(core.calls.some((c) => c.method === "figaro.fork")).toBe(true));
     expect(core.calls.find((c) => c.method === "figaro.fork")!.params).toMatchObject({ outfits: ["sonn5-kic"] });
-    await waitFor(() => expect(window.location.hash).not.toBe("#/gluck/" + MAIN));
+    await waitFor(() => expect(window.location.hash).not.toBe("#/home/" + MAIN));
   });
 
   it(":ls opens the tree in the pit", async () => {

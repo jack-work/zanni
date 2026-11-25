@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { act, fireEvent, render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { EDGE_FLICK, Pane, edgeSettle } from "zanni-react";
@@ -116,5 +118,17 @@ describe("Pane edge", () => {
     expect(view.container.querySelector(".zr-pane-edge")).not.toBeNull();
     act(() => view.rerender(shown(true)));
     expect(view.container.querySelector(".zr-pane-edge")).toBeNull();
+  });
+});
+
+describe("the edge zone on a notched phone in landscape", () => {
+  const css = readFileSync(resolve(process.cwd(), "../packages/react/src/zanni-react.css"), "utf8");
+  const rules = css.split("\n").filter((l) => l.includes(".zr-pane-edge {"));
+
+  it("starts at the left safe-area inset, fine pointer or coarse, so the notch cannot cover it", () => {
+    expect(rules).toHaveLength(2);
+    for (const rule of rules) expect(rule).toContain("env(safe-area-inset-left");
+    expect(rules.some((r) => /left:\s*env\(safe-area-inset-left/.test(r))).toBe(true);
+    expect(rules.some((r) => /left:\s*calc\(env\(safe-area-inset-left[^)]*\)\s*\+\s*6px\)/.test(r))).toBe(true);
   });
 });
