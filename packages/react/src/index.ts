@@ -15,7 +15,7 @@ export { PitList, PitRow } from "./pit-row";
 export { QueueList, QUEUE_ARRIVAL_GRACE_MS } from "./queue-list";
 export type { QueueListProps, QueueListRow, QueueOutcome } from "./queue-list";
 export type { PitRowProps } from "./pit-row";
-export { Pit, PIT_FLICK, PIT_HALF_MIN, PIT_PROJECT_MS, PIT_SCROLL_GUARD_MS, PIT_SETTLE_MS, PIT_SLOP, pitDetents, pitRubber, pitSettle, pitStep, pitStop } from "./pit";
+export { Pit, PIT_FLICK, PIT_HALF_MIN, PIT_PROJECT_MS, PIT_SCROLL_GUARD_MS, PIT_SETTLE_MS, PIT_SLOP, PIT_TOUCH_SLOP, pitDetents, pitRubber, pitSettle, pitStep, pitStop } from "./pit";
 export type { PitFrame, PitProps, PitSnap } from "./pit";
 export { attachGlyph, glyphs, voiceGlyph } from "./glyphs";
 export type { GlyphDoc, GlyphName } from "./glyphs";

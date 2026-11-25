@@ -186,6 +186,32 @@ describe("Pit", () => {
     expect(drawer().style.transform).toBe("");
   });
 
+  it("leaves a mouse drag over the text field to the text selection", () => {
+    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+    render(<Harness />);
+    const box = screen.getByRole("textbox", { name: "Message" });
+    fireEvent.pointerDown(box, { pointerId: 5, pointerType: "mouse", button: 0, isPrimary: true, clientX: 100, clientY: 780, timeStamp: 0 });
+    act(() => {
+      fireEvent.pointerMove(window, { pointerId: 5, clientX: 100, clientY: 700, timeStamp: 100 });
+    });
+    expect(drawer().hasAttribute("data-dragging")).toBe(false);
+  });
+
+  it("waits out a touch slop of 10 px before it takes the drag", () => {
+    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+    render(<Harness />);
+    const box = screen.getByRole("textbox", { name: "Message" });
+    fireEvent.pointerDown(box, { pointerId: 6, pointerType: "touch", button: 0, isPrimary: true, clientX: 100, clientY: 780, timeStamp: 0 });
+    act(() => {
+      fireEvent.pointerMove(window, { pointerId: 6, clientX: 100, clientY: 771, timeStamp: 30 });
+    });
+    expect(drawer().hasAttribute("data-dragging")).toBe(false);
+    act(() => {
+      fireEvent.pointerMove(window, { pointerId: 6, clientX: 100, clientY: 765, timeStamp: 60 });
+    });
+    expect(drawer().hasAttribute("data-dragging")).toBe(true);
+  });
+
   it("leaves a sideways swipe on the head alone", () => {
     render(<Harness />);
     const box = screen.getByRole("textbox", { name: "Message" });
