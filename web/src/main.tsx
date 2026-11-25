@@ -6,7 +6,7 @@ import { endpointUrl, edgeSession } from "figaro-forms/auth";
 import head from "../../assets/parla/figaro-head.png";
 import "./styles/index.css";
 import { App } from "./app";
-import { bootAtom, configureTraces, parseTemplates, sessionUrl, traceDial } from "zanni-react/jotai";
+import { bootAtom, configureTraces, sessionUrl, traceDial } from "zanni-react/jotai";
 
 const host = document.getElementById("app");
 if (!host) throw new Error("figaro web needs #app");
@@ -25,7 +25,6 @@ jotai.set(bootAtom, {
   sttUrl: host.getAttribute("data-stt") || "stt",
   attachUrl: host.getAttribute("data-attach") || "attach",
   mark: host.getAttribute("data-mark") || head,
-  templates: parseTemplates(host.getAttribute("data-templates")),
 });
 host.replaceChildren();
 createRoot(host).render(

@@ -464,6 +464,15 @@
       return { parent: id, continuation: id, alternative: nid, at: req.at_turn ? 'turn ' + req.at_turn : 'the head' };
     }
 
+    function create(req) {
+      var nid = aid(40 + core.order.length);
+      core.arias[nid] = { row: { id: nid, short: nid.slice(0, 8), kind: 'figaro', state: 'idle', mantra: '', handle: 'new-' + nid.slice(-4), created_at: clock() }, turns: [], run: null, queue: [], dormant: false, outfits: req.outfits || [] };
+      metricsOf[nid] = { context_tokens: 0, context_exact: false, tokens_in: 0, tokens_out: 0, cache_read_tokens: 0, cache_write_tokens: 0 };
+      core.order.unshift(nid);
+      timers.set(function () { pushForm('@arias'); pushForm('@recent'); }, 0);
+      return { figaro_id: nid };
+    }
+
     var methods = {
       'angelus.hello': function (c, id) {
         reply(c, id, { version: 1, capabilities: ['qua.images', 'unfollow', 'follow.channels'], node: core.fixture ? Object.keys(core.fixture.troupe)[0] : 'mock-node', principal: { kind: 'user', id: 'gluck@edge.test' } });
@@ -567,6 +576,11 @@
       'figaro.fork': function (c, id, p) {
         if (!core.arias[p.figaro_id]) { fail(c, id, -32000, 'figaro: aria ' + p.figaro_id + ' not found'); return; }
         reply(c, id, fork(p.figaro_id, p));
+      },
+      'figaro.create': function (c, id, p) {
+        var undeclared = (p.outfits || []).filter(function (n) { return (o.declared || ['opus5-ant', 'sonn5-kic', 'default', 'landing']).indexOf(n) < 0; });
+        if (undeclared.length) { fail(c, id, -32000, 'create: outfit ' + undeclared[0] + ' is not declared'); return; }
+        reply(c, id, create(p));
       },
       'angelus.outfits': function (c, id) {
         var names = ['opus5-ant', 'sonn5-kic', 'default'];

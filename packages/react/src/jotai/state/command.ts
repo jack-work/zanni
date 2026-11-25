@@ -6,7 +6,7 @@ import { forkSpecOf, keysOf, pathOf, planOf, refusalOf, shown, type Plan, type S
 import { parseDraft, pathProblem, refusalLine } from "../lib/form-edit";
 import type { PitView } from "../lib/pit-rows";
 import { forkAtom, interruptAtom, type Done } from "./composer";
-import { mintFigaroAtom, rootsAtom } from "./new-figaro";
+import { mintFigaroAtom } from "./new-figaro";
 import { traced } from "../telemetry/trace";
 import { attendedFactsAtom, treeStateAtom } from "./pit";
 import { attendedAtom, clientAtom, goAtom, storeNameAtom } from "./route";
@@ -171,8 +171,7 @@ export const runCommandAtom = atom(null, async (get, set, line: string): Promise
       }
     }
     case "new": {
-      const root = get(rootsAtom)[0]?.id ?? "";
-      return set(mintFigaroAtom, { root, outfits: flags.outfit ?? "", text: prompt ?? "" });
+      return set(mintFigaroAtom, { outfits: flags.outfit ?? "", text: prompt ?? "" });
     }
     case "fork": {
       const spec = forkSpecOf(args[0]);
