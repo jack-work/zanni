@@ -359,7 +359,7 @@
       var s = [], tool = /\[tool\]|run|test|check|build/i.test(text) && !/\[plain\]/.test(text);
       var think = !/\[plain\]/.test(text), n = 0, idx, md = /\[md\]/.test(text), long = /\[long\]/.test(text);
       if (md || long) tool = false;
-      if (long) think = false;
+      if (long || /\[quiet\]/.test(text)) think = false;
       var call = 'call_live' + t.id;
       var gap = function (fn, ms) { s.push({ fn: fn, wait: ms == null ? step : ms }); };
       var seq = function (list) { list.forEach(function (f) { gap(f); }); };
@@ -378,7 +378,7 @@
         gap(function () { emit(a, t, [{ id: idx, set: { input: raw } }]); });
         gap(function () { emit(a, t, [{ id: idx, set: { args: args, summary: 'command=' + args.command }, unset: ['input'] }]); });
         gap(function () { emit(a, t, [{ id: idx, set: { started_at: clock() } }]); });
-        gap(function () { emit(a, t, [{ id: idx, set: { output: 'ok  \tfigaro/api/livedoc\t0.213s', finished_at: clock() } }]); }, step * 3);
+        gap(function () { emit(a, t, [{ id: idx, set: { output: 'ok  \tfigaro/api/livedoc\t0.213s', finished_at: clock() } }]); }, /\[hold\]/.test(text) ? 4000 : step * 3);
         gap(function () { emit(a, t, [{ id: idx, set: { status: 'ok' } }]); });
         gap(function () {
           if (!a.queue.length) return;

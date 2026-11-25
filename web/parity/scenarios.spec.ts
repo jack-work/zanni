@@ -114,7 +114,7 @@ for (const scenario of doc.scenarios) {
         await act(step.do);
         await page.waitForTimeout(300);
         await page.screenshot({ path: join(shots, info.project.name, scenario.id, `${step.id}.png`), fullPage: false });
-        const want = real ? step.expect : { ...step.expect, ...step.expect_fake };
+        const want = step.expect;
         for (const gap of step.expect.web_gaps ?? []) info.annotations.push({ type: "web-gap", description: `${scenario.id}/${step.id}: ${gap.glyph}: ${gap.note}` });
         for (const turn of want.turns ?? []) {
           if (!turn.deltas) continue;

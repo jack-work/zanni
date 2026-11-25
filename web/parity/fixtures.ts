@@ -17,7 +17,7 @@ export interface MockCore {
 
 const DIRECTIVES: Record<string, string> = {
   "hello parity": " [plain]",
-  "steered work please": " run",
+  "steered work please": " run [quiet] [hold]",
   "steer ack now": " [plain]",
 };
 
