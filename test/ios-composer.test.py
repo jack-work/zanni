@@ -35,7 +35,7 @@ def geometry(pg):
       const last = turns.length ? turns[turns.length - 1].getBoundingClientRect() : null;
       const vv = window.visualViewport;
       return {
-        shell: r('.zr-shell'), composer: r('.zr-composer'), input: r('.zr-input'), scroller: r('[data-zr-scroll]'),
+        shell: r('.zr-shell'), pit: r('.zr-pit'), composer: r('.zr-composer'), input: r('.zr-input'), scroller: r('[data-zr-scroll]'),
         lastBottom: last && last.bottom,
         vvBottom: vv.offsetTop + vv.height, vvTop: vv.offsetTop, innerHeight: innerHeight,
         docScroll: [document.documentElement.scrollTop, document.body.scrollTop, scrollY],
@@ -147,10 +147,11 @@ with sync_playwright() as p:
         want = 844 - KB
         near(g["vvBottom"], top + want, "the fake keyboard moved the visual viewport")
         near(g["shell"]["top"], top, "the shell follows visualViewport.offsetTop (%d)" % top)
-        near(g["shell"]["bottom"], g["vvBottom"], "the shell ends where the keyboard begins (%d)" % top)
+        near(g["pit"]["bottom"], g["vvBottom"], "the drawer rests where the keyboard begins (%d)" % top)
+        assert g["shell"]["bottom"] >= g["vvBottom"] - 1, "the shell reaches under the keyboard so its surface shows there (%d): %s" % (top, g["shell"])
         near(g["composer"]["bottom"], g["vvBottom"], "the composer sits right above the keyboard (%d)" % top)
         pad = pg.evaluate("parseFloat(getComputedStyle(document.querySelector('.zr-composer')).paddingBottom)")
-        assert pad == 8, "no safe-area padding above the keyboard: %s" % pad
+        assert pad == 4, "a slim pad and no safe area above the keyboard: %s" % pad
         assert g["fromBottom"] <= 1, "the transcript stayed at its end: %s" % g
         near(g["lastBottom"], g["composer"]["top"], "nothing hides under the composer", 40)
         assert g["lastBottom"] <= g["composer"]["top"] + 1
@@ -196,7 +197,7 @@ with sync_playwright() as p:
     g = geometry(pg)
     near(g["composer"]["bottom"], 844, "the composer returns to the bottom once the keyboard goes")
     near(g["shell"]["bottom"], 844, "the shell returns to full height")
-    assert pg.evaluate("parseFloat(getComputedStyle(document.querySelector('.zr-composer')).paddingBottom)") >= 8
+    assert pg.evaluate("parseFloat(getComputedStyle(document.querySelector('.zr-composer')).paddingBottom)") >= 4
     assert g["docFits"] and g["docScroll"] == [0, 0, 0]
     pg.context.close()
 
@@ -286,7 +287,7 @@ with sync_playwright() as p:
     pg.evaluate("window.__kb.open(200, 0)")
     pg.wait_for_timeout(300)
     g = geometry(pg)
-    near(g["shell"]["bottom"], 190, "landscape with a keyboard: the shell is the strip above it")
+    near(g["pit"]["bottom"], 190, "landscape with a keyboard: the drawer rests on the strip above it")
     near(g["composer"]["bottom"], 190, "landscape: the composer is above the keyboard")
     assert g["input"]["top"] >= g["shell"]["top"], "the input is on screen in landscape: %s" % g
     assert pg.evaluate("document.documentElement.scrollWidth") <= 844

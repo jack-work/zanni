@@ -196,7 +196,7 @@
 .zr-queue-note, .zr-queue-empty { margin: 0; color: var(--z-muted); font-size: 1rem; font-style: italic; overflow-wrap: anywhere; }
 .zr-pit-detail { padding: var(--z-space-2, 4px) var(--z-space-2, 4px) var(--z-space-4, 12px) calc(2rem + var(--z-space-3, 8px)); min-width: 0; overflow-wrap: anywhere; user-select: text; }
 @media (pointer: coarse) {
-  .zr-pill::after { content: ""; position: absolute; inset: -4px; }
+  .zr-pill::after { content: ""; position: absolute; inset: -5px; }
 }
 
 .zr-composer {
@@ -208,7 +208,7 @@
   flex-direction: column;
   gap: var(--z-space-3, 8px);
   width: 100%;
-  padding: var(--z-space-3, 8px) var(--zr-edge-r, 16px) max(var(--z-space-2, 4px), calc(env(safe-area-inset-bottom) - 14px)) var(--zr-edge-l, 16px);
+  padding: var(--z-space-3, 8px) var(--zr-edge-r, 16px) max(var(--z-space-3, 8px), calc(env(safe-area-inset-bottom) - 14px)) var(--zr-edge-l, 16px);
   background: var(--z-ground);
   border-top: 1px solid var(--z-line);
 }

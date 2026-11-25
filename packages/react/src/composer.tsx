@@ -45,9 +45,14 @@ export function useSizeVar(ref: { current: HTMLElement | null }, name: string): 
     const write = () => root.style.setProperty(name, Math.ceil(el.getBoundingClientRect().height) + "px");
     write();
     if (typeof ResizeObserver === "undefined") return () => root.style.removeProperty(name);
-    const watch = new ResizeObserver(write);
+    let frame = 0;
+    const watch = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(write);
+    });
     watch.observe(el);
     return () => {
+      cancelAnimationFrame(frame);
       watch.disconnect();
       root.style.removeProperty(name);
     };
@@ -92,7 +97,6 @@ export function Composer(props: ComposerProps) {
     if (!el || typeof ResizeObserver === "undefined") return;
     const watch = new ResizeObserver(() => {
       if (el.offsetHeight > ONE_LINE_MAX) setStack(true);
-      markScrolls(el);
     });
     watch.observe(el);
     return () => watch.disconnect();
