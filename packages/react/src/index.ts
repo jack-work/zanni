@@ -22,7 +22,7 @@ export { Pit, PIT_FLICK, PIT_HALF_MIN, PIT_PROJECT_MS, PIT_SCROLL_GUARD_MS, PIT_
 export type { PitFrame, PitProps, PitSnap } from "./pit";
 export { attachGlyph, glyphs, voiceGlyph } from "./glyphs";
 export type { GlyphDoc, GlyphName } from "./glyphs";
-export { EXIT_MS, transition, useLinger } from "./motion";
+export { EXIT_MS, SWOOP_EASE, SWOOP_MS, SWOOP_REACH, swoop, transition, useLinger } from "./motion";
 export { reducedMotion, useMedia } from "./lib/media";
 export { useTick } from "./lib/tick";
 export { Spinner } from "./spinner";
@@ -47,11 +47,10 @@ export { DELTA_KEY_CAP, FORKED_FROM_KEYS, cellFull, cellLine, deltaRowsOf, flatt
 export type { WireDelta } from "./deltas";
 export { nodi } from "./zanni";
 export type * from "./nodi-types";
-export { NEAR_BOTTOM, SWOOP_EASE, SWOOP_MS, SWOOP_REACH, scrollRoot, scrollToBottom, swoop, useFollow } from "./follow";
+export { NEAR_BOTTOM, scrollEdge, scrollRoot, useTranscriptScroll, watchScroll } from "./scroll";
+export type { TranscriptScroll } from "./scroll";
 export { KEYBOARD_MIN, frameOf, onKeyboard, trackViewport, useViewport, viewportHeight } from "./viewport";
 export type { ViewportFrame } from "./viewport";
-export type { Follow } from "./follow";
 export { LatestPill } from "./latest";
-export { useTurnWindow } from "./window";
 export { DEPLOY_STEPS, QueueBoard, SINCE_WINDOWS, boardCell, boardColumns, cellTitle, formatRate, shortSha, sinceOf } from "./queue-board";
 export type { BoardCell, BoardColumn, DeployCommit, DeployEnv, DeployOutcome, DeploySpan, DeployStepName, DeploysResponse, QueueBoardProps, SinceKey, StepRollup } from "./queue-board";

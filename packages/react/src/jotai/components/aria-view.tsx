@@ -1,7 +1,7 @@
-import { Button, LatestPill, glyphs, scrollRoot, scrollToBottom, useFollow, useTurnWindow, Plain, TranscriptContext, TurnView } from "../../index";
+import { Button, LatestPill, glyphs, scrollEdge, scrollRoot, useTranscriptScroll, watchScroll, Plain, TranscriptContext, TurnView } from "../../index";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { ariaAtom } from "figaro-forms/aria/jotai";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFirstFrame } from "../lib/first-frame";
 import { labelOf } from "../lib/roster";
 import { metricsLineAtom, noteAtom, seenAtom, turnsAtom } from "../state/aria";
@@ -48,7 +48,6 @@ export function AriaView({ attended }: { attended: Attended }) {
   const turnsRef = useRef<HTMLOListElement | null>(null);
   const olderRef = useRef<HTMLButtonElement | null>(null);
   const headRef = useRef<HTMLHeadingElement | null>(null);
-  const anchor = useRef<{ turn: number; top: number } | null>(null);
   const loading = useRef(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [pageError, setPageError] = useState("");
@@ -56,18 +55,12 @@ export function AriaView({ attended }: { attended: Attended }) {
   const [baseline, setBaseline] = useState<number | null>(null);
   const live = snap.phase === "live";
   const olderAvailable = snap.olderAvailable === true;
-  const follow = useFollow(paneRef, followed);
+  const { spans, away, toEnd, latest, reveal } = useTranscriptScroll(turns, paneRef, followed);
   useFirstFrame(followed);
-  const paging = follow.paging;
-  const toBottom = follow.toBottom;
 
   const link = useAtomValue(linkAtom);
   const fork = useSetAtom(forkAtom);
   const speaking = useAtomValue(speakingAtom);
-  const [spans, jump] = useTurnWindow(turns);
-  useLayoutEffect(() => {
-    if (followed) follow.snap();
-  }, [turns, followed, follow.snap]);
   const cancelMic = useSetAtom(micCancelAtom);
   useVoice(attended);
   useEffect(() => () => cancelMic(), [cancelMic]);
@@ -83,11 +76,8 @@ export function AriaView({ attended }: { attended: Attended }) {
   const loadOlder = useCallback(async (): Promise<boolean> => {
     if (loading.current) return false;
     loading.current = true;
-    paging.current = true;
     setLoadingOlder(true);
     setPageError("");
-    const first = document.querySelector<HTMLElement>(".nodi-turn");
-    anchor.current = first ? { turn: Number(first.dataset.turn), top: first.getBoundingClientRect().top } : null;
     try {
       return await client.peek(aria).loadOlder();
     } catch (err) {
@@ -96,31 +86,15 @@ export function AriaView({ attended }: { attended: Attended }) {
     } finally {
       loading.current = false;
       setLoadingOlder(false);
-      setTimeout(() => {
-        anchor.current = null;
-        paging.current = false;
-      }, 400);
     }
-  }, [client, aria, paging]);
-
-  const firstKey = turns[0]?.key;
-  useLayoutEffect(() => {
-    const a = anchor.current;
-    if (!a) return;
-    const el = turnEl(a.turn);
-    if (!el) return;
-    const delta = el.getBoundingClientRect().top - a.top;
-    if (delta) scrollRoot().scrollTop += delta;
-    anchor.current = null;
-  }, [firstKey]);
+  }, [client, aria]);
 
   const seek = useCallback(
     async (turn: number) => {
       for (let n = 0; n <= DEEP_LIMIT; n++) {
-        jump(turn);
+        reveal(turn);
         const el = await appears(turn);
         if (el) {
-          el.scrollIntoView();
           el.setAttribute("data-flash", "");
           setTimeout(() => el.removeAttribute("data-flash"), FLASH_MS);
           return;
@@ -132,9 +106,9 @@ export function AriaView({ attended }: { attended: Attended }) {
           break;
         }
       }
-      scrollToBottom();
+      toEnd();
     },
-    [client, aria, loadOlder],
+    [client, aria, loadOlder, reveal, toEnd],
   );
 
   useEffect(() => {
@@ -142,8 +116,8 @@ export function AriaView({ attended }: { attended: Attended }) {
     setFollowed(true);
     setBaseline(Math.max(-1, ...turns.map((t) => t.turn)));
     if (want) void seek(want);
-    else toBottom();
-  }, [live, followed, want, seek, toBottom, turns]);
+    else toEnd();
+  }, [live, followed, want, seek, toEnd, turns]);
 
   const wanted = useRef(want);
   useEffect(() => {
@@ -156,11 +130,11 @@ export function AriaView({ attended }: { attended: Attended }) {
     if (!el || !followed || loadingOlder || pageError) return;
     const root = scrollRoot();
     const fill = () => {
-      if (el.getBoundingClientRect().bottom > root.getBoundingClientRect().top) loadOlder().catch(() => {});
+      if (el.getBoundingClientRect().bottom > scrollEdge(root)) loadOlder().catch(() => {});
     };
     fill();
-    root.addEventListener("scroll", fill, { passive: true });
-    return () => root.removeEventListener("scroll", fill);
+    const stop = watchScroll(root, fill);
+    return stop;
   }, [followed, olderAvailable, loadOlder, loadingOlder, pageError]);
 
   const tree = useAtomValue(treeStateAtom);
@@ -222,8 +196,8 @@ export function AriaView({ attended }: { attended: Attended }) {
           {status && <p className="fw-note">{status}</p>}
         </main>
       </div>
-      <Pit head={gone ? undefined : <Composer attended={attended} toBottom={toBottom} />} />
-      {follow.away && pitClosed && <LatestPill onClick={() => follow.latest(turnsRef.current)} />}
+      <Pit head={gone ? undefined : <Composer attended={attended} toBottom={toEnd} />} />
+      {away && pitClosed && <LatestPill onClick={() => latest(turnsRef.current)} />}
       <CommandHelp />
     </section>
   );
