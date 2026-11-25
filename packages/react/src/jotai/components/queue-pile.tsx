@@ -1,4 +1,5 @@
-import { Button, Glyph, QueueList, firstLine, glyphs, type QueueListRow } from "../../index";
+import { Button, Glyph, QueueList, firstLine, type QueueListRow } from "../../index";
+import { QUEUE_GLYPH } from "../lib/status";
 import { queueActionsOf, queueMark } from "figaro-forms/aria";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useMemo, useState } from "react";
@@ -21,7 +22,7 @@ export function QueuePile() {
   return (
     <div className="fw-pile" data-open={open ? "" : undefined}>
       <button type="button" className="fw-pile-head" aria-expanded={open} aria-label="Queue" onClick={() => setOpen((o) => !o)}>
-        <span className="fw-pile-mark"><Glyph glyph={glyphs["pit.queue"]} className="fw-pile-glyph" /></span>
+        <span className="fw-pile-mark"><Glyph glyph={QUEUE_GLYPH} className="fw-pile-glyph" /></span>
         <span className="fw-pile-text">{open ? "Queued" : firstLine(first.text)}</span>
         <span className="fw-pile-count">{"x" + rows.length}</span>
       </button>

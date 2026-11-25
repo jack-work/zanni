@@ -1271,7 +1271,8 @@ try:
             first = pg.locator(".zr-pit-row").evaluate_all("rows => rows.map(r => r.dataset.action)")
             assert first == ["new", "tail-fork", "tree", "recent", "asks", "queue", "voice", "hands-free", "state", "fork-at", "outfits"], first
             glyph = lambda a: pg.locator(".zr-pit-row[data-action='%s'] .zr-pit-row-glyph" % a).inner_text()
-            assert [glyph("state"), glyph("fork-at"), glyph("tree")] == ["웃", "⑂", "웃"], "each row wears its pager glyph"
+            assert [glyph("state"), glyph("fork-at")] == ["웃", "⑂"], "each detail row wears its pager glyph"
+            assert pg.locator(".fw-controls .zr-pit-row").evaluate_all("rows => rows.map(r => r.querySelector('.zr-pit-row-label').textContent)") == ["New", "Fork", "Tree", "Recent", "Asks", "Queue", "Voice", "Hands-free"], "the common controls are tiles"
             if not phone:
                 box, side = pg.locator(".zr-pit").bounding_box(), pg.locator(".fw-side").bounding_box()
                 assert abs(box["x"] - (side["x"] + side["width"])) <= 1 or box["x"] >= side["x"] + side["width"] - 1, "the drawer starts at the transcript pane: %s %s" % (box, side)
