@@ -110,7 +110,7 @@
 .zr-pit:not([data-open], [data-dragging])::before { background: var(--zr-pit-surface, var(--z-ground)); }
 .zr-pit[data-snap="half"] { transform: translate3d(0, calc(100% - var(--zr-vv-h, 100dvh) / 2), 0); }
 .zr-pit[data-snap="full"] { transform: translate3d(0, calc(100% - var(--zr-vv-h, 100dvh) + env(safe-area-inset-top, 0px)), 0); }
-.zr-pit-knob { position: absolute; z-index: 1; top: calc(var(--zr-pit-reach) / -2); left: 50%; translate: -50% 0; display: flex; align-items: center; justify-content: center; width: 120px; height: var(--zr-pit-reach); margin: 0; padding: 0; border: 0; background: transparent; cursor: grab; touch-action: none; -webkit-tap-highlight-color: transparent; }
+.zr-pit-knob { font: inherit; position: absolute; z-index: 1; top: calc(var(--zr-pit-reach) / -2); left: 50%; translate: -50% 0; display: flex; align-items: center; justify-content: center; width: 120px; height: var(--zr-pit-reach); margin: 0; padding: 0; border: 0; background: transparent; cursor: grab; touch-action: none; -webkit-tap-highlight-color: transparent; }
 .zr-pit-knob:focus-visible { outline: 2px solid var(--z-focus); outline-offset: -2px; }
 .zr-pit-knob-bar { display: block; width: 44px; height: 6px; border-radius: 999px; background: var(--z-line); transition: background-color var(--zr-d-press) var(--zr-out); }
 .zr-pit-knob:hover .zr-pit-knob-bar, .zr-pit[data-open] .zr-pit-knob-bar, .zr-pit[data-dragging] .zr-pit-knob-bar { background: var(--z-accent); }
