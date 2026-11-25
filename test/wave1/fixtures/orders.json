@@ -5,7 +5,7 @@
    "filed": "2026-11-20T12:00-05:00",
    "from": "Owner via King",
    "lane": "fleet.lane.figchat.gateway",
-   "note": "delivered as figaro web on gluck's store via figaro-gateway",
+   "note": "delivered as figaro web on the owner's store via figaro-gateway",
    "owner": "Figaro Engineer",
    "stages": {
     "filed": "2026-11-20T12:00:00-05:00",
@@ -13,13 +13,13 @@
     "live": "2026-11-21T03:30:00-05:00"
    },
    "state": "live",
-   "text": "Attend any figaro in the owner's store with pager semantics; threads are figaros scoped to a store, no herald side state; figchat figaro knows the hierarchy and reaches the King; order.kelliher.info opens a thread with any worker. Brief: ~/.captains-log/2026/11/20/gluck-figchat-attend-any-figaro.md"
+   "text": "Attend any figaro in the owner's store with pager semantics; threads are figaros scoped to a store, no herald side state; figchat figaro knows the hierarchy and reaches the King; order.kelliher.info opens a thread with any worker. Brief: ~/.captains-log/2026/11/20/owner-figchat-attend-any-figaro.md"
   },
   "backups": {
    "filed": "2026-11-23T19:00:00-05:00",
    "from": "Owner (back-filled by the figchat Strategist 11-23)",
    "lane": "fleet.lane.figchat.spain",
-   "note": "first snapshot 18.53 GiB on Spain with restore proof; gluck timers wait on the owner-path window (cheroot d26df9c)",
+   "note": "first snapshot 18.53 GiB on Spain with restore proof; desktop timers wait on the owner-path window (cheroot d26df9c)",
    "owner": "@4f6f262b",
    "stages": {
     "filed": "2026-11-23T19:00:00-05:00",
@@ -311,7 +311,7 @@
    "filed": "2026-11-20T19:00-05:00",
    "from": "Owner via King",
    "lane": "fleet.lane.figchat.gateway.writes",
-   "note": "gluck figaro 0.80.0, gateway set smoke PASS",
+   "note": "desktop figaro 0.80.0, gateway set smoke PASS",
    "owner": "Figaro Engineer",
    "stages": {
     "cut": "2026-11-21T02:02:13-05:00",
