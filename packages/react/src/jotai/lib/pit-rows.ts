@@ -26,12 +26,17 @@ export function byLastUsed(rows: readonly PitRowSpec[], used: Readonly<Record<st
   return [...rows].sort((a, b) => (used[b.id] ?? 0) - (used[a.id] ?? 0) || (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
 }
 
-export function valueAt(root: unknown, path: string): string | undefined {
+export function pick(root: unknown, path: string): unknown {
   let cur: unknown = root;
   for (const seg of path.split(".")) {
     if (cur === null || typeof cur !== "object") return undefined;
     cur = (cur as Record<string, unknown>)[seg];
   }
+  return cur;
+}
+
+export function valueAt(root: unknown, path: string): string | undefined {
+  const cur = pick(root, path);
   return typeof cur === "string" ? cur : cur === undefined || cur === null ? undefined : JSON.stringify(cur);
 }
 

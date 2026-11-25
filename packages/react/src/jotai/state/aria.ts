@@ -1,6 +1,6 @@
 import { atom, type Atom } from "jotai";
 import { ariaAtom, ariaConnectionAtom, ariaPhaseAtom } from "figaro-forms/aria/jotai";
-import type { AriaClient, AriaSnapshot, Phase } from "figaro-forms/aria";
+import type { AriaClient, AriaSnapshot, Metrics, Phase } from "figaro-forms/aria";
 import type { ConnectionState } from "figaro-forms";
 import { nodi, type TurnModel } from "../../index";
 import { workOf, type Work_ } from "../../index";
@@ -62,6 +62,14 @@ export function endStateAtom(client: AriaClient, aria: string): Atom<"" | "faile
 
 export function contextTokensAtom(client: AriaClient, aria: string): Atom<number | undefined> {
   return memo(client, `ctx\0${aria}`, () => atom((get) => get(ariaAtom(client, aria)).metrics?.context_tokens));
+}
+
+export function metricsAtom(client: AriaClient, aria: string): Atom<Metrics | undefined> {
+  return memo(client, `metrics-of\0${aria}`, () => atom((get) => get(ariaAtom(client, aria)).metrics));
+}
+
+export function startedAtom(client: AriaClient, aria: string): Atom<number> {
+  return memo(client, `started\0${aria}`, () => atom(Date.now()));
 }
 
 export function metricsLineAtom(client: AriaClient, aria: string): Atom<string> {

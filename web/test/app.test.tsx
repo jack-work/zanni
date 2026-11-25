@@ -164,6 +164,29 @@ describe("bench hooks", () => {
   });
 });
 
+describe("the control pit", () => {
+  it("shows the status rows from the aria's metrics and bound form above the actions", async () => {
+    open("#/gluck/" + "c0ffee01".repeat(4));
+    await waitFor(() => expect(document.querySelector(".fw-status-handle")).toBeTruthy());
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Open controls" }));
+    });
+    await waitFor(() => expect(document.querySelectorAll(".fw-pit-status .fw-pit-fact").length).toBeGreaterThanOrEqual(5));
+    const labels = [...document.querySelectorAll(".fw-pit-status dt")].map((n) => n.textContent);
+    expect(labels).toEqual(expect.arrayContaining(["aria", "status", "tokens", "cache", "started"]));
+    const order = ["aria", "status", "mantra", "route", "context", "tokens", "cache", "started"].filter((l) => labels.includes(l));
+    expect(labels).toEqual(order);
+    const row = (k: string) => document.querySelector(".fw-pit-status .fw-pit-fact[data-key='" + k + "'] dd")?.textContent;
+    expect(row("aria")).toContain("c0ffee01".repeat(4));
+    expect(row("started")).toMatch(/^\d\d:\d\d:\d\d$/);
+    expect(row("tokens")).toMatch(/^in .+ · out .+$/);
+    const status = document.querySelector(".fw-pit-status")!;
+    const actions = document.querySelector(".zr-pit-list")!;
+    expect(status.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText("New figaro")).toBeTruthy();
+  });
+});
+
 describe("the state pit writes", () => {
   const openState = async () => {
     open("#/gluck/" + "c0ffee01".repeat(4));
