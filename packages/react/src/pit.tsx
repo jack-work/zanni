@@ -304,6 +304,12 @@ export function Pit({ snap: asked, onSnapChange, label, detents = ALL, head, kno
 
   useDialog(drawer, close, { active: snap !== "closed", trap: !side, bodySelector: ".zr-pit-body", autofocus: () => !drawer.current?.querySelector(".zr-pit-head")?.contains(document.activeElement) });
 
+  const touch = useRef<{ id: number; x: number; y: number } | null>(null);
+  const tapped = useRef(false);
+  const keepTyping = (ev: { preventDefault(): void }) => {
+    if (drawer.current?.querySelector(".zr-pit-head")?.contains(document.activeElement)) ev.preventDefault();
+  };
+
   const leave = leaving ? { "data-leaving": "" } : {};
   return (
     <>
@@ -331,8 +337,21 @@ export function Pit({ snap: asked, onSnapChange, label, detents = ALL, head, kno
           aria-expanded={snap !== "closed"}
           onKeyDown={onKnobKey}
           onPointerDown={(ev) => {
-            if (drawer.current?.querySelector(".zr-pit-head")?.contains(document.activeElement)) ev.preventDefault();
+            keepTyping(ev);
+            touch.current = ev.pointerType === "mouse" ? null : { id: ev.pointerId, x: ev.clientX, y: ev.clientY };
           }}
+          onPointerUp={(ev) => {
+            const t = touch.current;
+            touch.current = null;
+            if (!t || t.id !== ev.pointerId || Math.hypot(ev.clientX - t.x, ev.clientY - t.y) >= PIT_SLOP) return;
+            tapped.current = true;
+            toggle();
+          }}
+          onTouchEnd={(ev) => {
+            if (tapped.current && ev.cancelable) ev.preventDefault();
+            tapped.current = false;
+          }}
+          onMouseDown={keepTyping}
           onClick={toggle}
         >
           <span className="zr-pit-knob-bar" aria-hidden="true" />
