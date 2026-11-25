@@ -142,6 +142,7 @@
   gap: var(--z-space-3, 8px);
   padding: var(--z-space-3, 8px) var(--zr-edge-r, 16px) calc(var(--z-space-4, 12px) + env(safe-area-inset-bottom)) var(--zr-edge-l, 16px);
 }
+.zr-pit[data-snap="half"] .zr-pit-body::after { content: ""; flex: none; height: calc(var(--zr-vv-h, 100dvh) / 2); }
 .zr-pit-scrim { transition: opacity var(--zr-d-sheet) var(--zr-sheet-curve); }
 .zr-pit ~ .zr-latest { bottom: calc(var(--zr-kb, 0px) + var(--zr-composer-h, 0px) + var(--zr-pit-reach) / 2 + 8px); }
 .zr-pit:is([data-open], [data-dragging]) ~ .zr-latest { display: none; }
