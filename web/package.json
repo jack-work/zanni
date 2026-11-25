@@ -9,6 +9,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "gallery": "vite --open /gallery/scene.html",
+    "gallery:shot": "node gallery/shot.mjs",
     "parity": "playwright test",
     "parity:real": "PARITY_REAL=1 playwright test",
     "parity:sync": "sh parity/sync.sh"
