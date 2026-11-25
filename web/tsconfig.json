@@ -25,5 +25,5 @@
       "*": ["./node_modules/@types/*", "./node_modules/*"]
     }
   },
-  "include": ["src", "test", "vite.config.ts", "../packages/react/src"]
+  "include": ["src", "test", "gallery", "vite.config.ts", "../packages/react/src"]
 }
