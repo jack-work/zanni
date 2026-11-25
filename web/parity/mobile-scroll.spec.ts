@@ -51,6 +51,17 @@ function settle(page: Page): Promise<void> {
   );
 }
 
+function moving(page: Page): Promise<boolean> {
+  return page.evaluate(
+    () =>
+      new Promise<boolean>((done) => {
+        const s = document.querySelector<HTMLElement>("[data-zr-scroll]")!;
+        const y = s.scrollTop;
+        requestAnimationFrame(() => requestAnimationFrame(() => done(Math.abs(s.scrollTop - y) >= 1)));
+      }),
+  );
+}
+
 function rect(page: Page, sel: string): Promise<Box | null> {
   return page.evaluate((sel) => {
     const e = document.querySelector(sel);
@@ -109,6 +120,33 @@ async function toMiddle(page: Page, browserName: string): Promise<void> {
 }
 
 test.describe("figaro web mobile scroll", () => {
+  test("a tap or a drag on the grip opens the drawer, at the end and in the middle of a long transcript", async ({ page, browserName }) => {
+    await attendLong(page);
+    const pit = page.locator(".zr-pit[role=dialog]");
+    const shut = async () => {
+      await page.keyboard.press("Escape");
+      await page.locator(".zr-pit").waitFor({ state: "detached" });
+      await settle(page);
+    };
+    for (const where of ["end", "middle"]) {
+      if (where === "middle") await toMiddle(page, browserName);
+      const bar = (await rect(page, ".zr-composer .zr-grip .zr-grip-bar"))!;
+      const x = bar.x + bar.w / 2;
+      const y = bar.y + bar.h / 2;
+      await page.touchscreen.tap(x, y);
+      await settle(page);
+      await expect(pit, `a tap on the grip at the ${where} opens the drawer and it stays open`).toHaveAttribute("data-snap", "half");
+      await shut();
+      if (browserName !== "chromium") continue;
+      const cdp = await finger(page);
+      await swipe(cdp, x, y, y - 360, 12, 16, page);
+      await cdp.detach();
+      await settle(page);
+      await expect(pit, `a drag up from the grip at the ${where} opens the drawer`).toHaveAttribute("data-snap", /half|full/);
+      await shut();
+    }
+  });
+
   test("the grip's bar sits on the composer's top edge and stays uncovered scrolled up", async ({ page, browserName }) => {
     await attendLong(page);
     const edge = async () => {
@@ -126,5 +164,30 @@ test.describe("figaro web mobile scroll", () => {
     const pill = (await rect(page, ".zr-latest"))!;
     const overlaps = pill.y < grip.y + grip.h && pill.y + pill.h > grip.y && pill.x < grip.x + grip.w && pill.x + pill.w > grip.x;
     expect(overlaps, `the Latest pill ${JSON.stringify(pill)} keeps off the grip ${JSON.stringify(grip)}`).toBe(false);
+  });
+
+  test("one tap on Latest reaches the end, even while the transcript is still coasting", async ({ page, browserName }) => {
+    await attendLong(page);
+    await toMiddle(page, browserName);
+    const tapPill = async () => {
+      const pill = (await rect(page, ".zr-latest"))!;
+      await page.touchscreen.tap(pill.x + pill.w / 2, pill.y + pill.h / 2);
+    };
+    await tapPill();
+    await settle(page);
+    expect(await away(page), "a tap on a resting transcript reaches the end").toBeLessThanOrEqual(2);
+    await expect(page.locator(".zr-latest")).toHaveCount(0);
+    await expect(page.locator(".zr-pit")).toHaveCount(0);
+    if (browserName !== "chromium") return;
+    const cdp = await finger(page);
+    for (let i = 0; i < 2; i++) await swipe(cdp, 195, 250, 670, 6, 0, page);
+    await cdp.detach();
+    await page.locator(".zr-latest").waitFor();
+    expect(await moving(page), "the transcript is still coasting when the pill is tapped").toBe(true);
+    await tapPill();
+    await settle(page);
+    expect(await away(page), "a tap during the coast reaches the end").toBeLessThanOrEqual(2);
+    await expect(page.locator(".zr-latest")).toHaveCount(0);
+    await expect(page.locator(".zr-pit")).toHaveCount(0);
   });
 });
