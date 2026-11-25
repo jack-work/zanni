@@ -4,7 +4,6 @@ export interface Step {
   id: string;
   do: Record<string, any>;
   expect: Record<string, any>;
-  expect_fake?: Record<string, any>;
 }
 
 export interface Scenario {
@@ -18,6 +17,7 @@ export interface Scenario {
 export interface Doc {
   version: number;
   labels?: Record<string, string>;
+  system?: Record<string, unknown>;
   provider: unknown;
   scenarios: Scenario[];
 }

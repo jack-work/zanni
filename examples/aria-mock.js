@@ -118,11 +118,14 @@
     var stream = o.stream ? Object.assign({ fps: 30, bytes: 8000, chunk: 64 }, o.stream) : null;
     if (!(history >= 0) || stream && !(stream.fps > 0 && stream.bytes > 0 && stream.chunk > 0)) throw new Error('aria-mock: history, stream.fps, stream.bytes and stream.chunk must be positive numbers');
 
+    var toolLabel = function (name) { return o.labels && o.labels[name] != null ? o.labels[name] : ''; };
+
     function add(id, row, turns) {
       row.id = id;
       row.short = id.slice(0, 8);
       row.kind = row.kind || 'figaro';
       row.created_at = base;
+      turns.forEach(function (t) { t.nodes.forEach(function (n) { if (n.type === 'tool' && toolLabel(n.name)) n.label = toolLabel(n.name); }); });
       core.arias[id] = { row: row, turns: turns, run: null, queue: [], dormant: row.state === 'dormant' };
       core.order.push(id);
       metricsOf[id] = { context_tokens: 1200 * turns.length, context_exact: false, tokens_in: 800 * turns.length, tokens_out: 300 * turns.length, cache_read_tokens: 4000, cache_write_tokens: 500 };
@@ -356,7 +359,7 @@
       var s = [], tool = /\[tool\]|run|test|check|build/i.test(text) && !/\[plain\]/.test(text);
       var think = !/\[plain\]/.test(text), n = 0, idx, md = /\[md\]/.test(text), long = /\[long\]/.test(text);
       if (md || long) tool = false;
-      if (long) think = false;
+      if (long || /\[quiet\]/.test(text)) think = false;
       var call = 'call_live' + t.id;
       var gap = function (fn, ms) { s.push({ fn: fn, wait: ms == null ? step : ms }); };
       var seq = function (list) { list.forEach(function (f) { gap(f); }); };
@@ -369,13 +372,13 @@
         idx = n++;
         var args = { command: 'go test ./api/livedoc/... -run Settle' };
         var raw = JSON.stringify(args);
-        gap(function () { emit(a, t, [{ id: idx, set: { type: 'tool', role: 'output', name: 'bash', status: 'running', tool_call_id: call, opened_at: clock() } }]); });
+        gap(function () { emit(a, t, [{ id: idx, set: Object.assign({ type: 'tool', role: 'output', name: 'bash', status: 'running', tool_call_id: call, opened_at: clock() }, toolLabel('bash') ? { label: toolLabel('bash') } : {}) }]); });
         gap(function () { emit(a, t, [{ id: idx, set: { input: raw.slice(0, 20) } }]); });
         if (/\[drop\]/.test(text)) gap(function () { core.drop(); });
         gap(function () { emit(a, t, [{ id: idx, set: { input: raw } }]); });
         gap(function () { emit(a, t, [{ id: idx, set: { args: args, summary: 'command=' + args.command }, unset: ['input'] }]); });
         gap(function () { emit(a, t, [{ id: idx, set: { started_at: clock() } }]); });
-        gap(function () { emit(a, t, [{ id: idx, set: { output: 'ok  \tfigaro/api/livedoc\t0.213s', finished_at: clock() } }]); }, step * 3);
+        gap(function () { emit(a, t, [{ id: idx, set: { output: 'ok  \tfigaro/api/livedoc\t0.213s', finished_at: clock() } }]); }, /\[hold\]/.test(text) ? 4000 : step * 3);
         gap(function () { emit(a, t, [{ id: idx, set: { status: 'ok' } }]); });
         gap(function () {
           if (!a.queue.length) return;
@@ -641,7 +644,7 @@
       var a = core.arias[id];
       if (!a) return null;
       if (a.edited) return clone(a.edited);
-      var sys = { model: 'claude-sonnet-5', provider: 'anthropic', thinking_effort: id === core.ids.main ? 'high' : 'medium', cwd: '/home/gluck/dev/zanni' };
+      var sys = Object.assign({ model: 'claude-sonnet-5', provider: 'anthropic', thinking_effort: id === core.ids.main ? 'high' : 'medium', cwd: '/home/gluck/dev/zanni' }, o.system || {});
       if (a.forkedFrom) sys.forked_from = a.forkedFrom;
       return { mantra: a.row.mantra, system: sys };
     }
@@ -651,6 +654,7 @@
       core.conns.slice().forEach(function (c) { if (c.open && c.follows[id]) c.sink.text(text); });
     }
     core.pushForm = pushForm;
+    core.formOf = formRoot;
     core.queues = {};
     function pushQueue(aria) {
       var key = aria + '/queue';

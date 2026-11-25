@@ -4,7 +4,7 @@ import type { Page } from "@playwright/test";
 const { test: base, expect } = pw;
 
 const require = createRequire(import.meta.url);
-const mock = require("../../examples/aria-mock.js") as { create(o: { step?: number; pageBytes?: number }): MockCore };
+const mock = require("../../examples/aria-mock.js") as { create(o: { step?: number; pageBytes?: number; labels?: Record<string, string>; system?: Record<string, unknown> }): MockCore };
 
 export interface MockCore {
   ids: Record<string, string>;
@@ -12,16 +12,17 @@ export interface MockCore {
   order: string[];
   attach(sink: { text(s: string): void; close(): void }): { receive(t: string): void; close(): void };
   sent?: { id: string; text: string }[];
+  formOf(id: string): { system?: Record<string, unknown> } | null;
 }
 
 const DIRECTIVES: Record<string, string> = {
   "hello parity": " [plain]",
-  "steered work please": " run",
+  "steered work please": " run [quiet] [hold]",
   "steer ack now": " [plain]",
 };
 
-export function newFakeAria(): { core: MockCore; id: string } {
-  const core = mock.create({ step: 120, pageBytes: 24000 });
+export function newFakeAria(source: { labels?: Record<string, string>; system?: Record<string, unknown> } = {}): { core: MockCore; id: string } {
+  const core = mock.create({ step: 120, pageBytes: 24000, labels: source.labels, system: source.system });
   const id = core.ids.lane!;
   core.arias[id].turns.length = 0;
   core.arias[id].row.mantra = "";
