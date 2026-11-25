@@ -18,6 +18,7 @@ export * from "./jotai/lib/clips";
 export * from "./jotai/lib/command";
 export * from "./jotai/lib/attach";
 export * from "./jotai/lib/asks";
+export * from "./jotai/lib/control-rows";
 export * from "./jotai/lib/stt";
 export { AriaView } from "./jotai/components/aria-view";
 export { Composer as BoundComposer } from "./jotai/components/composer";

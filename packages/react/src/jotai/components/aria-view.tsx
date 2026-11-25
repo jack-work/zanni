@@ -4,7 +4,7 @@ import { ariaAtom } from "figaro-forms/aria/jotai";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useFirstFrame } from "../lib/first-frame";
 import { labelOf } from "../lib/roster";
-import { metricsLineAtom, noteAtom, turnsAtom } from "../state/aria";
+import { metricsLineAtom, noteAtom, startedAtom, turnsAtom } from "../state/aria";
 import { forkOfAtom, treeStateAtom } from "../state/pit";
 import { paneAtom } from "../state/pane";
 import { routeFor } from "../lib/route";
@@ -40,6 +40,7 @@ export function AriaView({ attended }: { attended: Attended }) {
   const turns = useAtomValue(turnsAtom(client, aria));
   const note = useAtomValue(noteAtom(client, aria));
   const roster = useAtomValue(rosterAtom);
+  useAtomValue(startedAtom(client, aria));
   const [pane, setPane] = useAtom(paneAtom);
   const paneRef = useRef<HTMLElement | null>(null);
   const olderRef = useRef<HTMLButtonElement | null>(null);

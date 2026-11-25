@@ -184,7 +184,7 @@
           };
           sourceRoot = "zanni-source/web";
           nodejs = pkgs.nodejs_24;
-          npmDepsHash = "sha256-TSepLwUlSEzlEmUuzl1R3ZotvVjWLYbo+oFpxtQYiBw=";
+          npmDepsHash = "sha256-Moh8sqOAnIUOOBRRKeu64Jj1OQJkSzVZ+mq5rz1VEZM=";
           makeCacheWritable = true;
           doCheck = false;
           installPhase = ''
@@ -210,7 +210,7 @@
           };
           sourceRoot = "zanni-source/web";
           nodejs = pkgs.nodejs_24;
-          npmDepsHash = "sha256-TSepLwUlSEzlEmUuzl1R3ZotvVjWLYbo+oFpxtQYiBw=";
+          npmDepsHash = "sha256-Moh8sqOAnIUOOBRRKeu64Jj1OQJkSzVZ+mq5rz1VEZM=";
           makeCacheWritable = true;
           dontNpmBuild = true;
           dontBuild = true;

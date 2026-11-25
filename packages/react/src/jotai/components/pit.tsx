@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { PIT_ROWS, EFFORT_KEY, FORKED_FROM_KEY, byLastUsed, valueAt, type PitRowId, type PitView } from "../lib/pit-rows";
 import { PHASE_WORDS, labelOf } from "../lib/roster";
 import { AsksView, useAsks } from "./asks";
+import { ControlStatus } from "./control-status";
 import { OlderArias } from "./older";
 import { TopologyTree, FormTree } from "./tree-view";
 import { FormEdit, type FormEditTarget } from "./form-edit";
@@ -54,6 +55,7 @@ export function Pit() {
           <PitRow glyph="‹" label={name} className="fw-pit-back" onClick={() => setView("list")} />
         </PitList>
       )}
+      {view === "list" && attended && <ControlStatus attended={attended} />}
       {view === "list" && <ControlList />}
       {view === "state" && <StateView />}
       {view === "fork-at" && <ForkAtView />}

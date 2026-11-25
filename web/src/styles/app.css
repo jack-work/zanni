@@ -87,6 +87,9 @@ body.fw-page {
 .fw-pit-fact { display: flex; gap: var(--z-space-4, 12px); }
 .fw-pit-fact dt { flex: none; width: 5rem; color: var(--z-muted); }
 .fw-pit-fact dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.fw-pit-status { padding-bottom: var(--z-space-4, 12px); outline: none; }
+.fw-pit-status .fw-pit-fact dt { width: 6rem; }
+.fw-pit-dim { color: var(--z-muted); }
 .fw-ask-spans { display: block; }
 .fw-ask-stage, .fw-ask-span[data-current] { color: var(--z-accent); }
 .fw-ask-age { display: none; }
