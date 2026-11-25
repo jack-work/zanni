@@ -178,7 +178,7 @@ describe("the control pit", () => {
     expect(labels).toEqual(order);
     const row = (k: string) => document.querySelector(".fw-pit-status .fw-pit-fact[data-key='" + k + "'] dd")?.textContent;
     expect(row("aria")).toContain("c0ffee01".repeat(4));
-    expect(row("started")).toMatch(/^\d\d:\d\d:\d\d$/);
+    expect(row("started")).toMatch(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/);
     expect(row("tokens")).toMatch(/^in .+ · out .+$/);
     const status = document.querySelector(".fw-pit-status")!;
     const actions = document.querySelector(".zr-pit-list")!;
