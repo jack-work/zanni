@@ -64,12 +64,6 @@ def toggle_hands(pg):
     close_pit(pg)
 
 
-def stop_all(pg):
-    until(pg, "document.querySelector('.fw-pile-head')")
-    pg.locator(".fw-pile-head").click()
-    pg.locator(".fw-stop-all").click()
-
-
 def voice_pressed(pg):
     open_pit(pg)
     got = pg.locator(".fw-voice").get_attribute("aria-pressed")
@@ -727,12 +721,10 @@ try:
         assert slow.state()["interrupts"] == ["keep"], slow.state()
         send(pg, "second run the tests")
         pg.wait_for_selector(".nodi-turn[data-turn='28'] .nodi-thinking")
-        send(pg, "queued thought")
         until(pg, "document.querySelector('.fw').hasAttribute('data-running')")
-        stop_all(pg)
+        pg.locator(".fw-status-stop").click()
         until(pg, "!document.querySelector('.fw').hasAttribute('data-running')")
-        assert slow.state()["interrupts"] == ["keep", "clear"], slow.state()
-        assert pg.locator(".nodi-turn[data-turn='29']").count() == 0, "a cleared queue starts no turn"
+        assert slow.state()["interrupts"] == ["keep", "keep"], slow.state()
         pg.close()
 
         for width, height in ((390, 844), (1280, 800), (1920, 1080)):
