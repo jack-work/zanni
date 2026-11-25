@@ -744,12 +744,18 @@ try:
             def latest_lands(what):
                 pg.wait_for_selector(".zr-latest")
                 pg.locator(".zr-latest").click()
+                swoop = pg.evaluate("(() => { const n = document.querySelector('.nodi-turns'); const a = n.getAnimations(); return { marked: n.hasAttribute('data-swooping'), frames: a.length ? a[0].effect.getKeyframes().map((k) => k.transform) : [], ms: a.length ? a[0].effect.getTiming().duration : 0, props: a.length ? Object.keys(a[0].effect.getKeyframes()[0]).filter((k) => !['offset', 'computedOffset', 'easing', 'composite'].includes(k)).sort() : [] }; })()")
+                assert swoop["marked"] and len(swoop["frames"]) == 2 and swoop["frames"][1] == "translateY(0px)" and swoop["frames"][0].startswith("translateY(-"), "%s at %d: the content swoops down into place: %s" % (what, width, swoop)
+                assert swoop["props"] == ["opacity", "transform"] and 350 <= swoop["ms"] <= 450, "%s at %d: transform and opacity, about 400ms: %s" % (what, width, swoop)
                 try:
                     until(pg, landed + ".then((gap) => gap <= 1)", timeout=15000)
                 except AssertionError:
                     pass
                 got = pg.evaluate(landed)
                 assert got <= 1, "%s at %d: Latest stops %s px short of the bottom" % (what, width, got)
+                until(pg, "!document.querySelector('.nodi-turns').hasAttribute('data-swooping') && document.querySelector('.nodi-turns').getAnimations().length === 0", timeout=3000)
+                got = pg.evaluate(landed)
+                assert got <= 1, "%s at %d: Latest is %s px short of the bottom once the swoop ends" % (what, width, got)
 
             pg.evaluate(root_js + ".scrollTop = 0")
             pg.wait_for_timeout(400)

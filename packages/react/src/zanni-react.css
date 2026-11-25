@@ -283,6 +283,8 @@
   .zr-fold[open]::details-content { block-size: auto; }
 }
 
+[data-swooping] { will-change: transform, opacity; }
+
 .zr-latest {
   position: fixed;
   left: 0;
