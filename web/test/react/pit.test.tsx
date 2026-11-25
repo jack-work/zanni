@@ -121,6 +121,46 @@ describe("Pit", () => {
     expect(drawer().getAttribute("data-snap")).toBe("closed");
   });
 
+  it("opens once from a pen tap and does not toggle back on the click that follows", () => {
+    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+    render(<Harness />);
+    const knob = drawer().querySelector<HTMLElement>(".zr-pit-knob")!;
+    fireEvent.pointerDown(knob, { pointerId: 4, pointerType: "pen", button: 0, isPrimary: true, clientX: 100, clientY: 100 });
+    fireEvent.pointerUp(knob, { pointerId: 4, pointerType: "pen", clientX: 100, clientY: 100 });
+    fireEvent.click(knob);
+    expect(drawer().getAttribute("data-snap")).toBe("half");
+  });
+
+  it("opens from the knob, steps with the arrows, and closes on Escape", () => {
+    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+    render(<Harness />);
+    const knob = screen.getByRole("button", { name: "Open controls" });
+    knob.focus();
+    fireEvent.click(knob);
+    const dialog = screen.getByRole("dialog", { name: "Controls" });
+    expect(dialog).toBe(drawer());
+    expect(dialog.getAttribute("data-snap")).toBe("half");
+    expect(knob.getAttribute("aria-expanded")).toBe("true");
+    expect(document.activeElement).toBe(screen.getByText("Inside"));
+    fireEvent.keyDown(knob, { key: "ArrowUp" });
+    expect(drawer().getAttribute("data-snap")).toBe("full");
+    fireEvent.keyDown(knob, { key: "ArrowDown" });
+    expect(drawer().getAttribute("data-snap")).toBe("half");
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(drawer().getAttribute("data-snap")).toBe("closed");
+    expect(knob.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("toggles closed from the knob", () => {
+    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+    render(<Harness />);
+    const knob = screen.getByRole("button", { name: "Open controls" });
+    fireEvent.click(knob);
+    expect(drawer().getAttribute("data-snap")).toBe("half");
+    fireEvent.click(knob);
+    expect(drawer().getAttribute("data-snap")).toBe("closed");
+  });
+
   it("opens straight to full on a short screen", () => {
     Object.defineProperty(window, "innerHeight", { value: PIT_HALF_MIN - 40, configurable: true });
     render(<Harness />);

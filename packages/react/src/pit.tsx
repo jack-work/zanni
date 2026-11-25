@@ -343,7 +343,8 @@ export function Pit({ snap: asked, onSnapChange, label, detents = ALL, head, kno
           onKeyDown={onKnobKey}
           onPointerDown={(ev) => {
             keepTyping(ev);
-            touch.current = ev.pointerType === "mouse" ? null : { id: ev.pointerId, x: ev.clientX, y: ev.clientY };
+            tapped.current = false;
+            touch.current = ev.pointerType === "touch" ? { id: ev.pointerId, x: ev.clientX, y: ev.clientY } : null;
           }}
           onPointerUp={(ev) => {
             const t = touch.current;
