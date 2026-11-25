@@ -561,6 +561,7 @@
     "sitenav": {
       "summary": "The estate header: the k mark and links to Account, Files and Figaro, on a bar ruled in the k's gold. A static partial and one stylesheet; no script.",
       "marker": "<!-- zanni:sitenav -->",
+      "standalone": true,
       "classes": [
         "sitenav",
         "sitenav-mark",

@@ -13,8 +13,9 @@ assert.ok(!/<script/.test(html), "the example needs no script");
 for (const href of html.match(/href="\.\.\/[^"]+"/g) || []) {
   assert.ok(fs.existsSync(path.join(root, "examples", href.slice(6, -1))), "linked file exists: " + href);
 }
-const negative = css.replace(/\.zr-glyph/g, ".zr-gone");
-assert.ok([...used].some((c) => !new RegExp("\\." + c + "(?![\\w-])").test(negative)), "the check notices a class with no rule");
+const probe = [...used][0];
+const negative = css.replace(new RegExp("\\." + probe + "(?![\\w-])", "g"), ".zr-gone");
+assert.ok([...used].filter((c) => !new RegExp("\\." + c + "(?![\\w-])").test(negative)).includes(probe), "the check notices a class with no rule");
 
 const crypto = require("crypto");
 const manifest = JSON.parse(fs.readFileSync(path.join(root, "assets/manifest.json"), "utf8"));
