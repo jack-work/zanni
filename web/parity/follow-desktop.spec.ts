@@ -24,7 +24,7 @@ async function wheelUp(page: import("@playwright/test").Page, by: number): Promi
   await page.mouse.move(640, 300);
   await page.mouse.wheel(0, -by);
   await page.waitForTimeout(300);
-  if ((await away(page)) < 100) await page.evaluate((by) => ((document.querySelector("[data-zr-scroll]") as HTMLElement).scrollTop -= by), by);
+  if ((await away(page)) < by * 0.8) await page.evaluate((by) => ((document.querySelector("[data-zr-scroll]") as HTMLElement).scrollTop -= by), by);
 }
 
 const away = (page: import("@playwright/test").Page) =>
