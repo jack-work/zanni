@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { Tree, branchPeek, clipEllipsis, inlineBranch, treeRows, type TreeNodeData } from "zanni-react";
+import { Tree, branchPeek, inlineBranch, treeRows, type TreeNodeData } from "zanni-react";
 
 const form: TreeNodeData[] = [
   { id: "aria_id", label: "aria_id", value: '"0da9f5cd"' },
@@ -59,10 +59,8 @@ describe("treeRows (formNode rows)", () => {
     expect(inlineBranch([{ id: "n", label: "n", children: [] }])).toBe("");
   });
 
-  it("peeks four labels then an ellipsis, and clips with one", () => {
+  it("peeks four labels then an ellipsis", () => {
     expect(branchPeek(form[4]!.children!)).toBe("credo · cwd · model · outfit_name …");
-    expect(clipEllipsis("abcdef", 4)).toBe("abc…");
-    expect(clipEllipsis("abc", 4)).toBe("abc");
   });
 
   it("a leaf label past the pad cap takes no padding", () => {

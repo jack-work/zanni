@@ -1,6 +1,6 @@
-import { settleSpeakFor } from "../../trace";
+import { settleSpeakFor } from "../telemetry/trace";
 import type { AudioSession } from "./audio-session";
-import type { SpeechChunk, SpeechFault, SpeechSession, SpeechStart, SpeechTransport, VocePlayer, VoceApi } from "../../index";
+import type { SpeechChunk, SpeechFault, SpeechSession, SpeechStart, SpeechTransport, VocePlayer, VoceApi } from "../audio/types";
 
 export interface SpokenNode {
   readonly turn: number;

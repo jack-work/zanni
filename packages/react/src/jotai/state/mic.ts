@@ -1,6 +1,7 @@
 import { atom } from "jotai";
-import { sessionUrl, voce } from "../../index";
-import { beginAction, type Action } from "../../trace";
+import { voce } from "../audio/voce";
+import { sessionUrl } from "../telemetry/session";
+import { beginAction, type Action } from "../telemetry/trace";
 import { captureFrames, browserMedia } from "../lib/capture";
 import type { Dictation, SocketLike } from "../lib/dictation";
 import { canRecord, joinDictation, type MicSnapshot } from "../lib/mic";

@@ -1,8 +1,7 @@
 import { createStore, Provider } from "jotai";
 import { createRoot } from "react-dom/client";
 import { AriaClient } from "figaro-forms/aria";
-import { configureTraces } from "zanni-react";
-import { bootAtom, parseTemplates } from "zanni-react/jotai";
+import { bootAtom, configureTraces, parseTemplates } from "zanni-react/jotai";
 import ariaMock from "../../examples/aria-mock.js";
 import head from "../../assets/parla/figaro-head.png";
 import "../src/styles/index.css";

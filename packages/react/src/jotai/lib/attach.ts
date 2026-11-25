@@ -1,4 +1,4 @@
-import { traceHeaders } from "../../trace";
+import { traceHeaders } from "../telemetry/trace";
 
 export const MAX_FILES = 8;
 export const MAX_IMAGES = 4;
@@ -49,12 +49,6 @@ export function uploadFile(url: string, file: File, f: typeof fetch = (...a) => 
   }).then(replyOf, () => {
     throw new AttachError("network", 0);
   });
-}
-
-export function sizeLabel(bytes: number): string {
-  if (bytes < 1024) return bytes + " B";
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(bytes < 10 * 1024 ? 1 : 0) + " KB";
-  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 
 export function kindWord(kind: string): string {

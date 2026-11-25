@@ -1,7 +1,7 @@
-import { PitList, PitRow, glyphs } from "../../index";
+import { PitList, PitRow, glyphs, useTick } from "../../index";
 import { useAtomValue } from "jotai";
-import { useEffect, useMemo, useState } from "react";
-import { ageOf, askedLabel, dwellLabel, formatSpan, foldAsks, type Ask, type Stage } from "../lib/asks";
+import { useMemo, useState } from "react";
+import { ageOf, askedLabel, dwellLabel, foldAsks, lapse, type Ask, type Stage } from "../lib/asks";
 import { asksStateAtom } from "../state/asks";
 
 const STAGE_GLYPH: Record<Stage, string> = {
@@ -14,15 +14,6 @@ const STAGE_GLYPH: Record<Stage, string> = {
 };
 
 const TICK_MS = 60_000;
-
-function useNow(): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), TICK_MS);
-    return () => window.clearInterval(id);
-  }, []);
-  return now;
-}
 
 function when(at: number): string {
   const d = new Date(at);
@@ -67,7 +58,7 @@ function Detail({ ask }: { ask: Ask }) {
         {ask.spans.map((s) => (
           <div key={s.stage} className="fw-pit-fact" data-stage={s.stage}>
             <dt>{s.stage}</dt>
-            <dd>{when(s.at) + (s.ms !== undefined ? "  " + formatSpan(s.ms) : "")}</dd>
+            <dd>{when(s.at) + (s.ms !== undefined ? "  " + lapse(s.ms) : "")}</dd>
           </div>
         ))}
       </dl>
@@ -120,7 +111,7 @@ export function AsksList({ asks, now }: { asks: readonly Ask[]; now: number }) {
 
 export function useAsks(): { asks: Ask[]; now: number; ready: boolean; error: string | undefined } {
   const form = useAtomValue(asksStateAtom);
-  const now = useNow();
+  const now = useTick(TICK_MS);
   const asks = useMemo(() => foldAsks(form?.root, now), [form?.root, now]);
   return { asks, now, ready: !!form?.ready, error: form?.error };
 }

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { matches, useMedia } from "./lib/media";
 
 export type Theme = "light" | "dark";
 
-const dark = () => (typeof matchMedia === "function" ? matchMedia("(prefers-color-scheme: dark)") : undefined);
+const DARK = "(prefers-color-scheme: dark)";
 
 function system(): Theme {
-  return dark()?.matches ? "dark" : "light";
+  return matches(DARK) ? "dark" : "light";
 }
 
 function resolve(storage: string): Theme {
@@ -21,12 +22,8 @@ export function useTheme(storage: string, onTheme?: (theme: Theme) => void): rea
     document.documentElement.dataset.theme = theme;
     notify.current?.(theme);
   }, [theme]);
-  useEffect(() => {
-    const query = dark();
-    const follow = () => setTheme(resolve(storage));
-    query?.addEventListener("change", follow);
-    return () => query?.removeEventListener("change", follow);
-  }, [storage]);
+  const systemDark = useMedia(DARK);
+  useEffect(() => setTheme(resolve(storage)), [systemDark, storage]);
   const toggle = useCallback(() => {
     const next: Theme = theme === "dark" ? "light" : "dark";
     if (next === system()) localStorage.removeItem(storage + ".theme");

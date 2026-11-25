@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react";
+import { reducedMotion } from "./lib/media";
 
 export const EXIT_MS = 160;
 export const EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)";
-
-export function reducedMotion(): boolean {
-  return typeof window.matchMedia !== "function" || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
 
 export function useLinger(show: boolean, ms: number = EXIT_MS): { mounted: boolean; leaving: boolean } {
   const [mounted, setMounted] = useState(show);

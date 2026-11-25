@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "./button";
+import { clip } from "./lib/format";
 import { PitList, PitRow } from "./pit-row";
 
 export interface QueueListRow {
@@ -20,8 +21,6 @@ export interface QueueListProps {
 }
 
 export const QUEUE_ARRIVAL_GRACE_MS = 150;
-
-export const firstLine = (text: string): string => text.split("\n", 1)[0] ?? "";
 
 function useArrivals(rows: readonly QueueListRow[], grace: number): readonly QueueListRow[] {
   const [shown, setShown] = useState<ReadonlySet<number>>(() => new Set(rows.map((r) => r.id)));
@@ -111,7 +110,7 @@ export function QueueList({ rows, onDrop, onEdit, empty = "message queue is empt
             action="queued"
             className="zr-queue-row"
             glyph={r.mark}
-            label={firstLine(r.text)}
+            label={clip(r.text)}
             expanded={open.has(r.id)}
             detail={open.has(r.id) ? <Detail row={r} onDrop={onDrop} onEdit={onEdit} report={setNote} /> : undefined}
             onClick={() => toggle(r.id)}

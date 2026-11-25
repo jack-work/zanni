@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clock, formatWorkedTime, groupWork, liveVerb, stepsTitle, toolKind, workOf, type Work } from "zanni-react";
+import { groupWork, liveVerb, stepsTitle, toolKind, workOf, type Work } from "zanni-react";
 import type { Item, ToolItem, TurnModel } from "zanni-react";
 
 const tool = (node: number, name: string, extra: Partial<ToolItem> = {}): ToolItem => ({ key: "n" + node, kind: "tool", node, settled: true, name, status: "ok", summary: "", label: "", head: "", body: undefined, diff: false, args: "", input: "", output: "", outputBase: 0, ms: 0, ...extra });
@@ -48,13 +48,5 @@ describe("work", () => {
     expect(workOf(turn, 500).startedAt).toBeUndefined();
     expect(workOf({ ...turn, open: false }, 1_005_000).verb).toBe("Working");
     expect(workOf(undefined, 0).verb).toBe("Working");
-  });
-
-  it("writes time the way the strip and the finished turn say it", () => {
-    expect(clock(0)).toBe("0:00");
-    expect(clock(75_000)).toBe("1:15");
-    expect(formatWorkedTime(63_000)).toBe("1m 3s");
-    expect(formatWorkedTime(12_000)).toBe("12s");
-    expect(formatWorkedTime(3_840_000)).toBe("1h 4m");
   });
 });

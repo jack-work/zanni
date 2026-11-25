@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { useDialog } from "./dialog";
-import { EASE, EXIT_MS, reducedMotion } from "./motion";
+import { matches, reducedMotion } from "./lib/media";
+import { EASE, EXIT_MS } from "./motion";
 import { usePaneEdge } from "./pane-edge";
 import { rootVar } from "./rootvars";
 
@@ -29,10 +30,6 @@ const COLLAPSE_SLACK = 40;
 const SLIDE_PX = 24;
 
 export const PANE_WIDTH_VAR = { left: "--zr-pane-w", right: "--zr-pane-right-w" } as const;
-
-function coarse(): boolean {
-  return typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches;
-}
 
 export function Pane({ id, label, open, width, onWidth, onClose, onOpen, side = "left", form = "docked", min = 160, max = 640, as: Tag = "aside", className, children }: PaneProps) {
   const ref = useRef<HTMLElement | null>(null);
@@ -80,7 +77,7 @@ export function Pane({ id, label, open, width, onWidth, onClose, onOpen, side = 
     return () => out.cancel();
   }, [docked, open, away]);
   useEffect(() => () => rootVar(varName, null), [varName]);
-  useDialog(ref, onClose ?? (() => {}), { active: !docked && open && !!onClose, typing: false, root: coarse() });
+  useDialog(ref, onClose ?? (() => {}), { active: !docked && open && !!onClose, typing: false, root: matches("(pointer: coarse)") });
   const drag = (e: ReactPointerEvent<HTMLDivElement>) => {
     const start = { x: e.clientX, w: ref.current!.getBoundingClientRect().width };
     const target = e.currentTarget;

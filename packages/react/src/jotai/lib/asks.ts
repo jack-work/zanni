@@ -1,3 +1,5 @@
+import { duration } from "../../index";
+
 export const STAGES = ["filed", "lane", "ready", "cut", "live", "validated"] as const;
 export type Stage = (typeof STAGES)[number];
 
@@ -26,19 +28,9 @@ export interface Ask {
 }
 
 const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
 
-export function formatSpan(ms: number): string {
-  const t = Math.max(0, ms);
-  if (t < MINUTE) return "<1m";
-  if (t < HOUR) return Math.floor(t / MINUTE) + "m";
-  if (t < DAY) {
-    const m = Math.floor((t % HOUR) / MINUTE);
-    return Math.floor(t / HOUR) + "h" + (m ? " " + m + "m" : "");
-  }
-  const h = Math.floor((t % DAY) / HOUR);
-  return Math.floor(t / DAY) + "d" + (h ? " " + h + "h" : "");
+export function lapse(ms: number): string {
+  return ms < MINUTE ? "<1m" : duration(ms);
 }
 
 export function ageOf(ask: Pick<Ask, "filedAt">, now: number): number | undefined {
@@ -124,11 +116,11 @@ export function foldAsks(root: unknown, now: number): Ask[] {
 }
 
 export function dwellLabel(span: AskSpan, next: AskSpan | undefined): string {
-  const ms = span.ms === undefined ? "" : " " + formatSpan(span.ms);
+  const ms = span.ms === undefined ? "" : " " + lapse(span.ms);
   if (span.stage === "filed") return span.current ? "waiting" + ms + " for a lane" : "waited" + ms + " for " + (next?.stage ?? "a lane");
   return "in " + span.stage + ms;
 }
 
 export function askedLabel(age: number | undefined): string {
-  return age === undefined ? "" : "asked " + formatSpan(age) + " ago";
+  return age === undefined ? "" : "asked " + lapse(age) + " ago";
 }

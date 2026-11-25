@@ -1,10 +1,12 @@
-import { Button, Glyph, PlayerIsland, Plain, audioKeyUrl, glyphs, withSession, type PlayRequest } from "../../index";
+import { Button, Glyph, Plain, glyphs } from "../../index";
+import { PlayerIsland, type PlayRequest } from "../audio/player";
+import { audioKeyUrl, withSession } from "../telemetry/session";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useRef, useState } from "react";
 import { clipKey, transcribeClip } from "../lib/clips";
 import { joinDictation } from "../lib/mic";
 import { retranscribe } from "../lib/stt";
-import { beginAction, traced } from "../../trace";
+import { beginAction, traced } from "../telemetry/trace";
 import { handsFreeAtom, inquiryPlayAtom, replayAtom } from "../state/audio";
 import { bootAtom } from "../state/boot";
 import { draftAtom, keyOf } from "../state/composer";

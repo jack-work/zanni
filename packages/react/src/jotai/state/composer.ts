@@ -6,7 +6,7 @@ import { goAtom, attendedAtom } from "./route";
 import { rosterActionAtom } from "./roster";
 import { linkAtom } from "./aria";
 import { ForkedButUnsent } from "figaro-forms/aria";
-import { beginAction, traced } from "../../trace";
+import { beginAction, traced } from "../telemetry/trace";
 import { attachmentsAtom, clearAttachmentsAtom, quaDictated, quaWithAttachments, readyIdsAtom, spentAtom } from "./attach";
 
 export const SAVE_DELAY_MS = 400;

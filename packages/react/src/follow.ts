@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
-import { reducedMotion } from "./motion";
+import { reducedMotion } from "./lib/media";
 
 export const NEAR_BOTTOM = 24;
 export const AWAY_FROM_BOTTOM = 96;
@@ -11,11 +11,6 @@ export function scrollRoot(): HTMLElement {
 
 function scrollSource(root: HTMLElement): HTMLElement | Window {
   return root === document.documentElement || root === document.scrollingElement ? window : root;
-}
-
-export function distanceFromBottom(): number {
-  const root = scrollRoot();
-  return root.scrollHeight - root.clientHeight - root.scrollTop;
 }
 
 export function scrollToBottom(): void {

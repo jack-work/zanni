@@ -1,6 +1,5 @@
-import { glyphs } from "../../index";
+import { glyphs, stamp } from "../../index";
 import { STATUS_SPINNER, ctxLine, fmtTokens } from "./status";
-import { stamp } from "./topology";
 
 export interface ControlRow {
   readonly label: string;

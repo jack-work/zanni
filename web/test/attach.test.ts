@@ -1,14 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
-import { AttachError, ID_TTL_MS, MAX_BYTES, imagesIn, problemWith, sizeLabel, stale, uploadFile, kindWord } from "zanni-react/jotai";
+import { AttachError, ID_TTL_MS, MAX_BYTES, imagesIn, problemWith, stale, uploadFile, kindWord } from "zanni-react/jotai";
+import { bytes } from "zanni-react";
 
 const reply = (status: number, body: unknown) => Promise.resolve(new Response(JSON.stringify(body), { status }));
 
-describe("sizeLabel and kindWord", () => {
+describe("bytes and kindWord", () => {
   it("reads bytes the way a person does", () => {
-    expect(sizeLabel(512)).toBe("512 B");
-    expect(sizeLabel(1536)).toBe("1.5 KB");
-    expect(sizeLabel(250 * 1024)).toBe("250 KB");
-    expect(sizeLabel(3.2 * 1024 * 1024)).toBe("3.2 MB");
+    expect(bytes(512)).toBe("512 B");
+    expect(bytes(1536)).toBe("1.5 KB");
+    expect(bytes(250 * 1024)).toBe("250 KB");
+    expect(bytes(3.2 * 1024 * 1024)).toBe("3.2 MB");
     expect(kindWord("pdf")).toBe("PDF");
     expect(kindWord("image")).toBe("Photo");
     expect(kindWord("")).toBe("File");

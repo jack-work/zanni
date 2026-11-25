@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { KEYBOARD_MIN, frameOf, onKeyboard, trackViewport } from "zanni-react";
+import { rootVar } from "../../../packages/react/src/rootvars";
+
+const varOf = (name: string): string => getComputedStyle(document.documentElement).getPropertyValue(name);
 
 class FakeViewport extends EventTarget {
   height = 844;
@@ -19,7 +22,7 @@ function install(vv: FakeViewport | null): void {
 
 afterEach(() => {
   document.documentElement.removeAttribute("data-keyboard");
-  for (const n of ["--zr-vv-h", "--zr-vv-top", "--zr-kb"]) document.documentElement.style.removeProperty(n);
+  for (const n of ["--zr-vv-h", "--zr-vv-top", "--zr-kb"]) rootVar(n, null);
 });
 
 describe("frameOf", () => {
@@ -46,20 +49,18 @@ describe("trackViewport", () => {
     install(vv);
     const root = document.documentElement;
     const stop = trackViewport(root);
-    expect(root.hasAttribute("style")).toBe(false);
     expect(root.hasAttribute("data-keyboard")).toBe(false);
     vv.move(508, 40);
-    expect(root.style.getPropertyValue("--zr-vv-h")).toBe("508px");
-    expect(root.style.getPropertyValue("--zr-vv-top")).toBe("40px");
-    expect(root.style.getPropertyValue("--zr-kb")).toBe("296px");
+    expect(varOf("--zr-vv-h")).toBe("508px");
+    expect(varOf("--zr-vv-top")).toBe("40px");
+    expect(varOf("--zr-kb")).toBe("296px");
     expect(root.hasAttribute("data-keyboard")).toBe(true);
     vv.move(844);
     expect(root.hasAttribute("data-keyboard")).toBe(false);
-    expect(root.hasAttribute("style")).toBe(false);
     stop();
-    expect(root.style.getPropertyValue("--zr-vv-h")).toBe("");
+    expect(varOf("--zr-vv-h")).toBe("");
     vv.move(300);
-    expect(root.style.getPropertyValue("--zr-vv-h")).toBe("");
+    expect(varOf("--zr-vv-h")).toBe("");
   });
 
   it("tells listeners when the keyboard opens and closes, once per change", () => {
@@ -84,7 +85,7 @@ describe("trackViewport", () => {
     const stop = trackViewport();
     vv.height = 508;
     document.dispatchEvent(new Event("visibilitychange"));
-    expect(document.documentElement.style.getPropertyValue("--zr-vv-h")).toBe("508px");
+    expect(varOf("--zr-vv-h")).toBe("508px");
     stop();
   });
 

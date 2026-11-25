@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
-import { EASE, EXIT_MS, reducedMotion } from "./motion";
+import { reducedMotion } from "./lib/media";
+import { EASE, EXIT_MS } from "./motion";
 
 export const EDGE_FLICK = 0.5;
 export const EDGE_SLOP = 6;

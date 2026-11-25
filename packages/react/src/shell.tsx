@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useBar } from "./bar";
+import { useMedia } from "./lib/media";
 import { Pane } from "./pane";
 import { useTheme, type Theme } from "./theme";
 
@@ -67,20 +68,6 @@ function write(key: string, value: string): void {
   } catch {}
 }
 
-function useNarrow(breakpoint: number): boolean {
-  const query = "(max-width: " + (breakpoint - 1) + "px)";
-  const [narrow, setNarrow] = useState(() => typeof matchMedia === "function" && matchMedia(query).matches);
-  useEffect(() => {
-    if (typeof matchMedia !== "function") return;
-    const list = matchMedia(query);
-    const sync = () => setNarrow(list.matches);
-    sync();
-    list.addEventListener("change", sync);
-    return () => list.removeEventListener("change", sync);
-  }, [query]);
-  return narrow;
-}
-
 function useColumn(storage: string, pane: ShellPane | undefined, fallback: Saved) {
   const key = storage + "." + (pane?.id ?? "");
   const [saved, setSaved] = useState<Saved>(() => {
@@ -104,7 +91,7 @@ function useColumn(storage: string, pane: ShellPane | undefined, fallback: Saved
 
 export function Shell({ header, left, right, fold = FOLDED, breakpoint = 900, storage, onTheme, hosts }: ShellProps) {
   const [theme, toggleTheme] = useTheme(storage, onTheme);
-  const narrow = useNarrow(breakpoint);
+  const narrow = useMedia("(max-width: " + (breakpoint - 1) + "px)");
   const [menu, setMenu] = useState(false);
   const [overlay, setOverlay] = useState<string | null>(null);
   const leftState = useColumn(storage, left, { w: 280, open: true });

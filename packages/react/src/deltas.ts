@@ -2,7 +2,6 @@ import { glyphs } from "./glyphs";
 import type { DeltaCell, DeltaRow } from "./nodi-types";
 
 export const DELTA_KEY_CAP = 28;
-export const DELTA_VALUE_FLOOR = 6;
 
 export interface WireDelta {
   readonly value?: unknown;

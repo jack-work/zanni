@@ -21,15 +21,17 @@ dependency react only. `zanni-react/jotai` binds them to figaro-forms and Jotai:
 | `Pit`, `PitList`, `PitRow` | the drawer whose head is the composer or a bare tab, dragged by transform to closed, half (on a screen at least `PIT_HALF_MIN` tall) or full, and its rows |
 | `TurnView`, `ProseView`, `ToolView`, `ThinkingView`, `WorkGroup`, `TranscriptContext` | the nodi transcript as React; the context carries two app hooks: open the message sheet, per-turn actions. A tool item draws from `label`, `head`, `body` and `diff` (nodi reads `head_arg` and `body_arg` out of the node's args, partial JSON included). A `TurnModel` with `deltas` wears the `Δ` head button and its table |
 | `deltaRowsOf`, `cellLine`, `keyColumns`, `valueLines` | the pager's form-delta rows from a turn's or node's `formDeltas` (pure; `forked` drops the fork's birth keys) and their cells, key width and open lines |
-| `useFollow`, `LatestPill`, `PlayerIsland` | follow the bottom with a Latest pill and prepend anchor; a voce player the component owns |
-| `nodi`, `speech`, `voce`, work helpers | the framework-free zanni modules and the pure grouping and timing functions |
+| `useFollow`, `LatestPill` | follow the bottom with a Latest pill and prepend anchor |
+| `nodi`, work helpers | the framework-free nodi module and the pure grouping and timing functions |
 | `Glyph` | a glyph centred by its ink box rather than its advance box, so VT323 and fallback faces centre alike in a pill, a pit row or a button: drawn once per font and glyph on a canvas, its ink read back, the offset held as a zero-length `translate` animation, which the edge CSP lets through where a style attribute or an inserted rule is refused |
 | `Pill`, `PillPair` | a small round glyph button named by `aria-label` (optional `pressed`, `disabled`, `title`), and a joined pair of them; `Composer` takes `attach`, `command` and `sendGlyph` and lays them out |
 | `Composer` | the message box; a slot for the mic; writes its height to a CSS variable. For a line that is not a message it takes `prompt` (a glyph left of the input), `hints` (drawn above the row), `onEscape`, `onTab` (a Tab with no Shift) and `enterRuns` (Enter submits on a coarse pointer too) |
 | `Tray` | the composer's attachment chips: name, kind and size, uploading, ready or failed (the failure text replaces the size), a remove button that does not take focus; the `Composer`'s `tray` slot draws it above the row |
 | `Hints` | completion chips (a chip that cannot run is dashed and carries its reason as its title; picking one does not take focus from the input) over a usage line, or a refusal in its place |
 | `QueueBoard` | the deploy pipeline as a board: one row per commit (short sha, repo, ref), one column per `deploy.step` (queue, review, merge, build, dev deploy, prod deploy, cut), each cell the duration and outcome (ok, fail, skip; empty when the step never ran) with site, unit, actor, cand and box in its tooltip, and per step (and per `phase`, when figscope reports one, as a sub-column keyed step plus phase) a head of count, failure rate, p50 and p95. Controlled: `data` is figscope's `/api/deploys` body, `env` (dev, prod) and `since` (24h, 7d, 14d) are toggles that call `onEnv` and `onSince`; `sinceOf` turns a window into the RFC3339 the route wants |
+| `duration`, `clock`, `time`, `stamp`, `bytes`, `clip` | the one formatting for each thing a screen prints: `duration` (850ms, 1.2s, 12s, 1m 5s, 1h 4m, 2d 3h), `clock` (1:05, for a running counter), `time` (local hour and minute), `stamp` (local date and second), `bytes`, `clip` (first line, cut with an ellipsis) |
 | `useLinger`, `transition`, `reducedMotion` | motion helpers that honour prefers-reduced-motion |
+| `useMedia`, `useTick`, `Spinner` | a media query as state, the clock read again each period (`null` stops it), the running glyph cycle that holds still under reduced motion |
 
 Rules: no atoms, no fetches, no figaro names in this entry; class names are `zr-*`; motion and size come from the `--zr-*`
 and `--z-*` tokens, which an app aliases to its own (figaro web sets `--zr-mono`, `--zr-prose`, `--zr-edge-*`). Tests live
@@ -80,7 +82,7 @@ An inline import map is a script to the CSP: `script-src 'self'` refuses it unle
 Styles: link `index.css` of the core beside the page's z2 token and control CSS, and `parla.css` of the core as well if the page renders `FigaroSays` (it needs the z2 tokens and the fontpack faces, see [parla](parla.md)); `react-jotai/<version>/index.css` is empty and exists so both directories have the same shape. Types: `index.d.ts` is a script file of ambient module declarations (`zanni-react`, and `zanni-react/jotai`, which refers to the core's declarations, so load both); add them to a TypeScript project with `/// <reference path>` or `include`. The manifest's `react` entry lists every export of each bundle under `bundle.exports`, and `checks.zanni-react` fails when it differs from the built files.
 
 ## zanni-react/jotai
-`AriaView`, `Roster`, `StatusBar`, `BoundPit`, `BoundComposer`, `TurnActions` and the atoms behind them (`bootAtom`,
+`AriaView`, `Roster`, `StatusBar`, `BoundPit`, `TurnActions` and the atoms behind them (`bootAtom`,
 `routeAtom`, `rosterAtom`, `composerAtom`, `draftAtom`, `audioSessionAtom`, `micAtom`, `pitViewAtom` and the rest). Needs jotai
 and figaro-forms 0.14 (both peer dependencies of this entry only). figaro web is `app.tsx`, `main.tsx` and `styles/`: it mounts
 these under `.fw` and styles the `fw-*` hooks. `web/test/react/boundary.test.ts` fails if the root entry imports jotai or
@@ -99,7 +101,9 @@ Attachments: `lib/attach.ts` (limits, `uploadFile`, the size and kind words) is 
 (`attachmentsAtom`), uploads one file at a time (`addFilesAtom`), and gives `sendAtom` the ids (`readyIdsAtom`, which uploads
 again what the gateway is about to forget). `bootAtom` carries `attachUrl` (`data-attach`, default `attach`).
 
-Browser spans: `trace.ts` makes one root span per user action (`beginAction` or `traced`: send, speak, dictate, fork, attach), service
+Voice and trace code is the app's: `jotai/audio` holds `PlayerIsland`, `speech` and `voce` and their types, `jotai/telemetry` holds the session id and the spans, and this entry exports only `configureTraces`, `traceDial` and `sessionUrl` from them.
+
+Browser spans: `telemetry/trace.ts` makes one root span per user action (`beginAction` or `traced`: send, speak, dictate, fork, attach), service
 `figaro-web`, attributes `figchat.session`, `figchat.action` and `figaro.aria`, never text, params or URLs. `traceDial` wraps the
 door's dial and stamps the latest action's W3C `traceparent` into `figaro.qua` params; `traceHeaders` does the same for the stt, audio
 key and attach fetches, next to `X-Figchat-Session`. Failures become an error span and a log record carrying only `error.type` and the

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { SESSION_HEADER, audioKeyUrl, mintSessionId, sessionHeaders, sessionId, sessionUrl, withSession } from "zanni-react";
+import { SESSION_HEADER, audioKeyUrl, mintSessionId, sessionHeaders, sessionId, sessionUrl, withSession } from "../../packages/react/src/jotai/telemetry/session";
 import { retranscribe } from "zanni-react/jotai";
 
 const SHAPE = /^[A-Za-z0-9_-]{16}$/;
