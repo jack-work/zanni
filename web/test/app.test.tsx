@@ -81,6 +81,18 @@ describe("the list", () => {
     await waitFor(() => expect(window.location.hash).toBe("#/home/" + main));
   });
 
+  it("refuses to kill a role row and says so, and sends no kill", async () => {
+    open("#/");
+    await openTree();
+    await waitFor(() => expect(document.querySelector(".zr-tree-row[data-id='@frontend']")).toBeTruthy());
+    const role = "@frontend";
+    const tree = document.querySelector<HTMLElement>("[role='tree']")!;
+    for (let i = 0; i < 60 && document.querySelector("[data-cursor]")?.getAttribute("data-id") !== role; i++) act(() => void fireEvent.keyDown(tree, { key: "j" }));
+    act(() => void fireEvent.keyDown(tree, { key: "X" }));
+    await waitFor(() => expect(document.querySelector(".fw-note[role=status]")?.textContent).toMatch(/is a role; kill the aria it points at/));
+    expect(core.calls.filter((c) => c.method === "figaro.kill")).toEqual([]);
+  });
+
   it("opens only the chain to the attended aria and the attended row itself, as the pager's revealOpen does", async () => {
     open("#/home/" + "c0ffee02".repeat(4));
     await openTree();
