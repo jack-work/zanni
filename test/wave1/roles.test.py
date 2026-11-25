@@ -23,6 +23,8 @@ ROWS_JS = """() => [...document.querySelectorAll('.fw-topology [role=treeitem]')
 
 
 def open_tree(pg):
+    if pg.locator(".fw-topology [role=treeitem]").count():
+        return
     if not pg.locator(".zr-pit[data-snap='half'], .zr-pit[data-snap='full']").count():
         pg.locator(".zr-pit-knob").focus()
         pg.keyboard.press("Enter")
