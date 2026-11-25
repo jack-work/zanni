@@ -287,11 +287,9 @@
   .zr-host:hover .zr-actionbar, .zr-host:focus-within .zr-actionbar, .zr-host:last-child .zr-actionbar { opacity: 1; }
 }
 
-.zr-work { min-width: 0; border-left: 2px solid var(--nodi-bar, color-mix(in srgb, var(--z-line) 55%, transparent)); padding-left: var(--z-space-3, 8px); }
-.zr-work[data-live] { border-left-color: var(--z-warn); }
+.zr-work { min-width: 0; }
 .zr-work-time { flex: none; margin-left: auto; font: 400 1.0625rem / 1 var(--zr-mono, "VT323", "Nerd Icons", ui-monospace, monospace); }
 .zr-work-body { display: flex; flex-direction: column; gap: var(--z-space-2, 4px); padding: var(--z-space-2, 4px) 0 var(--z-space-3, 8px); min-width: 0; }
-.zr-work-body > .nodi-thinking, .zr-work-body > .nodi-tool { border-left: 0; padding-left: 0; }
 
 @supports (interpolate-size: allow-keywords) {
   :root { interpolate-size: allow-keywords; }
