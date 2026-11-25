@@ -1,7 +1,10 @@
 import { atom } from "jotai";
 import { AudioSession, pingPcm, type SessionType } from "../lib/audio-session";
-import { beginAction } from "../../trace";
-import { sessionId, speech, voce, type PcmFormat } from "../../index";
+import { beginAction } from "../telemetry/trace";
+import { speech } from "../audio/speech";
+import type { PcmFormat } from "../audio/types";
+import { voce } from "../audio/voce";
+import { sessionId } from "../telemetry/session";
 import { bootAtom } from "./boot";
 import { attendedAtom } from "./route";
 

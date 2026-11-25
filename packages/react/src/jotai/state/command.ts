@@ -7,7 +7,7 @@ import { parseDraft, pathProblem, refusalLine } from "../lib/form-edit";
 import type { PitView } from "../lib/pit-rows";
 import { forkAtom, interruptAtom, type Done } from "./composer";
 import { mintFigaroAtom, rootsAtom } from "./new-figaro";
-import { traced } from "../../trace";
+import { traced } from "../telemetry/trace";
 import { attendedFactsAtom, treeStateAtom } from "./pit";
 import { attendedAtom, clientAtom, goAtom, storeNameAtom } from "./route";
 import type { TreeNode } from "figaro-forms/aria";

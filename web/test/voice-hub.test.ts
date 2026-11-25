@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { AudioSession } from "zanni-react/jotai";
 import { VoiceHub, type Played, type SpokenNode } from "../../packages/react/src/jotai/lib/voice-hub";
-import type { SpeechHandlers, SpeechTransport, VoceApi, VoceOptions, VocePlayer } from "zanni-react";
+import type { SpeechHandlers, SpeechTransport, VoceApi, VoceOptions, VocePlayer } from "../../packages/react/src/jotai/audio/types";
 
 const ARIA = "c0ffee01".repeat(4);
 const FMT = { format: "pcm", rate: 24000, bits: 16, channels: 1 };

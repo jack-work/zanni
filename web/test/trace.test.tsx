@@ -3,7 +3,8 @@ import { createStore, Provider } from "jotai";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/app";
 import { AriaClient } from "figaro-forms/aria";
-import { SESSION_HEADER, beginAction, configureTraces, flushTraces, sessionId, traceDial, traceHeaders, traced } from "zanni-react";
+import { SESSION_HEADER, sessionId } from "../../packages/react/src/jotai/telemetry/session";
+import { beginAction, configureTraces, flushTraces, traceDial, traceHeaders, traced } from "../../packages/react/src/jotai/telemetry/trace";
 import { bootAtom, retranscribe } from "zanni-react/jotai";
 import { mockDoor } from "./mock";
 

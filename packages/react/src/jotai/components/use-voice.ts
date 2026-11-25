@@ -1,7 +1,9 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useRef } from "react";
 import type { Played, VoiceHub } from "../lib/voice-hub";
-import { audioKeyUrl, traceHeaders, voce, withSession } from "../../index";
+import { voce } from "../audio/voce";
+import { audioKeyUrl, withSession } from "../telemetry/session";
+import { traceHeaders } from "../telemetry/trace";
 import { audioSessionAtom, cancelSpeechAtom, speakingAtom, speechTransportAtom, voiceAtom, voiceControlAtom } from "../state/audio";
 import { bootAtom } from "../state/boot";
 import { composerNoteAtom, keyOf } from "../state/composer";

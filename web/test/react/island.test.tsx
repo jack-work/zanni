@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { ActionBar, Button, Fold, LatestPill, PlayerIsland } from "zanni-react";
+import { ActionBar, Button, Fold, LatestPill } from "zanni-react";
+import { PlayerIsland } from "../../../packages/react/src/jotai/audio/player";
 
 describe("PlayerIsland", () => {
   it("draws nothing until asked, then owns one player for the clip and replaces it on the next request", () => {

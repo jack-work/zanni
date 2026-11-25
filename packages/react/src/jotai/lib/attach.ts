@@ -1,4 +1,4 @@
-import { traceHeaders } from "../../trace";
+import { traceHeaders } from "../telemetry/trace";
 
 export const MAX_FILES = 8;
 export const MAX_IMAGES = 4;

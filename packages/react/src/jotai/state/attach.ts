@@ -1,6 +1,6 @@
 import { atom, type PrimitiveAtom } from "jotai";
 import { ariaMethod, type AriaClient, type QuaResponse } from "figaro-forms/aria";
-import { traced } from "../../trace";
+import { traced } from "../telemetry/trace";
 import { MAX_IMAGES, attachUrlOf, imagesIn, problemWith, stale, uploadFile, type Slot } from "../lib/attach";
 import { bootAtom } from "./boot";
 import { ariaOf, composerNoteAtom, keyOf } from "./composer";

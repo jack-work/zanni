@@ -1,4 +1,4 @@
-import { traceHeaders } from "../../trace";
+import { traceHeaders } from "../telemetry/trace";
 export interface SttReply {
   text?: string;
   duration_ms?: number;

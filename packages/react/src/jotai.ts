@@ -20,6 +20,8 @@ export * from "./jotai/lib/attach";
 export * from "./jotai/lib/asks";
 export * from "./jotai/lib/control-rows";
 export * from "./jotai/lib/stt";
+export { configureTraces, traceDial } from "./jotai/telemetry/trace";
+export { sessionUrl } from "./jotai/telemetry/session";
 export { AriaView } from "./jotai/components/aria-view";
 export { Pit as BoundPit } from "./jotai/components/pit";
 export { Roster } from "./jotai/components/roster";

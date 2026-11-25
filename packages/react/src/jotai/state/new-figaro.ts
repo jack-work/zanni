@@ -1,5 +1,5 @@
 import { atom } from "jotai";
-import { beginAction } from "../../trace";
+import { beginAction } from "../telemetry/trace";
 import { goAtom, clientAtom, storeNameAtom, attendedAtom } from "./route";
 import { rosterActionAtom, rosterAtom } from "./roster";
 import { labelOf } from "../lib/roster";

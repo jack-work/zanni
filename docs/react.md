@@ -21,8 +21,8 @@ dependency react only. `zanni-react/jotai` binds them to figaro-forms and Jotai:
 | `Pit`, `PitList`, `PitRow` | the drawer whose head is the composer or a bare tab, dragged by transform to closed, half (on a screen at least `PIT_HALF_MIN` tall) or full, and its rows |
 | `TurnView`, `ProseView`, `ToolView`, `ThinkingView`, `WorkGroup`, `TranscriptContext` | the nodi transcript as React; the context carries two app hooks: open the message sheet, per-turn actions. A tool item draws from `label`, `head`, `body` and `diff` (nodi reads `head_arg` and `body_arg` out of the node's args, partial JSON included). A `TurnModel` with `deltas` wears the `Δ` head button and its table |
 | `deltaRowsOf`, `cellLine`, `keyColumns`, `valueLines` | the pager's form-delta rows from a turn's or node's `formDeltas` (pure; `forked` drops the fork's birth keys) and their cells, key width and open lines |
-| `useFollow`, `LatestPill`, `PlayerIsland` | follow the bottom with a Latest pill and prepend anchor; a voce player the component owns |
-| `nodi`, `speech`, `voce`, work helpers | the framework-free zanni modules and the pure grouping and timing functions |
+| `useFollow`, `LatestPill` | follow the bottom with a Latest pill and prepend anchor |
+| `nodi`, work helpers | the framework-free nodi module and the pure grouping and timing functions |
 | `Glyph` | a glyph centred by its ink box rather than its advance box, so VT323 and fallback faces centre alike in a pill, a pit row or a button: drawn once per font and glyph on a canvas, its ink read back, the offset held as a zero-length `translate` animation, which the edge CSP lets through where a style attribute or an inserted rule is refused |
 | `Pill`, `PillPair` | a small round glyph button named by `aria-label` (optional `pressed`, `disabled`, `title`), and a joined pair of them; `Composer` takes `attach`, `command` and `sendGlyph` and lays them out |
 | `Composer` | the message box; a slot for the mic; writes its height to a CSS variable. For a line that is not a message it takes `prompt` (a glyph left of the input), `hints` (drawn above the row), `onEscape`, `onTab` (a Tab with no Shift) and `enterRuns` (Enter submits on a coarse pointer too) |
@@ -101,7 +101,9 @@ Attachments: `lib/attach.ts` (limits, `uploadFile`, the size and kind words) is 
 (`attachmentsAtom`), uploads one file at a time (`addFilesAtom`), and gives `sendAtom` the ids (`readyIdsAtom`, which uploads
 again what the gateway is about to forget). `bootAtom` carries `attachUrl` (`data-attach`, default `attach`).
 
-Browser spans: `trace.ts` makes one root span per user action (`beginAction` or `traced`: send, speak, dictate, fork, attach), service
+Voice and trace code is the app's: `jotai/audio` holds `PlayerIsland`, `speech` and `voce` and their types, `jotai/telemetry` holds the session id and the spans, and this entry exports only `configureTraces`, `traceDial` and `sessionUrl` from them.
+
+Browser spans: `telemetry/trace.ts` makes one root span per user action (`beginAction` or `traced`: send, speak, dictate, fork, attach), service
 `figaro-web`, attributes `figchat.session`, `figchat.action` and `figaro.aria`, never text, params or URLs. `traceDial` wraps the
 door's dial and stamps the latest action's W3C `traceparent` into `figaro.qua` params; `traceHeaders` does the same for the stt, audio
 key and attach fetches, next to `X-Figchat-Session`. Failures become an error span and a log record carrying only `error.type` and the

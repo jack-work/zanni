@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
-import { settleSpeakFor, traceHeaders } from "./trace";
-import { voce, type VocePlayer } from "./zanni";
+import { settleSpeakFor, traceHeaders } from "../telemetry/trace";
+import type { VocePlayer } from "./types";
+import { voce } from "./voce";
 
 export interface PlayRequest {
   readonly key: string;
