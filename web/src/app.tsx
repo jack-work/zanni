@@ -1,6 +1,6 @@
 import { useAtomValue } from "jotai";
 import { useSyncExternalStore } from "react";
-import { PitProvider, useViewport } from "zanni-react";
+import { useViewport } from "zanni-react";
 import { AriaView, BoundPit, NewFigaro, attendedAtom, attendedRunningAtom, audioSessionAtom, linkAtom, voiceAtom, micAtom, Roster, paneAtom, routeAtom, routeKindAtom, SignedOut, StatusBar } from "zanni-react/jotai";
 
 function ListHint() {
@@ -40,18 +40,16 @@ export function App() {
     () => session.phase(),
   );
   return (
-    <PitProvider>
-      <div className="fw zr-shell" data-link={link} data-route={kind} data-narrow={pane.narrow ? "" : undefined} data-running={running ? "" : undefined} data-mic={mic.state} data-voice={voice ? "" : undefined} data-audio={phase}>
-        <StatusBar />
-        <div className="fw-body">
-          <Roster />
-          <div className="fw-pane">
-            {attended ? <AriaView key={attended.store + "/" + attended.aria} attended={attended} /> : route?.aria ? <NoStore store={route.store} /> : link === "signedout" ? <SignedOut /> : <ListHint />}
-          </div>
+    <div className="fw zr-shell" data-link={link} data-route={kind} data-narrow={pane.narrow ? "" : undefined} data-running={running ? "" : undefined} data-mic={mic.state} data-voice={voice ? "" : undefined} data-audio={phase}>
+      <StatusBar />
+      <div className="fw-body">
+        <Roster />
+        <div className="fw-pane">
+          {attended ? <AriaView key={attended.store + "/" + attended.aria} attended={attended} /> : route?.aria ? <NoStore store={route.store} /> : link === "signedout" ? <SignedOut /> : <ListHint />}
         </div>
-        <NewFigaro />
-        <BoundPit />
       </div>
-    </PitProvider>
+      <NewFigaro />
+      {!attended && <BoundPit />}
+    </div>
   );
 }

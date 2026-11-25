@@ -27,7 +27,6 @@ export interface ComposerProps {
   queue?: ReactNode;
   accessory?: ReactNode;
   stacked?: boolean;
-  grip?: ReactNode;
   focusTick?: number;
   inputRef?: Ref<HTMLTextAreaElement>;
   heightVar?: string;
@@ -57,8 +56,12 @@ export function useSizeVar(ref: { current: HTMLElement | null }, name: string): 
   }, [ref, name]);
 }
 
+function markScrolls(el: HTMLTextAreaElement): void {
+  el.toggleAttribute("data-scrolls", el.scrollHeight > el.clientHeight + 1);
+}
+
 export function Composer(props: ComposerProps) {
-  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendGlyph, attach, command, prompt, mode, hints, tray, onEscape, onTab, enterRuns, sendDisabled, running, queue, accessory, stacked, grip, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
+  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendGlyph, attach, command, prompt, mode, hints, tray, onEscape, onTab, enterRuns, sendDisabled, running, queue, accessory, stacked, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
   const form = useRef<HTMLFormElement | null>(null);
   const input = useRef<HTMLTextAreaElement | null>(null);
   const typing = useRef(false);
@@ -68,9 +71,12 @@ export function Composer(props: ComposerProps) {
 
   useLayoutEffect(() => {
     const el = input.current;
-    if (!el || !grows) return;
-    el.style.height = "auto";
-    el.style.height = el.scrollHeight + (el.offsetHeight - el.clientHeight) + "px";
+    if (!el) return;
+    if (grows) {
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + (el.offsetHeight - el.clientHeight) + "px";
+    }
+    markScrolls(el);
   }, [value, grows]);
 
   const setInput = (el: HTMLTextAreaElement | null) => {
@@ -88,6 +94,7 @@ export function Composer(props: ComposerProps) {
     if (!el || typeof ResizeObserver === "undefined") return;
     const watch = new ResizeObserver(() => {
       if (el.offsetHeight > ONE_LINE_MAX) setStack(true);
+      markScrolls(el);
     });
     watch.observe(el);
     return () => watch.disconnect();
@@ -154,7 +161,6 @@ export function Composer(props: ComposerProps) {
         submit();
       }}
     >
-      {grip}
       {queue}
       {tray}
       {hints}

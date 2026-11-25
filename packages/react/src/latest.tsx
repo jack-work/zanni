@@ -1,13 +1,10 @@
 import { useRef } from "react";
 import { Button } from "./button";
-import { usePit } from "./pit";
 
 export const LATEST_TAP_SLOP = 10;
 
 export function LatestPill({ onClick, label = "Latest" }: { onClick: () => void; label?: string }) {
-  const pit = usePit();
   const start = useRef<{ x: number; y: number } | null>(null);
-  if (pit && (pit.snap !== "closed" || pit.dragging)) return null;
   return (
     <Button
       variant="accent"

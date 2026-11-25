@@ -128,8 +128,8 @@ describe("the composer", () => {
     expect(document.querySelectorAll(".fw-pile .zr-queue-row").length).toBe(0);
     act(() => (document.querySelector(".fw-pile-head") as HTMLElement).click());
     expect(document.querySelectorAll(".fw-pile .zr-queue-row").length).toBe(2);
-    act(() => (document.querySelector(".zr-grip") as HTMLElement).click());
-    await waitFor(() => expect(document.querySelector(".zr-pit")).toBeTruthy());
+    act(() => (document.querySelector(".zr-pit-knob") as HTMLElement).click());
+    await waitFor(() => expect(document.querySelector(".zr-pit[role=dialog]")).toBeTruthy());
     expect(document.querySelector(".fw-pile")).toBeNull();
     act(() => {
       fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
@@ -164,10 +164,10 @@ describe("the composer", () => {
   it("creates a new figaro from the state pit: forks the chosen root at turn 1 with outfits, sends the first message, attends it", async () => {
     attend(1);
     await live();
-    act(() => (document.querySelector(".zr-grip") as HTMLElement).click());
+    act(() => (document.querySelector(".zr-pit-knob") as HTMLElement).click());
     await waitFor(() => expect(document.querySelector('[data-action="new"]')).toBeTruthy());
     act(() => (document.querySelector('[data-action="new"]') as HTMLElement).click());
-    expect(document.querySelector(".zr-pit")).toBeNull();
+    expect(document.querySelector(".zr-pit[role=dialog]")).toBeNull();
     await waitFor(() => expect(document.querySelector(".fw-new-form")).toBeTruthy());
     const form = document.querySelector<HTMLFormElement>(".fw-new-form")!;
     const outfits = form.querySelector<HTMLInputElement>("input")!;
@@ -332,7 +332,7 @@ describe("the buttons under a message", () => {
   it("give way to the large Play in hands-free mode", async () => {
     await ready();
     expect(document.querySelector(".fw-play-big")).toBeNull();
-    act(() => (document.querySelector(".zr-grip") as HTMLElement).click());
+    act(() => (document.querySelector(".zr-pit-knob") as HTMLElement).click());
     await waitFor(() => expect(document.querySelector(".fw-hands")).toBeTruthy());
     press(".fw-hands");
     await waitFor(() => expect(document.querySelector(".fw-inline")).toBeNull());
