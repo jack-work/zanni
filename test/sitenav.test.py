@@ -24,6 +24,8 @@ with sync_playwright() as p:
         assert [tuple(l) for l in links] == WANT, links
         assert style(".sitenav-links a[aria-current]", "borderBottomColor") == gold
         assert style(".sitenav-links a:not([aria-current])", "borderBottomColor") == "rgba(0, 0, 0, 0)"
+        last = pg.eval_on_selector(".sitenav-links li:last-child a", "a => a.getBoundingClientRect().right")
+        assert last > 1280 - 40, ("the links sit at the bar's right end", last)
         pg.close()
 
     pg = b.new_page(viewport={"width": 390, "height": 844})
