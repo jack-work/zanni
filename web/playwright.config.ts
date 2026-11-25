@@ -20,7 +20,7 @@ export default defineConfig({
     },
     {
       command: `npx vite --host 127.0.0.1 --port ${galleryPort} --strictPort`,
-      url: `http://127.0.0.1:${galleryPort}/gallery/scene.html`,
+      url: `http://127.0.0.1:${galleryPort}/gallery/index.html`,
       reuseExistingServer: true,
     },
   ],

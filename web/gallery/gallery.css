@@ -1,0 +1,7 @@
+.gallery-part { padding: 12px; display: grid; gap: 10px; color: var(--z-ink); }
+.gallery-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.gallery-row-label { min-width: 64px; color: var(--z-muted); font-size: 13px; }
+.gallery-glyphs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 16px; }
+.gallery-glyph { display: flex; align-items: center; gap: 8px; }
+.gallery-glyph code { color: var(--z-muted); font-size: 13px; }
+.gallery-detail { margin: 6px 0; color: var(--z-muted); }

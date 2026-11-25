@@ -1,0 +1,13 @@
+:root { color-scheme: light dark; font: 15px/1.4 ui-sans-serif, system-ui, sans-serif; }
+body { margin: 0; background: Canvas; color: CanvasText; }
+.gi-head { display: flex; align-items: baseline; gap: 24px; padding: 12px 20px; border-bottom: 1px solid color-mix(in srgb, CanvasText 20%, transparent); position: sticky; top: 0; background: Canvas; z-index: 1; }
+.gi-head h1 { font-size: 18px; margin: 0; }
+.gi-head a { margin-right: 12px; }
+#gi { padding: 0 20px 60px; }
+#gi h2 { margin: 36px 0 4px; font-size: 20px; }
+#gi h3 { margin: 28px 0 4px; font-size: 16px; opacity: 0.7; }
+.gi-item { margin: 18px 0 26px; }
+.gi-item h4 { margin: 0 0 2px; font-size: 15px; }
+.gi-item p { margin: 0 0 8px; opacity: 0.7; }
+.gi-pair { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+.gi-pair iframe { border: 1px solid color-mix(in srgb, CanvasText 25%, transparent); background: Canvas; flex: none; }
