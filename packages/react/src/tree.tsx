@@ -227,7 +227,9 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, on
             }}
           >
             <Glyph glyph={selected ? mark : ""} className="zr-tree-mark" />
-            <span className="zr-tree-indent" aria-hidden="true" />
+            {Array.from({ length: r.depth }, (_, i) => (
+              <span key={i} className="zr-tree-indent" aria-hidden="true" />
+            ))}
             <span className={r.expandable ? "zr-tree-disclosure" : "zr-tree-pad"} aria-hidden="true" />
             <span className="zr-tree-label" data-tone="body">
               {r.label}
