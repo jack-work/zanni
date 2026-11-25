@@ -131,6 +131,7 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
 
   return (
     <>
+    {snap === "closed" && <QueuePile />}
     <ZComposer
       className="fw-composer"
       value={cmd.on ? cmd.line : draft}
@@ -163,7 +164,6 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
         } }}
       sendDisabled={cmd.on ? !cmd.line.trim() : comp.sending || !live || attached.uploading}
       running={running}
-      queue={snap !== "closed" ? undefined : <QueuePile />}
       focusTick={focusTick}
       inputRef={input}
       stacked={voiceOn || (mic.state !== "idle" && mic.state !== "unsupported")}
