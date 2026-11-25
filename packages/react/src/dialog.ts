@@ -8,6 +8,7 @@ export interface DialogOptions {
   bodySelector?: string;
   typing?: boolean;
   root?: boolean;
+  autofocus?: () => boolean;
 }
 
 function editable(t: EventTarget | null): boolean {
@@ -19,13 +20,15 @@ export function useDialog(root: RefObject<HTMLElement | null>, onClose: () => vo
   const { active = true, trap = true, bodySelector = ".zr-sheet-body", typing = true, root: focusRoot = false } = options;
   const close = useRef(onClose);
   close.current = onClose;
+  const autofocus = useRef(options.autofocus);
+  autofocus.current = options.autofocus;
 
   useEffect(() => {
     if (!active) return;
     const before = document.activeElement as HTMLElement | null;
     const el = root.current;
-    const target = focusRoot ? el : el?.querySelector<HTMLElement>("[data-autofocus]") ?? el?.querySelector<HTMLElement>(bodySelector + " " + FOCUSABLE) ?? el?.querySelector<HTMLElement>(FOCUSABLE);
-    target?.focus();
+    const target = focusRoot ? el : el?.querySelector<HTMLElement>("[data-autofocus]") ?? el?.querySelector<HTMLElement>(FOCUSABLE.split(", ").map((f) => bodySelector + " " + f).join(", ")) ?? el?.querySelector<HTMLElement>(FOCUSABLE);
+    if (autofocus.current?.() ?? true) target?.focus({ preventScroll: true });
     const onKey = (ev: KeyboardEvent) => {
       if (ev.key === "Escape") {
         if (!typing && editable(ev.target)) return;

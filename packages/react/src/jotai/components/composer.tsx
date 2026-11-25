@@ -1,4 +1,4 @@
-import { Button, Composer as ZComposer, Glyph, Hints, PitGrip, Tray, attachGlyph, glyphs, usePit, voiceGlyph } from "../../index";
+import { Button, Composer as ZComposer, Glyph, Hints, Tray, attachGlyph, glyphs, voiceGlyph } from "../../index";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { clock } from "../../index";
@@ -9,9 +9,8 @@ import { micAtom, micToggleAtom, dictationFocusAtom } from "../state/mic";
 import { linkAtom, runningAtom } from "../state/aria";
 import { composerAtom, composerNoteAtom, draftAtom, keyOf, sendAtom } from "../state/composer";
 import { COMMAND_OFF, commandAtom, commandSourcesAtom, helpOpenAtom, loadOutfitsAtom, runCommandAtom } from "../state/command";
-import { pitViewAtom } from "../state/pit";
+import { pitSnapAtom, pitViewAtom } from "../state/pit";
 import { applyCandidate, suggest, type Candidate } from "../lib/command";
-import { CommandHelp } from "./command-help";
 import { QueuePile } from "./queue-pile";
 import { SignedOut } from "./signed-out";
 import type { Attended } from "../state/route";
@@ -83,7 +82,7 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
   const runCommand = useSetAtom(runCommandAtom);
   const setView = useSetAtom(pitViewAtom);
   const setHelp = useSetAtom(helpOpenAtom);
-  const pit = usePit();
+  const [snap, setSnap] = useAtom(pitSnapAtom);
   const picker = useRef<HTMLInputElement | null>(null);
   const attached = useAtomValue(attachingAtom);
   const addFiles = useSetAtom(addFilesAtom);
@@ -117,7 +116,7 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
     if (outcome.open === "help") setHelp(true);
     else if (outcome.open) {
       setView(outcome.open);
-      pit?.setSnap("half");
+      setSnap("half");
     }
   };
 
@@ -164,10 +163,9 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
         } }}
       sendDisabled={cmd.on ? !cmd.line.trim() : comp.sending || !live || attached.uploading}
       running={running}
-      queue={pit && pit.snap !== "closed" ? undefined : <QueuePile />}
+      queue={snap !== "closed" ? undefined : <QueuePile />}
       focusTick={focusTick}
       inputRef={input}
-      grip={<PitGrip />}
       stacked={voiceOn || (mic.state !== "idle" && mic.state !== "unsupported")}
       accessory={
         cmd.on ? undefined : (
@@ -205,7 +203,6 @@ export const Composer = memo(function Composer({ attended, toBottom }: { attende
         input.current?.focus({ preventScroll: true });
       }}
     />
-    <CommandHelp />
     </>
   );
 });

@@ -1,4 +1,4 @@
-import { glyphs, usePit } from "../../index";
+import { glyphs } from "../../index";
 import { ariaFactsAtom } from "figaro-forms/aria/jotai";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useState } from "react";
@@ -7,7 +7,7 @@ import { PAUSE_GLYPH, STATUS_SPINNER, ctxLine, stateGlyph } from "../lib/status"
 import { contextTokensAtom, endStateAtom, linkAtom, runningAtom, workAtom } from "../state/aria";
 import { composerAtom, interruptAtom, keyOf } from "../state/composer";
 import { micAtom } from "../state/mic";
-import { boundStateAtom, forkOfAtom, treeStateAtom } from "../state/pit";
+import { boundStateAtom, forkOfAtom, pitSnapAtom, treeStateAtom } from "../state/pit";
 import { attendedAtom, type Attended } from "../state/route";
 
 function Bar({ attended }: { attended: Attended }) {
@@ -20,7 +20,7 @@ function Bar({ attended }: { attended: Attended }) {
   const facts = useAtomValue(ariaFactsAtom(client, aria));
   const bound = useAtomValue(boundStateAtom);
   const forkOf = useAtomValue(forkOfAtom);
-  const pit = usePit();
+  const snap = useAtomValue(pitSnapAtom);
   const work = useAtomValue(workAtom(client, aria));
   const composerNote = useAtomValue(composerAtom(keyOf(store, aria))).note;
   const micNote = useAtomValue(micAtom).note;
@@ -40,7 +40,7 @@ function Bar({ attended }: { attended: Attended }) {
   const used = node?.ctx ?? context;
   const ctx = ctxLine(used, node?.ctxLimit);
   const glyph = stateGlyph({ link, running, failed, interrupted, frame });
-  const open = pit && pit.snap !== "closed";
+  const open = snap !== "closed";
   const line = note || (running ? work.verb : "");
   return (
     <header className="fw-status" data-link={link} data-state={running ? "running" : failed ? "error" : interrupted ? "interrupted" : "done"} data-effort={valueAt(bound?.root, EFFORT_KEY)} data-fork={forkOf ? "" : undefined}>

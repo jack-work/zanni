@@ -21,7 +21,7 @@ async function attendLong(page: Page): Promise<void> {
   await fakeSpeech(page);
   await page.goto(`/#/${store}/${core.ids.main}`);
   await page.locator(".fw[data-link='live']").waitFor();
-  await page.locator(".zr-composer .zr-grip").waitFor();
+  await page.locator(".zr-pit .zr-pit-knob").waitFor();
   await settle(page);
 }
 
@@ -75,7 +75,7 @@ function hitAt(page: Page, x: number, y: number): Promise<string> {
   return page.evaluate(
     ([x, y]) => {
       const e = document.elementFromPoint(x!, y!);
-      const owner = e?.closest(".zr-grip, .zr-latest, .zr-composer, [data-zr-scroll]");
+      const owner = e?.closest(".zr-pit-knob, .zr-latest, .zr-composer, [data-zr-scroll]");
       return owner ? owner.className : e ? e.tagName : "nothing";
     },
     [x, y],
@@ -120,47 +120,50 @@ async function toMiddle(page: Page, browserName: string): Promise<void> {
 }
 
 test.describe("figaro web mobile scroll", () => {
-  test("a tap or a drag on the grip opens the drawer, at the end and in the middle of a long transcript", async ({ page, browserName }) => {
+  test("a tap on the knob or a drag on the input bar opens the drawer, at the end and in the middle of a long transcript", async ({ page, browserName }) => {
     await attendLong(page);
     const pit = page.locator(".zr-pit[role=dialog]");
     const shut = async () => {
       await page.keyboard.press("Escape");
-      await page.locator(".zr-pit").waitFor({ state: "detached" });
+      await page.locator(".zr-pit[role=dialog]").waitFor({ state: "detached" });
       await settle(page);
     };
     for (const where of ["end", "middle"]) {
       if (where === "middle") await toMiddle(page, browserName);
-      const bar = (await rect(page, ".zr-composer .zr-grip .zr-grip-bar"))!;
-      const x = bar.x + bar.w / 2;
-      const y = bar.y + bar.h / 2;
-      await page.touchscreen.tap(x, y);
+      const bar = (await rect(page, ".zr-pit-knob .zr-pit-knob-bar"))!;
+      await page.touchscreen.tap(bar.x + bar.w / 2, bar.y + bar.h / 2);
       await settle(page);
-      await expect(pit, `a tap on the grip at the ${where} opens the drawer and it stays open`).toHaveAttribute("data-snap", "half");
+      await expect(pit, `a tap on the knob at the ${where} opens the drawer and it stays open`).toHaveAttribute("data-snap", "half");
       await shut();
       if (browserName !== "chromium") continue;
-      const cdp = await finger(page);
-      await swipe(cdp, x, y, y - 360, 12, 16, page);
-      await cdp.detach();
-      await settle(page);
-      await expect(pit, `a drag up from the grip at the ${where} opens the drawer`).toHaveAttribute("data-snap", /half|full/);
-      await shut();
+      const input = (await rect(page, ".zr-pit-head .zr-input"))!;
+      for (const fx of [0.1, 0.9]) {
+        const x = input.x + input.w * fx;
+        const y = input.y + input.h / 2;
+        const cdp = await finger(page);
+        await swipe(cdp, x, y, y - 360, 12, 16, page);
+        await cdp.detach();
+        await settle(page);
+        await expect(pit, `a drag up from the input bar at ${fx} at the ${where} opens the drawer`).toHaveAttribute("data-snap", /half|full/);
+        await shut();
+      }
     }
   });
 
-  test("the grip's bar sits on the composer's top edge and stays uncovered scrolled up", async ({ page, browserName }) => {
+  test("the knob sits on the drawer's top border and stays uncovered scrolled up", async ({ page, browserName }) => {
     await attendLong(page);
     const edge = async () => {
-      const bar = (await rect(page, ".zr-composer .zr-grip .zr-grip-bar"))!;
-      const composer = (await rect(page, ".zr-composer"))!;
-      return { gap: Math.abs(bar.y + bar.h / 2 - composer.y), bar };
+      const bar = (await rect(page, ".zr-pit-knob .zr-pit-knob-bar"))!;
+      const drawer = (await rect(page, ".zr-pit"))!;
+      return { gap: Math.abs(bar.y + bar.h / 2 - drawer.y), bar };
     };
     const atEnd = await edge();
-    expect(atEnd.gap, `the bar is on the edge at the end (${JSON.stringify(atEnd)})`).toBeLessThanOrEqual(3);
+    expect(atEnd.gap, `the bar is on the border at the end (${JSON.stringify(atEnd)})`).toBeLessThanOrEqual(3);
     await toMiddle(page, browserName);
     const up = await edge();
-    expect(up.gap, `the bar is on the edge scrolled up (${JSON.stringify(up)})`).toBeLessThanOrEqual(3);
-    const grip = (await rect(page, ".zr-composer .zr-grip"))!;
-    for (const fx of [0.05, 0.5, 0.95]) for (const fy of [0.05, 0.5, 0.95]) expect(await hitAt(page, grip.x + grip.w * fx, grip.y + grip.h * fy), `nothing covers the grip at ${fx},${fy}`).toContain("zr-grip");
+    expect(up.gap, `the bar is on the border scrolled up (${JSON.stringify(up)})`).toBeLessThanOrEqual(3);
+    const grip = (await rect(page, ".zr-pit-knob"))!;
+    for (const fx of [0.05, 0.5, 0.95]) for (const fy of [0.05, 0.5, 0.95]) expect(await hitAt(page, grip.x + grip.w * fx, grip.y + grip.h * fy), `nothing covers the knob at ${fx},${fy}`).toContain("zr-pit-knob");
     const pill = (await rect(page, ".zr-latest"))!;
     const overlaps = pill.y < grip.y + grip.h && pill.y + pill.h > grip.y && pill.x < grip.x + grip.w && pill.x + pill.w > grip.x;
     expect(overlaps, `the Latest pill ${JSON.stringify(pill)} keeps off the grip ${JSON.stringify(grip)}`).toBe(false);
@@ -177,7 +180,7 @@ test.describe("figaro web mobile scroll", () => {
     await settle(page);
     expect(await away(page), "a tap on a resting transcript reaches the end").toBeLessThanOrEqual(2);
     await expect(page.locator(".zr-latest")).toHaveCount(0);
-    await expect(page.locator(".zr-pit")).toHaveCount(0);
+    await expect(page.locator(".zr-pit[role=dialog]")).toHaveCount(0);
     if (browserName !== "chromium") return;
     const cdp = await finger(page);
     for (let i = 0; i < 2; i++) await swipe(cdp, 195, 250, 670, 6, 0, page);
@@ -188,6 +191,6 @@ test.describe("figaro web mobile scroll", () => {
     await settle(page);
     expect(await away(page), "a tap during the coast reaches the end").toBeLessThanOrEqual(2);
     await expect(page.locator(".zr-latest")).toHaveCount(0);
-    await expect(page.locator(".zr-pit")).toHaveCount(0);
+    await expect(page.locator(".zr-pit[role=dialog]")).toHaveCount(0);
   });
 });

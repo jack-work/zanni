@@ -4,6 +4,7 @@ import { troupeFormID, type AriaFacts } from "figaro-forms/aria";
 import type { TopologyForms } from "../lib/topology";
 import { FORKED_FROM_KEY, valueAt, type PitView } from "../lib/pit-rows";
 import { attendedAtom, clientAtom } from "./route";
+import type { PitSnap } from "../../pit";
 
 const USED_KEY = "fw.pit.used";
 
@@ -18,6 +19,8 @@ function readUsed(): Record<string, number> {
 }
 
 export const pitViewAtom = atom<PitView>("list");
+
+export const pitSnapAtom = atom<PitSnap>("closed");
 
 const usedBase = atom<Record<string, number>>(readUsed());
 

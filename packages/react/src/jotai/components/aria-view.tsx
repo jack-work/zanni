@@ -16,6 +16,8 @@ import { useVoice } from "./use-voice";
 import { linkAtom } from "../state/aria";
 import type { Attended } from "../state/route";
 import { Composer } from "./composer";
+import { CommandHelp } from "./command-help";
+import { Pit } from "./pit";
 import { InlineActions } from "./inline-actions";
 import { TurnActions } from "./turn-actions";
 
@@ -219,8 +221,9 @@ export function AriaView({ attended }: { attended: Attended }) {
           {status && <p className="fw-note">{status}</p>}
         </main>
       </div>
-      {!gone && <Composer attended={attended} toBottom={toBottom} />}
+      <Pit head={gone ? undefined : <Composer attended={attended} toBottom={toBottom} />} />
       {follow.away && <LatestPill onClick={() => follow.latest(turnsRef.current)} />}
+      <CommandHelp />
     </section>
   );
 }

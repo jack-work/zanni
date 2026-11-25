@@ -1,118 +1,184 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
-import { Button, Pit, PitGrip, PitProvider, glyphs, pitHeight, pitSettle, pitStep } from "zanni-react";
+import { useState } from "react";
+import { afterEach, describe, expect, it } from "vitest";
+import { Button, PIT_HALF_MIN, Pit, glyphs, pitDetents, pitRubber, pitSettle, pitStep, pitStop, type PitFrame, type PitSnap } from "zanni-react";
 
-const H = 800;
+const F: PitFrame = { view: 800, rest: 100, top: 0 };
+const ALL: PitSnap[] = ["closed", "half", "full"];
+
+describe("pit stops", () => {
+  it("rests the head at the bottom, the middle, and the top", () => {
+    expect(pitStop("closed", F)).toBe(0);
+    expect(pitStop("half", F)).toBe(-300);
+    expect(pitStop("full", F)).toBe(-700);
+    expect(pitStop("full", { ...F, top: 47 })).toBe(-653);
+  });
+
+  it("offers half only when the screen is tall enough", () => {
+    expect(pitDetents(ALL, PIT_HALF_MIN)).toEqual(ALL);
+    expect(pitDetents(ALL, PIT_HALF_MIN - 1)).toEqual(["closed", "full"]);
+    expect(pitDetents(["closed", "full"], 900)).toEqual(["closed", "full"]);
+  });
+
+  it("steps between the stops it offers without wrapping", () => {
+    expect(pitStep("closed", 1, ALL)).toBe("half");
+    expect(pitStep("half", 1, ALL)).toBe("full");
+    expect(pitStep("full", 1, ALL)).toBe("full");
+    expect(pitStep("closed", -1, ALL)).toBe("closed");
+    expect(pitStep("closed", 1, ["closed", "full"])).toBe("full");
+  });
+
+  it("damps a pull past the top and refuses a push below the bottom", () => {
+    expect(pitRubber(-400, F)).toBe(-400);
+    expect(pitRubber(40, F)).toBe(0);
+    const over = pitRubber(-900, F);
+    expect(over).toBeLessThan(-700);
+    expect(over).toBeGreaterThan(-900);
+  });
+});
 
 describe("pitSettle", () => {
-  it("snaps closed below a quarter, half between, full once past the top 15 percent", () => {
-    expect(pitSettle(100, H, 0)).toBe("closed");
-    expect(pitSettle(199, H, 0)).toBe("closed");
-    expect(pitSettle(200, H, 0)).toBe("half");
-    expect(pitSettle(400, H, 0)).toBe("half");
-    expect(pitSettle(679, H, 0)).toBe("half");
-    expect(pitSettle(680, H, 0)).toBe("full");
-    expect(pitSettle(800, H, 0)).toBe("full");
+  it("rests on the nearest stop when released slowly", () => {
+    expect(pitSettle(-100, 0, F, ALL)).toBe("closed");
+    expect(pitSettle(-200, 0, F, ALL)).toBe("half");
+    expect(pitSettle(-480, 0, F, ALL)).toBe("half");
+    expect(pitSettle(-560, 0, F, ALL)).toBe("full");
   });
 
   it("lets a flick carry to the next stop in its direction", () => {
-    expect(pitSettle(60, H, 1.2)).toBe("half");
-    expect(pitSettle(400, H, 1.2)).toBe("full");
-    expect(pitSettle(500, H, 1.2)).toBe("full");
-    expect(pitSettle(700, H, -1.2)).toBe("half");
-    expect(pitSettle(400, H, -1.2)).toBe("closed");
-    expect(pitSettle(60, H, -1.2)).toBe("closed");
+    expect(pitSettle(-30, -0.5, F, ALL)).toBe("half");
+    expect(pitSettle(-320, -0.5, F, ALL)).toBe("full");
+    expect(pitSettle(-650, 0.5, F, ALL)).toBe("half");
+    expect(pitSettle(-280, 0.5, F, ALL)).toBe("closed");
   });
 
-  it("treats a slow release as no flick", () => {
-    expect(pitSettle(60, H, 0.49)).toBe("closed");
+  it("lets a hard flick skip a stop", () => {
+    expect(pitSettle(-30, -3, F, ALL)).toBe("full");
+    expect(pitSettle(-680, 3, F, ALL)).toBe("closed");
   });
-});
 
-describe("pit geometry", () => {
-  it("measures the stops and steps between them without wrapping", () => {
-    expect([pitHeight("closed", H), pitHeight("half", H), pitHeight("full", H)]).toEqual([0, 400, 800]);
-    expect(pitStep("closed", 1)).toBe("half");
-    expect(pitStep("half", 1)).toBe("full");
-    expect(pitStep("full", 1)).toBe("full");
-    expect(pitStep("closed", -1)).toBe("closed");
+  it("goes straight between closed and full without a half stop", () => {
+    expect(pitSettle(-200, 0, F, ["closed", "full"])).toBe("closed");
+    expect(pitSettle(-400, 0, F, ["closed", "full"])).toBe("full");
+    expect(pitSettle(-30, -0.5, F, ["closed", "full"])).toBe("full");
   });
 });
 
-function Harness() {
+function Harness({ head = true }: { head?: boolean }) {
+  const [snap, setSnap] = useState<PitSnap>("closed");
   return (
-    <PitProvider>
-      <PitGrip />
-      <Pit label="Controls" title="Pit" glyph={glyphs["pit.form"]} docked>
-        <Button>Inside</Button>
-      </Pit>
-    </PitProvider>
+    <Pit snap={snap} onSnapChange={setSnap} label="Controls" docked head={head ? <textarea aria-label="Message" defaultValue="draft" /> : undefined}>
+      <Button>Inside</Button>
+    </Pit>
   );
 }
 
+function drawer(): HTMLElement {
+  return document.querySelector<HTMLElement>(".zr-pit")!;
+}
+
 describe("Pit", () => {
-  it("draws nothing without a provider and nothing while closed", () => {
-    render(<Pit label="Controls" title="Pit"><p>x</p></Pit>);
-    expect(screen.queryByRole("dialog")).toBeNull();
+  afterEach(() => {
+    Object.defineProperty(window, "innerHeight", { value: 768, configurable: true });
   });
 
-  it("opens to half from the keyboard, steps with the arrows, and closes on Escape", () => {
+  it("is one element whose head is the composer, with no dialog while closed", () => {
     render(<Harness />);
-    const grip = screen.getByRole("button", { name: "Open controls" });
-    expect(grip.getAttribute("aria-expanded")).toBe("false");
+    expect(document.querySelectorAll(".zr-pit").length).toBe(1);
+    expect(drawer().querySelector(".zr-pit-head textarea")).toBeTruthy();
     expect(screen.queryByRole("dialog")).toBeNull();
-    grip.focus();
-    fireEvent.click(grip);
+    expect(screen.queryByText("Inside")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Close" })).toBeNull();
+  });
+
+  it("opens from the knob, steps with the arrows, and closes on Escape", () => {
+    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+    render(<Harness />);
+    const knob = screen.getByRole("button", { name: "Open controls" });
+    knob.focus();
+    fireEvent.click(knob);
     const dialog = screen.getByRole("dialog", { name: "Controls" });
+    expect(dialog).toBe(drawer());
     expect(dialog.getAttribute("data-snap")).toBe("half");
-    expect(grip.getAttribute("aria-expanded")).toBe("true");
+    expect(knob.getAttribute("aria-expanded")).toBe("true");
     expect(document.activeElement).toBe(screen.getByText("Inside"));
-    fireEvent.keyDown(screen.getByRole("button", { name: "Resize" }), { key: "ArrowUp" });
-    expect(dialog.getAttribute("data-snap")).toBe("full");
-    fireEvent.keyDown(screen.getByRole("button", { name: "Resize" }), { key: "ArrowDown" });
-    expect(dialog.getAttribute("data-snap")).toBe("half");
+    fireEvent.keyDown(knob, { key: "ArrowUp" });
+    expect(drawer().getAttribute("data-snap")).toBe("full");
+    fireEvent.keyDown(knob, { key: "ArrowDown" });
+    expect(drawer().getAttribute("data-snap")).toBe("half");
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(grip.getAttribute("aria-expanded")).toBe("false");
-    expect(document.activeElement).toBe(grip);
+    expect(drawer().getAttribute("data-snap")).toBe("closed");
+    expect(knob.getAttribute("aria-expanded")).toBe("false");
   });
 
-  it("opens on a tap of the grip and closes on the Close button", () => {
+  it("toggles closed from the knob, with no close button", () => {
+    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
     render(<Harness />);
-    const grip = screen.getByRole("button", { name: "Open controls" });
-    fireEvent.pointerDown(grip, { pointerId: 1, button: 0, clientY: 700 });
-    fireEvent.pointerUp(grip, { pointerId: 1, button: 0, clientY: 700 });
-    expect(screen.getByRole("dialog").getAttribute("data-snap")).toBe("half");
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
-    expect(screen.queryByRole("dialog")).toBeNull();
+    const knob = screen.getByRole("button", { name: "Open controls" });
+    fireEvent.click(knob);
+    expect(drawer().getAttribute("data-snap")).toBe("half");
+    fireEvent.click(knob);
+    expect(drawer().getAttribute("data-snap")).toBe("closed");
   });
 
-  it("follows a drag from the grip and settles on the stop it reached", () => {
-    Object.defineProperty(window, "innerHeight", { value: H, configurable: true });
-    render(<Harness />);
-    const grip = screen.getByRole("button", { name: "Open controls" });
-    fireEvent.pointerDown(grip, { pointerId: 2, button: 0, clientY: 800, timeStamp: 0 });
-    act(() => {
-      fireEvent.pointerMove(grip, { pointerId: 2, clientY: 500, timeStamp: 400 });
-    });
-    expect(screen.getByRole("dialog").hasAttribute("data-dragging")).toBe(true);
-    expect(document.documentElement.style.getPropertyValue("--zr-pit-h")).toBe("300px");
-    act(() => {
-      fireEvent.pointerMove(grip, { pointerId: 2, clientY: 60, timeStamp: 900 });
-    });
-    expect(document.documentElement.style.getPropertyValue("--zr-pit-h")).toBe("740px");
-    fireEvent.pointerUp(grip, { pointerId: 2, clientY: 60, timeStamp: 1400 });
-    const dialog = screen.getByRole("dialog");
-    expect(dialog.getAttribute("data-snap")).toBe("full");
-    expect(dialog.hasAttribute("data-dragging")).toBe(false);
-    expect(document.documentElement.style.getPropertyValue("--zr-pit-h")).toBe("800px");
-  });
-
-  it("pulls the pager's glyph from the table", () => {
+  it("opens straight to full on a short screen", () => {
+    Object.defineProperty(window, "innerHeight", { value: PIT_HALF_MIN - 40, configurable: true });
     render(<Harness />);
     fireEvent.click(screen.getByRole("button", { name: "Open controls" }));
-    expect(document.querySelector(".zr-pit-glyph")!.textContent).toBe("웃");
-    expect(glyphs.delta).toBe("Δ");
+    expect(drawer().getAttribute("data-snap")).toBe("full");
+  });
+
+  it("keeps the composer focused when it opens over a draft", () => {
+    render(<Harness />);
+    const box = screen.getByRole("textbox", { name: "Message" });
+    box.focus();
+    fireEvent.click(screen.getByRole("button", { name: "Open controls" }));
+    expect(drawer().hasAttribute("data-open")).toBe(true);
+    expect(document.activeElement).toBe(box);
+    expect((box as HTMLTextAreaElement).value).toBe("draft");
+  });
+
+  it("follows a drag from anywhere on the head by transform alone and settles on the stop it reached", () => {
+    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+    render(<Harness />);
+    const box = screen.getByRole("textbox", { name: "Message" });
+    const before = document.documentElement.getAttribute("style");
+    fireEvent.pointerDown(box, { pointerId: 2, button: 0, isPrimary: true, clientX: 100, clientY: 780, timeStamp: 0 });
+    act(() => {
+      fireEvent.pointerMove(window, { pointerId: 2, clientX: 100, clientY: 770, timeStamp: 100 });
+    });
+    act(() => {
+      fireEvent.pointerMove(window, { pointerId: 2, clientX: 100, clientY: 480, timeStamp: 400 });
+    });
+    expect(drawer().hasAttribute("data-dragging")).toBe(true);
+    expect(drawer().style.transform).toBe("translate3d(0px, -300px, 0px)");
+    expect(document.documentElement.getAttribute("style")).toBe(before);
+    act(() => {
+      fireEvent.pointerMove(window, { pointerId: 2, clientX: 100, clientY: 60, timeStamp: 900 });
+    });
+    act(() => {
+      fireEvent.pointerUp(window, { pointerId: 2, clientX: 100, clientY: 60, timeStamp: 1400 });
+    });
+    expect(drawer().getAttribute("data-snap")).toBe("full");
+    expect(drawer().hasAttribute("data-dragging")).toBe(false);
+    expect(drawer().style.transform).toBe("");
+  });
+
+  it("leaves a sideways swipe on the head alone", () => {
+    render(<Harness />);
+    const box = screen.getByRole("textbox", { name: "Message" });
+    fireEvent.pointerDown(box, { pointerId: 3, button: 0, isPrimary: true, clientX: 100, clientY: 780, timeStamp: 0 });
+    act(() => {
+      fireEvent.pointerMove(window, { pointerId: 3, clientX: 160, clientY: 775, timeStamp: 50 });
+    });
+    expect(drawer().hasAttribute("data-dragging")).toBe(false);
+    expect(drawer().style.transform).toBe("");
+  });
+
+  it("gives a plain drawer a knob and nothing else", () => {
+    render(<Harness head={false} />);
+    expect(drawer().querySelector(".zr-pit-head")).toBeNull();
+    expect(drawer().querySelector(".zr-pit-knob-bar")).toBeTruthy();
     expect(glyphs.fork).toBe("⑂");
   });
 });

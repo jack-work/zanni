@@ -1,4 +1,5 @@
-import { Button, Pit as ZPit, PitList, PitRow, glyphs, usePit } from "../../index";
+import { Button, Pit as ZPit, PitList, PitRow, glyphs } from "../../index";
+import type { ReactNode } from "react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useState } from "react";
 import { PIT_ROWS, EFFORT_KEY, FORKED_FROM_KEY, byLastUsed, valueAt, type PitRowId, type PitView } from "../lib/pit-rows";
@@ -14,7 +15,7 @@ import { handsFreeAtom, toggleHandsFreeAtom, toggleVoiceAtom, voiceAtom } from "
 import { bootAtom } from "../state/boot";
 import { composerAtom, forkAtom, keyOf } from "../state/composer";
 import { openNewFigaroAtom } from "../state/new-figaro";
-import { attendedFactsAtom, boundStateAtom, markPitUsedAtom, pitUsedAtom, pitViewAtom, queueStateAtom, recentStateAtom, treeStateAtom } from "../state/pit";
+import { attendedFactsAtom, boundStateAtom, markPitUsedAtom, pitSnapAtom, pitUsedAtom, pitViewAtom, queueStateAtom, recentStateAtom, treeStateAtom } from "../state/pit";
 import { attendedRowAtom, rosterAtom } from "../state/roster";
 import { attendedAtom, clientAtom, goAtom, storeNameAtom } from "../state/route";
 
@@ -40,19 +41,23 @@ const FACE: Record<PitView, string> = {
   outfits: glyphs["pit.models"],
 };
 
-export function Pit() {
-  const pit = usePit();
+export function Pit({ head }: { head?: ReactNode }) {
+  const [snap, setSnap] = useAtom(pitSnapAtom);
   const [view, setView] = useAtom(pitViewAtom);
   const { mark } = useAtomValue(bootAtom);
   const attended = useAtomValue(attendedAtom);
   const own = useAtomValue(attendedFactsAtom);
-  const closed = pit?.snap === "closed";
+  const closed = snap === "closed";
   useEffect(() => {
     if (closed) setView("list");
   }, [closed, setView]);
   const name = attended ? own?.mantra || attended.aria.slice(0, 8) : "figaro web";
   return (
-    <ZPit className="fw-pit" label="Controls" title={view === "list" ? name : TITLES[view]} glyph={FACE[view]} icon={mark ? <img className="fw-head" alt="" src={mark} /> : undefined}>
+    <ZPit className="fw-pit" label="Controls" snap={snap} onSnapChange={setSnap} head={head}>
+      <p className="fw-pit-title">
+        {snap === "full" && mark ? <img className="fw-head" alt="" src={mark} /> : <span className="fw-pit-glyph" aria-hidden="true">{FACE[view]}</span>}
+        {view === "list" ? name : TITLES[view]}
+      </p>
       {view !== "list" && (
         <PitList>
           <PitRow glyph="‹" label={name} className="fw-pit-back" onClick={() => setView("list")} />
@@ -72,7 +77,7 @@ export function Pit() {
 }
 
 function ControlList() {
-  const pit = usePit();
+  const setSnap = useSetAtom(pitSnapAtom);
   const setView = useSetAtom(pitViewAtom);
   const used = useAtomValue(pitUsedAtom);
   const markUsed = useSetAtom(markPitUsedAtom);
@@ -105,12 +110,12 @@ function ControlList() {
   };
   const act: Record<PitRowId, () => void> = {
     new: () => {
-      pit?.setSnap("closed");
+      setSnap("closed");
       openNew();
     },
     state: () => setView("state"),
     "tail-fork": () => {
-      pit?.setSnap("closed");
+      setSnap("closed");
       void fork(0);
     },
     "fork-at": () => setView("fork-at"),
@@ -197,7 +202,7 @@ function StateView() {
 }
 
 function ForkAtView() {
-  const pit = usePit();
+  const setSnap = useSetAtom(pitSnapAtom);
   const attended = useAtomValue(attendedAtom)!;
   const turns = useAtomValue(turnsAtom(attended.client, attended.aria));
   const link = useAtomValue(linkAtom);
@@ -214,7 +219,7 @@ function ForkAtView() {
       onSubmit={(ev) => {
         ev.preventDefault();
         if (!ok) return;
-        pit?.setSnap("closed");
+        setSnap("closed");
         void fork({ turn: n, ...(text.trim() ? { text: text.trim() } : {}) });
       }}
     >
@@ -236,12 +241,12 @@ function ForkAtView() {
 }
 
 function TreeView() {
-  const pit = usePit();
-  return <TopologyTree autoFocus onVisit={() => pit?.setSnap("closed")} />;
+  const setSnap = useSetAtom(pitSnapAtom);
+  return <TopologyTree autoFocus onVisit={() => setSnap("closed")} />;
 }
 
 function RecentView() {
-  const pit = usePit();
+  const setSnap = useSetAtom(pitSnapAtom);
   const recent = useAtomValue(recentStateAtom);
   const attended = useAtomValue(attendedAtom);
   const store = useAtomValue(storeNameAtom);
@@ -261,13 +266,13 @@ function RecentView() {
             meta={r.state}
             current={attended?.aria === r.id}
             onClick={() => {
-              pit?.setSnap("closed");
+              setSnap("closed");
               go({ store, aria: r.id });
             }}
           />
         ))}
       </PitList>
-      <OlderArias shown={new Set(recent.rows.map((r) => r.id))} more={recent.more} onVisit={() => pit?.setSnap("closed")} />
+      <OlderArias shown={new Set(recent.rows.map((r) => r.id))} more={recent.more} onVisit={() => setSnap("closed")} />
     </>
   );
 }
@@ -279,7 +284,7 @@ interface OutfitsReply {
 }
 
 function OutfitsView() {
-  const pit = usePit();
+  const setSnap = useSetAtom(pitSnapAtom);
   const client = useAtomValue(clientAtom);
   const row = useAtomValue(attendedRowAtom);
   const bound = useAtomValue(boundStateAtom);
@@ -321,7 +326,7 @@ function OutfitsView() {
             action="outfit"
             id={n}
             onClick={() => {
-              pit?.setSnap("closed");
+              setSnap("closed");
               openNew(n);
             }}
           />
