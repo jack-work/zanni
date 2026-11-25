@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
-import { reducedMotion } from "./motion";
+import { reducedMotion } from "./lib/media";
 
 export const NEAR_BOTTOM = 24;
 export const AWAY_FROM_BOTTOM = 96;

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { rootVar } from "./rootvars";
 
 export const KEYBOARD_MIN = 120;
 
@@ -32,9 +33,8 @@ export function viewportHeight(): number {
   return vv ? frameOf(vv, window.innerHeight).height : Math.round(window.innerHeight);
 }
 
-function clear(root: HTMLElement): void {
-  for (const name of ["--zr-vv-h", "--zr-vv-top", "--zr-kb"]) root.style.removeProperty(name);
-  if (!root.getAttribute("style")) root.removeAttribute("style");
+function clear(): void {
+  for (const name of ["--zr-vv-h", "--zr-vv-top", "--zr-kb"]) rootVar(name, null);
 }
 
 const keyboardListeners = new Set<(open: boolean) => void>();
@@ -54,14 +54,10 @@ export function trackViewport(root: HTMLElement = document.documentElement): () 
     const key = f.height + ":" + f.top + ":" + f.inset + ":" + f.keyboard;
     if (key === last) return;
     last = key;
-    if (f.height === Math.round(window.innerHeight) && f.top === 0) clear(root);
-    else {
-      root.style.setProperty("--zr-vv-h", f.height + "px");
-      root.style.setProperty("--zr-vv-top", f.top + "px");
-    }
-    if (f.inset) root.style.setProperty("--zr-kb", f.inset + "px");
-    else root.style.removeProperty("--zr-kb");
-    if (!root.getAttribute("style")) root.removeAttribute("style");
+    const full = f.height === Math.round(window.innerHeight) && f.top === 0;
+    rootVar("--zr-vv-h", full ? null : f.height + "px");
+    rootVar("--zr-vv-top", full ? null : f.top + "px");
+    rootVar("--zr-kb", f.inset ? f.inset + "px" : null);
     if (f.keyboard) root.setAttribute("data-keyboard", "");
     else root.removeAttribute("data-keyboard");
     if (f.keyboard !== open && Math.abs(vv.scale - 1) <= 0.01) {
@@ -86,7 +82,7 @@ export function trackViewport(root: HTMLElement = document.documentElement): () 
     window.removeEventListener("orientationchange", write);
     window.removeEventListener("pageshow", wake);
     document.removeEventListener("visibilitychange", wake);
-    clear(root);
+    clear();
     root.removeAttribute("data-keyboard");
   };
 }

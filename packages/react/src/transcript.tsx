@@ -2,7 +2,7 @@ import { groupWork, stepsTitle, type Work } from "./work";
 import { duration, time } from "./lib/format";
 import { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Fold } from "./fold";
-import { reducedMotion } from "./motion";
+import { Spinner } from "./spinner";
 import { glyphs } from "./glyphs";
 import { nodi, type InputModel, type Item, type ProseItem, type SteeringItem, type ThinkingItem, type ToolItem, type TurnModel, type UnknownItem } from "./zanni";
 import { BlockView, Plain } from "./text";
@@ -21,8 +21,6 @@ export const TranscriptContext = createContext<TranscriptHooks>({});
 
 const CLIP = 4000;
 const OUTPUT_LINES = 10;
-const SPIN_MS = 80;
-const SPINNER = [...glyphs["tool.running"]];
 
 function settled(item: { settled: boolean }): { "data-settled"?: "" } {
   return item.settled ? { "data-settled": "" } : {};
@@ -101,16 +99,6 @@ export function SteeringView({ item }: { item: SteeringItem }) {
       </div>
     </div>
   );
-}
-
-function Spinner() {
-  const [frame, setFrame] = useState(0);
-  useEffect(() => {
-    if (reducedMotion()) return;
-    const id = setInterval(() => setFrame((f) => (f + 1) % SPINNER.length), SPIN_MS);
-    return () => clearInterval(id);
-  }, []);
-  return <>{SPINNER[frame]}</>;
 }
 
 function ToolMark({ item }: { item: ToolItem }) {
