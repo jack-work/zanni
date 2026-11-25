@@ -21,7 +21,6 @@ export * from "./jotai/lib/asks";
 export * from "./jotai/lib/control-rows";
 export * from "./jotai/lib/stt";
 export { AriaView } from "./jotai/components/aria-view";
-export { Composer as BoundComposer } from "./jotai/components/composer";
 export { Pit as BoundPit } from "./jotai/components/pit";
 export { Roster } from "./jotai/components/roster";
 export { SignedOut } from "./jotai/components/signed-out";

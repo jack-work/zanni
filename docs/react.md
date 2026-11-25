@@ -80,7 +80,7 @@ An inline import map is a script to the CSP: `script-src 'self'` refuses it unle
 Styles: link `index.css` of the core beside the page's z2 token and control CSS, and `parla.css` of the core as well if the page renders `FigaroSays` (it needs the z2 tokens and the fontpack faces, see [parla](parla.md)); `react-jotai/<version>/index.css` is empty and exists so both directories have the same shape. Types: `index.d.ts` is a script file of ambient module declarations (`zanni-react`, and `zanni-react/jotai`, which refers to the core's declarations, so load both); add them to a TypeScript project with `/// <reference path>` or `include`. The manifest's `react` entry lists every export of each bundle under `bundle.exports`, and `checks.zanni-react` fails when it differs from the built files.
 
 ## zanni-react/jotai
-`AriaView`, `Roster`, `StatusBar`, `BoundPit`, `BoundComposer`, `TurnActions` and the atoms behind them (`bootAtom`,
+`AriaView`, `Roster`, `StatusBar`, `BoundPit`, `TurnActions` and the atoms behind them (`bootAtom`,
 `routeAtom`, `rosterAtom`, `composerAtom`, `draftAtom`, `audioSessionAtom`, `micAtom`, `pitViewAtom` and the rest). Needs jotai
 and figaro-forms 0.14 (both peer dependencies of this entry only). figaro web is `app.tsx`, `main.tsx` and `styles/`: it mounts
 these under `.fw` and styles the `fw-*` hooks. `web/test/react/boundary.test.ts` fails if the root entry imports jotai or

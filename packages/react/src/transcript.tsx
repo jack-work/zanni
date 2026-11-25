@@ -107,12 +107,6 @@ export function SteeringView({ item }: { item: SteeringItem }) {
   );
 }
 
-export function toolStatusWord(item: ToolItem): string {
-  let label = item.status === "running" ? "running" : item.status === "error" ? "failed" : "done";
-  if (item.ms >= 1000) label += " " + (item.ms / 1000).toFixed(1) + "s";
-  return label;
-}
-
 function Spinner() {
   const [frame, setFrame] = useState(0);
   useEffect(() => {

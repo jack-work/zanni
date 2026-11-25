@@ -13,11 +13,6 @@ function scrollSource(root: HTMLElement): HTMLElement | Window {
   return root === document.documentElement || root === document.scrollingElement ? window : root;
 }
 
-export function distanceFromBottom(): number {
-  const root = scrollRoot();
-  return root.scrollHeight - root.clientHeight - root.scrollTop;
-}
-
 export function scrollToBottom(): void {
   const root = scrollRoot();
   root.scrollTop = root.scrollHeight;
