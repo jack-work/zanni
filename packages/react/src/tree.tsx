@@ -20,7 +20,6 @@ export interface TreeNodeData {
 
 export interface RowShown {
   label?: ReactNode;
-  role?: ReactNode;
   mantra?: ReactNode;
   value?: ReactNode;
 }
@@ -315,7 +314,7 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, on
               {r.role && (
                 <span className="zr-tree-role" data-tone="holder">
                   {"  "}
-                  {m?.role ?? r.role}
+                  {r.role}
                 </span>
               )}
               {r.mantra && (
