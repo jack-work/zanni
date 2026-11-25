@@ -1,0 +1,10 @@
+/engineer  1/2
+  e3eadfbd-b5fc-4578-b86f-3acab8f411d5: {form: "@arias", self: true}
+  └─ arias (5)
+     └─ @744a27e38ebd91da1988a0445709fb7e (6)
+        └─ forks (1)
+           └─ utopia-magazine (8)  "@King of Spain"  "King of Spain"
+              └─ forks (3)
+▸                └─ cymbal-pry (9)  "@Figaro Engineer"  "Figaro Engineer"
+                    └─ role: "@Figaro Engineer"
+⌕ · wrangle-buffalo · fig batch B: tree like pager                                                         0/200.0k 0.0%

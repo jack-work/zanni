@@ -1,0 +1,55 @@
+package fuzzy
+
+import (
+	"encoding/json"
+	"os"
+	"testing"
+)
+
+func TestZZDump(t *testing.T) {
+	in := os.Getenv("DUMP_IN")
+	if in == "" {
+		t.Skip()
+	}
+	raw, err := os.ReadFile(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc struct {
+		Entries map[string]any `json:"entries"`
+		Queries []string       `json:"queries"`
+	}
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		t.Fatal(err)
+	}
+	var ix Index
+	ix.Update(snapOf(t, doc.Entries))
+	m := NewMatcher()
+	type hitOut struct {
+		Path       string `json:"path"`
+		Score      int    `json:"score"`
+		OnKey      bool   `json:"onKey"`
+		Spread     bool   `json:"spread"`
+		ValueAt    int    `json:"valueAt"`
+		KeyMarks   []int  `json:"keyMarks"`
+		ValueMarks []int  `json:"valueMarks"`
+	}
+	out := map[string][]hitOut{}
+	for _, q := range doc.Queries {
+		var hs []hitOut
+		for _, h := range ix.Query(m, q) {
+			text := valueText(mustRaw(doc.Entries[h.Entry.Path]))
+			hs = append(hs, hitOut{h.Entry.Path, h.Score, h.OnKey, h.Spread, h.ValueAt, h.KeyPositions(m, q), h.ValueMarks(m, q, text, 0)})
+		}
+		out[q] = hs
+	}
+	b, _ := json.MarshalIndent(out, "", " ")
+	if err := os.WriteFile(os.Getenv("DUMP_OUT"), b, 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func mustRaw(v any) json.RawMessage {
+	b, _ := json.Marshal(v)
+	return b
+}

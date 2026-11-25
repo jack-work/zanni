@@ -181,3 +181,34 @@ describe("Tree", () => {
     expect(document.activeElement).not.toBe(screen.getByRole("tree"));
   });
 });
+
+describe("the pager's other motions", () => {
+  const press = (k: string, init: object = {}) => fireEvent.keyDown(document.querySelector("[role='tree']")!, { key: k, ...init });
+  const at = () => document.querySelector("[data-cursor]")!.getAttribute("data-id");
+
+  it("^N and ^P are down and up, PageDown and PageUp half a page", () => {
+    render(<Tree roots={form} mark="⌖" />);
+    press("n", { ctrlKey: true });
+    expect(at()).toBe("datetime");
+    press("n", { ctrlKey: true });
+    press("p", { ctrlKey: true });
+    expect(at()).toBe("datetime");
+    press("PageDown");
+    expect(at()).toBe("deep");
+    press("PageUp");
+    expect(at()).toBe("datetime");
+  });
+
+  it("a key bound by the caller gets the cursor row, ctrl chords arrive as ^x, and the others are left to the browser", () => {
+    const keys = { a: vi.fn(), X: vi.fn(), "^k": vi.fn() };
+    render(<Tree roots={form} mark="⌖" keys={keys} />);
+    const prevented = (init: object) => !fireEvent.keyDown(document.querySelector("[role='tree']")!, init);
+    expect(prevented({ key: "a" })).toBe(true);
+    expect(prevented({ key: "X" })).toBe(true);
+    expect(prevented({ key: "k", ctrlKey: true })).toBe(true);
+    expect(prevented({ key: "r", ctrlKey: true })).toBe(false);
+    expect(keys.a).toHaveBeenCalledWith("aria_id");
+    expect(keys.X).toHaveBeenCalledWith("aria_id");
+    expect(keys["^k"]).toHaveBeenCalledWith("aria_id");
+  });
+});

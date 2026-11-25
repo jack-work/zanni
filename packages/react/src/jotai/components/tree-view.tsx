@@ -1,9 +1,9 @@
 import { Tree, glyphs, type TreeNodeData } from "../../index";
-import { useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { OlderArias } from "./older";
 import { ancestorsOf, formNodes, topologyNodes } from "../lib/topology";
-import { topologyFormsAtom, treeStateAtom } from "../state/pit";
+import { pitSnapAtom, topologyFormsAtom, treeStateAtom } from "../state/pit";
 import { attendedAtom, clientAtom, goAtom, storeNameAtom } from "../state/route";
 
 const ARM_MS = 5000;
@@ -15,6 +15,7 @@ export function TopologyTree({ onVisit, autoFocus, className }: { onVisit?: () =
   const client = useAtomValue(clientAtom);
   const store = useAtomValue(storeNameAtom);
   const go = useSetAtom(goAtom);
+  const [snap, setSnap] = useAtom(pitSnapAtom);
   const last = useRef<string | undefined>(undefined);
   if (attended) last.current = attended.aria;
   const here = attended?.aria ?? last.current;
@@ -30,12 +31,20 @@ export function TopologyTree({ onVisit, autoFocus, className }: { onVisit?: () =
   const defaultOpen = useMemo(() => (id: string) => id.startsWith("@") || open.has(id), [open]);
   if (!tree) return <p className="fw-note">No such store.</p>;
 
-  const kill = (id: string) => {
+  const attend = (id: string) => {
+    const role = tree.nodes.get(id);
+    const aria = role?.kind === "role" ? role.target : id.startsWith("@") ? undefined : id;
+    if (!aria) return;
+    onVisit?.();
+    go({ store, aria });
+  };
+
+  const kill = (id: string, now: boolean) => {
     const node = tree.nodes.get(id);
     if (!node || !client) return;
     const name = node.handle ?? node.label;
-    if (armed.current?.id === id) {
-      clearTimeout(armed.current.timer);
+    if (now || armed.current?.id === id) {
+      clearTimeout(armed.current?.timer);
       armed.current = null;
       setNote("");
       client.connection.call("figaro.kill", { figaro_id: id }).then(
@@ -61,14 +70,8 @@ export function TopologyTree({ onVisit, autoFocus, className }: { onVisit?: () =
         current={here}
         defaultOpen={defaultOpen}
         autoFocus={autoFocus}
-        keys={{ x: kill }}
-        onActivate={(id) => {
-          const role = tree.nodes.get(id);
-          const aria = role?.kind === "role" ? role.target : id.startsWith("@") ? undefined : id;
-          if (!aria) return;
-          onVisit?.();
-          go({ store, aria });
-        }}
+        keys={{ x: (id) => kill(id, false), X: (id) => kill(id, true), a: attend, q: () => setSnap("closed"), F: () => setSnap(snap === "full" ? "half" : "full") }}
+        onActivate={attend}
       />
       <OlderArias shown={new Set(tree.nodes.keys())} more={tree.more} onVisit={onVisit} />
       {(note || status) && (
