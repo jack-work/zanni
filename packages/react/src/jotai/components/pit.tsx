@@ -10,7 +10,7 @@ import { OlderArias } from "./older";
 import { QueueView } from "./queue-view";
 import { TopologyTree, FormTree } from "./tree-view";
 import { FormEdit, type FormEditTarget } from "./form-edit";
-import { attendedRunningAtom, turnsAtom, linkAtom } from "../state/aria";
+import { turnsAtom, linkAtom } from "../state/aria";
 import { handsFreeAtom, toggleHandsFreeAtom, toggleVoiceAtom, voiceAtom } from "../state/audio";
 import { bootAtom } from "../state/boot";
 import { composerAtom, forkAtom, keyOf } from "../state/composer";

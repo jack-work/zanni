@@ -1,6 +1,6 @@
 import { groupWork, stepsTitle, type Work } from "./work";
 import { duration, time } from "./lib/format";
-import { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createContext, memo, useCallback, useContext, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Fold } from "./fold";
 import { Spinner } from "./spinner";
 import { glyphs } from "./glyphs";

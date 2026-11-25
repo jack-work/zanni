@@ -143,6 +143,7 @@
 .zr-pit-close:focus-visible { outline: 2px solid var(--z-focus); outline-offset: -2px; }
 .zr-pit[data-snap="half"] .zr-pit-body::after { content: ""; flex: none; height: calc(var(--zr-vv-h, 100dvh) / 2); }
 .zr-pit-scrim { transition: opacity var(--zr-d-sheet) var(--zr-sheet-curve); }
+.zr-pit-scrim:has(+ .zr-pit[data-dragging]) { transition: none; }
 .zr-latest-dock { position: sticky; bottom: 0; z-index: 2; height: 0; }
 .zr-latest {
   position: absolute;
@@ -304,8 +305,6 @@
   }
   .zr-fold[open]::details-content { block-size: auto; }
 }
-
-[data-swooping] { will-change: transform, opacity; }
 
 .zr-btn.zr-latest[data-variant="accent"] { background: color-mix(in srgb, var(--z-accent) 55%, transparent); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
 .fw .zr-btn.zr-latest:active:not(:disabled) { scale: 1; }
