@@ -83,9 +83,13 @@ not in atoms.
   the `role` key, the mantra in quotes, and ● on the attended aria; the cursor
   row adds `Enter attend · x kill`. Indentation and the disclosure caret are DOM
   and CSS, no guide characters. Open on arrival: the node, `arias`, the attended
-  aria's chain and the aria itself. The tree is the pit's Tree view. j k l h gg G Enter as the pager; `x` says "press x
-  again to kill <handle>" and a second `x` asks the door, which the delegated
-  gateway refuses, and the refusal is shown.
+  aria's chain and the aria itself. The tree is the pit's Tree view. j k l h gg G Enter as the pager;
+  `/` finds as the pager's `/` (Enter keeps the hit, Esc returns); `^n ^p` and
+  the arrows step the hits; `a` attends the cursor row; `q` closes the pit and
+  `F` toggles half and full; `x` says "press x again to kill <handle>" and a
+  second `x` asks the door, which the delegated gateway refuses, and the
+  refusal is shown; `X` kills at once, as the pager's does; both refuse a role
+  row. A bare root creates an aria and attends it with the pit on the Tree.
 - Forks: after one the alternative is attended (`#/<store>/<alt>`, no turn), the
   transcript is the alternative's own history followed to its end, the status bar
   names it by handle and mantra, and there is no banner and no fork glyph there.
