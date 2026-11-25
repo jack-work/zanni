@@ -144,23 +144,28 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, on
   const moveTo = (i: number) => setCursorId(rows[Math.min(Math.max(i, 0), rows.length - 1)]?.id);
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.ctrlKey || e.metaKey || e.altKey || !cursor) return;
+    if (e.metaKey || e.altKey || !cursor) return;
+    const key = e.ctrlKey ? "^" + e.key : e.key;
     const prev = lastKey.current;
-    lastKey.current = e.key;
+    lastKey.current = key;
     const page = Math.max(Math.floor((box.current?.clientHeight ?? 0) / 28 / 2), 1);
-    switch (e.key) {
+    switch (key) {
       case "j":
+      case "^n":
       case "ArrowDown":
         moveTo(at + 1);
         break;
       case "k":
+      case "^p":
       case "ArrowUp":
         moveTo(at - 1);
         break;
       case "d":
+      case "PageDown":
         moveTo(at + page);
         break;
       case "u":
+      case "PageUp":
         moveTo(at - page);
         break;
       case "G":
@@ -189,11 +194,11 @@ export function Tree({ roots, mark, current, defaultOpen = never, onActivate, on
         activate(cursor);
         break;
       default: {
-        if (e.key === "c" && onEdit && cursor.leaf) {
+        if (key === "c" && onEdit && cursor.leaf) {
           onEdit(cursor.id);
           break;
         }
-        const own = keys?.[e.key];
+        const own = keys?.[key];
         if (!own) return;
         own(cursor.id);
       }

@@ -47,6 +47,28 @@ describe("the list", () => {
     await waitFor(() => expect(window.location.hash).toBe("#/home/" + "c0ffee01".repeat(4)));
   });
 
+  it("a attends the cursor row, x arms a kill and X kills at once, as the pager's pit does", async () => {
+    open("#/");
+    await waitFor(() => expect(document.querySelectorAll(".zr-tree-row").length).toBeGreaterThan(5));
+    const main = "c0ffee01".repeat(4);
+    const kills = () => core.calls.filter((c) => c.method === "figaro.kill").map((c) => c.params.figaro_id);
+    const tree = document.querySelector<HTMLElement>("[role='tree']")!;
+    const press = (key: string) => act(() => void fireEvent.keyDown(tree, { key }));
+    const row = document.querySelector<HTMLElement>(".zr-tree-row[data-id='" + main + "']")!;
+    const cursorTo = async () => {
+      for (let i = 0; i < 40 && document.querySelector("[data-cursor]")?.getAttribute("data-id") !== main; i++) press("j");
+    };
+    expect(row).toBeTruthy();
+    await cursorTo();
+    press("x");
+    expect(kills()).toEqual([]);
+    expect(document.body.textContent).toContain("press x again to kill");
+    press("X");
+    await waitFor(() => expect(kills()).toEqual([main]));
+    press("a");
+    await waitFor(() => expect(window.location.hash).toBe("#/home/" + main));
+  });
+
   it("opens only the chain to the attended aria and the attended row itself, as the pager's revealOpen does", async () => {
     open("#/home/" + "c0ffee02".repeat(4));
     await waitFor(() => expect(document.querySelectorAll(".zr-tree-row").length).toBeGreaterThan(5));
