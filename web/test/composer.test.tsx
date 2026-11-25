@@ -107,6 +107,34 @@ describe("the composer", () => {
     await waitFor(() => expect(document.querySelector(".fw-status-stop")).toBeTruthy(), { timeout: 5000 });
   });
 
+  it("saving an edit of a queued message sends nothing from the draft, and the pile is not inside the composer form", async () => {
+    attend(150);
+    await live();
+    fireEvent.change(input(), { target: { value: "please run the build" } });
+    act(() => screen.getByRole("button", { name: "Send" }).click());
+    await waitFor(() => expect(document.querySelector(".fw-status-stop")).toBeTruthy(), { timeout: 5000 });
+    act(() =>
+      core.setQueue(MAIN, {
+        epoch: "e1",
+        len: 1,
+        order: [5],
+        items: { "5": { state: "queued", text: "first thing" } },
+      }),
+    );
+    await waitFor(() => expect(document.querySelector(".fw-pile")).toBeTruthy());
+    expect(document.querySelector(".fw-pile")!.closest("form")).toBeNull();
+    fireEvent.change(input(), { target: { value: "half typed steer" } });
+    act(() => (document.querySelector(".fw-pile-head") as HTMLElement).click());
+    act(() => (document.querySelector(".fw-pile .zr-queue-row[data-id='5']") as HTMLElement).click());
+    act(() => screen.getByRole("button", { name: "Edit" }).click());
+    fireEvent.change(screen.getByRole("textbox", { name: "Queued message" }), { target: { value: "better words" } });
+    const before = (core.sent ?? []).length;
+    act(() => screen.getByRole("button", { name: "Save" }).click());
+    await waitFor(() => expect(core.calls.some((c) => c.method === "figaro.queue.update")).toBe(true));
+    expect((core.sent ?? []).length).toBe(before);
+    expect(input().value).toBe("half typed steer");
+  });
+
   it("piles the queue above the input, expands it, stops all from there, and hides it while the pit is open", async () => {
     attend(150);
     await live();

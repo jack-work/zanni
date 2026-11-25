@@ -24,7 +24,6 @@ export interface ComposerProps {
   enterRuns?: boolean;
   sendDisabled?: boolean;
   running?: boolean;
-  queue?: ReactNode;
   accessory?: ReactNode;
   stacked?: boolean;
   focusTick?: number;
@@ -61,7 +60,7 @@ function markScrolls(el: HTMLTextAreaElement): void {
 }
 
 export function Composer(props: ComposerProps) {
-  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendGlyph, attach, command, prompt, mode, hints, tray, onEscape, onTab, enterRuns, sendDisabled, running, queue, accessory, stacked, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
+  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendGlyph, attach, command, prompt, mode, hints, tray, onEscape, onTab, enterRuns, sendDisabled, running, accessory, stacked, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
   const form = useRef<HTMLFormElement | null>(null);
   const input = useRef<HTMLTextAreaElement | null>(null);
   const typing = useRef(false);
@@ -161,7 +160,6 @@ export function Composer(props: ComposerProps) {
         submit();
       }}
     >
-      {queue}
       {tray}
       {hints}
       <div className="zr-compose-row" data-attach={attach ? "" : undefined} data-stack={!prompt && (stack || stacked) ? "" : undefined} data-prompt={prompt ? "" : undefined}>
