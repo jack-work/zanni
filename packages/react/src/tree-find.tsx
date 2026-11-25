@@ -268,6 +268,7 @@ export interface BarProps {
 
 export function Bar({ query, tally, edit, hop, flip, end }: BarProps) {
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
     const key = e.ctrlKey ? "^" + e.key : e.key;
     if (key === "ArrowDown" || key === "^n") hop(1);
     else if (key === "ArrowUp" || key === "^p") hop(-1);
