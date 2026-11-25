@@ -27,9 +27,20 @@ const gatewayBin = () => {
   return bin;
 };
 
+const parityDir = () => process.env.FIGARO_PARITY_DIR ?? "/var/tmp/figaro-parity/scripts/parity";
+
+const refuseSpentUnit = (file: string) => {
+  try {
+    execFileSync("python3", [`${parityDir()}/unit.py`, "check", file], { stdio: ["ignore", "ignore", "inherit"] });
+  } catch {
+    throw new Error("spent parity unit: start a fresh one");
+  }
+};
+
 export async function realUnit(scenario: Scenario): Promise<Unit> {
   const file = process.env.PARITY_UNIT;
   if (!file || !existsSync(file)) throw new Error("PARITY_REAL=1 needs PARITY_UNIT=<unit.json> from scripts/parity/unit.py up");
+  if (scenario.id === "error") refuseSpentUnit(file);
   const unit: UnitFile = JSON.parse(readFileSync(file, "utf8"));
   const inherited = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^(FIGARO_|HUSH_|ANTHROPIC_|TMUX$)/.test(k)));
   const env = { ...inherited, ...unit.env } as NodeJS.ProcessEnv;
