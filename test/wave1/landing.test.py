@@ -29,6 +29,15 @@ def main():
 
                 rep.run("%dpx: the bare root lands on a fresh figaro with the tree" % width, lands)
 
+                def types():
+                    kills = len([f for f in frames if "figaro.kill" in f])
+                    pg.keyboard.type("Xhello")
+                    rep.check(pg.locator("[data-testid='composer-input']").input_value() == "Xhello", "%dpx: the first keys after landing go to the composer" % width)
+                    rep.check(len([f for f in frames if "figaro.kill" in f]) == kills, "%dpx: and kill nothing" % width)
+                    pg.locator("[data-testid='composer-input']").fill("")
+
+                rep.run("%dpx: landing leaves focus on the composer" % width, types)
+
                 def stays():
                     before = len([f for f in frames if "figaro.create" in f])
                     pg.goto(door.url + "#/")

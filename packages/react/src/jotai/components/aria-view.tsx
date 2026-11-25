@@ -68,7 +68,7 @@ export function AriaView({ attended }: { attended: Attended }) {
   const heading = row ? labelOf(row) : aria.slice(0, 8);
 
   useEffect(() => {
-    headRef.current?.focus({ preventScroll: true });
+    if (!document.activeElement?.closest(".zr-pit-head")) headRef.current?.focus({ preventScroll: true });
   }, []);
 
   const loadOlder = useCallback(async (): Promise<boolean> => {

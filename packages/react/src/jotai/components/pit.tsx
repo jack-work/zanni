@@ -1,6 +1,6 @@
 import { Button, Pit as ZPit, PitList, PitRow, glyphs } from "../../index";
 import type { ReactNode } from "react";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom, useStore } from "jotai";
 import { useEffect, useState } from "react";
 import { PIT_ROWS, EFFORT_KEY, FORKED_FROM_KEY, byLastUsed, valueAt, type PitRowId, type PitView } from "../lib/pit-rows";
 import { PHASE_WORDS, labelOf } from "../lib/roster";
@@ -15,7 +15,7 @@ import { handsFreeAtom, toggleHandsFreeAtom, toggleVoiceAtom, voiceAtom } from "
 import { bootAtom } from "../state/boot";
 import { composerAtom, forkAtom, keyOf } from "../state/composer";
 import { openNewFigaroAtom } from "../state/new-figaro";
-import { attendedFactsAtom, boundStateAtom, markPitUsedAtom, pitSnapAtom, pitUsedAtom, pitViewAtom, queueStateAtom, recentStateAtom, treeStateAtom } from "../state/pit";
+import { attendedFactsAtom, boundStateAtom, markPitUsedAtom, pitSnapAtom, pitUsedAtom, pitViewAtom, queueStateAtom, recentStateAtom, treeStateAtom, treeTakesFocusAtom } from "../state/pit";
 import { attendedRowAtom, rosterAtom } from "../state/roster";
 import { attendedAtom, clientAtom, goAtom, storeNameAtom } from "../state/route";
 
@@ -242,7 +242,10 @@ function ForkAtView() {
 
 function TreeView() {
   const setSnap = useSetAtom(pitSnapAtom);
-  return <TopologyTree autoFocus onVisit={() => setSnap("closed")} />;
+  const store = useStore();
+  const [focus] = useState(() => store.get(treeTakesFocusAtom));
+  useEffect(() => store.set(treeTakesFocusAtom, true), [store]);
+  return <TopologyTree autoFocus={focus} onVisit={() => setSnap("closed")} />;
 }
 
 function RecentView() {

@@ -16,7 +16,7 @@ export const micAtom = atom<MicSnapshot>({ state: canRecord(browserMedia()) ? "i
 const controller = atom<Dictation | null>(null);
 let dictation: Action | null = null;
 
-export const dictationFocusAtom = atom(0);
+export const composerFocusAtom = atom(0);
 
 function writeLevel(value: number): void {
   const root = document.documentElement.style;
@@ -64,7 +64,7 @@ export const micToggleAtom = atom(null, async (get, set) => {
     const joined = joinDictation(base, text);
     set(draftAtom(key), joined);
     if (final && audioId) set(dictatedAtom(key), { id: audioId, text: joined });
-    set(dictationFocusAtom, (n) => n + 1);
+    set(composerFocusAtom, (n) => n + 1);
   });
 });
 
