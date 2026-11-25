@@ -558,6 +558,33 @@
       "constructed": true,
       "knobs": ["--voce-hit", "--voce-thumb", "--voce-bar", "--voce-face"]
     },
+    "sitenav": {
+      "summary": "The estate header: the k mark and links to Account, Files and Figaro, on a bar ruled in the k's gold. A static partial and one stylesheet; no script.",
+      "marker": "<!-- zanni:sitenav -->",
+      "classes": [
+        "sitenav",
+        "sitenav-mark",
+        "sitenav-links"
+      ],
+      "files": [
+        "sitenav.css"
+      ],
+      "assets": [
+        "sitenav.html"
+      ],
+      "docs": "docs/sitenav.md",
+      "example": "examples/sitenav.html",
+      "requires": [
+        "gesso",
+        "fontpack"
+      ],
+      "knobs": [
+        "--sitenav-rule",
+        "--sitenav-ground",
+        "--sitenav-ink",
+        "--sitenav-height"
+      ]
+    },
     "rotolo": {
       "summary": "Thin scrollbars on the page and every scroll container under it: a dark track and an accent thumb that lights on hover, Firefox and Chromium alike.",
       "marker": "<!-- zanni:rotolo -->",
