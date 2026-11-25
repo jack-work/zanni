@@ -1,9 +1,8 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type Ref } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { Pill, PillPair, type PillSpec } from "./pill";
 import { onKeyboard } from "./viewport";
 
 export const KEYBOARD_CLOSE_SETTLE_MS = 300;
-export const ONE_LINE_MAX = 44;
 
 export interface ComposerProps {
   value: string;
@@ -88,20 +87,6 @@ export function Composer(props: ComposerProps) {
     else if (inputRef) (inputRef as { current: HTMLTextAreaElement | null }).current = el;
   };
 
-  const [stack, setStack] = useState(false);
-  useEffect(() => {
-    if (value === "") setStack(false);
-  }, [value]);
-  useEffect(() => {
-    const el = input.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const watch = new ResizeObserver(() => {
-      if (el.offsetHeight > ONE_LINE_MAX) setStack(true);
-    });
-    watch.observe(el);
-    return () => watch.disconnect();
-  }, []);
-
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const off = onKeyboard((open) => {
@@ -165,7 +150,7 @@ export function Composer(props: ComposerProps) {
     >
       {tray}
       {hints}
-      <div className="zr-compose-row" data-attach={attach ? "" : undefined} data-stack={!prompt && !field && stack ? "" : undefined} data-prompt={prompt ? "" : undefined}>
+      <div className="zr-compose-row" data-attach={attach ? "" : undefined} data-stack={!prompt && !field ? "" : undefined} data-prompt={prompt ? "" : undefined}>
         {attach && <Pill {...attach} className="zr-attach" />}
         {prompt && (
           <span className="zr-prompt" aria-hidden="true">
