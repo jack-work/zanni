@@ -22,6 +22,11 @@ function setGap(slot: number, px: number): void {
   (sheet.cssRules[slot] as CSSStyleRule).style.height = px + "px";
 }
 
+function restingTop(el: HTMLElement): number {
+  const shift = typeof DOMMatrix === "function" ? new DOMMatrix(getComputedStyle(el).transform).m42 : 0;
+  return el.getBoundingClientRect().top - shift;
+}
+
 export function useTurnWindow(turns: readonly { readonly turn: number }[]) {
   const heights = useRef<Record<string, number>>({});
   const [anchor, setAnchor] = useState(-1);
@@ -55,7 +60,7 @@ export function useTurnWindow(turns: readonly { readonly turn: number }[]) {
     const root = scrollRoot();
     const read = () => {
       const all = latest.current;
-      const y = root.scrollTop - (document.querySelector(".nodi-turns")!.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop);
+      const y = root.scrollTop - (restingTop(document.querySelector<HTMLElement>(".nodi-turns")!) - root.getBoundingClientRect().top + root.scrollTop);
       let acc = 0;
       let i = 0;
       for (; i < all.length - 1 && (acc += sizeOf(i, all)) <= y; i++);

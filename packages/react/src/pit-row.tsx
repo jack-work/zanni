@@ -43,9 +43,9 @@ export function PitRow({ glyph, label, meta, sub, expanded, detail, depth = 0, c
   );
 }
 
-export function PitList({ label, children }: { label?: string; children: ReactNode }) {
+export function PitList({ label, className, children }: { label?: string; className?: string; children: ReactNode }) {
   return (
-    <ul className="zr-pit-list" aria-label={label}>
+    <ul className={["zr-pit-list", className].filter(Boolean).join(" ")} aria-label={label}>
       {children}
     </ul>
   );

@@ -24,6 +24,7 @@ export interface ComposerProps {
   enterRuns?: boolean;
   sendDisabled?: boolean;
   running?: boolean;
+  queue?: ReactNode;
   accessory?: ReactNode;
   stacked?: boolean;
   grip?: ReactNode;
@@ -57,7 +58,7 @@ export function useSizeVar(ref: { current: HTMLElement | null }, name: string): 
 }
 
 export function Composer(props: ComposerProps) {
-  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendGlyph, attach, command, prompt, mode, hints, tray, onEscape, onTab, enterRuns, sendDisabled, running, accessory, stacked, grip, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
+  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendGlyph, attach, command, prompt, mode, hints, tray, onEscape, onTab, enterRuns, sendDisabled, running, queue, accessory, stacked, grip, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
   const form = useRef<HTMLFormElement | null>(null);
   const input = useRef<HTMLTextAreaElement | null>(null);
   const typing = useRef(false);
@@ -154,6 +155,7 @@ export function Composer(props: ComposerProps) {
       }}
     >
       {grip}
+      {queue}
       {tray}
       {hints}
       <div className="zr-compose-row" data-attach={attach ? "" : undefined} data-stack={!prompt && (stack || stacked) ? "" : undefined} data-prompt={prompt ? "" : undefined}>

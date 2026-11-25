@@ -158,6 +158,11 @@ body.fw-page {
 .fw-subbar { display: flex; align-items: center; justify-content: space-between; gap: var(--z-space-3, 8px); }
 .fw-subtools { display: inline-flex; gap: var(--z-space-3, 8px); margin-left: auto; }
 .fw-voice { min-width: 5.5rem; }
+.fw-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--z-space-3, 8px); padding-bottom: var(--z-space-3, 8px); border-top: 0; }
+.fw-controls .zr-pit-row { display: flex; justify-content: center; border: 1px solid var(--z-line); border-radius: 10px; padding: 0 var(--z-space-2, 4px); font-size: 1rem; }
+.fw-controls .zr-pit-row-glyph { display: none; }
+.fw-controls .zr-pit-row[aria-pressed="true"] { border-color: var(--z-accent); color: var(--z-accent); }
+.fw-controls .fw-voice { min-width: 0; }
 
 .fw[data-mic="recording"] .zr-input { border-color: var(--z-fail); }
 
@@ -292,5 +297,18 @@ body.fw-page {
 
 .fw-status-line { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--z-muted); }
 .fw-status-line[data-kind="note"] { color: var(--z-warn); }
-.fw-status-stop { flex: none; align-self: stretch; margin-block: 0; padding: 0 var(--z-space-2, 4px); border: 0; background: none; color: var(--z-accent); font: inherit; cursor: pointer; touch-action: manipulation; }
+.fw-status-stop { flex: none; align-self: center; min-width: 24px; height: 22px; margin-block: 0; padding: 0 var(--z-space-2, 4px); border: 1px solid var(--z-accent); border-radius: 6px; background: none; color: var(--z-accent); font: inherit; cursor: pointer; touch-action: manipulation; }
 .fw-status-stop:focus-visible { outline: 2px solid var(--z-focus); outline-offset: -2px; }
+
+.fw-pile { position: relative; z-index: 1; display: flex; flex-direction: column; border-bottom: 1px solid var(--z-line); }
+.fw-pile-head { display: grid; grid-template-columns: 2rem minmax(0, 1fr) auto; align-items: center; gap: var(--z-space-3, 8px); width: 100%; min-height: 32px; padding: 0; border: 0; background: none; color: var(--z-muted); font: 400 1.0625rem / 1 var(--fw-mono); letter-spacing: 0.04em; text-align: left; cursor: pointer; touch-action: manipulation; }
+.fw-pile-head:focus-visible { outline: 2px solid var(--z-focus); outline-offset: -2px; }
+.fw-pile-mark { display: inline-grid; place-items: center; width: 28px; height: 28px; margin-left: var(--z-space-2, 4px); border: 1px solid var(--z-line); border-radius: 8px; }
+.fw-pile-glyph { text-align: center; }
+.fw-pile[data-open] .fw-pile-glyph { color: var(--z-accent); }
+.fw-pile-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fw-pile-count { padding-right: var(--z-space-2, 4px); }
+.fw-pile-body { max-height: 40vh; overflow-y: auto; overscroll-behavior: contain; }
+.fw-pile-body .zr-pit-list { border-top: 0; }
+.fw-pile-body .fw-stop-all { margin-block: var(--z-space-2, 4px); }
+@media (pointer: coarse) { .fw-pile-head { min-height: 44px; } }

@@ -1,5 +1,7 @@
 import { glyphs } from "../../index";
 
+export const PAUSE_GLYPH = "\uf04c";
+
 export const STATUS_SPINNER = [...glyphs["tool.running"]];
 
 export function fmtTokens(n: number): string {

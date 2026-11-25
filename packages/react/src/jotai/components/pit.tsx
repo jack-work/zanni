@@ -9,12 +9,12 @@ import { OlderArias } from "./older";
 import { QueueView } from "./queue-view";
 import { TopologyTree, FormTree } from "./tree-view";
 import { FormEdit, type FormEditTarget } from "./form-edit";
-import { turnsAtom, linkAtom } from "../state/aria";
+import { attendedRunningAtom, turnsAtom, linkAtom } from "../state/aria";
 import { handsFreeAtom, toggleHandsFreeAtom, toggleVoiceAtom, voiceAtom } from "../state/audio";
 import { bootAtom } from "../state/boot";
-import { composerAtom, forkAtom, interruptAtom, keyOf } from "../state/composer";
+import { composerAtom, forkAtom, keyOf } from "../state/composer";
 import { openNewFigaroAtom } from "../state/new-figaro";
-import { attendedFactsAtom, attendedRunningAtom, boundStateAtom, markPitUsedAtom, pitUsedAtom, pitViewAtom, queueStateAtom, recentStateAtom, treeStateAtom } from "../state/pit";
+import { attendedFactsAtom, boundStateAtom, markPitUsedAtom, pitUsedAtom, pitViewAtom, queueStateAtom, recentStateAtom, treeStateAtom } from "../state/pit";
 import { attendedRowAtom, rosterAtom } from "../state/roster";
 import { attendedAtom, clientAtom, goAtom, storeNameAtom } from "../state/route";
 
@@ -89,8 +89,6 @@ function ControlList() {
   const toggleVoice = useSetAtom(toggleVoiceAtom);
   const handsFree = useAtomValue(handsFreeAtom);
   const toggleHandsFree = useSetAtom(toggleHandsFreeAtom);
-  const interrupt = useSetAtom(interruptAtom);
-  const running = useAtomValue(attendedRunningAtom);
   const openNew = useSetAtom(openNewFigaroAtom);
   const fork = useSetAtom(forkAtom);
   const live = link === "live";
@@ -123,29 +121,33 @@ function ControlList() {
     outfits: () => setView("outfits"),
     voice: () => toggleVoice(),
     "hands-free": () => toggleHandsFree(),
-    "stop-all": () => void interrupt("clear"),
   };
-  const off = (id: PitRowId): boolean => (id === "tail-fork" ? !attended || !live || forking : id === "stop-all" ? !live || !running : id === "state" || id === "fork-at" || id === "outfits" || id === "queue" || id === "hands-free" ? !attended : false);
+  const off = (id: PitRowId): boolean => (id === "tail-fork" ? !attended || !live || forking : id === "state" || id === "fork-at" || id === "outfits" || id === "queue" || id === "hands-free" ? !attended : false);
 
+  const sorted = byLastUsed(PIT_ROWS, used);
+  const draw = (r: (typeof PIT_ROWS)[number]) => (
+    <PitRow
+      key={r.id}
+      glyph={r.tile ? "" : r.glyph}
+      label={r.tile ?? r.label}
+      meta={r.tile ? undefined : meta[r.id]}
+      action={r.id}
+      className={r.id === "voice" ? "fw-voice" : r.id === "hands-free" ? "fw-hands" : "fw-pit-act"}
+      pressed={r.id === "voice" ? voice : r.id === "hands-free" ? handsFree : undefined}
+      disabled={off(r.id)}
+      onClick={() => {
+        markUsed(r.id);
+        act[r.id]();
+      }}
+    />
+  );
   return (
-    <PitList label="Controls">
-      {byLastUsed(PIT_ROWS, used).map((r) => (
-        <PitRow
-          key={r.id}
-          glyph={r.glyph}
-          label={r.label}
-          meta={meta[r.id]}
-          action={r.id}
-          className={r.id === "voice" ? "fw-voice" : r.id === "hands-free" ? "fw-hands" : r.id === "stop-all" ? "fw-stop-all" : "fw-pit-act"}
-          pressed={r.id === "voice" ? voice : r.id === "hands-free" ? handsFree : undefined}
-          disabled={off(r.id)}
-          onClick={() => {
-            markUsed(r.id);
-            act[r.id]();
-          }}
-        />
-      ))}
-    </PitList>
+    <>
+      <PitList label="Controls" className="fw-controls">
+        {sorted.filter((r) => r.tile).map(draw)}
+      </PitList>
+      <PitList label="Details">{sorted.filter((r) => !r.tile).map(draw)}</PitList>
+    </>
   );
 }
 
