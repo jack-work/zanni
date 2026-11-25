@@ -177,7 +177,7 @@ body.fw-page {
 .fw[data-voice] .fw-mic { border-color: var(--z-accent); background: color-mix(in srgb, var(--z-accent) 14%, transparent); }
 .fw-mic-glyph { flex: none; }
 .fw-mic-meter { position: absolute; left: 12px; right: 12px; bottom: 0; height: 3px; border-radius: 2px; background: currentColor; transform-origin: left center; transform: scaleX(var(--fw-mic-level, 0.04)); transition: transform 60ms linear; }
-.zr-pit-head .fw-mic { border-color: var(--z-line); background: var(--z-ground-2); }
+
 .fw-mic[aria-pressed="true"] { background: var(--z-fail); border-color: var(--z-fail); color: var(--z-ground); }
 
 .fw-inline { display: flex; flex-direction: column; align-items: flex-start; gap: var(--z-space-2, 4px); }
@@ -305,7 +305,7 @@ body.fw-page {
 .fw-status-stop:focus-visible { outline: 2px solid var(--z-focus); outline-offset: -2px; }
 
 .fw-pile { position: relative; z-index: 1; display: flex; flex-direction: column; color: var(--z-muted); border-bottom: 1px solid color-mix(in srgb, currentColor 35%, transparent); }
-.zr-pit-head .fw-pile { color: var(--z-on-accent); }
+.zr-pit-head .fw-pile { color: var(--z-ink); }
 .fw-pile-head { display: grid; grid-template-columns: 2rem minmax(0, 1fr) auto; align-items: center; gap: var(--z-space-3, 8px); width: 100%; min-height: 32px; padding: 0; border: 0; background: none; color: inherit; font: 400 1.0625rem / 1 var(--fw-mono); letter-spacing: 0.04em; text-align: left; cursor: pointer; touch-action: manipulation; }
 .fw-pile-head:focus-visible { outline: 2px solid var(--z-focus); outline-offset: -2px; }
 .fw-pile-mark { display: inline-grid; place-items: center; width: 28px; height: 28px; margin-left: var(--z-space-2, 4px); color: currentColor; }
