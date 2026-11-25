@@ -732,7 +732,14 @@ try:
             landed = "new Promise((r) => requestAnimationFrame(() => setTimeout(() => { const s = %s; r(Math.round((s.scrollHeight - s.clientHeight - s.scrollTop) * 100) / 100); }, 0)))" % root_js
 
             def latest_lands(what):
-                pg.wait_for_selector(".zr-latest")
+                try:
+                    pg.wait_for_selector(".zr-latest", timeout=20000)
+                except Exception:
+                    print("LATEST-DIAG", width, what, pg.evaluate("""() => { const s = document.querySelector('[data-zr-scroll]'); const pit = document.querySelector('.zr-pit'); const l = document.querySelector('.zr-latest');
+                      return { gap: Math.round(s.scrollHeight - s.clientHeight - s.scrollTop), top: s.scrollTop, h: s.scrollHeight, ch: s.clientHeight, cw: s.clientWidth,
+                        pit: pit && [...pit.attributes].map((a) => a.name + '=' + a.value).join(' '), latest: !!l, latestDisplay: l && getComputedStyle(l).display,
+                        held: document.querySelector('.nodi-turns') && document.querySelector('.nodi-turns').dataset.held, swooping: !!document.querySelector('[data-swooping]') }; }"""))
+                    raise
                 pg.locator(".zr-latest").click()
                 swoop = pg.evaluate("(() => { const n = document.querySelector('.nodi-turns'); const a = n.getAnimations(); return { marked: n.hasAttribute('data-swooping'), frames: a.length ? a[0].effect.getKeyframes().map((k) => k.transform) : [], ms: a.length ? a[0].effect.getTiming().duration : 0, props: a.length ? Object.keys(a[0].effect.getKeyframes()[0]).filter((k) => !['offset', 'computedOffset', 'easing', 'composite'].includes(k)).sort() : [] }; })()")
                 assert swoop["marked"] and len(swoop["frames"]) == 2 and swoop["frames"][1] == "translateY(0px)" and swoop["frames"][0].startswith("translateY(-"), "%s at %d: the content swoops down into place: %s" % (what, width, swoop)
