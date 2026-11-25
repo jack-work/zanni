@@ -1,7 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { Pill, PillPair, type PillSpec } from "./pill";
-import { Strip, type StripProps } from "./strip";
-import { useLinger } from "./motion";
 import { onKeyboard } from "./viewport";
 
 export const KEYBOARD_CLOSE_SETTLE_MS = 300;
@@ -26,8 +24,6 @@ export interface ComposerProps {
   enterRuns?: boolean;
   sendDisabled?: boolean;
   running?: boolean;
-  strip?: Omit<StripProps, "leaving"> | null;
-  stripActions?: ReactNode;
   accessory?: ReactNode;
   stacked?: boolean;
   grip?: ReactNode;
@@ -61,7 +57,7 @@ export function useSizeVar(ref: { current: HTMLElement | null }, name: string): 
 }
 
 export function Composer(props: ComposerProps) {
-  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendGlyph, attach, command, prompt, mode, hints, tray, onEscape, onTab, enterRuns, sendDisabled, running, strip, stripActions, accessory, stacked, grip, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
+  const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendGlyph, attach, command, prompt, mode, hints, tray, onEscape, onTab, enterRuns, sendDisabled, running, accessory, stacked, grip, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
   const form = useRef<HTMLFormElement | null>(null);
   const input = useRef<HTMLTextAreaElement | null>(null);
   const typing = useRef(false);
@@ -139,9 +135,6 @@ export function Composer(props: ComposerProps) {
     void onSubmit();
   };
 
-  const shown = useLinger(!!strip);
-  const frozen = useRef(strip);
-  if (strip) frozen.current = strip;
   const swap = useRef({ label: sendLabel, swapped: false });
   if (swap.current.label !== sendLabel) swap.current = { label: sendLabel, swapped: true };
 
@@ -161,11 +154,6 @@ export function Composer(props: ComposerProps) {
       }}
     >
       {grip}
-      {shown.mounted && frozen.current && (
-        <Strip {...frozen.current} leaving={shown.leaving}>
-          {frozen.current.kind === "running" ? stripActions : null}
-        </Strip>
-      )}
       {tray}
       {hints}
       <div className="zr-compose-row" data-attach={attach ? "" : undefined} data-stack={!prompt && (stack || stacked) ? "" : undefined} data-prompt={prompt ? "" : undefined}>

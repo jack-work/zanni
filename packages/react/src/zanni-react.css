@@ -178,7 +178,6 @@
   .zr-composer > .zr-grip { top: calc(-1 * var(--zr-grip-reach)); width: 120px; height: calc(var(--zr-grip-reach) + 6px); padding-bottom: 4px; align-items: flex-end; }
   .zr-pit-handle { height: 44px; }
   .zr-pill::after { content: ""; position: absolute; inset: -4px; }
-  .zr-strip { height: 44px; }
 }
 
 .zr-composer {
@@ -261,32 +260,6 @@
 .zr-pill-pair > .zr-pill + .zr-pill { margin-left: -1px; }
 .zr-send { background: var(--z-accent); border-color: var(--z-accent); color: var(--z-on-accent); }
 @keyframes zr-swap { from { scale: 0.7; opacity: 0; } }
-
-.zr-strip {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: var(--z-space-3, 8px);
-  height: 32px;
-  font: 400 1.0625rem / 1 var(--zr-mono, "VT323", "Nerd Icons", ui-monospace, monospace);
-  letter-spacing: 0.04em;
-  color: var(--z-muted);
-  translate: 0 0;
-  opacity: 1;
-  transition: translate var(--zr-d-slide) var(--zr-spring), opacity var(--zr-d-exit) var(--zr-out);
-  @starting-style { translate: 0 100%; opacity: 0; }
-}
-.zr-strip[data-leaving] { translate: 0 100%; opacity: 0; transition: translate var(--zr-d-exit) var(--zr-out), opacity var(--zr-d-exit) var(--zr-out); }
-.zr-strip-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.zr-strip[data-kind="note"] .zr-strip-text { color: var(--z-warn); }
-.zr-strip-time { flex: none; }
-.zr-glyph { display: inline-grid; grid-auto-flow: column; gap: 2px; flex: none; width: 22px; height: 8px; }
-.zr-glyph i { display: block; background: var(--z-accent); animation: zr-glyph 900ms steps(1, end) infinite; }
-.zr-glyph i:nth-child(2) { animation-delay: -600ms; }
-.zr-glyph i:nth-child(3) { animation-delay: -300ms; }
-@keyframes zr-glyph { 0% { opacity: 1; } 33.3% { opacity: 0.25; } 100% { opacity: 0.25; } }
-@media (prefers-reduced-motion: reduce) { .zr-glyph i { animation: none !important; opacity: 1; } }
 
 .zr-actionbar { display: inline-flex; gap: var(--z-space-2, 4px); }
 @media (hover: hover) and (pointer: fine) {

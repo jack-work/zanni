@@ -85,7 +85,7 @@ describe("command mode in the composer", () => {
     await run("set mantra x");
     await waitFor(() => expect(sets()[0]?.keys).toEqual(["mantra"]));
     await waitFor(() => expect(pill().getAttribute("aria-pressed")).toBe("false"));
-    expect(document.querySelector(".zr-strip-text")!.textContent).toBe("Set mantra.");
+    expect(document.querySelector(".fw-status-line")!.textContent).toBe("Set mantra.");
   });
 
   it(":set on a key the gateway will not write shows the refusal in place and stays in command mode", async () => {
@@ -204,7 +204,7 @@ describe("command mode in the composer", () => {
   it("answers :get and :hup, and never sends the command line as a message", async () => {
     await attend();
     await run("get mantra");
-    await waitFor(() => expect(document.querySelector(".zr-strip-text")!.textContent).toContain("Zanni"));
+    await waitFor(() => expect(document.querySelector(".fw-status-line")!.textContent).toContain("Zanni"));
     expect(core.sent ?? []).toEqual([]);
   });
 });
