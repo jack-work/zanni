@@ -7,7 +7,7 @@ function ListHint() {
   return (
     <main className="fw-main" tabIndex={-1}>
       <h1 className="fw-h1">figaro web</h1>
-      <p className="fw-note">Pick an aria to attend.</p>
+      <p className="fw-note">Open the controls and choose Tree to pick an aria.</p>
     </main>
   );
 }

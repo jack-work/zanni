@@ -117,6 +117,7 @@ body.fw-page {
 .fw-main > * + * { margin-top: var(--z-space-4, 12px); }
 .fw-back { display: inline-flex; align-items: center; min-height: var(--z-control-hit); color: var(--accent-ink); font: 400 1.125rem / 1 var(--fw-mono); letter-spacing: 0.04em; text-decoration: none; -webkit-user-select: none; user-select: none; }
 .fw-back::before { content: ""; width: 0.7em; height: 0.7em; margin-right: 8px; background: currentColor; clip-path: var(--fw-caret); rotate: 180deg; }
+@media (min-width: 640px) { .fw-back { display: none; } }
 .fw-h1 { font: 400 2rem / 1.1 var(--fw-display); letter-spacing: 0.02em; overflow-wrap: anywhere; margin-top: 0 !important; }
 .fw-older { display: flex; width: 100%; }
 .fw-metrics { min-height: 1rem; }
