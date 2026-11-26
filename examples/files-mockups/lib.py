@@ -305,7 +305,9 @@ body.shot .mk-bar,body.shot .from{display:none!important}
 """
 
 MK_JS = """
-(function(){var q=new URLSearchParams(location.search);
+(function(){document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href^="#"]');
+if(!a||e.defaultPrevented||e.button||e.metaKey||e.ctrlKey||e.shiftKey)return;e.preventDefault();location.hash=a.getAttribute('href').slice(1);});
+var q=new URLSearchParams(location.search);
 if(q.has('shot'))document.body.classList.add('shot');
 var s=q.get('scheme');if(s)document.documentElement.setAttribute('data-scheme',s);
 var b=document.getElementById('mk-scheme');if(b)b.addEventListener('click',function(){var d=document.documentElement,c=d.getAttribute('data-scheme');

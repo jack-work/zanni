@@ -29,6 +29,11 @@ the worse case: the phone discarded the page, the file handles are gone, and
 she has to choose the same files again. Add `?shot` to hide the bar and the
 notes, `?scheme=dark` or `?scheme=light` to force a scheme.
 
+One line of script in each page (`MK_JS` in `lib.py`) turns fragment links into
+`location.hash` changes. It exists because keel's preview injects a `<base>`,
+which makes a bare `#u-sending` link navigate away. The designs themselves use
+plain anchors and `:target`.
+
 ## What the mockups assume
 
 - Parts of 16 MB, three in flight, resume per part, Cloudflare's 100 MB
