@@ -1,6 +1,7 @@
 import type { TreeNode, TreeState } from "figaro-forms/aria";
 import { describe, expect, it } from "vitest";
 import { enumerateForms } from "../src/order/enumerate";
+import { INTERIM_FORMS } from "../src/order/interim-forms";
 
 const node = (o: Partial<TreeNode> & { id: string }): TreeNode => ({ kind: "aria", label: o.id, roleName: undefined, target: undefined, handle: undefined, mantra: undefined, parent: undefined, children: [], daemon: "d", state: "idle", status: "live", roles: [], cwd: undefined, activeAt: undefined, ctx: undefined, ctxLimit: undefined, reapsAt: undefined, bound: false, ...o });
 
@@ -14,5 +15,18 @@ describe("which forms the page reads", () => {
 
   it("is empty with no tree", () => {
     expect(enumerateForms(null)).toEqual([]);
+  });
+});
+
+describe("the interim list", () => {
+  it("adds the listed forms once each, after the rows", () => {
+    const ids = enumerateForms(tree(node({ id: "@r1", kind: "role", roleName: "King" })), ["@r1", "@aaaaaaaa", "aaaaaaaa", "@bbbbbbbb"]);
+    expect(ids).toEqual(["@r1", "@aaaaaaaa", "@bbbbbbbb"]);
+  });
+
+  it("is the full ids of chartered forms", () => {
+    expect(INTERIM_FORMS.length).toBeGreaterThan(10);
+    for (const id of INTERIM_FORMS) expect(id).toMatch(/^@[0-9a-f]{8,32}$/);
+    expect(new Set(INTERIM_FORMS).size).toBe(INTERIM_FORMS.length);
   });
 });

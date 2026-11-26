@@ -9,6 +9,8 @@ import { rolesOf, shortId, type RoleRow } from "./roles";
 
 export const orderClientAtom = atom<AriaClient | null>(null);
 
+export const interimFormsAtom = atom<readonly string[]>([]);
+
 const hashAtom = atom(typeof window === "undefined" ? "" : window.location.hash);
 hashAtom.onMount = (set) => {
   const read = () => set(window.location.hash);
@@ -70,7 +72,7 @@ export const readsAtom = atom<Read[]>((get) => {
   if (!client) return [];
   const canon = get(canonAtom);
   const rows = new Map(get(rolesAtom).map((r) => [bare(canon(r.id)), r]));
-  const ids = new Map(enumerateForms(get(treeStateAtom)).map((id) => [bare(canon(id)), formId(canon(id))]));
+  const ids = new Map(enumerateForms(get(treeStateAtom), get(interimFormsAtom)).map((id) => [bare(canon(id)), formId(canon(id))]));
   const asked = get(orderRouteAtom).central;
   if (asked) ids.set(bare(canon(asked)), formId(canon(asked)));
   const read = (id: string): Read => {
