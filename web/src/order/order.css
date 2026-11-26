@@ -16,7 +16,7 @@ body.ord-page {
 }
 
 .ord {
-  --ord-prose: "EB Garamond", Georgia, "Times New Roman", serif;
+  --ord-prose: "Source Serif 4", Georgia, "Times New Roman", serif;
   --ord-mono: "VT323", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --ord-display: "Jacquard 24", Georgia, serif;
   --ord-edge: max(var(--z-space-5, 16px), env(safe-area-inset-left));

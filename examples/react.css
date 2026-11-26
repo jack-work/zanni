@@ -1,4 +1,4 @@
-body { margin: 0; background: var(--z-ground); color: var(--z-ink); font: 1.0625rem / 1.45 "EB Garamond", Georgia, serif; --zr-prose: "EB Garamond", Georgia, serif; --zr-mono: "VT323", ui-monospace, monospace; }
+body { margin: 0; background: var(--z-ground); color: var(--z-ink); font: 1.0625rem / 1.45 "Source Serif 4", Georgia, serif; --zr-prose: "Source Serif 4", Georgia, serif; --zr-mono: "VT323", ui-monospace, monospace; }
 .specimen { max-width: 46rem; margin: 0 auto; padding: 24px 16px 0; }
 .specimen h1, .specimen h2 { font-family: "Jacquard 24", Georgia, serif; font-weight: 400; color: var(--z-accent); }
 .specimen code { font-family: "VT323", ui-monospace, monospace; }

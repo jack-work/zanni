@@ -1,11 +1,11 @@
 {
  "band-light": {
   "background": "#E7D4C4",
-  "font": "\"Grenze\", \"EB Garamond\", Georgia, serif",
+  "font": "\"Grenze\", \"Source Serif 4\", Georgia, serif",
   "title": {
    "color": "#1A0D0F",
    "fontSize": 19,
-   "font": "\"Grenze\", \"EB Garamond\", Georgia, serif",
+   "font": "\"Grenze\", \"Source Serif 4\", Georgia, serif",
    "fontWeight": 700
   },
   "axis": {
@@ -73,11 +73,11 @@
  },
  "band-dark": {
   "background": "#1A0D0F",
-  "font": "\"Grenze\", \"EB Garamond\", Georgia, serif",
+  "font": "\"Grenze\", \"Source Serif 4\", Georgia, serif",
   "title": {
    "color": "#E7D4C4",
    "fontSize": 19,
-   "font": "\"Grenze\", \"EB Garamond\", Georgia, serif",
+   "font": "\"Grenze\", \"Source Serif 4\", Georgia, serif",
    "fontWeight": 700
   },
   "axis": {
@@ -145,11 +145,11 @@
  },
  "figaro-light": {
   "background": "#E7D4C4",
-  "font": "\"Grenze\", \"EB Garamond\", Georgia, serif",
+  "font": "\"Grenze\", \"Source Serif 4\", Georgia, serif",
   "title": {
    "color": "#2B1A15",
    "fontSize": 21,
-   "font": "\"Grenze\", \"EB Garamond\", Georgia, serif",
+   "font": "\"Grenze\", \"Source Serif 4\", Georgia, serif",
    "fontWeight": 700
   },
   "axis": {
@@ -217,11 +217,11 @@
  },
  "figaro-dark": {
   "background": "#1A0D0F",
-  "font": "\"Grenze\", \"EB Garamond\", Georgia, serif",
+  "font": "\"Grenze\", \"Source Serif 4\", Georgia, serif",
   "title": {
    "color": "#F0DFC8",
    "fontSize": 21,
-   "font": "\"Grenze\", \"EB Garamond\", Georgia, serif",
+   "font": "\"Grenze\", \"Source Serif 4\", Georgia, serif",
    "fontWeight": 700
   },
   "axis": {
@@ -289,11 +289,11 @@
  },
  "registro-light": {
   "background": "#F6EDE2",
-  "font": "\"Grenze\", \"EB Garamond\", Georgia, serif",
+  "font": "\"Grenze\", \"Source Serif 4\", Georgia, serif",
   "title": {
    "color": "#2B1A15",
    "fontSize": 19,
-   "font": "\"Grenze\", \"EB Garamond\", Georgia, serif",
+   "font": "\"Grenze\", \"Source Serif 4\", Georgia, serif",
    "fontWeight": 700
   },
   "axis": {
@@ -361,11 +361,11 @@
  },
  "registro-dark": {
   "background": "#1A0D0F",
-  "font": "\"Grenze\", \"EB Garamond\", Georgia, serif",
+  "font": "\"Grenze\", \"Source Serif 4\", Georgia, serif",
   "title": {
    "color": "#F0DFC8",
    "fontSize": 19,
-   "font": "\"Grenze\", \"EB Garamond\", Georgia, serif",
+   "font": "\"Grenze\", \"Source Serif 4\", Georgia, serif",
    "fontWeight": 700
   },
   "axis": {

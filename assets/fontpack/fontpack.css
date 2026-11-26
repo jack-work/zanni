@@ -5,7 +5,7 @@
  *   Jacquard 24   display, numerals, drop caps.  A pixel blackletter; it has
  *                 one weight (400) and asking for another gets you a browser
  *                 synthesising a bold, which smears the pixel grid.
- *   EB Garamond   prose, and act names in italic. The humane register.
+ *   Source Serif 4   prose, and act names in italic. The humane register.
  *   VT323         everything technical: commands, labels, chips, timestamps.
  *                 A CRT terminal face. NEVER below ~13px CSS — it is a
  *                 bitmap-derived design and it disintegrates when small.
@@ -17,7 +17,7 @@
 
 :root {
   --fontpack-display: 'Jacquard 24', 'Cormorant Garamond', serif;
-  --fontpack-prose: 'EB Garamond', Georgia, 'Times New Roman', serif;
+  --fontpack-prose: 'Source Serif 4', Georgia, 'Times New Roman', serif;
   --fontpack-mono: 'VT323', ui-monospace, 'Courier New', monospace;
 }
 

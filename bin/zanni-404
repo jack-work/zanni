@@ -55,7 +55,7 @@ def build():
     head = base64.b64encode((A / "parla" / "figaro-head.png").read_bytes()).decode()
     css = "\n".join([
         face("z404-display", "jacquard-24.woff2", TITLE),
-        face("z404-prose", "eb-garamond.woff2", prose),
+        face("z404-prose", "source-serif-4.woff2", prose),
         face("z404-mono", "vt323.woff2", BACK),
         strip((A / "gesso" / "gesso.css").read_text()),
         strip((A / "parla" / "parla.css").read_text()),

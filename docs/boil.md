@@ -71,7 +71,7 @@ initial seed — still displaced, no longer moving. Ship `boil.css` without
    descenders. figar.org pads such boxes ~4px; `.boil-slack` is that padding.
 5. **Boil alone is shimmer and nothing more.** figar.org's texture is boil
    *plus* the `repeating-conic-gradient` dither ground, the scanlines,
-   `image-rendering: pixelated`, and the Jacquard 24 / EB Garamond / VT323
+   `image-rendering: pixelated`, and the Jacquard 24 / Source Serif 4 / VT323
    triple. `examples/card.html` shows the difference in three panels rather
    than asking anyone to imagine it.
 

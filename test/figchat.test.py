@@ -84,7 +84,7 @@ def toggle_voice(pg):
 
 
 SANS = """() => {
-  const house = new Set(['EB Garamond','Jacquard 24','VT323','Nerd Icons']);
+  const house = new Set(['Source Serif 4','Jacquard 24','VT323','Nerd Icons']);
   const generic = new Set(['serif','monospace','Georgia','Times New Roman','Courier New','ui-monospace','SF Mono','Menlo','Consolas']);
   const bad = [];
   for (const n of document.querySelectorAll('body, body *')) {

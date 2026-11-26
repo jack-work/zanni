@@ -8,7 +8,7 @@ description: The media player chrome worn over a page's own video or audio eleme
 The thread a recording runs along. One player for juglar on
 files.kelliher.info, the aguatv app, and the Fire TV's WebView. Shaped after
 player.style's Sutro theme, dressed in gesso and fontpack: pixel icons, the
-title in Jacquard, times in VT323, menus in Garamond.
+title in Jacquard, times in VT323, menus in Source Serif.
 
 ## Wearing it
 
