@@ -234,6 +234,7 @@ export function safeHref(link: string): string | undefined {
 }
 
 export interface OrderRoute {
+  readonly central: string | undefined;
   readonly role: string | undefined;
   readonly entry: string | undefined;
 }
@@ -248,10 +249,11 @@ export function parseOrderRoute(hash: string): OrderRoute {
       return undefined;
     }
   };
-  return { role: decode(parts[0]), entry: decode(parts[1]) };
+  return { central: decode(parts[0]), role: decode(parts[1]), entry: decode(parts[2]) };
 }
 
-export function orderHash(role: string | undefined, entry?: string): string {
-  if (!role) return "#/";
-  return "#/" + encodeURIComponent(role) + (entry ? "/" + encodeURIComponent(entry) : "");
+export function orderHash(central: string | undefined, role?: string, entry?: string): string {
+  if (!central) return "#/";
+  const part = (s: string): string => "/" + encodeURIComponent(s);
+  return "#" + part(central) + (role ? part(role) + (entry ? part(entry) : "") : "");
 }

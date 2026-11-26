@@ -12,7 +12,7 @@ const root = (queue: Record<string, JsonObject>): JsonObject => ({ queue }) as J
 
 describe("entries of a role form", () => {
   it("reads every contract field of the widget queue", () => {
-    const entries = entriesOf(form("Widget Engineer"));
+    const entries = entriesOf(form("Widget Work"));
     const catalogue = entries.find((e) => e.title === "Ship the widget catalogue")!;
     expect(catalogue.kind).toBe("work");
     expect(catalogue.state).toBe("claimed");
@@ -51,7 +51,7 @@ describe("entries of a role form", () => {
 
 describe("the tree of work orders", () => {
   it("nests children under their parent, in the order the lead declared", () => {
-    expect(shape(forestOf(entriesOf(form("Widget Engineer"))))).toEqual([
+    expect(shape(forestOf(entriesOf(form("Widget Work"))))).toEqual([
       "Retire the old widget index",
       "Handoff: widget tooling lane",
       ["Ship the widget catalogue", ["Catalogue schema", "Catalogue loader", ["Catalogue page", ["Page: empty state"]]]],
@@ -96,7 +96,7 @@ describe("the tree of work orders", () => {
   });
 
   it("orders roots by priority, higher first", () => {
-    const forest = forestOf(entriesOf(form("Review Inspector")));
+    const forest = forestOf(entriesOf(form("Review Queue")));
     expect(forest.map((b) => b.entry.priority)).toEqual([20, 10, 5]);
     const a = { id: "A", priority: undefined } as never;
     const b = { id: "B", priority: undefined } as never;
@@ -106,7 +106,7 @@ describe("the tree of work orders", () => {
 
 describe("summaries and links", () => {
   it("counts entries by state", () => {
-    expect([...stateCounts(entriesOf(form("Widget Engineer")))].sort()).toEqual([["blocked", 1], ["claimed", 1], ["done", 1], ["posted", 3], ["review", 1]]);
+    expect([...stateCounts(entriesOf(form("Widget Work")))].sort()).toEqual([["blocked", 1], ["claimed", 1], ["done", 1], ["posted", 3], ["review", 1]]);
   });
 
   it("tells a live lease from a lapsed one and from none", () => {
@@ -129,9 +129,10 @@ describe("summaries and links", () => {
 
 describe("the page route", () => {
   it("round-trips a role and an entry", () => {
-    expect(parseOrderRoute(orderHash("@7e1a0001", "clear-lens"))).toEqual({ role: "@7e1a0001", entry: "clear-lens" });
-    expect(parseOrderRoute("#/")).toEqual({ role: undefined, entry: undefined });
-    expect(parseOrderRoute("")).toEqual({ role: undefined, entry: undefined });
-    expect(parseOrderRoute("#/%E0%A4%A")).toEqual({ role: undefined, entry: undefined });
+    expect(parseOrderRoute(orderHash("@c0de0001", "@7e1a0001", "clear-lens"))).toEqual({ central: "@c0de0001", role: "@7e1a0001", entry: "clear-lens" });
+    expect(parseOrderRoute(orderHash("@c0de0001"))).toEqual({ central: "@c0de0001", role: undefined, entry: undefined });
+    expect(parseOrderRoute("#/")).toEqual({ central: undefined, role: undefined, entry: undefined });
+    expect(parseOrderRoute("")).toEqual({ central: undefined, role: undefined, entry: undefined });
+    expect(parseOrderRoute("#/%E0%A4%A")).toEqual({ central: undefined, role: undefined, entry: undefined });
   });
 });

@@ -2,14 +2,269 @@
   "synthetic": true,
   "roles": [
     {
+      "id": "@c0de0001c0de0001c0de0001c0de0001",
+      "name": "Crown",
+      "target": "c0ffee01c0ffee01c0ffee01c0ffee01",
+      "form": {
+        "name": "Crown",
+        "role-name": "Crown",
+        "target-aria": "c0ffee01c0ffee01c0ffee01c0ffee01",
+        "charter": "Invented charter for Crown.",
+        "chartered": {
+          "seat": "king",
+          "root": "@c0de0001",
+          "central-command": true,
+          "succession-abdication": "retire",
+          "succession-ttl": "5m",
+          "studies": [
+            "@c0de0103",
+            "@c0de0fff"
+          ]
+        }
+      }
+    },
+    {
+      "id": "@c0de0002",
+      "name": "Frontier Knight",
+      "target": "c0ffee02c0ffee02c0ffee02c0ffee02",
+      "form": {
+        "name": "Frontier Knight",
+        "role-name": "Frontier Knight",
+        "target-aria": "c0ffee02c0ffee02c0ffee02c0ffee02",
+        "charter": "Invented charter for Frontier Knight.",
+        "chartered": {
+          "seat": "knight",
+          "regiment": "frontend",
+          "reports-to": "@c0de0001",
+          "root": "@c0de0001",
+          "succession-abdication": "retire",
+          "succession-ttl": "5m",
+          "studies": [
+            "@c0de0102"
+          ]
+        },
+        "system": {
+          "fanout": {
+            "min_children": 1,
+            "max_children": 2,
+            "quota": 4
+          }
+        }
+      }
+    },
+    {
+      "id": "@c0de0007",
+      "name": "Frontier Strategist",
+      "target": "c0ffee06c0ffee06c0ffee06c0ffee06",
+      "form": {
+        "name": "Frontier Strategist",
+        "role-name": "Frontier Strategist",
+        "target-aria": "c0ffee06c0ffee06c0ffee06c0ffee06",
+        "charter": "Invented charter for Frontier Strategist.",
+        "chartered": {
+          "seat": "strategist",
+          "regiment": "frontend",
+          "reports-to": "@c0de0002",
+          "root": "@c0de0001",
+          "succession-abdication": "retire",
+          "succession-ttl": "5m"
+        },
+        "system": {
+          "fanout": {
+            "max_children": 1,
+            "quota": 3
+          }
+        }
+      }
+    },
+    {
       "id": "@7e1a0001",
       "name": "Widget Engineer",
-      "target": "c0ffee01c0ffee01c0ffee01c0ffee01",
+      "target": "c0ffee05c0ffee05c0ffee05c0ffee05",
       "form": {
         "name": "Widget Engineer",
         "role-name": "Widget Engineer",
-        "target-aria": "c0ffee01c0ffee01c0ffee01c0ffee01",
+        "target-aria": "c0ffee05c0ffee05c0ffee05c0ffee05",
         "charter": "Invented charter for Widget Engineer.",
+        "chartered": {
+          "seat": "lead",
+          "regiment": "frontend",
+          "reports-to": "@c0de0007",
+          "root": "@c0de0001",
+          "succession-abdication": "retire",
+          "succession-ttl": "5m"
+        }
+      }
+    },
+    {
+      "id": "@7e1a0003",
+      "name": "Edge Engineer",
+      "target": "c0ffee03c0ffee03c0ffee03c0ffee03",
+      "form": {
+        "name": "Edge Engineer",
+        "role-name": "Edge Engineer",
+        "target-aria": "c0ffee03c0ffee03c0ffee03c0ffee03",
+        "charter": "Invented charter for Edge Engineer.",
+        "chartered": {
+          "seat": "edge",
+          "reports-to": "@c0de0001",
+          "root": "@c0de0001",
+          "succession-abdication": "retire",
+          "succession-ttl": "5m",
+          "studies": [
+            "@c0de0104"
+          ]
+        },
+        "system": {
+          "fanout": {
+            "max_children": 1,
+            "quota": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "@c0de0003",
+      "name": "Bridge Knight",
+      "target": "c0ffee0ac0ffee0ac0ffee0ac0ffee0a",
+      "form": {
+        "name": "Bridge Knight",
+        "role-name": "Bridge Knight",
+        "target-aria": "c0ffee0ac0ffee0ac0ffee0ac0ffee0a",
+        "charter": "Invented charter for Bridge Knight.",
+        "chartered": {
+          "seat": "knight",
+          "regiment": "backend",
+          "reports-to": "@c0de0001",
+          "root": "@c0de0001",
+          "succession-abdication": "retire",
+          "succession-ttl": "5m"
+        },
+        "system": {
+          "fanout": {
+            "max_children": 1,
+            "quota": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "@c0de0004",
+      "name": "Backend Lead",
+      "target": "",
+      "form": {
+        "name": "Backend Lead",
+        "role-name": "Backend Lead",
+        "charter": "Invented charter for Backend Lead.",
+        "chartered": {
+          "seat": "lead",
+          "regiment": "backend",
+          "reports-to": "@c0de0003",
+          "root": "@c0de0001",
+          "succession-abdication": "retire",
+          "succession-ttl": "5m"
+        }
+      }
+    },
+    {
+      "id": "@c0de0005",
+      "name": "Lost Lead",
+      "target": "c0ffeefec0ffeefec0ffeefec0ffeefe",
+      "form": {
+        "name": "Lost Lead",
+        "role-name": "Lost Lead",
+        "target-aria": "c0ffeefec0ffeefec0ffeefec0ffeefe",
+        "charter": "Invented charter for Lost Lead.",
+        "chartered": {
+          "seat": "lead",
+          "regiment": "frontend",
+          "reports-to": "@c0de0007",
+          "root": "@c0de0001",
+          "succession-abdication": "retire",
+          "succession-ttl": "5m"
+        }
+      }
+    },
+    {
+      "id": "@7e1a0004",
+      "name": "Idle Scout",
+      "target": "c0ffee09c0ffee09c0ffee09c0ffee09",
+      "form": {
+        "name": "Idle Scout",
+        "role-name": "Idle Scout",
+        "target-aria": "c0ffee09c0ffee09c0ffee09c0ffee09",
+        "charter": "Invented charter for Idle Scout."
+      }
+    },
+    {
+      "id": "@c0de0006",
+      "name": "Stray Scribe",
+      "target": "c0ffee08c0ffee08c0ffee08c0ffee08",
+      "form": {
+        "name": "Stray Scribe",
+        "role-name": "Stray Scribe",
+        "target-aria": "c0ffee08c0ffee08c0ffee08c0ffee08",
+        "charter": "Invented charter for Stray Scribe.",
+        "chartered": {
+          "seat": "lead",
+          "regiment": "backend",
+          "reports-to": "@c0de0099",
+          "root": "@c0de0099",
+          "succession-abdication": "retire",
+          "succession-ttl": "5m"
+        }
+      }
+    },
+    {
+      "id": "@c0de0099",
+      "name": "Rival Crown",
+      "target": "c0ffee0cc0ffee0cc0ffee0cc0ffee0c",
+      "form": {
+        "name": "Rival Crown",
+        "role-name": "Rival Crown",
+        "target-aria": "c0ffee0cc0ffee0cc0ffee0cc0ffee0c",
+        "charter": "Invented charter for Rival Crown.",
+        "chartered": {
+          "seat": "king",
+          "root": "@c0de0099",
+          "central-command": true,
+          "succession-abdication": "retire",
+          "succession-ttl": "5m"
+        }
+      }
+    },
+    {
+      "id": "@c0de0101",
+      "name": "Widget Work",
+      "target": "",
+      "form": {
+        "name": "Widget Work",
+        "queue-contract": {
+          "version": "v0",
+          "contract": "https://contract.example.invalid/work-orders",
+          "kinds": [
+            "work",
+            "handoff"
+          ],
+          "priority": false,
+          "entries": "queue.<id>",
+          "id": "two hyphenated lowercase words, unique on the form",
+          "order": "priority, then state_at",
+          "posters-write": "queue.**",
+          "states": [
+            "posted",
+            "claimed",
+            "blocked",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "chartered": {
+          "kind": "queue-form",
+          "root": "@c0de0001",
+          "under": "@7e1a0001"
+        },
         "queue": {
           "clear-lens": {
             "id": "clear-lens",
@@ -267,14 +522,81 @@
       }
     },
     {
-      "id": "@7e1a0002",
-      "name": "Review Inspector",
-      "target": "c0ffee02c0ffee02c0ffee02c0ffee02",
+      "id": "@c0de0102",
+      "name": "Frontier Handoff",
+      "target": "",
       "form": {
-        "name": "Review Inspector",
-        "role-name": "Review Inspector",
-        "target-aria": "c0ffee02c0ffee02c0ffee02c0ffee02",
-        "charter": "Invented charter for Review Inspector.",
+        "name": "Frontier Handoff",
+        "queue-contract": {
+          "version": "v0",
+          "contract": "https://contract.example.invalid/work-orders",
+          "kinds": [
+            "handoff",
+            "work"
+          ],
+          "priority": false,
+          "entries": "queue.<id>",
+          "id": "two hyphenated lowercase words, unique on the form",
+          "order": "priority, then state_at",
+          "posters-write": "queue.**",
+          "states": [
+            "posted",
+            "claimed",
+            "blocked",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "chartered": {
+          "kind": "queue-form",
+          "root": "@c0de0001",
+          "under": "@c0de0007"
+        },
+        "queue": {
+          "first-light": {
+            "id": "first-light",
+            "kind": "handoff",
+            "title": "Hand the frontier lane to the knight",
+            "state": "posted",
+            "state_at": "2026-11-25T19:00:00Z",
+            "parent": "",
+            "children": []
+          }
+        }
+      }
+    },
+    {
+      "id": "@c0de0103",
+      "name": "Review Queue",
+      "target": "",
+      "form": {
+        "name": "Review Queue",
+        "queue-contract": {
+          "version": "v0",
+          "contract": "https://contract.example.invalid/work-orders",
+          "kinds": [
+            "review"
+          ],
+          "priority": true,
+          "entries": "queue.<id>",
+          "id": "two hyphenated lowercase words, unique on the form",
+          "order": "priority, then state_at",
+          "posters-write": "queue.**",
+          "states": [
+            "posted",
+            "claimed",
+            "blocked",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "chartered": {
+          "kind": "queue-form",
+          "root": "@c0de0001",
+          "under": "@c0de0008"
+        },
         "queue": {
           "amber-review": {
             "id": "amber-review",
@@ -391,14 +713,36 @@
       }
     },
     {
-      "id": "@7e1a0003",
-      "name": "Edge Engineer",
-      "target": "c0ffee04c0ffee04c0ffee04c0ffee04",
+      "id": "@c0de0104",
+      "name": "Deploy Queue",
+      "target": "",
       "form": {
-        "name": "Edge Engineer",
-        "role-name": "Edge Engineer",
-        "target-aria": "c0ffee04c0ffee04c0ffee04c0ffee04",
-        "charter": "Invented charter for Edge Engineer.",
+        "name": "Deploy Queue",
+        "queue-contract": {
+          "version": "v0",
+          "contract": "https://contract.example.invalid/work-orders",
+          "kinds": [
+            "deploy"
+          ],
+          "priority": false,
+          "entries": "queue.<id>",
+          "id": "two hyphenated lowercase words, unique on the form",
+          "order": "priority, then state_at",
+          "posters-write": "queue.**",
+          "states": [
+            "posted",
+            "claimed",
+            "blocked",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "chartered": {
+          "kind": "queue-form",
+          "root": "@c0de0001",
+          "under": "@c0de0002"
+        },
         "queue": {
           "dev-launch": {
             "id": "dev-launch",
@@ -472,15 +816,76 @@
       }
     },
     {
-      "id": "@7e1a0004",
-      "name": "Idle Scout",
-      "target": "c0ffee03c0ffee03c0ffee03c0ffee03",
+      "id": "@c0de0105",
+      "name": "Backend Handoff",
+      "target": "",
       "form": {
-        "name": "Idle Scout",
-        "role-name": "Idle Scout",
-        "target-aria": "c0ffee03c0ffee03c0ffee03c0ffee03",
-        "charter": "Invented charter for Idle Scout."
+        "name": "Backend Handoff",
+        "queue-contract": {
+          "version": "v0",
+          "contract": "https://contract.example.invalid/work-orders",
+          "kinds": [
+            "handoff",
+            "work"
+          ],
+          "priority": false,
+          "entries": "queue.<id>",
+          "id": "two hyphenated lowercase words, unique on the form",
+          "order": "priority, then state_at",
+          "posters-write": "queue.**",
+          "states": [
+            "posted",
+            "claimed",
+            "blocked",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "chartered": {
+          "kind": "queue-form",
+          "root": "@c0de0001",
+          "under": "@c0de0003"
+        },
+        "queue": {}
+      }
+    },
+    {
+      "id": "@c0de0106",
+      "name": "Rival Handoff",
+      "target": "",
+      "form": {
+        "name": "Rival Handoff",
+        "queue-contract": {
+          "version": "v0",
+          "contract": "https://contract.example.invalid/work-orders",
+          "kinds": [
+            "handoff"
+          ],
+          "priority": false,
+          "entries": "queue.<id>",
+          "id": "two hyphenated lowercase words, unique on the form",
+          "order": "priority, then state_at",
+          "posters-write": "queue.**",
+          "states": [
+            "posted",
+            "claimed",
+            "blocked",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "chartered": {
+          "kind": "queue-form",
+          "root": "@c0de0099",
+          "under": "@c0de0099"
+        },
+        "queue": {}
       }
     }
-  ]
+  ],
+  "topology": {
+    "c0ffee04c0ffee04c0ffee04c0ffee04": "c0ffee02c0ffee02c0ffee02c0ffee02"
+  }
 }
