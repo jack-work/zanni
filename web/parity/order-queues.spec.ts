@@ -150,7 +150,7 @@ test.describe("the order page against the fake door", () => {
     await expect(row(page, "Catalogue loader").locator("[data-field=state]")).toContainText("blocked");
 
     queue[loader.id as string] = { ...loader, state: "claimed", state_at: "2026-11-25T20:29:00Z", claimed_by: { role: "Widget Engineer", aria: core.ids.engineer, at: "2026-11-25T20:29:00Z", lease_until: "2026-11-25T20:59:00Z" } };
-    const fresh = "01MBZ9" + "0".repeat(20);
+    const fresh = "added-while-watching";
     queue[fresh] = { ...loader, id: fresh, title: "Added while watching", state: "posted", state_at: "2026-11-25T20:30:00Z", parent: entryId("Ship the widget catalogue"), claimed_by: undefined };
     const gone = entryId("Retire the old widget index");
     delete queue[gone];
@@ -188,7 +188,7 @@ test.describe("the order page against the fake door", () => {
   });
 
   test("says so when the entry has left the live queue", async ({ page }) => {
-    await visit(page, `#/${encodeURIComponent(widget.id)}/01MBNOSUCH0000000000000000`);
+    await visit(page, `#/${encodeURIComponent(widget.id)}/no-such-entry`);
     await expect(page.getByRole("dialog", { name: "Work order" })).toContainText("This entry has left the live queue.");
   });
 });

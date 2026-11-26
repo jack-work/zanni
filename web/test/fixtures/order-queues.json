@@ -11,17 +11,17 @@
         "target-aria": "c0ffee01c0ffee01c0ffee01c0ffee01",
         "charter": "Invented charter for Widget Engineer.",
         "queue": {
-          "01MBW100000000000000000000": {
-            "id": "01MBW100000000000000000000",
+          "clear-lens": {
+            "id": "clear-lens",
             "kind": "work",
             "title": "Ship the widget catalogue",
             "state": "claimed",
             "state_at": "2026-11-25T18:05:00Z",
             "parent": "",
             "children": [
-              "01MBW200000000000000000000",
-              "01MBW300000000000000000000",
-              "01MBW400000000000000000000"
+              "tidy-ledger",
+              "brisk-loader",
+              "quiet-page"
             ],
             "amendments": [
               {
@@ -76,13 +76,13 @@
               "9be02e7"
             ]
           },
-          "01MBW200000000000000000000": {
-            "id": "01MBW200000000000000000000",
+          "tidy-ledger": {
+            "id": "tidy-ledger",
             "kind": "work",
             "title": "Catalogue schema",
             "state": "review",
             "state_at": "2026-11-25T19:40:00Z",
-            "parent": "01MBW100000000000000000000",
+            "parent": "clear-lens",
             "children": [],
             "amendments": [],
             "source": "king",
@@ -123,13 +123,13 @@
               "verdict": ""
             }
           },
-          "01MBW300000000000000000000": {
-            "id": "01MBW300000000000000000000",
+          "brisk-loader": {
+            "id": "brisk-loader",
             "kind": "work",
             "title": "Catalogue loader",
             "state": "blocked",
             "state_at": "2026-11-25T19:15:00Z",
-            "parent": "01MBW100000000000000000000",
+            "parent": "clear-lens",
             "children": [],
             "amendments": [
               {
@@ -156,15 +156,15 @@
             },
             "links": []
           },
-          "01MBW400000000000000000000": {
-            "id": "01MBW400000000000000000000",
+          "quiet-page": {
+            "id": "quiet-page",
             "kind": "work",
             "title": "Catalogue page",
             "state": "posted",
             "state_at": "2026-11-25T18:21:00Z",
-            "parent": "01MBW100000000000000000000",
+            "parent": "clear-lens",
             "children": [
-              "01MBW500000000000000000000"
+              "hollow-state"
             ],
             "amendments": [],
             "source": "github:https://github.com/example/widgets/issues/7",
@@ -182,13 +182,13 @@
             },
             "links": []
           },
-          "01MBW500000000000000000000": {
-            "id": "01MBW500000000000000000000",
+          "hollow-state": {
+            "id": "hollow-state",
             "kind": "work",
             "title": "Page: empty state",
             "state": "posted",
             "state_at": "2026-11-25T18:22:00Z",
-            "parent": "01MBW400000000000000000000",
+            "parent": "quiet-page",
             "children": [],
             "amendments": [],
             "source": "king",
@@ -206,8 +206,8 @@
             },
             "links": []
           },
-          "01MBW600000000000000000000": {
-            "id": "01MBW600000000000000000000",
+          "old-index": {
+            "id": "old-index",
             "kind": "work",
             "title": "Retire the old widget index",
             "state": "done",
@@ -230,8 +230,8 @@
             },
             "links": []
           },
-          "01MBY100000000000000000000": {
-            "id": "01MBY100000000000000000000",
+          "steady-handoff": {
+            "id": "steady-handoff",
             "kind": "handoff",
             "title": "Handoff: widget tooling lane",
             "state": "posted",
@@ -276,8 +276,8 @@
         "target-aria": "c0ffee02c0ffee02c0ffee02c0ffee02",
         "charter": "Invented charter for Review Inspector.",
         "queue": {
-          "01MBR100000000000000000000": {
-            "id": "01MBR100000000000000000000",
+          "amber-review": {
+            "id": "amber-review",
             "kind": "review",
             "title": "Review: catalogue schema",
             "state": "review",
@@ -317,8 +317,8 @@
               "lease_until": "2026-11-25T20:45:00Z"
             }
           },
-          "01MBR200000000000000000000": {
-            "id": "01MBR200000000000000000000",
+          "plain-retry": {
+            "id": "plain-retry",
             "kind": "review",
             "title": "Review: loader retry policy",
             "state": "posted",
@@ -352,8 +352,8 @@
               "verdict": ""
             }
           },
-          "01MBR300000000000000000000": {
-            "id": "01MBR300000000000000000000",
+          "docs-wording": {
+            "id": "docs-wording",
             "kind": "review",
             "title": "Review: docs wording",
             "state": "done",
@@ -400,8 +400,8 @@
         "target-aria": "c0ffee04c0ffee04c0ffee04c0ffee04",
         "charter": "Invented charter for Edge Engineer.",
         "queue": {
-          "01MBD100000000000000000000": {
-            "id": "01MBD100000000000000000000",
+          "dev-launch": {
+            "id": "dev-launch",
             "kind": "deploy",
             "title": "Deploy widgets 0.4.1 to dev",
             "state": "claimed",
@@ -435,8 +435,8 @@
               "lease_until": "2026-11-25T20:25:00Z"
             }
           },
-          "01MBD200000000000000000000": {
-            "id": "01MBD200000000000000000000",
+          "prod-launch": {
+            "id": "prod-launch",
             "kind": "deploy",
             "title": "Deploy widgets 0.4.0 to prod",
             "state": "cancelled",

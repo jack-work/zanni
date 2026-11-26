@@ -52,9 +52,9 @@ describe("entries of a role form", () => {
 describe("the tree of work orders", () => {
   it("nests children under their parent, in the order the lead declared", () => {
     expect(shape(forestOf(entriesOf(form("Widget Engineer"))))).toEqual([
-      ["Ship the widget catalogue", ["Catalogue schema", "Catalogue loader", ["Catalogue page", ["Page: empty state"]]]],
       "Retire the old widget index",
       "Handoff: widget tooling lane",
+      ["Ship the widget catalogue", ["Catalogue schema", "Catalogue loader", ["Catalogue page", ["Page: empty state"]]]],
     ]);
   });
 
@@ -73,7 +73,29 @@ describe("the tree of work orders", () => {
     expect(shown.sort()).toEqual(["A", "B", "C"]);
   });
 
-  it("orders roots by priority, higher first, then by id", () => {
+  it("orders by priority, then the oldest state_at first, then id; ids never lead", () => {
+    const at = (id: string, p: Record<string, unknown>) => [id, raw({ title: id, ...p })] as const;
+    const queue = Object.fromEntries([
+      at("aaa-late", { state_at: "2026-11-25T12:00:00Z" }),
+      at("zzz-early", { state_at: "2026-11-25T08:00:00Z" }),
+      at("mmm-tied-b", { state_at: "2026-11-25T10:00:00Z" }),
+      at("mmm-tied-a", { state_at: "2026-11-25T10:00:00Z" }),
+      at("bbb-undated", {}),
+      at("ccc-urgent", { priority: 5, state_at: "2026-11-25T23:00:00Z" }),
+    ]);
+    expect(forestOf(entriesOf(root(queue))).map((b) => b.entry.id)).toEqual(["ccc-urgent", "zzz-early", "mmm-tied-a", "mmm-tied-b", "aaa-late", "bbb-undated"]);
+  });
+
+  it("keeps the lead's child order even when state_at says otherwise", () => {
+    const queue = {
+      lead: raw({ title: "lead", children: ["kid-new", "kid-old"], state_at: "2026-11-25T09:00:00Z" }),
+      "kid-old": raw({ title: "kid-old", parent: "lead", state_at: "2026-11-25T01:00:00Z" }),
+      "kid-new": raw({ title: "kid-new", parent: "lead", state_at: "2026-11-25T08:00:00Z" }),
+    };
+    expect(shape(forestOf(entriesOf(root(queue))))).toEqual([["lead", ["kid-new", "kid-old"]]]);
+  });
+
+  it("orders roots by priority, higher first", () => {
     const forest = forestOf(entriesOf(form("Review Inspector")));
     expect(forest.map((b) => b.entry.priority)).toEqual([20, 10, 5]);
     const a = { id: "A", priority: undefined } as never;
@@ -83,8 +105,8 @@ describe("the tree of work orders", () => {
 });
 
 describe("summaries and links", () => {
-  it("counts entries by state in the order the ids first show them", () => {
-    expect(stateCounts(entriesOf(form("Widget Engineer")))).toEqual([["claimed", 1], ["review", 1], ["blocked", 1], ["posted", 3], ["done", 1]]);
+  it("counts entries by state", () => {
+    expect([...stateCounts(entriesOf(form("Widget Engineer")))].sort()).toEqual([["blocked", 1], ["claimed", 1], ["done", 1], ["posted", 3], ["review", 1]]);
   });
 
   it("tells a live lease from a lapsed one and from none", () => {
@@ -107,7 +129,7 @@ describe("summaries and links", () => {
 
 describe("the page route", () => {
   it("round-trips a role and an entry", () => {
-    expect(parseOrderRoute(orderHash("@7e1a0001", "01MBW1"))).toEqual({ role: "@7e1a0001", entry: "01MBW1" });
+    expect(parseOrderRoute(orderHash("@7e1a0001", "clear-lens"))).toEqual({ role: "@7e1a0001", entry: "clear-lens" });
     expect(parseOrderRoute("#/")).toEqual({ role: undefined, entry: undefined });
     expect(parseOrderRoute("")).toEqual({ role: undefined, entry: undefined });
     expect(parseOrderRoute("#/%E0%A4%A")).toEqual({ role: undefined, entry: undefined });

@@ -148,6 +148,9 @@ export function byQueueOrder(a: Entry, b: Entry): number {
   const pa = a.priority ?? 0;
   const pb = b.priority ?? 0;
   if (pa !== pb) return pb - pa;
+  const ta = instant(a.stateAt) ?? Infinity;
+  const tb = instant(b.stateAt) ?? Infinity;
+  if (ta !== tb) return ta < tb ? -1 : 1;
   return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 }
 
