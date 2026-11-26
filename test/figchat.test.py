@@ -870,10 +870,16 @@ try:
 
         def finger(pg, cdp, phone):
             class Finger:
+                clock = 0.0
+
+                def stamp(self, advance=0.0):
+                    Finger.clock = max(Finger.clock, time.time()) + advance
+                    return Finger.clock
+
                 def down(self, x, y):
                     self.x, self.y = x, y
                     if phone:
-                        cdp.send("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": [{"x": x, "y": y}]})
+                        cdp.send("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": [{"x": x, "y": y}], "timestamp": self.stamp()})
                     else:
                         pg.mouse.move(x, y)
                         pg.mouse.down()
@@ -882,22 +888,24 @@ try:
                     y0 = self.y
                     for i in range(1, steps + 1):
                         yy = y0 + (y - y0) * i / steps
+                        at = self.stamp(gap / 1000)
                         if phone:
-                            cdp.send("Input.dispatchTouchEvent", {"type": "touchMove", "touchPoints": [{"x": self.x, "y": yy}]})
+                            cdp.send("Input.dispatchTouchEvent", {"type": "touchMove", "touchPoints": [{"x": self.x, "y": yy}], "timestamp": at})
                         else:
-                            pg.mouse.move(self.x, yy)
-                        if gap:
-                            pg.wait_for_timeout(gap)
+                            cdp.send("Input.dispatchMouseEvent", {"type": "mouseMoved", "x": self.x, "y": yy, "button": "left", "buttons": 1, "timestamp": at})
                     self.y = y
+                    pg.evaluate("() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))")
 
                 def hold(self, ms=160):
+                    self.stamp(ms / 1000)
                     pg.wait_for_timeout(ms)
 
                 def up(self):
+                    at = self.stamp(0.001)
                     if phone:
-                        cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
+                        cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": [], "timestamp": at})
                     else:
-                        pg.mouse.up()
+                        cdp.send("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": self.x, "y": self.y, "button": "left", "buttons": 0, "clickCount": 1, "timestamp": at})
             return Finger()
 
         PIT = "() => { const p = document.querySelector('.zr-pit'); const b = p.getBoundingClientRect(); return { snap: p.dataset.snap, dragging: p.hasAttribute('data-dragging'), dialog: p.getAttribute('role') === 'dialog', top: b.top, bottom: b.bottom, left: b.left, width: b.width }; }"
