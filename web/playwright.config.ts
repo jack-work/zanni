@@ -3,6 +3,7 @@ const { defineConfig, devices } = pw;
 
 const port = Number(process.env.PARITY_PORT ?? 4173);
 const galleryPort = Number(process.env.GALLERY_PORT ?? 4174);
+const orderPort = Number(process.env.ORDER_PORT ?? 4175);
 
 export default defineConfig({
   testDir: "parity",
@@ -16,6 +17,11 @@ export default defineConfig({
     {
       command: `npx vite preview --host 127.0.0.1 --port ${port} --strictPort`,
       url: `http://127.0.0.1:${port}/`,
+      reuseExistingServer: true,
+    },
+    {
+      command: `npx vite preview -c vite.order.config.ts --host 127.0.0.1 --port ${orderPort} --strictPort`,
+      url: `http://127.0.0.1:${orderPort}/`,
       reuseExistingServer: true,
     },
     {
