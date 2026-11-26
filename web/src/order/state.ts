@@ -3,6 +3,7 @@ import type { AriaClient } from "figaro-forms/aria";
 import { ariaConnectionAtom, boundFormAtom, treeAtom } from "figaro-forms/aria/jotai";
 import type { BoundFormState } from "figaro-forms/aria";
 import { atlasOf, bare, canonOf, charterRoleOf, formId, overridesOf, pickCentral, queueFormOf, TOPOLOGY_FORM, topologyOf, type CharterRole, type QueueForm, type Topology } from "./charter";
+import { enumerateForms } from "./enumerate";
 import { orderHash, parseOrderRoute, type OrderRoute } from "./queue";
 import { rolesOf, shortId, type RoleRow } from "./roles";
 
@@ -69,7 +70,7 @@ export const readsAtom = atom<Read[]>((get) => {
   if (!client) return [];
   const canon = get(canonAtom);
   const rows = new Map(get(rolesAtom).map((r) => [bare(canon(r.id)), r]));
-  const ids = new Map([...rows.keys()].map((k) => [k, formId(k)]));
+  const ids = new Map(enumerateForms(get(treeStateAtom)).map((id) => [bare(canon(id)), formId(canon(id))]));
   const asked = get(orderRouteAtom).central;
   if (asked) ids.set(bare(canon(asked)), formId(canon(asked)));
   const read = (id: string): Read => {
