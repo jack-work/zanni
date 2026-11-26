@@ -7,7 +7,8 @@ import { orderHash } from "./queue";
 import { ariaName } from "./roles";
 import { scoped, type PageContext } from "./rows";
 import { Topologies } from "./seats";
-import { carryCentralAtom, linkAtom, openEntryAtom, orderClientAtom, orderRouteAtom, treeStateAtom, viewAtom, type Link, type MissingWhy } from "./state";
+import type { MissingWhy } from "./derive";
+import { carryCentralAtom, linkAtom, openEntryAtom, orderClientAtom, orderRouteAtom, treeStateAtom, viewAtom, type Link } from "./state";
 
 const LINK_TEXT: Record<Link, string> = {
   live: "live",
