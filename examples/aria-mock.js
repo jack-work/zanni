@@ -636,7 +636,11 @@
         return out;
       }
       var root = { arias: level('') };
-      root.arias['@frontend'] = { id: '@frontend', kind: 'form', name: 'frontend', target: core.ids.main, state: 'active', active_at: base };
+      if (!o.roles) root.arias['@frontend'] = { id: '@frontend', kind: 'form', name: 'frontend', target: core.ids.main, state: 'active', active_at: base };
+      Object.keys(core.roles).forEach(function (rid) {
+        var r = core.roles[rid];
+        root.arias[rid] = { id: rid, kind: 'form', name: r.name, target: r.target, state: 'form', active_at: base };
+      });
       if (cut()) root.more = cut();
       return root;
     }
@@ -655,6 +659,7 @@
       if (id === '@arias') { var root = ariasRoot(); root.roles = {}; return root; }
       if (id === '@recent') return recentRoot();
       if (id === ASKS_FORM) return clone(core.orders);
+      if (core.roles[id]) return clone(core.roles[id].form);
       var a = core.arias[id];
       if (!a) return null;
       if (a.edited) return clone(a.edited);
@@ -678,6 +683,10 @@
     }
     core.setQueue = function (aria, root) { core.queues[aria] = clone(root); pushQueue(aria); };
     core.setOrders = function (root) { core.orders = clone(root); pushForm(ASKS_FORM); };
+    core.roles = {};
+    (o.roles || []).forEach(function (r) { core.roles[r.id] = clone(r); });
+    core.setRole = function (rid, form) { core.roles[rid].form = clone(form); pushForm(rid); pushForm('@arias'); };
+    core.addRole = function (r) { core.roles[r.id] = clone(r); pushForm('@arias'); };
 
     core.attach = function (sink) {
       var conn = { sink: sink, follows: {}, open: true };

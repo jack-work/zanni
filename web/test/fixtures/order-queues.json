@@ -1,0 +1,486 @@
+{
+  "synthetic": true,
+  "roles": [
+    {
+      "id": "@7e1a0001",
+      "name": "Widget Engineer",
+      "target": "c0ffee01c0ffee01c0ffee01c0ffee01",
+      "form": {
+        "name": "Widget Engineer",
+        "role-name": "Widget Engineer",
+        "target-aria": "c0ffee01c0ffee01c0ffee01c0ffee01",
+        "charter": "Invented charter for Widget Engineer.",
+        "queue": {
+          "01MBW100000000000000000000": {
+            "id": "01MBW100000000000000000000",
+            "kind": "work",
+            "title": "Ship the widget catalogue",
+            "state": "claimed",
+            "state_at": "2026-11-25T18:05:00Z",
+            "parent": "",
+            "children": [
+              "01MBW200000000000000000000",
+              "01MBW300000000000000000000",
+              "01MBW400000000000000000000"
+            ],
+            "amendments": [
+              {
+                "at": "2026-11-25T18:20:00Z",
+                "by": {
+                  "role": "Widget Engineer",
+                  "aria": "c0ffee01c0ffee01c0ffee01c0ffee01"
+                },
+                "note": "Split the catalogue into three parts: schema, loader, page."
+              },
+              {
+                "at": "2026-11-25T19:10:00Z",
+                "by": {
+                  "role": "Widget Engineer",
+                  "aria": "c0ffee01c0ffee01c0ffee01c0ffee01"
+                },
+                "note": "The loader waits on the schema; page work can start from fixtures.",
+                "body": {
+                  "uri": "https://orders.example.test/blob/amend-2",
+                  "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                  "bytes": 912
+                }
+              }
+            ],
+            "source": "ada-notes",
+            "requested_by": {
+              "role": "Quartermaster",
+              "aria": "c0ffee02c0ffee02c0ffee02c0ffee02"
+            },
+            "owner": "Widget Engineer",
+            "principal": "ada",
+            "attention": "owner",
+            "body": {
+              "uri": "https://orders.example.test/blob/01mbw100000000000000000000",
+              "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "bytes": 1840
+            },
+            "links": [
+              "https://keel.example.test/diff/widgets/4f1c9ad",
+              "https://notes.example.test/2026/11/25/catalogue.md"
+            ],
+            "claimed_by": {
+              "role": "Widget Engineer",
+              "aria": "c0ffee01c0ffee01c0ffee01c0ffee01",
+              "at": "2026-11-25T18:05:00Z",
+              "lease_until": "2026-11-25T21:05:00Z"
+            },
+            "repo": "widgets",
+            "branch": "lane/catalogue",
+            "commits": [
+              "4f1c9ad",
+              "9be02e7"
+            ]
+          },
+          "01MBW200000000000000000000": {
+            "id": "01MBW200000000000000000000",
+            "kind": "work",
+            "title": "Catalogue schema",
+            "state": "review",
+            "state_at": "2026-11-25T19:40:00Z",
+            "parent": "01MBW100000000000000000000",
+            "children": [],
+            "amendments": [],
+            "source": "king",
+            "requested_by": {
+              "role": "Quartermaster",
+              "aria": "c0ffee02c0ffee02c0ffee02c0ffee02"
+            },
+            "owner": "Review Inspector",
+            "principal": "ada",
+            "attention": "none",
+            "body": {
+              "uri": "https://orders.example.test/blob/01mbw200000000000000000000",
+              "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "bytes": 1840
+            },
+            "links": [
+              "https://keel.example.test/diff/widgets/c3d77f0"
+            ],
+            "claimed_by": {
+              "role": "Widget Engineer",
+              "aria": "c0ffee02c0ffee02c0ffee02c0ffee02",
+              "at": "2026-11-25T18:30:00Z",
+              "lease_until": "2026-11-25T19:30:00Z"
+            },
+            "repo": "widgets",
+            "branch": "lane/catalogue-schema",
+            "commits": [
+              "c3d77f0"
+            ],
+            "review": {
+              "needed": true,
+              "commissioned_by": {
+                "role": "Widget Engineer",
+                "aria": "c0ffee01c0ffee01c0ffee01c0ffee01"
+              },
+              "reviewer_role": "",
+              "leased_at": "",
+              "verdict": ""
+            }
+          },
+          "01MBW300000000000000000000": {
+            "id": "01MBW300000000000000000000",
+            "kind": "work",
+            "title": "Catalogue loader",
+            "state": "blocked",
+            "state_at": "2026-11-25T19:15:00Z",
+            "parent": "01MBW100000000000000000000",
+            "children": [],
+            "amendments": [
+              {
+                "at": "2026-11-25T19:15:00Z",
+                "by": {
+                  "role": "Widget Engineer",
+                  "aria": "c0ffee01c0ffee01c0ffee01c0ffee01"
+                },
+                "note": "Blocked on the schema review."
+              }
+            ],
+            "source": "king",
+            "requested_by": {
+              "role": "Quartermaster",
+              "aria": "c0ffee02c0ffee02c0ffee02c0ffee02"
+            },
+            "owner": "Widget Engineer",
+            "principal": "ada",
+            "attention": "owner",
+            "body": {
+              "uri": "https://orders.example.test/blob/01mbw300000000000000000000",
+              "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "bytes": 1840
+            },
+            "links": []
+          },
+          "01MBW400000000000000000000": {
+            "id": "01MBW400000000000000000000",
+            "kind": "work",
+            "title": "Catalogue page",
+            "state": "posted",
+            "state_at": "2026-11-25T18:21:00Z",
+            "parent": "01MBW100000000000000000000",
+            "children": [
+              "01MBW500000000000000000000"
+            ],
+            "amendments": [],
+            "source": "github:https://github.com/example/widgets/issues/7",
+            "requested_by": {
+              "role": "Quartermaster",
+              "aria": "c0ffee02c0ffee02c0ffee02c0ffee02"
+            },
+            "owner": "Widget Engineer",
+            "principal": "ada",
+            "attention": "none",
+            "body": {
+              "uri": "https://orders.example.test/blob/01mbw400000000000000000000",
+              "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "bytes": 1840
+            },
+            "links": []
+          },
+          "01MBW500000000000000000000": {
+            "id": "01MBW500000000000000000000",
+            "kind": "work",
+            "title": "Page: empty state",
+            "state": "posted",
+            "state_at": "2026-11-25T18:22:00Z",
+            "parent": "01MBW400000000000000000000",
+            "children": [],
+            "amendments": [],
+            "source": "king",
+            "requested_by": {
+              "role": "Quartermaster",
+              "aria": "c0ffee02c0ffee02c0ffee02c0ffee02"
+            },
+            "owner": "Widget Engineer",
+            "principal": "ada",
+            "attention": "none",
+            "body": {
+              "uri": "https://orders.example.test/blob/01mbw500000000000000000000",
+              "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "bytes": 1840
+            },
+            "links": []
+          },
+          "01MBW600000000000000000000": {
+            "id": "01MBW600000000000000000000",
+            "kind": "work",
+            "title": "Retire the old widget index",
+            "state": "done",
+            "state_at": "2026-11-25T16:00:00Z",
+            "parent": "",
+            "children": [],
+            "amendments": [],
+            "source": "ada",
+            "requested_by": {
+              "role": "Quartermaster",
+              "aria": "c0ffee02c0ffee02c0ffee02c0ffee02"
+            },
+            "owner": "Widget Engineer",
+            "principal": "ada",
+            "attention": "none",
+            "body": {
+              "uri": "https://orders.example.test/blob/01mbw600000000000000000000",
+              "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "bytes": 1840
+            },
+            "links": []
+          },
+          "01MBY100000000000000000000": {
+            "id": "01MBY100000000000000000000",
+            "kind": "handoff",
+            "title": "Handoff: widget tooling lane",
+            "state": "posted",
+            "state_at": "2026-11-25T17:00:00Z",
+            "parent": "",
+            "children": [],
+            "amendments": [],
+            "source": "Tooling Engineer",
+            "requested_by": {
+              "role": "Tooling Engineer",
+              "aria": "c0ffee03c0ffee03c0ffee03c0ffee03"
+            },
+            "owner": "Widget Engineer",
+            "principal": "ada",
+            "attention": "none",
+            "body": {
+              "uri": "https://orders.example.test/blob/01mbh100000000000000000000",
+              "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "bytes": 1840
+            },
+            "links": [
+              "https://keel.example.test/diff/widgets/07aa5c1"
+            ],
+            "repo": "widgets",
+            "branch": "lane/tooling",
+            "commits": [
+              "07aa5c1",
+              "8d2e990",
+              "e11b4f6"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "@7e1a0002",
+      "name": "Review Inspector",
+      "target": "c0ffee02c0ffee02c0ffee02c0ffee02",
+      "form": {
+        "name": "Review Inspector",
+        "role-name": "Review Inspector",
+        "target-aria": "c0ffee02c0ffee02c0ffee02c0ffee02",
+        "charter": "Invented charter for Review Inspector.",
+        "queue": {
+          "01MBR100000000000000000000": {
+            "id": "01MBR100000000000000000000",
+            "kind": "review",
+            "title": "Review: catalogue schema",
+            "state": "review",
+            "state_at": "2026-11-25T19:41:00Z",
+            "parent": "",
+            "children": [],
+            "amendments": [],
+            "source": "Widget Engineer",
+            "requested_by": {
+              "role": "Widget Engineer",
+              "aria": "c0ffee02c0ffee02c0ffee02c0ffee02"
+            },
+            "owner": "Review Inspector",
+            "principal": "ada",
+            "attention": "none",
+            "body": {
+              "uri": "https://orders.example.test/blob/01mbr100000000000000000000",
+              "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "bytes": 1840
+            },
+            "links": [],
+            "priority": 10,
+            "review": {
+              "needed": true,
+              "commissioned_by": {
+                "role": "Widget Engineer",
+                "aria": "c0ffee01c0ffee01c0ffee01c0ffee01"
+              },
+              "reviewer_role": "Reviewer 7f3a",
+              "leased_at": "2026-11-25T19:45:00Z",
+              "verdict": ""
+            },
+            "claimed_by": {
+              "role": "Reviewer 7f3a",
+              "aria": "c0ffee03c0ffee03c0ffee03c0ffee03",
+              "at": "2026-11-25T19:45:00Z",
+              "lease_until": "2026-11-25T20:45:00Z"
+            }
+          },
+          "01MBR200000000000000000000": {
+            "id": "01MBR200000000000000000000",
+            "kind": "review",
+            "title": "Review: loader retry policy",
+            "state": "posted",
+            "state_at": "2026-11-25T19:50:00Z",
+            "parent": "",
+            "children": [],
+            "amendments": [],
+            "source": "Tooling Engineer",
+            "requested_by": {
+              "role": "Tooling Engineer",
+              "aria": "c0ffee03c0ffee03c0ffee03c0ffee03"
+            },
+            "owner": "Review Inspector",
+            "principal": "ada",
+            "attention": "none",
+            "body": {
+              "uri": "https://orders.example.test/blob/01mbr200000000000000000000",
+              "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "bytes": 1840
+            },
+            "links": [],
+            "priority": 20,
+            "review": {
+              "needed": true,
+              "commissioned_by": {
+                "role": "Tooling Engineer",
+                "aria": "c0ffee03c0ffee03c0ffee03c0ffee03"
+              },
+              "reviewer_role": "",
+              "leased_at": "",
+              "verdict": ""
+            }
+          },
+          "01MBR300000000000000000000": {
+            "id": "01MBR300000000000000000000",
+            "kind": "review",
+            "title": "Review: docs wording",
+            "state": "done",
+            "state_at": "2026-11-25T15:30:00Z",
+            "parent": "",
+            "children": [],
+            "amendments": [],
+            "source": "ada",
+            "requested_by": {
+              "role": "Quartermaster",
+              "aria": "c0ffee02c0ffee02c0ffee02c0ffee02"
+            },
+            "owner": "Review Inspector",
+            "principal": "ada",
+            "attention": "none",
+            "body": {
+              "uri": "https://orders.example.test/blob/01mbr300000000000000000000",
+              "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "bytes": 1840
+            },
+            "links": [],
+            "priority": 5,
+            "review": {
+              "needed": false,
+              "commissioned_by": {
+                "role": "Widget Engineer",
+                "aria": "c0ffee01c0ffee01c0ffee01c0ffee01"
+              },
+              "reviewer_role": "",
+              "leased_at": "2026-11-25T15:00:00Z",
+              "verdict": "approved"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "@7e1a0003",
+      "name": "Edge Engineer",
+      "target": "c0ffee04c0ffee04c0ffee04c0ffee04",
+      "form": {
+        "name": "Edge Engineer",
+        "role-name": "Edge Engineer",
+        "target-aria": "c0ffee04c0ffee04c0ffee04c0ffee04",
+        "charter": "Invented charter for Edge Engineer.",
+        "queue": {
+          "01MBD100000000000000000000": {
+            "id": "01MBD100000000000000000000",
+            "kind": "deploy",
+            "title": "Deploy widgets 0.4.1 to dev",
+            "state": "claimed",
+            "state_at": "2026-11-25T19:55:00Z",
+            "parent": "",
+            "children": [],
+            "amendments": [],
+            "source": "Widget Engineer",
+            "requested_by": {
+              "role": "Widget Engineer",
+              "aria": "c0ffee01c0ffee01c0ffee01c0ffee01"
+            },
+            "owner": "Edge Engineer",
+            "principal": "ada",
+            "attention": "none",
+            "body": {
+              "uri": "https://orders.example.test/blob/01mbd100000000000000000000",
+              "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "bytes": 1840
+            },
+            "links": [],
+            "repo": "widgets",
+            "branch": "main",
+            "commits": [
+              "9be02e7"
+            ],
+            "claimed_by": {
+              "role": "Edge Engineer",
+              "aria": "c0ffee04c0ffee04c0ffee04c0ffee04",
+              "at": "2026-11-25T19:55:00Z",
+              "lease_until": "2026-11-25T20:25:00Z"
+            }
+          },
+          "01MBD200000000000000000000": {
+            "id": "01MBD200000000000000000000",
+            "kind": "deploy",
+            "title": "Deploy widgets 0.4.0 to prod",
+            "state": "cancelled",
+            "state_at": "2026-11-25T14:00:00Z",
+            "parent": "",
+            "children": [],
+            "amendments": [
+              {
+                "at": "2026-11-25T14:00:00Z",
+                "by": {
+                  "role": "Edge Engineer",
+                  "aria": "c0ffee04c0ffee04c0ffee04c0ffee04"
+                },
+                "note": "Superseded by 0.4.1."
+              }
+            ],
+            "source": "ada",
+            "requested_by": {
+              "role": "Quartermaster",
+              "aria": "c0ffee02c0ffee02c0ffee02c0ffee02"
+            },
+            "owner": "Edge Engineer",
+            "principal": "ada",
+            "attention": "none",
+            "body": {
+              "uri": "https://orders.example.test/blob/01mbd200000000000000000000",
+              "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "bytes": 1840
+            },
+            "links": []
+          }
+        }
+      }
+    },
+    {
+      "id": "@7e1a0004",
+      "name": "Idle Scout",
+      "target": "c0ffee03c0ffee03c0ffee03c0ffee03",
+      "form": {
+        "name": "Idle Scout",
+        "role-name": "Idle Scout",
+        "target-aria": "c0ffee03c0ffee03c0ffee03c0ffee03",
+        "charter": "Invented charter for Idle Scout."
+      }
+    }
+  ]
+}
