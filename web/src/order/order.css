@@ -1,0 +1,132 @@
+@import "../styles/fonts.css";
+@import "../../../assets/v2/z2-tokens.css";
+@import "../../../assets/v2/z2-control.css";
+@import "../../../assets/rotolo/rotolo.css";
+@import "../../../assets/nodi/nodi.css";
+@import "../../../packages/react/src/zanni-react.css";
+
+:where(:root[data-theme="registro"]) { color-scheme: light dark; }
+
+body.ord-page {
+  margin: 0;
+  min-height: 100dvh;
+  background-color: var(--z-ground);
+  background-image: repeating-conic-gradient(color-mix(in srgb, var(--z-ink) 5%, transparent) 0% 25%, transparent 0% 50%);
+  background-size: 6px 6px;
+}
+
+.ord {
+  --ord-prose: "EB Garamond", Georgia, "Times New Roman", serif;
+  --ord-mono: "VT323", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --ord-display: "Jacquard 24", Georgia, serif;
+  --ord-edge: max(var(--z-space-5, 16px), env(safe-area-inset-left));
+  --zr-mono: var(--ord-mono);
+  --zr-prose: var(--ord-prose);
+  --zr-edge-l: var(--ord-edge);
+  --zr-edge-r: var(--ord-edge);
+  --zr-sheet-width: 56rem;
+  --nodi-mono: var(--ord-mono);
+  --nodi-caret: polygon(0 0,14.286% 0,14.286% 14.286%,42.857% 14.286%,42.857% 28.571%,71.429% 28.571%,71.429% 42.857%,100% 42.857%,100% 57.143%,71.429% 57.143%,71.429% 71.429%,42.857% 71.429%,42.857% 85.714%,14.286% 85.714%,14.286% 100%,0 100%);
+  min-height: 100dvh;
+  color: var(--z-ink);
+  font: 1.0625rem / 1.4 var(--ord-prose);
+  font-variant-numeric: lining-nums;
+  -webkit-text-size-adjust: 100%;
+}
+.ord *, .ord *::before, .ord *::after { box-sizing: border-box; }
+:where(.ord) :is(h1, h2, p, ul, ol, dl, dd) { margin: 0; padding: 0; }
+.ord :is(a, button, summary):focus-visible { outline: 2px solid var(--z-focus); outline-offset: 2px; }
+
+.ord-bar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: var(--z-space-4, 12px);
+  padding: calc(var(--z-space-3, 8px) + env(safe-area-inset-top)) var(--ord-edge) var(--z-space-3, 8px);
+  background: var(--z-ground);
+  border-bottom: 1px solid var(--z-line);
+}
+.ord-mark { font: 400 1.75rem / 1 var(--ord-display); color: var(--z-accent); }
+.ord-h1 { flex: 1 1 auto; min-width: 0; font: 400 1.25rem / 1 var(--ord-mono); letter-spacing: 0.04em; color: var(--z-muted); }
+.ord-status { flex: none; padding: 0 var(--z-space-3, 8px); border: 1px solid var(--z-line); border-radius: 999px; font: 400 1.0625rem / 1.5 var(--ord-mono); letter-spacing: 0.04em; color: var(--z-muted); }
+.ord-status[data-link="live"] { color: var(--z-ok); border-color: currentColor; }
+.ord-status[data-link="connecting"], .ord-status[data-link="offline"] { color: var(--z-warn); border-color: currentColor; }
+.ord-status[data-link="signedout"], .ord-status[data-link="closed"] { color: var(--z-fail); border-color: currentColor; }
+
+.ord-main { max-width: 64rem; margin: 0 auto; padding: var(--z-space-5, 16px) var(--ord-edge) 64px; outline: none; }
+.ord-note { padding: var(--z-space-4, 12px) 0; font: 400 1.125rem / 1.3 var(--ord-mono); letter-spacing: 0.04em; color: var(--z-muted); }
+.ord-roles { display: flex; flex-direction: column; gap: var(--z-space-4, 12px); }
+
+.ord-role { border: 1px solid var(--z-line); border-top: 2px solid var(--z-accent); background: var(--z-ground-2); }
+.ord-role > .nodi-sum { display: flex; align-items: flex-start; padding: var(--z-space-3, 8px) var(--z-space-4, 12px); color: var(--z-ink); }
+.ord-role > .nodi-sum .nodi-caret { margin-top: 0.55rem; }
+.ord-role-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--z-space-1, 2px) var(--z-space-4, 12px); min-width: 0; }
+.ord-role-name { font: 400 1.5rem / 1.1 var(--ord-display); letter-spacing: 0.01em; overflow-wrap: anywhere; }
+.ord-holder { font: 400 1.125rem / 1.2 var(--ord-mono); letter-spacing: 0.04em; color: var(--z-muted); }
+.ord-holder[data-vacant] { font-style: italic; }
+.ord-counts { display: flex; flex-wrap: wrap; gap: 0 var(--z-space-3, 8px); flex-basis: 100%; font: 400 1.0625rem / 1.2 var(--ord-mono); letter-spacing: 0.04em; color: var(--z-muted); }
+.ord-count[data-state="attention"] { color: var(--z-hot); }
+.ord-count[data-state="blocked"] { color: var(--z-fail); }
+.ord-role-body { padding: 0 var(--z-space-4, 12px) var(--z-space-3, 8px); }
+
+.ord-tree { list-style: none; display: flex; flex-direction: column; }
+.ord-tree .ord-tree { margin-left: 10px; padding-left: 10px; border-left: 1px solid var(--z-line); }
+.ord-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--z-space-2, 4px);
+  width: 100%;
+  min-height: var(--z-control-hit, 44px);
+  padding: var(--z-space-3, 8px) var(--z-space-3, 8px);
+  border: 0;
+  border-bottom: 1px solid var(--z-rule);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.ord-row:hover { background: color-mix(in srgb, var(--z-ink) 6%, transparent); }
+.ord-row[aria-current="true"] { background: color-mix(in srgb, var(--z-accent) 16%, transparent); }
+.ord-row[data-attention="owner"] { box-shadow: inset 3px 0 0 var(--z-hot); }
+.ord-title { font: 400 1.1875rem / 1.25 var(--ord-prose); overflow-wrap: anywhere; }
+.ord-row[data-state="done"] .ord-title { color: var(--z-muted); }
+.ord-row[data-state="cancelled"] .ord-title { color: var(--z-muted); text-decoration: line-through; }
+.ord-meta { display: flex; flex-wrap: wrap; gap: var(--z-space-1, 2px) var(--z-space-3, 8px); font: 400 1.0625rem / 1.15 var(--ord-mono); letter-spacing: 0.04em; }
+.ord-chip { min-width: 0; padding: 0 var(--z-space-3, 8px); border: 1px solid var(--z-line); border-radius: 999px; color: var(--z-muted); overflow-wrap: anywhere; }
+.ord-chip[data-tone="claimed"], .ord-chip[data-tone="live"] { color: var(--z-accent); border-color: currentColor; }
+.ord-chip[data-tone="blocked"], .ord-chip[data-tone="lapsed"] { color: var(--z-fail); border-color: currentColor; }
+.ord-chip[data-tone="review"] { color: var(--z-warn); border-color: currentColor; }
+.ord-chip[data-tone="done"] { color: var(--z-ok); border-color: currentColor; }
+.ord-chip[data-tone="owner"] { color: var(--z-hot); border-color: currentColor; }
+.ord-age { color: var(--z-muted); }
+
+.ord-sheet { max-height: 88dvh; overflow-y: auto; overscroll-behavior: contain; }
+.ord-detail { display: flex; flex-direction: column; gap: var(--z-space-4, 12px); min-width: 0; }
+.ord-detail-title { font: 400 1.5rem / 1.15 var(--ord-prose); overflow-wrap: anywhere; }
+.ord-fields { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--z-space-2, 4px) var(--z-space-4, 12px); }
+.ord-field { display: contents; }
+.ord-field > dt { font: 400 1.0625rem / 1.3 var(--ord-mono); letter-spacing: 0.04em; color: var(--z-muted); text-transform: lowercase; }
+.ord-field > dd { min-width: 0; overflow-wrap: anywhere; }
+.ord-field code, .ord-commits code, .ord-raw { font: 400 1.0625rem / 1.3 var(--ord-mono); letter-spacing: 0.04em; }
+.ord-commits { display: flex; flex-wrap: wrap; gap: var(--z-space-2, 4px) var(--z-space-3, 8px); }
+.ord-raw { margin: 0; white-space: pre-wrap; }
+.ord-links, .ord-review, .ord-pointers { list-style: none; display: flex; flex-direction: column; gap: var(--z-space-1, 2px); }
+.ord-link { color: var(--z-accent); text-decoration: underline; text-underline-offset: 2px; }
+.ord-nolink { color: var(--z-muted); }
+.ord-hash { font: 400 1.0625rem / 1.3 var(--ord-mono); color: var(--z-muted); }
+.ord-pointer { padding: 0; border: 0; background: none; color: var(--z-accent); font: inherit; text-align: left; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.ord-amendments > .nodi-sum { padding: 0; }
+.ord-amend-list { list-style: none; display: flex; flex-direction: column; gap: var(--z-space-3, 8px); padding-top: var(--z-space-2, 4px); }
+.ord-amend { padding-left: var(--z-space-3, 8px); border-left: 2px solid var(--z-line); }
+.ord-amend-head { font: 400 1.0625rem / 1.3 var(--ord-mono); letter-spacing: 0.04em; color: var(--z-muted); }
+.ord-amend-note { overflow-wrap: anywhere; }
+
+@media (max-width: 520px) {
+  .ord-fields { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .ord-field { display: block; padding: var(--z-space-2, 4px) 0; border-bottom: 1px solid var(--z-rule); }
+  .ord-role-body { padding-inline: var(--z-space-2, 4px); }
+}
