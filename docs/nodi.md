@@ -44,5 +44,5 @@ nodes, boxing control, bidi and zero-width characters as `U+202E` through
 Thinking and tool blocks are `details` with the stair caret, open by default.
 Their open state is the user's.
 
-Faces: Jacquard 24 display, EB Garamond text, VT323 for bylines, tools, ends and
+Faces: Jacquard 24 display, Source Serif 4 text, VT323 for bylines, tools, ends and
 metrics. No sans.

@@ -306,7 +306,7 @@ with sync_playwright() as p:
         csp.goto(origin + "/app/")
         csp.wait_for_selector(".placet-row")
         assert csp.evaluate("window.__csp || []") == [] and not violations, (csp.evaluate("window.__csp"), violations)
-        assert csp.evaluate("document.fonts.check('16px \\'EB Garamond\\'')"), "EB Garamond loads from the bundle under font-src self"
+        assert csp.evaluate("document.fonts.check('16px \\'Source Serif 4\\'')"), "Source Serif 4 loads from the bundle under font-src self"
         assert csp.locator(".placet-head").evaluate("e => e.naturalWidth") > 0, "the mark loads under img-src self"
         csp.locator(".placet-link", has_text="figaro.model").tap()
         csp.wait_for_selector(".placet-patch")

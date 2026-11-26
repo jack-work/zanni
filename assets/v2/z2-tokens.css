@@ -130,7 +130,7 @@
   --z-leading-body: 1.5;
   --z-radius-1: 2px;
   --z-radius-2: 5px;
-  --z-font: "Grenze", "EB Garamond", Georgia, serif;
+  --z-font: "Grenze", "Source Serif 4", Georgia, serif;
   --z-mono: ui-monospace, "SF Mono", Consolas, monospace;
 }
 :root[data-scheme="light"] { color-scheme: light; }

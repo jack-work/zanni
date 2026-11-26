@@ -58,14 +58,14 @@ API (figaro approvals serve, branch lane/approvals-api):
 
 `bin/placet-bundle OUT` writes a flat directory for the backend's `--spa-dir`:
 `index.html`, `boot.js`, `placet.js`, `placet.css`, `z2-tokens.css`, `rotolo.css`,
-`fonts.css`, `fonts/eb-garamond.woff2`, `fonts/eb-garamond-italic.woff2`,
+`fonts.css`, `fonts/source-serif-4.woff2`, `fonts/source-serif-4-italic.woff2`,
 `fonts/jacquard-24.woff2`, `figaro-head.png` and
 a `SHA256SUMS` over all of them, so a reviewer reads exactly what is served. No
 external URL, no source map, no build step beyond a copy. CSP that fits:
 `script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:;
 connect-src 'self'; form-action 'none'`.
 
-The theme is registro (keel palette: oxblood in light, gold in dark), EB Garamond
+The theme is registro (keel palette: oxblood in light, gold in dark), Source Serif 4
 for text and every number, Jacquard only on the mark.
 
 ## Checks

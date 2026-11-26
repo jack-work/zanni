@@ -13,7 +13,7 @@ body.fw-page {
 }
 
 .fw {
-  --fw-prose: "EB Garamond", Georgia, "Times New Roman", serif;
+  --fw-prose: "Source Serif 4", Georgia, "Times New Roman", serif;
   --fw-mono: "VT323", "Nerd Icons", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --fw-display: "Jacquard 24", Georgia, serif;
   --zr-mono: var(--fw-mono);

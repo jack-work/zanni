@@ -1,5 +1,5 @@
 html, body, #root { height: 100%; margin: 0; }
-body { background: var(--z-ground); color: var(--z-ink); font: 1.0625rem / 1.45 "EB Garamond", Georgia, serif; --zr-mono: "VT323", ui-monospace, monospace; }
+body { background: var(--z-ground); color: var(--z-ink); font: 1.0625rem / 1.45 "Source Serif 4", Georgia, serif; --zr-mono: "VT323", ui-monospace, monospace; }
 .zr-bar { font-family: var(--zr-mono); font-size: 1.125rem; }
 .zr-bar a { color: var(--z-ink); text-decoration: none; }
 .zr-bar [data-slot="mark"] a { color: var(--z-accent); font-size: 1.375rem; }

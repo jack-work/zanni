@@ -23,7 +23,7 @@ with sync_playwright() as p:
     assert current.evaluate("e => getComputedStyle(e).borderBottomColor") == "rgb(217, 169, 78)"
     assert page.locator(".z2-scope [data-slot='mark']").evaluate("e => getComputedStyle(e).fontFamily").startswith('"Jacquard 24"'), "the display face stays on the mark"
     assert page.locator("h2").evaluate("e => getComputedStyle(e).fontFamily").startswith('"Jacquard 24"'), "panel titles are in the pixel gothic"
-    assert page.locator("body").evaluate("e => getComputedStyle(e).fontFamily").lstrip('"').startswith("EB Garamond"), "text is in the serif"
+    assert page.locator("body").evaluate("e => getComputedStyle(e).fontFamily").lstrip('"').startswith("Source Serif 4"), "text is in the serif"
     assert page.locator(".z2-capacity-value").first.inner_text() == "Unavailable"
     assert page.locator(".z2-capacity-state").inner_text() == "Stale"
     assert page.locator("h3").all_text_contents() == ["Provider reported", "Observed headers", "Local usage"]

@@ -1,5 +1,5 @@
 .ordine, :root:has(.ordine) .z2-tip {
-  --z-font: var(--fontpack-prose, "EB Garamond", Georgia, serif);
+  --z-font: var(--fontpack-prose, "Source Serif 4", Georgia, serif);
   --z-display: var(--fontpack-display, "Jacquard 24", Georgia, serif);
   --z-mono: var(--fontpack-mono, "VT323", ui-monospace, monospace);
   --z-utility: var(--z-font);

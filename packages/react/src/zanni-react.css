@@ -247,7 +247,7 @@
   border-radius: var(--z-radius-2, 5px);
   background: var(--z-ground-2);
   color: var(--z-ink);
-  font: 400 1.125rem / 1.3 var(--zr-prose, "EB Garamond", Georgia, serif);
+  font: 400 1.125rem / 1.3 var(--zr-prose, "Source Serif 4", Georgia, serif);
   resize: none;
   field-sizing: content;
 }

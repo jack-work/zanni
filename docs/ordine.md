@@ -161,8 +161,8 @@ Enter selects a single match.
 The page wears the Scope registro: its tokens, buttons, segments, fields and
 `z2.tips` tooltips (`data-tip-text`), cards on `--z-ground-2` with an accent
 top edge, a gesso ground and rotolo scrollbars, light and dark. Type is
-fontpack's three faces and no other: Jacquard 24 for names and titles, EB
-Garamond for prose, VT323 for handles, states and labels. Ordine overrides
+fontpack's three faces and no other: Jacquard 24 for names and titles, Source
+Serif 4 for prose, VT323 for handles, states and labels. Ordine overrides
 registro's text face inside its host and in the tooltips it raises.
 
 `examples/ordine.html` is synthetic and has no backend connection.
