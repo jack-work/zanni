@@ -40,7 +40,7 @@ or https; anything else is text. All values reach the page as text. The route is
 
 ```sh
 cd web
-npx vite build -c vite.order.config.ts    # web/dist-order: index.html and assets/
+npm run build:order    # web/dist-order: index.html and assets/
 ORDER_DOOR=http://127.0.0.1:8099 npx vite -c vite.order.config.ts   # dev server, /rpc proxied
 ```
 

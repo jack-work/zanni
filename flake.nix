@@ -512,6 +512,7 @@
             cd web
             [ -d node_modules ] || npm ci --ignore-scripts
             npm run build --silent -- --logLevel warn
+            npm run build:order --silent -- --logLevel warn
             exec npx playwright test "$@"
           '');
         };
