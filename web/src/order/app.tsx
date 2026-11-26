@@ -1,11 +1,13 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { Button, useTick } from "zanni-react";
 import { EntrySheet } from "./entry-sheet";
-import { RoleSection, useRoleQueue } from "./role-section";
+import { useRoleQueue } from "./queue-section";
+import { orderHash } from "./queue";
 import { ariaName } from "./roles";
 import { scoped, type PageContext } from "./rows";
-import { linkAtom, openEntryAtom, orderClientAtom, orderRouteAtom, rolesAtom, treeStateAtom, type Link } from "./state";
+import { Topologies } from "./seats";
+import { carryCentralAtom, linkAtom, openEntryAtom, orderClientAtom, orderRouteAtom, treeStateAtom, viewAtom, type Link, type MissingWhy } from "./state";
 
 const LINK_TEXT: Record<Link, string> = {
   live: "live",
@@ -34,10 +36,19 @@ function Status({ link }: { link: Link }) {
   );
 }
 
+const MISSING: Record<MissingWhy, string> = {
+  unknown: "No role form with this id is visible to you.",
+  closed: "This central command is closed to you.",
+  gone: "This central command is gone.",
+  unreadable: "Could not read this central command.",
+  unchartered: "This form is not a chartered role.",
+  queue: "This form is a queue form, not a central command.",
+};
+
 function Body({ page }: { page: PageContext }) {
   const client = useAtomValue(orderClientAtom);
   const tree = useAtomValue(treeStateAtom);
-  const roles = useAtomValue(rolesAtom);
+  const view = useAtomValue(viewAtom);
   const link = useAtomValue(linkAtom);
   if (!client || !tree) return <p className="ord-note">No door to figaro.</p>;
   if (link === "signedout")
@@ -49,15 +60,21 @@ function Body({ page }: { page: PageContext }) {
         </Button>
       </div>
     );
-  if (!tree.ready && roles.length === 0) return <p className="ord-note">{tree.error ? "Could not read the roles: " + tree.error : "Loading roles…"}</p>;
-  if (roles.length === 0) return <p className="ord-note">No role forms are visible to you.</p>;
-  return (
-    <div className="ord-roles" data-field="roles">
-      {roles.map((role) => (
-        <RoleSection key={role.id} client={client} role={role} page={page} />
-      ))}
-    </div>
-  );
+  if (view.kind === "loading") return <p className="ord-note">{tree.error ? "Could not read the roles: " + tree.error : "Loading the chartered roles…"}</p>;
+  if (view.kind === "none") return <p className="ord-note" data-field="none">No chartered central command is visible to you.</p>;
+  if (view.kind === "missing") return <p className="ord-note" data-field="missing">{MISSING[view.why]}</p>;
+  if (view.kind === "elsewhere")
+    return (
+      <p className="ord-note" data-field="elsewhere">
+        {view.role.name} is not a central command.{" "}
+        {view.role.chartered.root && (
+          <a className="ord-link" href={orderHash(view.role.chartered.root)}>
+            Open its central command
+          </a>
+        )}
+      </p>
+    );
+  return <Topologies client={client} topology={view.topology} page={page} overrides={view.overrides} />;
 }
 
 export function App() {
@@ -65,7 +82,12 @@ export function App() {
   const tree = useAtomValue(treeStateAtom);
   const route = useAtomValue(orderRouteAtom);
   const open = useSetAtom(openEntryAtom);
+  const view = useAtomValue(viewAtom);
+  const carry = useSetAtom(carryCentralAtom);
   const now = useTick(30_000);
+  useEffect(() => {
+    if (view.central) carry();
+  }, [view.central, carry]);
   const page = useMemo<PageContext>(() => ({ now, nameOf: (aria) => ariaName(tree, aria), route, openIn: (role, entry) => open({ role, entry }) }), [now, tree, route, open]);
   return (
     <div className="ord" data-link={link}>

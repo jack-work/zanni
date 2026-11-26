@@ -658,6 +658,7 @@
       if (id === '@arias' && core.fixture) return clone(core.fixture.arias);
       if (id === '@arias') { var root = ariasRoot(); root.roles = {}; return root; }
       if (id === '@recent') return recentRoot();
+      if (id === '@topology') return clone(core.topology || {});
       if (id === ASKS_FORM) return clone(core.orders);
       if (core.roles[id]) return clone(core.roles[id].form);
       var a = core.arias[id];
@@ -683,6 +684,8 @@
     }
     core.setQueue = function (aria, root) { core.queues[aria] = clone(root); pushQueue(aria); };
     core.setOrders = function (root) { core.orders = clone(root); pushForm(ASKS_FORM); };
+    core.topology = clone(o.topology || {});
+    core.setTopology = function (root) { core.topology = clone(root); pushForm('@topology'); };
     core.roles = {};
     (o.roles || []).forEach(function (r) { core.roles[r.id] = clone(r); });
     core.setRole = function (rid, form) { core.roles[rid].form = clone(form); pushForm(rid); pushForm('@arias'); };

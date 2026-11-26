@@ -1,64 +1,120 @@
-import { useMemo } from "react";
-import { useAtomValue } from "jotai";
-import type { AriaClient } from "figaro-forms/aria";
-import { boundFormAtom } from "figaro-forms/aria/jotai";
+import type { ReactNode } from "react";
 import { Fold } from "zanni-react";
-import { entriesOf, forestOf, stateCounts, wantsAttention, type Entry } from "./queue";
-import type { RoleRow } from "./roles";
-import { Branches, scoped, type PageContext } from "./rows";
+import { standing, type CharterRole, type Mismatch, type Seat, type Study } from "./charter";
+import { orderHash } from "./queue";
+import { Chip } from "./rows";
 
-export function useRoleQueue(client: AriaClient, roleId: string) {
-  const form = useAtomValue(boundFormAtom(client, roleId));
-  const entries = useMemo(() => entriesOf(form.root), [form.root]);
-  const forest = useMemo(() => forestOf(entries), [entries]);
-  return { form, entries, forest };
+function fanoutText(role: CharterRole, drawn: number | undefined): string {
+  const parts: string[] = [];
+  if (drawn !== undefined) parts.push(drawn === 1 ? "1 child" : drawn + " children");
+  if (role.fanout.min !== undefined) parts.push("min " + role.fanout.min);
+  if (role.fanout.max !== undefined) parts.push("max " + role.fanout.max);
+  if (role.fanout.quota !== undefined) parts.push("quota " + role.fanout.quota);
+  return parts.join(" · ");
 }
 
-function formNote(form: ReturnType<typeof useRoleQueue>["form"]): string {
-  if (form.refusal) return "This role form is closed to you.";
-  if (form.phase === "gone") return "This role form is gone.";
-  if (form.phase === "incompatible") return "This role form cannot be read by this page.";
-  if (form.phase === "failed") return "Could not read this role form.";
-  if (!form.ready) return "Loading…";
-  return "";
+function hasLimits(role: CharterRole): boolean {
+  return role.fanout.min !== undefined || role.fanout.max !== undefined || role.fanout.quota !== undefined;
 }
 
-function Counts({ entries }: { entries: readonly Entry[] }) {
-  const counts = stateCounts(entries);
-  const attention = entries.filter(wantsAttention).length;
+export function mismatchText(m: Mismatch): string {
+  const under = m.drawnUnder.length > 0 ? "drawn under " + m.drawnUnder.join(" and ") : "drawn outside the command";
+  return under + ", charter says " + m.declaredName;
+}
+
+function Fact({ name, children }: { name: string; children: ReactNode }) {
   return (
-    <span className="ord-counts" data-field="counts">
-      {counts.map(([state, n]) => (
-        <span key={state} className="ord-count" data-state={state}>
-          {n} {state}
-        </span>
-      ))}
-      {attention > 0 && (
-        <span className="ord-count" data-state="attention">
-          {attention} need attention
-        </span>
-      )}
-    </span>
+    <div className="ord-field" data-field={name}>
+      <dt>{name.replace(/_/g, " ")}</dt>
+      <dd>{children}</dd>
+    </div>
   );
 }
 
-export function RoleSection({ client, role, page }: { client: AriaClient; role: RoleRow; page: PageContext }) {
-  const { form, entries, forest } = useRoleQueue(client, role.id);
-  const note = formNote(form);
+function Charter({ role, mismatch, nameOfForm }: { role: CharterRole; mismatch: Mismatch | undefined; nameOfForm: (form: string) => string }) {
+  const c = role.chartered;
   return (
-    <Fold className="ord-role" data-role={role.id} open={entries.length > 0 || undefined} summary={
-      <span className="ord-role-head">
-        <span className="ord-role-name">{role.name}</span>
-        <span className="ord-holder" data-field="holder" data-vacant={role.holder ? undefined : ""}>
-          {role.holder ? "held by " + role.holder.name : "vacant"}
+    <dl className="ord-fields ord-charter">
+      {c.reportsTo && (
+        <Fact name="reports_to">
+          {nameOfForm(c.reportsTo)}
+          {mismatch && " (not where it is drawn)"}
+        </Fact>
+      )}
+      {c.abdication && (
+        <Fact name="succession">
+          {c.abdication}
+          {c.ttl && ", ttl " + c.ttl}
+        </Fact>
+      )}
+      {c.reviewerMaxChildren !== undefined && <Fact name="reviewer_limit">{c.reviewerMaxChildren} per reviewer</Fact>}
+    </dl>
+  );
+}
+
+export interface SeatFacts {
+  readonly role: CharterRole;
+  readonly mismatch: Mismatch | undefined;
+  readonly studies: readonly Study[];
+  readonly seat: Seat | undefined;
+  readonly central: boolean;
+  readonly centralId: string;
+  readonly holder: string;
+  readonly nameOfForm: (form: string) => string;
+}
+
+export function RoleSection({ facts }: { facts: SeatFacts }) {
+  const { role, mismatch, studies, seat, central, centralId, holder, nameOfForm } = facts;
+  const drawn = seat?.drawnChildren;
+  const limited = hasLimits(role);
+  const tone = limited && drawn !== undefined ? standing(role.fanout, drawn) : "within";
+  return (
+    <Fold
+      className="ord-card ord-role"
+      data-role={role.id}
+      data-seat={role.chartered.seat || undefined}
+      data-regiment={role.chartered.regiment || undefined}
+      data-central={central ? "true" : undefined}
+      data-mismatch={mismatch ? "true" : undefined}
+      summary={
+        <span className="ord-role-head">
+          <span className="ord-role-name">{role.name}</span>
+          <span className="ord-holder" data-field="holder" data-vacant={seat ? undefined : ""}>
+            {holder}
+          </span>
+          <span className="ord-meta ord-seatline">
+            {central && <Chip field="central">central command</Chip>}
+            {role.chartered.seat && <Chip field="seat">{role.chartered.seat}</Chip>}
+            {role.chartered.regiment && <Chip field="regiment">{role.chartered.regiment}</Chip>}
+            {limited && (
+              <Chip field="fanout" tone={tone === "over" ? "lapsed" : tone === "short" ? "review" : undefined}>
+                {fanoutText(role, drawn)}
+              </Chip>
+            )}
+            {seat && seat.skipped > 0 && <Chip field="skipped">{seat.skipped === 1 ? "skips 1 unchartered" : "skips " + seat.skipped + " unchartered"}</Chip>}
+            {mismatch && (
+              <Chip field="mismatch" tone="owner">
+                {mismatchText(mismatch)}
+              </Chip>
+            )}
+            {studies.map((study) => (
+              <Chip key={study.id} field="study" tone={study.found ? undefined : "lapsed"}>
+                studies{" "}
+                {study.found ? (
+                  <a className="ord-link" href={orderHash(centralId, study.id)} data-study={study.id}>
+                    {study.name}
+                  </a>
+                ) : (
+                  study.name + " (not visible)"
+                )}
+              </Chip>
+            ))}
+          </span>
         </span>
-        <Counts entries={entries} />
-      </span>
-    }>
+      }
+    >
       <div className="ord-role-body">
-        {note && <p className="ord-note">{note}</p>}
-        {!note && entries.length === 0 && <p className="ord-note">No work orders.</p>}
-        {forest.length > 0 && <Branches branches={forest} ctx={scoped(page, role.id)} />}
+        <Charter role={role} mismatch={mismatch} nameOfForm={nameOfForm} />
       </div>
     </Fold>
   );
