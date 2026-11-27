@@ -23,6 +23,7 @@ What each section measures:
 | input[] | CPU throttle 1x and 4x. `keydown_to_paint` is keydown timestamp to the task after the next frame; `roundtrip` is `keystrokes()` from the test kit. Idle, during the mock's tool reply, and during a 24 KB prose reply (`streaming_long.series`, per window of 25 keys) |
 | stream_frame | per 40 ms stream frame: React commits, components rendered (counted through the DevTools hook, split into live turn, settled turns, outside the transcript), CDP script, layout and style |
 | input_webkit | the same keydown-to-paint in WebKit with the iPhone 15 profile, idle and during the long reply |
+| composer_row | the composer row stacking and un-stacking at 390x844: a long draft is inserted, then cleared. Per way, over 700 ms: layouts and style recalcs from CDP (a FLIP costs the layouts of the one DOM change; animating width or height would cost one per frame), `layout_props` (animated properties on the row's parts that are layout properties, which must be 0), the rAF frame times and `frames_over_33ms` |
 | scroll | wheel flings toward the top of a 10 000-turn history: rAF frame times, long tasks, turns paged in |
 | scroll_dom | flings through the transcript left by the memory run (200+ turns in the DOM) |
 | memory | 200 turns streamed one after another at 2 ms frames; heap after GC, DOM elements and listeners per turn; `after_detach` is the heap once the aria is left |

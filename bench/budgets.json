@@ -1,5 +1,5 @@
 {
- "from": "2026-11-21-bf617a2.json, bundle sizes and session.* and attach.1.app_mark from the finish run",
+ "from": "2026-11-21-bf617a2.json, bundle sizes and session.* and attach.1.app_mark from the finish run; composer_row.* from the composer row run on 2026-11-27",
  "margin": 0.5,
  "metrics": {
   "attach.1.app_mark.p50": {
@@ -47,6 +47,44 @@
   "bundle.lazy.voice-hub.gzip": {
    "budget": 1780,
    "margin": 0.1
+  },
+  "composer_row.stack.frame_ms.p95": {
+   "budget": 16.7,
+   "margin": 1.0
+  },
+  "composer_row.stack.frames_over_33ms": {
+   "budget": 0,
+   "margin": 0,
+   "slack": 2
+  },
+  "composer_row.stack.layout_props": {
+   "budget": 0,
+   "margin": 0,
+   "slack": 0
+  },
+  "composer_row.stack.layouts": {
+   "budget": 7,
+   "margin": 0.5,
+   "slack": 2
+  },
+  "composer_row.unstack.frame_ms.p95": {
+   "budget": 16.7,
+   "margin": 1.0
+  },
+  "composer_row.unstack.frames_over_33ms": {
+   "budget": 0,
+   "margin": 0,
+   "slack": 2
+  },
+  "composer_row.unstack.layout_props": {
+   "budget": 0,
+   "margin": 0,
+   "slack": 0
+  },
+  "composer_row.unstack.layouts": {
+   "budget": 7,
+   "margin": 0.5,
+   "slack": 2
   },
   "history.rows.2.keydown_to_paint.p50": {
    "budget": 56.5,
