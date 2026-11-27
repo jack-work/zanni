@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { isObject, type Json } from "figaro-forms";
 import { Fold, Sheet, bytes, stamp } from "zanni-react";
-import { instant, type Amendment, type Blob, type Entry } from "./queue";
+import { instant, sourceHref, type Amendment, type Blob, type Entry } from "./queue";
 import type { Standing } from "./derive";
 import { Anchor, leaseText, relative, type RowContext } from "./rows";
 import { StandingNote } from "./standing";
@@ -157,7 +157,7 @@ export function EntryDetail({ entry, byId, ctx }: { entry: Entry; byId: Readonly
             <Pointers ids={entry.children} byId={byId} ctx={ctx} />
           </Field>
         )}
-        {entry.source && <Field name="source">{entry.source.startsWith("github:") ? <Anchor href={entry.source.slice(7)}>{entry.source}</Anchor> : entry.source}</Field>}
+        {entry.source && <Field name="source">{sourceHref(entry.source) ? <Anchor href={sourceHref(entry.source)!}>{entry.source}</Anchor> : entry.source}</Field>}
         {entry.requestedBy && (
           <Field name="requested_by">
             {entry.requestedBy.role}

@@ -589,6 +589,26 @@ describe("the order page: fields the contract does not name", () => {
   });
 });
 
+describe("the order page: an entry's source", () => {
+  it("links a github short reference, in a new tab that keeps the page private", async () => {
+    const withSource = fixture.roles.map((r) => {
+      if (r.name !== "Widget Work") return r;
+      const queue = { ...r.form.queue! };
+      const id = Object.keys(queue).find((k) => queue[k]!.title === "Catalogue loader")!;
+      queue[id] = { ...queue[id]!, source: "github:jack-work/zanni#12" };
+      return { ...r, form: { ...r.form, queue } };
+    });
+    mount({ roles: withSource as Role[] });
+    await shown();
+    fireEvent.click(nodeNamed("Widget Work", "queue"));
+    fireEvent.click(await screen.findByText("Catalogue loader", undefined, { timeout: 3000 }));
+    const sheet = await screen.findByRole("dialog", { name: "Work order" });
+    const a = within(sheet).getByRole("link", { name: "github:jack-work/zanni#12" });
+    expect(a.getAttribute("href")).toBe("https://github.com/jack-work/zanni/issues/12");
+    expect(a.getAttribute("rel")).toBe("noopener noreferrer");
+  });
+});
+
 describe("the order page: which forms the address may open", () => {
   const loaded = (core: ReturnType<typeof mount>, id: string): boolean => core.calls.some((c: { method: string; params: Record<string, unknown> }) => c.method === "figaro.form" && c.params.figaro_id === id);
 

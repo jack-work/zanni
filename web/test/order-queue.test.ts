@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import type { JsonObject } from "figaro-forms";
 import { describe, expect, it } from "vitest";
-import { byQueueOrder, entriesOf, forestOf, leaseOf, orderHash, parseOrderRoute, safeHref, stateCounts, wantsAttention, type Branch, type Entry } from "../src/order/queue";
+import { byQueueOrder, entriesOf, forestOf, leaseOf, orderHash, parseOrderRoute, safeHref, sourceHref, stateCounts, wantsAttention, type Branch, type Entry } from "../src/order/queue";
 
 const fixture = JSON.parse(readFileSync("test/fixtures/order-queues.json", "utf8")) as { roles: { name: string; form: JsonObject }[] };
 const form = (name: string) => fixture.roles.find((r) => r.name === name)!.form;
@@ -145,5 +145,22 @@ describe("the page route", () => {
     expect(parseOrderRoute("#/%40c0de0001/c0ffee01?view=command")).toEqual({ central: "@c0de0001", node: "c0ffee01", entry: undefined, view: "command" });
     expect(parseOrderRoute("#/%40c0de0001?view=other").view).toBe("full");
     expect(orderHash(undefined, undefined, undefined, "command")).toBe("#/?view=command");
+  });
+});
+
+describe("the link a source names", () => {
+  it("links a github short reference to its repository or issue", () => {
+    expect(sourceHref("github:jack-work/zanni#12")).toBe("https://github.com/jack-work/zanni/issues/12");
+    expect(sourceHref("github:jack-work/zanni")).toBe("https://github.com/jack-work/zanni");
+    expect(sourceHref("github:a/b.c_d-e#7")).toBe("https://github.com/a/b.c_d-e/issues/7");
+  });
+
+  it("still links a github prefix on a full address, and only a safe one", () => {
+    expect(sourceHref("github:https://github.com/jack-work/zanni/issues/3")).toBe("https://github.com/jack-work/zanni/issues/3");
+    expect(sourceHref("github:javascript:alert(1)")).toBeUndefined();
+  });
+
+  it("links nothing that is not a github reference, or a malformed one", () => {
+    for (const s of ["jira:ABC-1", "https://example.invalid/x", "github:", "github:owner", "github:owner/repo#", "github:owner/repo/extra", "github:../x#1", "github:-a/b"]) expect(sourceHref(s), s).toBeUndefined();
   });
 });

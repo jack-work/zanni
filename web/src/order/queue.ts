@@ -229,6 +229,16 @@ export function safeHref(link: string): string | undefined {
   }
 }
 
+const GITHUB_REF = /^([A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)\/([A-Za-z0-9._-]+?)(?:#(\d+))?$/;
+
+export function sourceHref(source: string): string | undefined {
+  if (!source.startsWith("github:")) return undefined;
+  const rest = source.slice("github:".length);
+  const ref = GITHUB_REF.exec(rest);
+  if (ref) return "https://github.com/" + ref[1] + "/" + ref[2] + (ref[3] ? "/issues/" + ref[3] : "");
+  return safeHref(rest);
+}
+
 export type GraphView = "full" | "command";
 
 export interface OrderRoute {
