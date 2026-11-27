@@ -22,6 +22,7 @@
       "figaro-forms/aria": ["./node_modules/figaro-forms/dist/aria/index.d.ts"],
       "figaro-forms/aria/jotai": ["./node_modules/figaro-forms/dist/aria/jotai.d.ts"],
       "zanni-react/jotai": ["../packages/react/src/jotai.ts"],
+      "zanni-react/jotai/*": ["../packages/react/src/jotai/*"],
       "*": ["./node_modules/@types/*", "./node_modules/*"]
     }
   },

@@ -1,7 +1,7 @@
 import { atom } from "jotai";
 import type { AriaClient } from "figaro-forms/aria";
 import { boundFormAtom, treeAtom } from "figaro-forms/aria/jotai";
-import { connectionLinkAtom, type Link } from "zanni-react/jotai";
+import { connectionLinkAtom, type Link } from "zanni-react/jotai/state/link";
 import { TOPOLOGY_FORM } from "./charter";
 import { canonFor, completeOf, readsOf, standingOf, viewOf, type OrderView, type Read, type Standing } from "./derive";
 import { orderHash, parseOrderRoute, type GraphView, type OrderRoute } from "./queue";

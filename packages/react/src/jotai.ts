@@ -1,4 +1,5 @@
 export * from "./jotai/state/aria";
+export * from "./jotai/state/link";
 export * from "./jotai/state/audio";
 export * from "./jotai/state/boot";
 export * from "./jotai/state/composer";

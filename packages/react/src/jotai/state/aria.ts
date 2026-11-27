@@ -6,6 +6,7 @@ import { nodi, type TurnModel } from "../../index";
 import { workOf, type Work_ } from "../../index";
 import { refusalText } from "../lib/roster";
 import { newTurnCache, turnsOf } from "../lib/turns";
+import { connectionLinkAtom, type Link } from "./link";
 import { attendedAtom, clientAtom } from "./route";
 
 const families = new WeakMap<AriaClient, Map<string, unknown>>();
@@ -102,14 +103,6 @@ export function noteAtom(client: AriaClient, aria: string): Atom<string> {
       return get(turnsAtom(client, aria)).length || snap.phase !== "live" ? "" : "Nothing said yet.";
     }),
   );
-}
-
-export type Link = Phase | "signedout";
-
-const connectionPhase: Record<ConnectionState, Link> = { open: "live", connecting: "connecting", waiting: "offline", signedout: "signedout", closed: "closed" };
-
-export function connectionLinkAtom(client: AriaClient): Atom<Link> {
-  return memo(client, "connection-link", () => atom((get) => connectionPhase[get(ariaConnectionAtom(client))]));
 }
 
 export const linkAtom = atom<Link>((get) => {

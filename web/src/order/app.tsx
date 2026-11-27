@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { Button, useTick } from "zanni-react";
-import { PHASE_WORDS, SignedOut, type Link } from "zanni-react/jotai";
+import { SignedOut } from "zanni-react/jotai/components/signed-out";
+import { PHASE_WORDS } from "zanni-react/jotai/lib/roster";
+import type { Link } from "zanni-react/jotai/state/link";
 import { EntrySheet } from "./entry-sheet";
 import { GraphPage } from "./graph-page";
 import { useRoleQueue } from "./queue-detail";

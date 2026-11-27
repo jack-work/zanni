@@ -1,5 +1,5 @@
 import type { Standing } from "./derive";
-import type { Link } from "zanni-react/jotai";
+import type { Link } from "zanni-react/jotai/state/link";
 
 export function standingText(standing: Standing, link: Link): string {
   if (standing === "current") return "";
