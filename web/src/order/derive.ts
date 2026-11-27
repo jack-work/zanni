@@ -19,20 +19,18 @@ export type OrderView =
   | { readonly kind: "none"; readonly central: undefined }
   | { readonly kind: "missing"; readonly central: string; readonly why: MissingWhy }
   | { readonly kind: "elsewhere"; readonly central: string; readonly role: CharterRole }
-  | { readonly kind: "ready"; readonly central: string; readonly topology: Topology; readonly atlas: Atlas; readonly overrides: "applied" | "unreadable"; readonly listing: "listed" | "unreadable" };
+  | { readonly kind: "ready"; readonly central: string; readonly topology: Topology; readonly atlas: Atlas; readonly overrides: "applied" | "unreadable" };
 
 export type ReadyView = Extract<OrderView, { readonly kind: "ready" }>;
-
-export type Listing = "pending" | "listed" | "unreadable";
 
 export const settled = (form: FormRead): boolean => form.ready || form.refusal !== undefined || form.phase === "gone" || form.phase === "failed" || form.phase === "incompatible";
 
 export const canonFor = (tree: TreeState | null): Canon => canonOf(tree ? [...tree.nodes.keys()] : []);
 
-export function readsOf(o: { tree: TreeState; canon: Canon; asked: string | undefined; listed: readonly string[]; formOf: (id: string) => FormRead }): Read[] {
-  const { tree, canon, asked, listed, formOf } = o;
+export function readsOf(o: { tree: TreeState; canon: Canon; asked: string | undefined; formOf: (id: string) => FormRead }): Read[] {
+  const { tree, canon, asked, formOf } = o;
   const rows = new Map<string, RoleRow>(rolesOf(tree).map((r) => [bare(canon(r.id)), r]));
-  const ids = new Map(enumerateForms(tree, listed).map((id) => [bare(canon(id)), formId(canon(id))]));
+  const ids = new Map(enumerateForms(tree).map((id) => [bare(canon(id)), formId(canon(id))]));
   if (asked) ids.set(bare(canon(asked)), formId(canon(asked)));
   const read = (id: string): Read => {
     const form = formOf(id);
@@ -49,13 +47,13 @@ export function readsOf(o: { tree: TreeState; canon: Canon; asked: string | unde
   return [...first, ...[...extra.values()].map(read)];
 }
 
-export function viewOf(o: { tree: TreeState; canon: Canon; reads: readonly Read[]; topo: FormRead; listing: Listing; asked: string | undefined }): OrderView {
-  const { tree, canon, reads, topo, listing, asked } = o;
+export function viewOf(o: { tree: TreeState; canon: Canon; reads: readonly Read[]; topo: FormRead; asked: string | undefined }): OrderView {
+  const { tree, canon, reads, topo, asked } = o;
   if (!tree.ready && tree.nodes.size === 0) return { kind: "loading", central: undefined };
   const roles = reads.flatMap((r) => (r.role ? [r.role] : []));
   const queues = reads.flatMap((r) => (r.queue ? [r.queue] : []));
   const askedId = asked ? formId(canon(asked)) : undefined;
-  const waiting = !settled(topo) || listing === "pending" || reads.some((r) => !settled(r.form));
+  const waiting = !settled(topo) || reads.some((r) => !settled(r.form));
   const chosen = askedId ? roles.find((r) => r.id === askedId) : pickCentral(roles);
   if (!chosen) {
     if (waiting) return { kind: "loading", central: undefined };
@@ -65,9 +63,9 @@ export function viewOf(o: { tree: TreeState; canon: Canon; reads: readonly Read[
     return { kind: "missing", central: askedId, why };
   }
   if (!chosen.chartered.central) return { kind: "elsewhere", central: chosen.id, role: chosen };
-  if (!settled(topo) || listing === "pending") return { kind: "loading", central: undefined };
+  if (!settled(topo)) return { kind: "loading", central: undefined };
   const overrides = topo.ready ? overridesOf(topo.root, canon) : new Map<string, string>();
   const atlas = atlasOf(tree.nodes, overrides, canon);
   const topology = topologyOf(chosen, roles, queues, atlas);
-  return { kind: "ready", central: chosen.id, topology, atlas, overrides: topo.ready ? "applied" : "unreadable", listing };
+  return { kind: "ready", central: chosen.id, topology, atlas, overrides: topo.ready ? "applied" : "unreadable" };
 }

@@ -6,24 +6,20 @@ each seat, joined by the relations the forms declare. A click on a node shows
 what it is, who it talks to and, for a queue form, its `queue.*` work orders
 of the work-orders contract as a tree. It reads through figaro-forms'
 `AriaClient` over the same gateway door figaro web uses, and holds no store of
-its own: `treeAtom` gives the arias, `boundFormAtom` gives `@arias-global`,
+its own: `treeAtom` gives the arias and every named form, `boundFormAtom` gives
 `@topology`, each role form and each queue form, and everything else is derived
 from them. It changes when the forms change.
 
 ## Which forms it reads
 
 One function, `enumerateForms` in `enumerate.ts`, says which form ids the page
-reads: the live role rows of `@arias`, then every row of kind `form` in
-`@arias-global`, found by walking `arias.<id>` and each `.forks` below it. A row
-is `{id, state: "form", kind: "form", name, target, active_at, recency}`; a
-queue form or a vacant seat carries no `target`. The page reads each form by the
-id the row names (a short id is read as the long one the tree knows, and a short
-id resolves only among forms the caller may read, so rows carry full ids). When
-`@arias-global` cannot be read the page says so and draws the roles `@arias`
-lists. The listing is held as a stable list of ids and a three-valued state
-(`pending`, `listed`, `unreadable`), because `@arias-global` carries every
-aria's counters and changes constantly; the view waits for it to settle. When
-`@arias` itself lists every form, `listedForms` is the one thing to remove.
+reads: the live rows of `@arias` of kind `form`. figaro 0.96.0 nests every named
+form there, role forms and queue forms alike, so `@arias` is the only listing.
+A row is `{id, state: "form", kind: "form", name, target, active_at}`; a queue
+form or a vacant seat carries no `target`. The page reads each form by the id
+the row names (a short id is read as the long one the tree knows, and a short id
+resolves only among forms the caller may read, so rows carry full ids). A form
+`@arias` lists and nobody can read is named under the toolbar.
 
 ## The graph
 
@@ -150,20 +146,19 @@ boxes, and the checks shown to fail on a sabotaged layout. `test/order-app.test.
 pins the page and `test/order-door.test.ts` the fake door's role forms and
 `@topology`.
 `parity/order-graph.spec.ts` drives the built page in a real browser against
-the fake door (`examples/aria-mock.js` with `roles`, `topology`, `global` and
-`listed`) at 390 and 1280, under the kdev CSP, fails on a console error or a CSP
+the fake door (`examples/aria-mock.js` with `roles` and `topology`) at 390 and 1280, under the kdev CSP, fails on a console error or a CSP
 violation, and measures the rendered paths against the rendered boxes. The
-fixtures, `test/fixtures/order-queues.json` and `test/fixtures/arias-global.json`,
-are invented data in the shape of the contract and of the listing: one central
+fixture, `test/fixtures/order-queues.json`, is invented data in the shape of
+the contract: one central
 command, one `@topology` override, one seat whose `reports-to` differs from where
 it is drawn, a seat drawn outside the command, vacant seats, queue forms under a
 role, a vacant role and an unminted role, a study that cannot be found, an
 unchartered role and a second central command.
 
 A check against the live forms needs no fixture: `web/test/live/snapshot.sh`
-writes `@arias-global`, `@topology` and every listed form through the local
+writes `@arias`, `@topology` and every form it lists through the local
 figaro CLI to `/var/tmp/order-live/snapshot.json` (mode 600, never in the
 repository), and `ORDER_LIVE_SNAPSHOT=/var/tmp/order-live/snapshot.json npx
 vitest run test/order-live.test.ts` runs the page's derivation over it and
-asserts that every chartered seat and queue form of the central command is a
-node. Without the variable the test is skipped.
+asserts that every chartered form is among the reads and that every chartered
+seat and queue form of the central command is a node. Without the variable the test is skipped.

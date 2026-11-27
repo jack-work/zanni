@@ -90,11 +90,6 @@ export function GraphPage({ client, view, page, overrides }: { client: AriaClien
           Drawn placement is unreadable: seats sit where their forks put them.
         </p>
       )}
-      {view.listing === "unreadable" && (
-        <p className="og-note" data-field="listing-note">
-          The form listing (@arias-global) is not readable: only the roles @arias lists are drawn.
-        </p>
-      )}
       {bad.length > 0 && (
         <p className="og-note" data-field="unreadable">
           {bad.length === 1 ? "1 chartered form is" : bad.length + " chartered forms are"} not readable:{" "}

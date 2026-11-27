@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 import { foldTree } from "../node_modules/figaro-forms/dist/aria/tree.js";
 import { bare, formId } from "../src/order/charter";
 import { canonFor, readsOf, viewOf, type FormRead, type ReadyView } from "../src/order/derive";
-import { listedForms } from "../src/order/enumerate";
 import { collapse, graphOf } from "../src/order/graph";
 import { layoutOf } from "../src/order/graph-layout";
 import { entriesOf } from "../src/order/queue";
@@ -15,7 +14,7 @@ const path = process.env.ORDER_LIVE_SNAPSHOT ?? "";
 
 interface Snapshot {
   taken: string;
-  global: JsonObject;
+  arias: JsonObject;
   topology: JsonObject;
   forms: Record<string, JsonObject>;
 }
@@ -25,27 +24,27 @@ const missing: FormRead = { root: {}, ready: false, refusal: undefined, phase: "
 
 function derived() {
   const snap = JSON.parse(readFileSync(path, "utf8")) as Snapshot;
-  const folded = foldTree({ live: { self: true, form: "@arias-global" } }, new Map([["live", { root: snap.global, phase: "ready" as const, error: undefined }]]), undefined, Date.now());
+  const folded = foldTree({ live: { self: true, form: "@arias" } }, new Map([["live", { root: snap.arias, phase: "ready" as const, error: undefined }]]), undefined, Date.now());
   const tree = { ready: true, freshness: "current" as const, error: undefined, ...folded };
   const canon = canonFor(tree);
-  const listed = listedForms(snap.global);
   const formOf = (id: string): FormRead => {
     const key = Object.keys(snap.forms).find((k) => bare(canon(k)) === bare(canon(id)));
     return key ? ready(snap.forms[key]!) : missing;
   };
-  const reads = readsOf({ tree, canon, asked: undefined, listed, formOf });
-  const view = viewOf({ tree, canon, reads, topo: ready(snap.topology), listing: "listed", asked: undefined });
+  const reads = readsOf({ tree, canon, asked: undefined, formOf });
+  const view = viewOf({ tree, canon, reads, topo: ready(snap.topology), asked: undefined });
   const chartered = Object.entries(snap.forms).filter(([, f]) => typeof f.chartered === "object" && f.chartered !== null);
-  return { snap, tree, canon, listed, reads, view, chartered };
+  return { snap, tree, canon, reads, view, chartered };
 }
 
 const rootOf = (f: JsonObject, canon: (id: string) => string): string => formId(canon(String((f.chartered as JsonObject).root ?? "")));
 
 describe.skipIf(!path || !existsSync(path))("the live forms through the page's derivation", () => {
-  it("lists every chartered form the daemon holds", () => {
-    const { chartered, listed, canon } = derived();
+  it("reads every chartered form the daemon holds, from @arias alone", () => {
+    const { chartered, reads, canon } = derived();
     expect(chartered.length).toBeGreaterThan(10);
-    for (const [id] of chartered) expect(listed.map((l) => bare(canon(l)))).toContain(bare(canon(id)));
+    const read = reads.map((r) => bare(canon(r.id)));
+    for (const [id] of chartered) expect(read).toContain(bare(canon(id)));
   });
 
   it("finds one central command and draws it", () => {

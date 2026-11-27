@@ -2,9 +2,7 @@ import { atom } from "jotai";
 import type { AriaClient } from "figaro-forms/aria";
 import { ariaConnectionAtom, boundFormAtom, treeAtom } from "figaro-forms/aria/jotai";
 import { TOPOLOGY_FORM } from "./charter";
-import { selectAtom } from "jotai/utils";
-import { canonFor, readsOf, settled, viewOf, type Listing, type OrderView, type Read } from "./derive";
-import { LISTING_FORM, listedForms } from "./enumerate";
+import { canonFor, readsOf, viewOf, type OrderView, type Read } from "./derive";
 import { orderHash, parseOrderRoute, type GraphView, type OrderRoute } from "./queue";
 import { rolesOf, type RoleRow } from "./roles";
 
@@ -56,27 +54,16 @@ export const linkAtom = atom<Link>((get) => {
 
 export const canonAtom = atom((get) => canonFor(get(treeStateAtom)));
 
-const listingFormAtom = atom((get) => {
-  const client = get(orderClientAtom);
-  return client ? get(boundFormAtom(client, LISTING_FORM)) : undefined;
-});
-
-const sameIds = (a: readonly string[], b: readonly string[]): boolean => a.length === b.length && a.every((id, i) => id === b[i]);
-
-export const listedAtom = selectAtom(listingFormAtom, (form): readonly string[] => (form?.ready ? listedForms(form.root) : []), sameIds);
-
-export const listingAtom = selectAtom(listingFormAtom, (form): Listing => (!form ? "pending" : form.ready ? "listed" : settled(form) ? "unreadable" : "pending"));
-
 export const readsAtom = atom<Read[]>((get) => {
   const client = get(orderClientAtom);
   const tree = get(treeStateAtom);
   if (!client || !tree) return [];
-  return readsOf({ tree, canon: get(canonAtom), asked: get(orderRouteAtom).central, listed: get(listedAtom), formOf: (id) => get(boundFormAtom(client, id)) });
+  return readsOf({ tree, canon: get(canonAtom), asked: get(orderRouteAtom).central, formOf: (id) => get(boundFormAtom(client, id)) });
 });
 
 export const viewAtom = atom<OrderView>((get) => {
   const client = get(orderClientAtom);
   const tree = get(treeStateAtom);
   if (!client || !tree) return { kind: "none", central: undefined };
-  return viewOf({ tree, canon: get(canonAtom), reads: get(readsAtom), topo: get(boundFormAtom(client, TOPOLOGY_FORM)), listing: get(listingAtom), asked: get(orderRouteAtom).central });
+  return viewOf({ tree, canon: get(canonAtom), reads: get(readsAtom), topo: get(boundFormAtom(client, TOPOLOGY_FORM)), asked: get(orderRouteAtom).central });
 });
