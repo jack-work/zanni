@@ -24,8 +24,8 @@ const clip = (text: string, chars: number): string => (text.length > chars ? tex
 
 export function fitted(n: GraphNode): Fitted {
   const want = Math.max(n.label.length * LABEL_CHAR, n.sub.length * SUB_CHAR) + SIDE;
-  const w = Math.round(Math.min(MAX_W, Math.max(MIN_W, want)));
-  return { label: clip(n.label, Math.floor((w - SIDE) / LABEL_CHAR)), sub: clip(n.sub, Math.floor((w - SIDE) / SUB_CHAR)), w };
+  const w = Math.ceil(Math.min(MAX_W, Math.max(MIN_W, want)));
+  return { label: clip(n.label, Math.floor((w - SIDE) / LABEL_CHAR + 1e-9)), sub: clip(n.sub, Math.floor((w - SIDE) / SUB_CHAR + 1e-9)), w };
 }
 
 export interface LaidEdge extends GraphEdge {

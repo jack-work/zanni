@@ -131,6 +131,14 @@ describe("the layout of random graphs", () => {
     expect(layout.edges).toEqual([]);
   });
 
+  it("does not clip a label that just fits its box", () => {
+    for (const len of [8, 15, 16, 17, 24, 25]) {
+      const label = "@" + "x".repeat(len);
+      const f = fitted({ id: "x", kind: "role", label, sub: "role form", about: "", cell: "x", tone: "" });
+      if (f.w < 224) expect(f.label).toBe(label);
+    }
+  });
+
   it("fits a long label to its box", () => {
     const f = fitted({ id: "x", kind: "role", label: "@" + "Q".repeat(80), sub: "role form", about: "", cell: "x", tone: "" });
     expect(f.w).toBeLessThanOrEqual(224);
