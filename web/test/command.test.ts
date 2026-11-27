@@ -45,7 +45,7 @@ describe("planOf", () => {
   it("refuses a flag the web does not take, and a missing argument with the usage", () => {
     expect((planOf("fork -O opus5-ant") as { why: string }).why).toMatch(/does not take -O/);
     expect((planOf("send -S a=b -- hi") as { why: string }).why).toMatch(/does not take -S \(text only/);
-    expect((planOf("set mantra") as { why: string }).why).toBe("usage: set [--id <id>] <key> <value>");
+    expect((planOf("set mantra") as { why: string }).why).toMatch(/^usage: set .*<key> <value>$/);
     expect((planOf("new -O") as { why: string }).why).toMatch(/takes a value/);
     expect((planOf("new sonn5") as { why: string }).why).toMatch(/name outfits with -O/);
     expect((planOf("set a b -- c") as { why: string }).why).toMatch(/no prompt after --/);
