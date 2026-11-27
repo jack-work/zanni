@@ -29,3 +29,4 @@ What each section measures:
 | memory | 200 turns streamed one after another at 2 ms frames; heap after GC, DOM elements and listeners per turn; `after_detach` is the heap once the aria is left |
 | wire | door frames and bytes per turn over the same run, by message kind |
 | session | 500 turns of 3 KB (150 B per frame, 200 fps) streamed into one aria in batches of 100; heap after GC, DOM elements and listeners at each batch end, wire bytes per turn. Compresses a two hour session (a turn every 15 s) into about a minute |
+| resync | 390 and 1280: a 400-turn aria attended, the door held while 200 more turns accrue (`BENCH_RESYNC_BEHIND`), then released. Reads, door bytes, reconnect time, turns held and mounted, heap after GC before and after, distance from the end. `BENCH_SHOTS=<dir>` saves a screenshot; `--only resync` runs just this section |

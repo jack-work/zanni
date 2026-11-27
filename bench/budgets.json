@@ -184,6 +184,54 @@
    "margin": 0,
    "slack": 1
   },
+  "resync.1280.door_in_bytes": {
+   "budget": 128000,
+   "margin": 0.3
+  },
+  "resync.1280.heap_growth": {
+   "budget": 450000,
+   "margin": 0.5,
+   "slack": 100000
+  },
+  "resync.1280.px_from_end": {
+   "budget": 0,
+   "margin": 0,
+   "slack": 2
+  },
+  "resync.1280.reads": {
+   "budget": 7,
+   "margin": 0.5,
+   "slack": 2
+  },
+  "resync.1280.resynced.held": {
+   "budget": 7,
+   "margin": 0.5,
+   "slack": 6
+  },
+  "resync.390.door_in_bytes": {
+   "budget": 128000,
+   "margin": 0.3
+  },
+  "resync.390.heap_growth": {
+   "budget": 450000,
+   "margin": 0.5,
+   "slack": 100000
+  },
+  "resync.390.px_from_end": {
+   "budget": 0,
+   "margin": 0,
+   "slack": 2
+  },
+  "resync.390.reads": {
+   "budget": 7,
+   "margin": 0.5,
+   "slack": 2
+  },
+  "resync.390.resynced.held": {
+   "budget": 7,
+   "margin": 0.5,
+   "slack": 6
+  },
   "scroll.frame_ms.p95": {
    "budget": 16.8,
    "margin": 1.0

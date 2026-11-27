@@ -37,6 +37,11 @@ ROW_QUIET_MS = 700
 ROW_PROPS = """(() => document.getAnimations().filter((a) => a.effect && a.effect.target && a.effect.target.closest && a.effect.target.closest('.zr-compose-row')).map((a) => a.effect.getKeyframes().flatMap((k) => Object.keys(k)).filter((k) => !['offset', 'easing', 'composite', 'computedOffset'].includes(k))))()"""
 ROW_LAYOUT = {"width", "height", "min-width", "max-width", "min-height", "max-height", "top", "left", "right", "bottom", "margin", "padding", "grid-template-columns", "flex-basis", "inset"}
 PHONE = {"viewport": {"width": 390, "height": 844}, "device_scale_factor": 3, "is_mobile": True, "has_touch": True}
+DESKTOP = {"viewport": {"width": 1280, "height": 800}}
+RESYNC_HISTORY = 400
+RESYNC_BEHIND = int(os.environ.get("BENCH_RESYNC_BEHIND", "200"))
+RESYNC_BEHIND_QUICK = 60
+LINK = "document.querySelector('.fw') && document.querySelector('.fw').dataset.link"
 
 PROBE = """
 (() => {
@@ -118,6 +123,9 @@ class Door:
 
     def status(self):
         return self.get("/__bench/status")
+
+    def reads(self):
+        return len([c for c in self.get("/__state")["calls"] if c == "figaro.read"])
 
     def stop(self):
         self.proc.terminate()
@@ -203,8 +211,9 @@ def say(what):
     sys.stderr.flush()
 
 
-def run(bundle, quick=False):
+def run(bundle, quick=False, only=None):
     out = {"bundle": bundle_sizes(bundle)}
+    errors = []
     reps = 2 if quick else 5
     keys = 40 if quick else 200
     with sync_playwright() as p:
@@ -242,6 +251,55 @@ def run(bundle, quick=False):
             rows = pg.net.http()
             return {"fp": paint.get("first-paint"), "fcp": paint.get("first-contentful-paint"), "tti": ready, "dcl": nav["dcl"], "blocking": long,
                     "requests": len(rows), "from_cache": sum(1 for r in rows if r["cache"] or r["status"] == 304), "wire": sum(r["wire"] for r in rows), "rows": rows}
+
+        def resync(width):
+            behind = RESYNC_BEHIND_QUICK if quick else RESYNC_BEHIND
+            d = Door(bundle, 40, history=RESYNC_HISTORY, page=24000, fps=SESSION_FPS, bytes=SESSION_REPLY, chunk=SESSION_CHUNK)
+            pg = page(browser.new_context(**(PHONE if width == 390 else DESKTOP)))
+            attend(pg, d)
+
+            def took():
+                pg.evaluate(FRAME)
+                pg.cdp.send("HeapProfiler.collectGarbage")
+                m = metrics(pg)
+                return {"heap": m["JSHeapUsedSize"], "nodes": m["Nodes"], "listeners": m["JSEventListeners"], "held": pg.evaluate(HELD),
+                        "dom_turns": pg.evaluate("document.querySelectorAll('.nodi-turn').length"), "dom": pg.evaluate("document.getElementsByTagName('*').length")}
+
+            attached = took()
+            reads = d.reads()
+            d.get("/__bench/hold?on=1")
+            d.get("/__drop")
+            until(pg, LINK + " !== 'live'", 15000)
+            d.send(count=behind)
+            until(pg, "fetch('/__bench/status').then(r => r.json()).then(s => !s.running && !s.queued)", 300000)
+            turns = d.status()["turns"]
+            pg.net.reset()
+            began = time.time()
+            d.get("/__bench/hold?on=0")
+            until(pg, LINK + " === 'live'", 120000)
+            reconnect = time.time() - began
+            pg.wait_for_timeout(1500)
+            resynced = took()
+            at_end = pg.evaluate("(() => { const s = document.querySelector('[data-testid=transcript-scroller]'); return s.scrollHeight - s.clientHeight - s.scrollTop; })()")
+            newest = pg.evaluate("Math.max(...[...document.querySelectorAll('.nodi-turn')].map((t) => Number(t.dataset.turn)))")
+            shots = os.environ.get("BENCH_SHOTS", "")
+            if shots:
+                os.makedirs(shots, exist_ok=True)
+                pg.screenshot(path=os.path.join(shots, "resync-%d.png" % width))
+            res = {"viewport": width, "history": RESYNC_HISTORY, "behind": behind, "turns": turns, "reads": d.reads() - reads, "door_in_bytes": pg.net.ws["in"][1],
+                   "reconnect_s": round(reconnect, 2), "newest_on_screen": newest, "px_from_end": round(at_end, 1),
+                   "attached": attached, "resynced": resynced, "heap_growth": resynced["heap"] - attached["heap"]}
+            errors.extend(pg.errors)
+            pg.context.close()
+            d.stop()
+            return res
+
+        if only == "resync":
+            say("resync")
+            out["resync"] = {str(w): resync(w) for w in (390, 1280)}
+            out["errors"] = errors
+            browser.close()
+            return out
 
         say("load")
         d = Door(bundle, 40, asset_cache=GATEWAY_ASSETS)
@@ -560,7 +618,7 @@ def run(bundle, quick=False):
         gone = metrics(pg)
         out["memory"]["after_detach"] = {"heap": gone["JSHeapUsedSize"], "nodes": gone["Nodes"], "listeners": gone["JSEventListeners"],
                                          "retained_per_turn": round((gone["JSHeapUsedSize"] - samples[0]["heap"]) / max(1, streamed), 1)}
-        errors = pg.errors
+        errors.extend(pg.errors)
         pg.context.close()
         d.stop()
         say("session")
@@ -595,6 +653,8 @@ def run(bundle, quick=False):
         errors += pg.errors
         pg.context.close()
         d.stop()
+        say("resync")
+        out["resync"] = {str(w): resync(w) for w in (390, 1280)}
         out["errors"] = errors
         browser.close()
     return out
@@ -606,10 +666,11 @@ def main():
     ap.add_argument("--out", help="result file; default bench/results/<date>-<sha>.json")
     ap.add_argument("--sha", default=os.environ.get("BENCH_SHA", ""))
     ap.add_argument("--quick", action="store_true", help="fewer reps and keys, for a smoke run")
+    ap.add_argument("--only", choices=["resync"], help="run one section and skip the rest")
     a = ap.parse_args()
     sha = a.sha or subprocess.run(["git", "-C", root, "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip() or "unknown"
     res = {"date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "sha": sha, "browser": "chromium", "viewport": "390x844", "quick": a.quick}
-    res.update(run(os.path.abspath(a.bundle), a.quick))
+    res.update(run(os.path.abspath(a.bundle), a.quick, a.only))
     path = a.out or os.path.join(here, "results", "%s-%s.json" % (res["date"][:10], sha))
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w") as f:
