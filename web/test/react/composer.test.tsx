@@ -4,9 +4,9 @@ import { describe, expect, it, vi } from "vitest";
 import { act } from "@testing-library/react";
 import { Button, Composer, KEYBOARD_CLOSE_SETTLE_MS, trackViewport } from "zanni-react";
 
-function Harness({ submit = () => {}, running = false, onAttach = () => {}, onCommand = () => {}, commandOn = false, field = false }: { submit?: () => void; onAttach?: () => void; onCommand?: () => void; commandOn?: boolean; running?: boolean; field?: boolean }) {
+function Harness({ submit = () => {}, running = false, onAttach = () => {}, onCommand = () => {}, commandOn = false, field = false, prompt }: { submit?: () => void; onAttach?: () => void; onCommand?: () => void; commandOn?: boolean; running?: boolean; field?: boolean; prompt?: string }) {
   const [v, setV] = useState("");
-  return <Composer value={v} onChange={setV} onSubmit={submit} sendLabel={running ? "Steer" : "Send"} sendGlyph={running ? "↳" : "✎"} attach={{ glyph: "❝", label: "Attach", onClick: onAttach }} command={{ glyph: "∴", label: "Command", pressed: commandOn, onClick: onCommand }} running={running} field={field ? <Button>Record</Button> : undefined} heightVar="--test-h" />;
+  return <Composer value={v} onChange={setV} prompt={prompt} onSubmit={submit} sendLabel={running ? "Steer" : "Send"} sendGlyph={running ? "↳" : "✎"} attach={{ glyph: "❝", label: "Attach", onClick: onAttach }} command={{ glyph: "∴", label: "Command", pressed: commandOn, onClick: onCommand }} running={running} field={field ? <Button>Record</Button> : undefined} heightVar="--test-h" />;
 }
 
 const box = () => screen.getByLabelText("Message", { selector: "textarea" }) as HTMLTextAreaElement;
@@ -134,5 +134,58 @@ describe("the composer row", () => {
     fireEvent.click(screen.getByRole("button", { name: "Attach" }));
     expect(onAttach).toHaveBeenCalledTimes(1);
     expect(submit).not.toHaveBeenCalled();
+  });
+});
+
+describe("the composer row stacks only when the draft outgrows it", () => {
+  const row = () => document.querySelector(".zr-compose-row")!;
+  const tall = (px: number) => Object.defineProperty(box(), "offsetHeight", { configurable: true, value: px });
+
+  it("starts as one row", () => {
+    render(<Harness />);
+    expect(row().hasAttribute("data-stack")).toBe(false);
+  });
+
+  it("stacks once the box is taller than a line, and stays stacked while there is text", () => {
+    render(<Harness />);
+    tall(36);
+    fireEvent.change(box(), { target: { value: "one line" } });
+    expect(row().hasAttribute("data-stack")).toBe(false);
+    tall(80);
+    fireEvent.change(box(), { target: { value: "one line, then a second one that wraps" } });
+    expect(row().hasAttribute("data-stack")).toBe(true);
+    tall(36);
+    fireEvent.change(box(), { target: { value: "short" } });
+    expect(row().hasAttribute("data-stack")).toBe(true);
+  });
+
+  it("goes back to one row when the draft is empty", () => {
+    render(<Harness />);
+    tall(80);
+    fireEvent.change(box(), { target: { value: "long enough to wrap" } });
+    expect(row().hasAttribute("data-stack")).toBe(true);
+    tall(36);
+    fireEvent.change(box(), { target: { value: "" } });
+    expect(row().hasAttribute("data-stack")).toBe(false);
+  });
+
+  it("keeps the same textarea through the change, so focus and the keyboard stay", () => {
+    render(<Harness />);
+    const node = box();
+    node.focus();
+    tall(80);
+    fireEvent.change(node, { target: { value: "long enough to wrap" } });
+    expect(box()).toBe(node);
+    expect(document.activeElement).toBe(node);
+  });
+
+  it("never stacks a command line, and a record button takes its own full row", () => {
+    const { unmount } = render(<Harness prompt=":" />);
+    tall(80);
+    fireEvent.change(box(), { target: { value: "a long command line that wraps" } });
+    expect(row().hasAttribute("data-stack")).toBe(false);
+    unmount();
+    render(<Harness field />);
+    expect(row().hasAttribute("data-stack")).toBe(true);
   });
 });

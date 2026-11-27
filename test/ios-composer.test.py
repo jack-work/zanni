@@ -368,20 +368,25 @@ with sync_playwright() as p:
     attend(pg, fast)
     rects = lambda: pg.evaluate("""() => { const r = (s) => { const b = document.querySelector(s).getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, b: b.bottom }; }; return { bar: r('.zr-composer'), input: r('.zr-input'), send: r('.zr-send'), attach: r('.zr-attach') }; }""")
     idle = rects()
-    assert idle["input"]["w"] >= idle["bar"]["w"] - 36, "the input takes the full bar width: %s" % idle
-    assert idle["send"]["y"] >= idle["input"]["b"] - 1 and idle["attach"]["y"] >= idle["input"]["b"] - 1, "the pills sit below the input: %s" % idle
-    assert abs(idle["send"]["x"] + idle["send"]["w"] - (idle["input"]["x"] + idle["input"]["w"])) < 2 and abs(idle["attach"]["x"] - idle["input"]["x"]) < 2, "the pair is right-justified and the attachments button left: %s" % idle
+    assert idle["attach"]["x"] + idle["attach"]["w"] <= idle["input"]["x"] + 1 and idle["input"]["x"] + idle["input"]["w"] <= idle["send"]["x"] + 1, "attach, input and the pair share one row: %s" % idle
+    assert abs(idle["send"]["b"] - idle["input"]["b"]) <= 1 and abs(idle["attach"]["b"] - idle["input"]["b"]) <= 1, "on one baseline: %s" % idle
+    pg.evaluate("window.__node = document.querySelector('.zr-input')")
     pg.locator(".zr-input").tap()
-    pg.keyboard.insert_text("the quick brown fox jumps over the lazy dog " * 3)
-    pg.wait_for_timeout(700)
+    pg.keyboard.insert_text("fits on a line")
+    pg.wait_for_timeout(150)
+    assert rects()["send"]["y"] < rects()["input"]["b"] - 1, "a draft that fits keeps the row"
+    pg.keyboard.insert_text(" the quick brown fox jumps over the lazy dog " * 3)
+    pg.wait_for_timeout(150)
     over = rects()
     assert over["input"]["w"] >= over["bar"]["w"] - 36, "on overflow the input takes the full bar width: %s" % over
     assert over["send"]["y"] >= over["input"]["b"] - 1 and over["attach"]["y"] >= over["input"]["b"] - 1, "on overflow the pills sit below the input: %s" % over
+    assert abs(over["send"]["x"] + over["send"]["w"] - (over["input"]["x"] + over["input"]["w"])) < 2 and abs(over["attach"]["x"] - over["input"]["x"]) < 2, "the pair is right-justified and the attachments button left: %s" % over
     assert over["input"]["h"] > idle["input"]["h"] + 20, "and the input grows taller: %s" % over
+    assert pg.evaluate("document.activeElement === window.__node"), "the same node keeps focus, so the keyboard stays up through the stack"
     pg.locator(".zr-input").fill("")
-    pg.wait_for_timeout(700)
+    pg.wait_for_timeout(150)
     back = rects()
-    assert back["send"]["y"] >= back["input"]["b"] - 1 and back["input"]["h"] < over["input"]["h"] - 20, "an empty input shrinks again with the pills still below it: %s" % back
+    assert back["send"]["y"] < back["input"]["b"] - 1 and abs(back["input"]["w"] - idle["input"]["w"]) <= 2, "an empty input puts the row back: %s" % back
     pg.context.close()
 
     NO_FIELD_SIZING = "(() => { const was = CSS.supports.bind(CSS); CSS.supports = (a, b) => (a === 'field-sizing' ? false : was(a, b)); })();"

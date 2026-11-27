@@ -1,8 +1,9 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, type KeyboardEvent, type ReactNode, type Ref } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { Pill, PillPair, type PillSpec } from "./pill";
 import { onKeyboard } from "./viewport";
 
 export const KEYBOARD_CLOSE_SETTLE_MS = 300;
+const ONE_LINE_MAX = 44;
 
 export interface ComposerProps {
   value: string;
@@ -71,6 +72,15 @@ export function Composer(props: ComposerProps) {
   const grows = useMemo(() => !(window.CSS?.supports && window.CSS.supports("field-sizing", "content")), []);
   useSizeVar(form, heightVar);
 
+  const [wrapped, setWrapped] = useState(false);
+  const stack = !prompt && (!!field || wrapped);
+
+  const judge = (el: HTMLTextAreaElement) => {
+    if (prompt) return;
+    const next = value !== "" && (wrapped || el.offsetHeight > ONE_LINE_MAX);
+    if (next !== wrapped) setWrapped(next);
+  };
+
   useLayoutEffect(() => {
     const el = input.current;
     if (!el) return;
@@ -79,7 +89,18 @@ export function Composer(props: ComposerProps) {
       el.style.height = el.scrollHeight + (el.offsetHeight - el.clientHeight) + "px";
     }
     markScrolls(el);
+    judge(el);
   }, [value, grows]);
+
+  const judging = useRef(judge);
+  judging.current = judge;
+  useEffect(() => {
+    const el = input.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const watch = new ResizeObserver(() => judging.current(el));
+    watch.observe(el);
+    return () => watch.disconnect();
+  }, []);
 
   const setInput = (el: HTMLTextAreaElement | null) => {
     input.current = el;
@@ -150,7 +171,7 @@ export function Composer(props: ComposerProps) {
     >
       {tray}
       {hints}
-      <div className="zr-compose-row" data-attach={attach ? "" : undefined} data-stack={!prompt ? "" : undefined} data-prompt={prompt ? "" : undefined}>
+      <div className="zr-compose-row" data-attach={attach ? "" : undefined} data-stack={stack ? "" : undefined} data-prompt={prompt ? "" : undefined}>
         {attach && <Pill {...attach} className="zr-attach" />}
         {prompt && (
           <span className="zr-prompt" aria-hidden="true">

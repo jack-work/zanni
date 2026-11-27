@@ -330,6 +330,40 @@ try:
             assert not pg.errors, pg.errors
             pg.close()
 
+        ROW = """() => { const r = (s) => { const n = document.querySelector(s); if (!n) return null; const b = n.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom }; };
+          return { bar: r('.zr-composer'), row: r('.zr-compose-row'), input: r('.zr-input'), attach: r('.zr-attach'), pair: r('.zr-pill-pair'), stack: document.querySelector('.zr-compose-row').hasAttribute('data-stack') }; }"""
+        WORDS = "the quick brown fox jumps over the lazy dog " * 4
+
+        for width, height in ((390, 844), (1280, 800)):
+            pg = fresh(width, height)
+            attend(pg, door(12), MAIN)
+            one = pg.evaluate(ROW)
+            assert not one["stack"], "the composer starts as one row: %s" % one
+            assert one["attach"]["r"] <= one["input"]["x"] + 1 and one["input"]["r"] <= one["pair"]["x"] + 1, "attach, input, then the pair on one row at %d: %s" % (width, one)
+            assert abs(one["attach"]["b"] - one["input"]["b"]) <= 1 and abs(one["pair"]["b"] - one["input"]["b"]) <= 1, "the three share a baseline at %d: %s" % (width, one)
+            pg.evaluate("(() => { const t = document.querySelector('.zr-input'); t.focus(); window.__node = t; })()")
+            pg.keyboard.insert_text("fits on a line")
+            pg.wait_for_timeout(120)
+            assert not pg.evaluate(ROW)["stack"], "a draft that fits stays on the row"
+            pg.keyboard.insert_text(" " + WORDS)
+            pg.wait_for_timeout(120)
+            many = pg.evaluate(ROW)
+            assert many["stack"], "a draft that outgrows the row stacks: %s" % many
+            assert many["input"]["w"] >= many["row"]["w"] - 2, "the input is the row's full width at %d: %s" % (width, many)
+            assert many["attach"]["y"] >= many["input"]["b"] - 1 and many["pair"]["y"] >= many["input"]["b"] - 1, "the pills are under the input at %d: %s" % (width, many)
+            assert abs(many["attach"]["x"] - many["input"]["x"]) <= 2 and abs(many["pair"]["r"] - many["input"]["r"]) <= 2, "attach left, pair right under the input: %s" % many
+            assert pg.evaluate("document.activeElement === window.__node"), "the same editable node keeps focus through the stack"
+            pg.keyboard.insert_text(" more")
+            pg.wait_for_timeout(120)
+            assert pg.evaluate(ROW)["stack"], "a stacked row stays stacked while there is text, even if it would fit again"
+            pg.locator(".zr-input").fill("")
+            pg.wait_for_timeout(120)
+            after = pg.evaluate(ROW)
+            assert not after["stack"] and after["input"]["w"] < one["input"]["w"] + 2 and abs(after["input"]["w"] - one["input"]["w"]) <= 2, "an empty draft puts the row back as it was: %s" % after
+            assert pg.evaluate("document.activeElement === window.__node"), "and focus is still in the same node"
+            assert not pg.errors, pg.errors
+            pg.close()
+
         for width, height in ((390, 844), (1280, 800)):
             pg = fresh(width, height)
             attend(pg, fast, LANE, 2)
@@ -394,7 +428,7 @@ try:
             pg = fresh(width, height, scheme)
             attend(pg, door(45), MAIN)
             idle = pg.locator(".zr-composer").bounding_box()
-            assert idle["height"] <= 104, "an idle composer is at most 104px tall, an input row over a pill row: %s" % idle
+            assert idle["height"] <= 64, "an idle composer is one row, at most 64px tall: %s" % idle
             marks = pg.evaluate("[...document.querySelectorAll('.zr-composer .zr-pill-glyph')].map(n => n.textContent)")
             assert len(marks) >= 3 and not [m for m in marks if re.search("[\U0001F000-\U0001FFFF\uFE0E\uFE0F]", m)], "the compose bar draws no emoji: %s" % marks
             pg.locator(".zr-input").fill("\n".join("line %d of a long note" % i for i in range(14)))
@@ -404,11 +438,11 @@ try:
             assert grown["height"] <= height * 0.32, "the input leaves the transcript room: %s" % grown
             pg.locator(".zr-input").fill("")
             pg.wait_for_timeout(200)
-            assert pg.locator(".zr-composer").bounding_box()["height"] <= 104, "the composer settles back when the text goes"
+            assert pg.locator(".zr-composer").bounding_box()["height"] <= 64, "the composer settles back to one row when the text goes"
             sendp, field, attach, command = (pg.locator(s).bounding_box() for s in (".zr-send", ".zr-input", ".zr-attach", ".zr-command"))
             assert pg.locator(".zr-pill:disabled").count() == 0, "no pill is drawn disabled"
-            assert attach["y"] >= field["y"] + field["height"] - 1 and abs(attach["x"] - field["x"]) <= 1, "attach sits under the input, left-justified: %s %s" % (attach, field)
-            assert command["y"] >= field["y"] + field["height"] - 1 and abs(sendp["x"] + sendp["width"] - (field["x"] + field["width"])) <= 2 and sendp["x"] >= command["x"] + command["width"] - 2, "command and send sit under the input, right-justified, send last: %s" % [command, sendp]
+            assert abs(attach["y"] + attach["height"] - (field["y"] + field["height"])) <= 1 and attach["x"] + attach["width"] <= field["x"] + 1, "attach sits left of the input on its row: %s %s" % (attach, field)
+            assert abs(command["y"] + command["height"] - (field["y"] + field["height"])) <= 1 and field["x"] + field["width"] <= command["x"] + 1 and sendp["x"] >= command["x"] + command["width"] - 2, "command and send sit right of the input on its row, send last: %s" % [command, sendp]
             for b in (attach, command, sendp):
                 assert 30 <= b["height"] <= 40 and b["width"] <= 64, "a small pill: %s" % b
             assert [pg.locator(s).inner_text() for s in (".zr-command", ".zr-send")] == ["∴", "✎"], "pager glyphs on the right pills"
@@ -700,7 +734,10 @@ try:
         assert pg.locator(".fw[data-voice]").count() == 1
         record = pg.locator(".zr-compose-row > .fw-mic").bounding_box()
         assert not pg.locator(".zr-input").is_visible(), "voice mode puts the record button in the field's place"
-        assert abs(record["x"] - field["x"]) <= 1 and abs(record["width"] - field["width"]) <= 2 and abs(record["height"] - field["height"]) <= 2, "the record button takes the field's pill: %s %s" % (record, field)
+        rowbox = pg.locator(".zr-compose-row").bounding_box()
+        pills = pg.locator(".zr-send").bounding_box()
+        assert abs(record["x"] - rowbox["x"]) <= 1 and abs(record["width"] - rowbox["width"]) <= 2 and abs(record["height"] - field["height"]) <= 2, "the record button takes the row's full width, as a stacked input would: %s %s" % (record, rowbox)
+        assert pills["y"] >= record["y"] + record["height"] - 1, "the pills sit under the record button: %s %s" % (record, pills)
         assert pg.locator(".fw-mic .fw-mic-glyph").inner_text() != "", "the record button wears a glyph"
         send(pg, "just a [plain] hello")
         pg.wait_for_selector(".nodi-turn[data-turn='27'] .voce[data-for='27']")
