@@ -16,10 +16,17 @@ const aria = (hex: string): string => ("c0ffee" + hex).repeat(4);
 const CROWN = "@c0de0001c0de0001c0de0001c0de0001";
 const hash = (...parts: string[]): string => "#/" + parts.map(encodeURIComponent).join("/");
 
-function mount(o: { roles?: Role[]; topology?: Record<string, string>; } = {}) {
+function mount(o: { roles?: Role[]; topology?: Record<string, string>} = {}) {
   const core = (mock as unknown as { create(o: object): any }).create({ step: 1, roles: o.roles ?? fixture.roles, topology: o.topology ?? fixture.topology });
-  const gate = { down: false };
-  const dial: Dial = (events) => (gate.down ? Promise.reject(new Error("the door is down")) : core.dial(events));
+  const gate = { down: false, refusing: false };
+  const dial: Dial = (events) => {
+    if (gate.down) return Promise.reject(new Error("the door is down"));
+    if (!gate.refusing) return core.dial(events);
+    return core.dial(events).then((socket: unknown) => {
+      setTimeout(() => events.closed("the session was refused"), 0);
+      return socket;
+    });
+  };
   const client = new AriaClient({ dial, pageBytes: 24000, retryMinMs: 20, retryMaxMs: 40 });
   const store = createStore();
   store.set(orderClientAtom, client);
@@ -511,6 +518,21 @@ describe("the order page: a dropped link", () => {
     await waitFor(() => expect(sheet.querySelector("[data-field=standing]")?.textContent).toMatch(/^Offline/), { timeout: 3000 });
     expect(sheet.querySelector(".ord-sheet-body")!.getAttribute("data-standing")).toBe("stale");
     expect(within(sheet).getByText("Amendments (1)")).toBeTruthy();
+  });
+
+  it("asks to sign in again with the shared signed-out block, and Retry reconnects", async () => {
+    const core = mount();
+    await shown();
+    core.gate.refusing = true;
+    await act(async () => core.drop());
+    const alert = await screen.findByRole("alert", undefined, { timeout: 3000 });
+    expect(alert.className).toBe("fw-signedout");
+    expect(link()).toBe("signedout");
+    expect(within(alert).getByRole("button", { name: "Reload" })).toBeTruthy();
+    core.gate.refusing = false;
+    fireEvent.click(within(alert).getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(link()).toBe("live"), { timeout: 3000 });
+    await shown();
   });
 
   it("says a closed link is closed, not loading, when nothing was ever drawn", async () => {

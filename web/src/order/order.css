@@ -59,6 +59,9 @@ body.ord-page {
 .ord-standing { margin: 0 0 var(--z-space-4, 12px); padding: 6px 14px; border: 1px solid currentColor; font: 400 1.0625rem / 1.3 var(--ord-mono); letter-spacing: 0.04em; color: var(--z-warn); }
 .ord-standing[data-standing="stale"] { color: var(--z-fail); }
 .ord-main[data-standing="stale"] > :not(.ord-standing), .ord-main[data-standing="resyncing"] > :not(.ord-standing), .ord-sheet-body[data-standing="stale"] > :not(.ord-standing), .ord-sheet-body[data-standing="resyncing"] > :not(.ord-standing) { opacity: 0.55; }
+.ord .fw-signedout { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--z-space-3, 8px); padding: var(--z-space-3, 8px) var(--z-space-4, 12px); border: 1px solid var(--z-fail); font: 400 1.125rem / 1.3 var(--ord-mono); letter-spacing: 0.04em; color: var(--z-fail); }
+.ord .fw-signedout-line { margin: 0; }
+.ord .fw-signedout-actions { display: flex; gap: var(--z-space-3, 8px); }
 .ord-note { padding: var(--z-space-4, 12px) 0; font: 400 1.125rem / 1.3 var(--ord-mono); letter-spacing: 0.04em; color: var(--z-muted); }
 .ord-contract { padding: var(--z-space-2, 4px) 0; font: 400 1.0625rem / 1.3 var(--ord-mono); letter-spacing: 0.04em; color: var(--z-muted); overflow-wrap: anywhere; }
 

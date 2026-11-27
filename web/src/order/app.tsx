@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { Button, useTick } from "zanni-react";
+import { SignedOut } from "zanni-react/jotai";
 import { EntrySheet } from "./entry-sheet";
 import { GraphPage } from "./graph-page";
 import { useRoleQueue } from "./queue-detail";
@@ -70,14 +71,7 @@ function Body({ page, shown }: { page: PageContext; shown: Page }) {
   const link = useAtomValue(linkAtom);
   if (!client || !tree) return <p className="ord-note">No door to figaro.</p>;
   if (link === "signedout")
-    return (
-      <div className="ord-note" role="alert">
-        <p>Signed out: sign in again.</p>
-        <Button variant="outline" size="compact" onClick={() => window.location.reload()}>
-          Reload
-        </Button>
-      </div>
-    );
+    return <SignedOut client={client} />;
   if (link === "closed" && view.kind === "loading")
     return (
       <div className="ord-note" role="alert" data-field="closed">
