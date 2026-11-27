@@ -96,20 +96,24 @@ def quantile(xs, q):
 
 
 class Door:
-    def __init__(self, bundle, step, fixture=None, orders=None, **bench):
+    def __init__(self, bundle, step, fixture=None, orders=None, preload=None, **bench):
         env = dict(os.environ)
         if fixture:
             env["FIGCHAT_FIXTURE"] = fixture
         if orders:
             env["FIGCHAT_ORDERS"] = orders
         flags = [x for k, v in bench.items() for x in ("--" + k, str(v))]
-        self.proc = subprocess.Popen(["node", os.path.join(root, "test", "figchat-server.js"), bundle, str(step)] + flags, stdout=subprocess.PIPE, text=True, env=env)
+        node = ["node", "-r", preload] if preload else ["node"]
+        self.proc = subprocess.Popen(node + [os.path.join(root, "test", "figchat-server.js"), bundle, str(step)] + flags, stdout=subprocess.PIPE, text=True, env=env)
         self.port = int(self.proc.stdout.readline())
         self.base = "http://127.0.0.1:%d" % self.port
         self.url = self.base + "/chat/"
 
     def state(self):
         return json.load(urllib.request.urlopen(self.base + "/__state"))
+
+    def get(self, path):
+        return json.load(urllib.request.urlopen(self.base + path))
 
     def set_orders(self, root):
         req = urllib.request.Request(self.base + "/__orders", data=json.dumps(root).encode(), method="POST")
