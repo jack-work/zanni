@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
 import { Fold, Sheet, bytes, stamp } from "zanni-react";
 import { instant, type Amendment, type Blob, type Entry } from "./queue";
+import type { Standing } from "./derive";
 import { Anchor, leaseText, relative, type RowContext } from "./rows";
+import { StandingNote } from "./standing";
+import type { Link } from "./state";
 
 function When({ iso, now }: { iso: string; now: number }) {
   const at = instant(iso);
@@ -209,13 +212,18 @@ export interface EntrySheetProps {
   readonly byId: ReadonlyMap<string, Entry>;
   readonly settled: boolean;
   readonly ctx: RowContext;
+  readonly standing: Standing;
+  readonly link: Link;
   readonly onClose: () => void;
 }
 
-export function EntrySheet({ open, entry, byId, settled, ctx, onClose }: EntrySheetProps) {
+export function EntrySheet({ open, entry, byId, settled, ctx, standing, link, onClose }: EntrySheetProps) {
   return (
     <Sheet open={open} onClose={onClose} className="ord-sheet" title={entry ? entry.kind || "entry" : "entry"} label="Work order">
-      {entry ? <EntryDetail entry={entry} byId={byId} ctx={ctx} /> : <p className="ord-note">{settled ? "This entry has left the live queue." : "Loading…"}</p>}
+      <div className="ord-sheet-body" data-standing={standing}>
+        <StandingNote standing={standing} link={link} />
+        {entry ? <EntryDetail entry={entry} byId={byId} ctx={ctx} /> : <p className="ord-note">{settled ? "This entry has left the live queue." : "Loading…"}</p>}
+      </div>
     </Sheet>
   );
 }

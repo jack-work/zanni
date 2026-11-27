@@ -1,9 +1,10 @@
 import type { BoundFormState, TreeState } from "figaro-forms/aria";
+import type { Freshness } from "figaro-forms";
 import { atlasOf, bare, canonOf, charterRoleOf, formId, overridesOf, pickCentral, queueFormOf, topologyOf, type Atlas, type Canon, type CharterRole, type QueueForm, type Topology } from "./charter";
 import { enumerateForms } from "./enumerate";
 import { rolesOf, shortId, type RoleRow } from "./roles";
 
-export type FormRead = Pick<BoundFormState, "root" | "ready" | "refusal" | "phase">;
+export type FormRead = Pick<BoundFormState, "root" | "ready" | "refusal" | "phase" | "freshness">;
 
 export interface Read {
   readonly id: string;
@@ -26,6 +27,14 @@ export type ReadyView = Extract<OrderView, { readonly kind: "ready" }>;
 export const settled = (form: FormRead): boolean => form.refusal !== undefined || form.phase !== "loading";
 
 export const completeOf = (view: OrderView, reads: readonly Read[], topo: FormRead): boolean => view.kind !== "loading" && settled(topo) && reads.every((r) => settled(r.form));
+
+export type Standing = "current" | "resyncing" | "stale";
+
+export function standingOf(o: { live: boolean; complete: boolean; tree: Freshness; forms: readonly FormRead[] }): Standing {
+  const seen = [o.tree, ...o.forms.filter((f) => f.phase === "ready").map((f) => f.freshness)];
+  if (!o.live || seen.includes("stale")) return "stale";
+  return !o.complete || seen.includes("resyncing") ? "resyncing" : "current";
+}
 
 export const canonFor = (tree: TreeState | null): Canon => canonOf(tree ? [...tree.nodes.keys()] : []);
 

@@ -19,8 +19,8 @@ interface Snapshot {
   forms: Record<string, JsonObject>;
 }
 
-const ready = (root: JsonObject): FormRead => ({ root, ready: true, refusal: undefined, phase: "ready" });
-const missing: FormRead = { root: {}, ready: false, refusal: undefined, phase: "failed" };
+const ready = (root: JsonObject): FormRead => ({ root, ready: true, refusal: undefined, phase: "ready", freshness: "current" });
+const missing: FormRead = { root: {}, ready: false, refusal: undefined, phase: "failed", freshness: "stale" };
 
 function derived() {
   const snap = JSON.parse(readFileSync(path, "utf8")) as Snapshot;

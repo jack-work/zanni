@@ -7,7 +7,8 @@ import { useRoleQueue } from "./queue-detail";
 import { orderHash } from "./queue";
 import { ariaName } from "./roles";
 import { scoped, type PageContext } from "./rows";
-import type { MissingWhy } from "./derive";
+import { StandingNote } from "./standing";
+import type { MissingWhy, Standing } from "./derive";
 import { carryCentralAtom, linkAtom, openAtom, orderClientAtom, orderRouteAtom, pageAtom, treeStateAtom, type Link, type Page } from "./state";
 
 const LINK_TEXT: Record<Link, string> = {
@@ -19,14 +20,15 @@ const LINK_TEXT: Record<Link, string> = {
   detached: "no door",
 };
 
-function Detail({ page }: { page: PageContext }) {
+function Detail({ page, standing }: { page: PageContext; standing: Standing }) {
   const client = useAtomValue(orderClientAtom)!;
   const { route } = page;
   const open = useSetAtom(openAtom);
+  const link = useAtomValue(linkAtom);
   const { form, entries } = useRoleQueue(client, route.node ?? "");
   const byId = useMemo(() => new Map(entries.map((e) => [e.id, e])), [entries]);
   const shown = route.node && route.entry ? byId.get(route.entry) : undefined;
-  return <EntrySheet open={!!route.entry && !!route.node} entry={shown} byId={byId} settled={form.ready} ctx={scoped(page, route.node ?? "")} onClose={() => open({ node: route.node })} />;
+  return <EntrySheet open={!!route.entry && !!route.node} entry={shown} byId={byId} settled={form.ready} standing={standing} link={link} ctx={scoped(page, route.node ?? "")} onClose={() => open({ node: route.node })} />;
 }
 
 function Status({ link }: { link: Link }) {
@@ -91,7 +93,9 @@ function useLastComplete(now: Page, asked: string | undefined): Page {
   const kept = useRef<{ page: Page; asked: string | undefined }>(undefined);
   if (now.complete) kept.current = { page: now, asked };
   const held = kept.current;
-  return !now.complete && held && (held.asked === undefined || held.asked === asked) ? held.page : now;
+  const standing = held ? now.standing : "current";
+  const page = !now.complete && held && (held.asked === undefined || held.asked === asked) ? held.page : now;
+  return { ...page, standing };
 }
 
 export function App() {
@@ -113,10 +117,11 @@ export function App() {
         <h1 className="ord-h1">Work orders</h1>
         <Status link={link} />
       </header>
-      <main className="ord-main" tabIndex={-1}>
+      <main className="ord-main" data-standing={shown.standing} tabIndex={-1}>
+        {shown.view.kind !== "loading" && link !== "signedout" && <StandingNote standing={shown.standing} link={link} />}
         <Body page={page} shown={shown} />
       </main>
-      {route.node && route.entry && route.node.startsWith("@") && <Detail page={page} />}
+      {route.node && route.entry && route.node.startsWith("@") && <Detail page={page} standing={shown.standing} />}
     </div>
   );
 }

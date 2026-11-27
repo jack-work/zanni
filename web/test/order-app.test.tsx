@@ -486,6 +486,8 @@ describe("the order page: a dropped link", () => {
     expect(document.querySelector('[data-field="graph"]')).not.toBeNull();
     expect(nodes().sort()).toEqual(before);
     expect(screen.queryByText(/Loading the chartered roles/)).toBeNull();
+    expect(document.querySelector(".ord-main")!.getAttribute("data-standing")).toBe("stale");
+    expect(document.querySelector(".ord-main > [data-field=standing]")!.textContent).toBe("Offline: showing the last known state, retrying.");
     await act(async () => {
       core.gate.down = false;
     });
@@ -494,6 +496,21 @@ describe("the order page: a dropped link", () => {
     expect(nodes().sort()).toEqual(before);
     expect(document.querySelector('[data-chip="lease"]')!.getAttribute("aria-pressed")).toBe("false");
     expect(node(aria("03")).classList.contains("og-sel")).toBe(true);
+    await waitFor(() => expect(document.querySelector("[data-field=standing]")).toBeNull(), { timeout: 3000 });
+    expect(document.querySelector(".ord-main")!.getAttribute("data-standing")).toBe("current");
+  });
+
+  it("says on the open sheet that the entry is the last known one", async () => {
+    const core = mount();
+    await shown();
+    fireEvent.click(nodeNamed("Widget Work", "queue"));
+    fireEvent.click(await screen.findByText("Catalogue loader", undefined, { timeout: 3000 }));
+    const sheet = await screen.findByRole("dialog", { name: "Work order" });
+    expect(sheet.querySelector("[data-field=standing]")).toBeNull();
+    await act(async () => loseDoor(core));
+    await waitFor(() => expect(sheet.querySelector("[data-field=standing]")?.textContent).toMatch(/^Offline/), { timeout: 3000 });
+    expect(sheet.querySelector(".ord-sheet-body")!.getAttribute("data-standing")).toBe("stale");
+    expect(within(sheet).getByText("Amendments (1)")).toBeTruthy();
   });
 
   it("says a closed link is closed, not loading, when nothing was ever drawn", async () => {
