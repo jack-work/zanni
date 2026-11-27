@@ -481,6 +481,14 @@ describe("the order page: the address and what is missing", () => {
 describe("the order page: a dropped link", () => {
   const link = (): string | null => document.querySelector(".ord-status")!.getAttribute("data-link");
 
+  it("words the link in the shared labels", async () => {
+    const core = mount();
+    await shown();
+    expect(document.querySelector(".ord-status")!.textContent).toBe("Live");
+    await act(async () => loseDoor(core));
+    await waitFor(() => expect(document.querySelector(".ord-status")!.textContent).toBe("Offline"), { timeout: 3000 });
+  });
+
   it("keeps the graph, and the reader's choices, through a drop and a resync", async () => {
     const core = mount();
     await shown();

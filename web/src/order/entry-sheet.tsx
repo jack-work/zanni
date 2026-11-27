@@ -5,7 +5,7 @@ import { instant, type Amendment, type Blob, type Entry } from "./queue";
 import type { Standing } from "./derive";
 import { Anchor, leaseText, relative, type RowContext } from "./rows";
 import { StandingNote } from "./standing";
-import type { Link } from "./state";
+import type { Link } from "zanni-react/jotai";
 
 function When({ iso, now }: { iso: string; now: number }) {
   const at = instant(iso);

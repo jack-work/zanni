@@ -108,13 +108,17 @@ export type Link = Phase | "signedout";
 
 const connectionPhase: Record<ConnectionState, Link> = { open: "live", connecting: "connecting", waiting: "offline", signedout: "signedout", closed: "closed" };
 
+export function connectionLinkAtom(client: AriaClient): Atom<Link> {
+  return memo(client, "connection-link", () => atom((get) => connectionPhase[get(ariaConnectionAtom(client))]));
+}
+
 export const linkAtom = atom<Link>((get) => {
   const a = get(attendedAtom);
   const client = a?.client ?? get(clientAtom);
   if (!client) return "detached";
-  const connection = get(ariaConnectionAtom(client));
+  const connection = get(connectionLinkAtom(client));
   if (connection === "signedout") return "signedout";
-  return a ? get(ariaPhaseAtom(a.client, a.aria)) : connectionPhase[connection];
+  return a ? get(ariaPhaseAtom(a.client, a.aria)) : connection;
 });
 
 export const attendedRunningAtom = atom((get) => {

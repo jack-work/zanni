@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { Button, useTick } from "zanni-react";
-import { SignedOut } from "zanni-react/jotai";
+import { PHASE_WORDS, SignedOut, type Link } from "zanni-react/jotai";
 import { EntrySheet } from "./entry-sheet";
 import { GraphPage } from "./graph-page";
 import { useRoleQueue } from "./queue-detail";
@@ -11,20 +11,11 @@ import { scoped, type PageContext } from "./rows";
 import { StandingNote } from "./standing";
 import { queueFormsOf, sameId, type QueueForm } from "./charter";
 import type { MissingWhy, OrderView, Standing } from "./derive";
-import { carryCentralAtom, linkAtom, openAtom, orderClientAtom, orderRouteAtom, pageAtom, treeStateAtom, type Link, type Page } from "./state";
+import { carryCentralAtom, linkAtom, openAtom, orderClientAtom, orderRouteAtom, pageAtom, treeStateAtom, type Page } from "./state";
 
 const LOADING = "Loading…";
 const ENTRY_GONE = "This entry has left the live queue.";
 const NOT_HERE = "This form is not in this command.";
-
-const LINK_TEXT: Record<Link, string> = {
-  live: "live",
-  connecting: "connecting",
-  offline: "offline, retrying",
-  signedout: "signed out",
-  closed: "closed",
-  detached: "no door",
-};
 
 function QueueSheet({ page, queue, standing }: { page: PageContext; queue: QueueForm; standing: Standing }) {
   const client = useAtomValue(orderClientAtom)!;
@@ -50,7 +41,7 @@ function Detail({ page, view, standing }: { page: PageContext; view: OrderView; 
 function Status({ link }: { link: Link }) {
   return (
     <span className="ord-status" data-field="link" data-link={link}>
-      {LINK_TEXT[link]}
+      {PHASE_WORDS[link] || link}
     </span>
   );
 }

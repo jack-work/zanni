@@ -1,6 +1,7 @@
 import { atom } from "jotai";
 import type { AriaClient } from "figaro-forms/aria";
-import { ariaConnectionAtom, boundFormAtom, treeAtom } from "figaro-forms/aria/jotai";
+import { boundFormAtom, treeAtom } from "figaro-forms/aria/jotai";
+import { connectionLinkAtom, type Link } from "zanni-react/jotai";
 import { TOPOLOGY_FORM } from "./charter";
 import { canonFor, completeOf, readsOf, standingOf, viewOf, type OrderView, type Read, type Standing } from "./derive";
 import { orderHash, parseOrderRoute, type GraphView, type OrderRoute } from "./queue";
@@ -43,13 +44,9 @@ export const rolesAtom = atom<RoleRow[]>((get) => {
   return tree ? rolesOf(tree) : [];
 });
 
-export type Link = "live" | "connecting" | "offline" | "signedout" | "closed" | "detached";
-
-const linkOf = { open: "live", connecting: "connecting", waiting: "offline", signedout: "signedout", closed: "closed" } as const;
-
 export const linkAtom = atom<Link>((get) => {
   const client = get(orderClientAtom);
-  return client ? linkOf[get(ariaConnectionAtom(client))] : "detached";
+  return client ? get(connectionLinkAtom(client)) : "detached";
 });
 
 export const canonAtom = atom((get) => canonFor(get(treeStateAtom)));
