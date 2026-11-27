@@ -9,15 +9,14 @@ import { mock } from "./mock";
 
 type Role = { id: string; name: string; form: { queue?: Record<string, Record<string, unknown>> } & Record<string, unknown> };
 const fixture = JSON.parse(readFileSync("test/fixtures/order-queues.json", "utf8")) as { roles: Role[]; topology: Record<string, string> };
-const ariasGlobal = JSON.parse(readFileSync("test/fixtures/arias-global.json", "utf8")) as Record<string, unknown>;
 const byName = (name: string): Role => fixture.roles.find((r) => r.name === name)!;
 const widgetWork = byName("Widget Work");
 const aria = (hex: string): string => ("c0ffee" + hex).repeat(4);
 const CROWN = "@c0de0001c0de0001c0de0001c0de0001";
 const hash = (...parts: string[]): string => "#/" + parts.map(encodeURIComponent).join("/");
 
-function mount(o: { roles?: Role[]; topology?: Record<string, string>; global?: object | null; listed?: string[] } = {}) {
-  const core = (mock as unknown as { create(o: object): any }).create({ step: 1, roles: o.roles ?? fixture.roles, topology: o.topology ?? fixture.topology, global: o.global === undefined ? ariasGlobal : o.global, listed: o.listed ?? [CROWN] });
+function mount(o: { roles?: Role[]; topology?: Record<string, string>; } = {}) {
+  const core = (mock as unknown as { create(o: object): any }).create({ step: 1, roles: o.roles ?? fixture.roles, topology: o.topology ?? fixture.topology });
   const client = new AriaClient({ dial: core.dial, pageBytes: 24000, retryMinMs: 20, retryMaxMs: 40 });
   const store = createStore();
   store.set(orderClientAtom, client);
@@ -428,37 +427,27 @@ describe("the order page: the address and what is missing", () => {
     expect(nodes()).toEqual([]);
   });
 
-  it("names a chartered form the listing carries and nobody can read", async () => {
-    const listing = JSON.parse(JSON.stringify(ariasGlobal)) as { arias: { null: { forks: Record<string, unknown> } } };
-    listing.arias.null.forks["@ghost-form"] = { id: "@feedfacefeedfacefeedfacefeedface", kind: "form", state: "form", name: "Ghost", parent: "null", active_at: 1, recency: 1 };
-    mount({ global: listing });
+  it("names a chartered form @arias lists and nobody can read", async () => {
+    const ghost = { id: "@feedfacefeedfacefeedfacefeedface", name: "Ghost", target: aria("0c"), form: null };
+    mount({ roles: [...fixture.roles, ghost] as unknown as Role[] });
     await shown();
     await waitFor(() => expect(document.querySelector('[data-field="unreadable"]')?.textContent).toMatch(/1 chartered form is not readable: feedface \((could not be read|gone)\)/), { timeout: 3000 });
   });
 
-  it("draws every form the listing carries when @arias lists only one role", async () => {
+  it("draws every seat and queue form @arias lists, with no other source", async () => {
     mount();
     await shown();
     expect(nodes("role")).toHaveLength(8);
     expect(nodes("queue")).toHaveLength(5);
+    expect(document.querySelector('[data-field="listing-note"]')).toBeNull();
   });
 
-  it("draws only the roles @arias lists, and says so, when the listing cannot be read", async () => {
-    mount({ global: null });
-    await waitFor(() => expect(document.querySelector('[data-field="listing-note"]')).not.toBeNull(), { timeout: 3000 });
-    expect(document.querySelector('[data-field="listing-note"]')!.textContent).toContain("The form listing (@arias-global) is not readable");
-    expect(nodes("role")).toEqual(["@Crown"]);
-  });
-
-  it("follows the listing: a form added to it appears, without any change to @arias", async () => {
+  it("follows @arias: a role added to it appears", async () => {
     const core = mount();
     await shown();
     const late = { id: "@7e1a0009", name: "Late Lead", target: aria("0b"), form: { name: "Late Lead", "role-name": "Late Lead", "target-aria": aria("0b"), chartered: { seat: "lead", regiment: "frontend", root: "@c0de0001", "reports-to": "@c0de0002" } } };
-    const listing = JSON.parse(JSON.stringify(ariasGlobal)) as { arias: { null: { forks: Record<string, unknown> } } };
-    listing.arias.null.forks["@late-lead"] = { id: late.id, kind: "form", state: "form", name: late.name, target: late.target, parent: "null", active_at: 1, recency: 1 };
     await act(async () => {
-      core.roles[late.id] = late;
-      core.setGlobal(listing);
+      core.addRole(late);
     });
     await waitFor(() => expect(nodes("role")).toContain("@Late Lead"), { timeout: 3000 });
   });

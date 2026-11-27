@@ -6,7 +6,6 @@ import { fakeRpc, test, expect, type MockCore } from "./fixtures";
 const require = createRequire(import.meta.url);
 const mock = require("../../examples/aria-mock.js") as { create(o: object): MockCore & { setRole(id: string, form: object): void; addRole(role: object): void; setTopology(root: object): void } };
 const fixture = JSON.parse(readFileSync(new URL("../test/fixtures/order-queues.json", import.meta.url), "utf8")) as { roles: Role[]; topology: Record<string, string> };
-const listing = JSON.parse(readFileSync(new URL("../test/fixtures/arias-global.json", import.meta.url), "utf8")) as object;
 
 interface Role {
   id: string;
@@ -30,7 +29,7 @@ const entryId = (title: string): string => Object.values(widget.form.queue!).fin
 const row = (page: Page, title: string) => page.locator(`.ord-row[data-entry="${entryId(title)}"]`);
 
 async function visit(page: Page, hash = "", count = hash.includes("view=command") ? 5 : 20): Promise<{ core: ReturnType<typeof mock.create>; errors: string[] }> {
-  const core = mock.create({ step: 120, pageBytes: 24000, roles: fixture.roles, topology: fixture.topology, global: listing, listed: [CROWN] });
+  const core = mock.create({ step: 120, pageBytes: 24000, roles: fixture.roles, topology: fixture.topology });
   const errors: string[] = [];
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
   page.on("pageerror", (e) => errors.push(String(e)));

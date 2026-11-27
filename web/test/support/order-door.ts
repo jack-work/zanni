@@ -16,10 +16,6 @@ export interface Role {
 
 export const fixture = JSON.parse(readFileSync("test/fixtures/order-queues.json", "utf8")) as { roles: Role[]; topology: Record<string, string> };
 
-export const ariasGlobal = JSON.parse(readFileSync("test/fixtures/arias-global.json", "utf8")) as Record<string, unknown>;
-
-export const LIVE_LISTED = ["@c0de0001c0de0001c0de0001c0de0001"];
-
 export const NOW = Date.parse("2026-11-25T20:30:00Z");
 
 async function until<T>(read: () => T | undefined): Promise<T> {
@@ -32,7 +28,7 @@ async function until<T>(read: () => T | undefined): Promise<T> {
 }
 
 export async function fixtureGraph(): Promise<Graph> {
-  const core = (mock as unknown as { create(o: object): any }).create({ step: 1, roles: fixture.roles, topology: fixture.topology, global: ariasGlobal, listed: LIVE_LISTED });
+  const core = (mock as unknown as { create(o: object): any }).create({ step: 1, roles: fixture.roles, topology: fixture.topology });
   const client = new AriaClient({ dial: core.dial, pageBytes: 24000, retryMinMs: 20, retryMaxMs: 40 });
   const store = createStore();
   store.set(orderClientAtom, client);
