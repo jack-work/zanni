@@ -3,7 +3,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { ariaAtom } from "figaro-forms/aria/jotai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFirstFrame } from "../lib/first-frame";
-import { releaseBefore, runTop } from "../lib/hold";
+import { farCut, releaseBefore, runTop } from "../lib/hold";
 import { labelOf } from "../lib/roster";
 import { metricsLineAtom, noteAtom, seenAtom, turnsAtom } from "../state/aria";
 import { forkOfAtom, pitSnapAtom, treeStateAtom } from "../state/pit";
@@ -142,14 +142,16 @@ export function AriaView({ attended }: { attended: Attended }) {
     return stop;
   }, [followed, olderAvailable, loadOlder, loadingOlder, pageError]);
 
+  const windowTop = spans[0]?.[0] ?? 0;
   useEffect(() => {
     if (!followed || loadingOlder || seeking.current) return;
     const stream = client.peek(aria);
-    const top = runTop(stream);
-    if (top === undefined) return;
-    releaseBefore(stream, top);
-    toEnd();
-  }, [turns, followed, loadingOlder, client, aria, toEnd]);
+    const run = runTop(stream);
+    const cut = Math.max(run ?? 0, farCut(turns, windowTop));
+    if (cut <= 0) return;
+    releaseBefore(stream, cut);
+    if (run !== undefined) toEnd();
+  }, [turns, windowTop, followed, loadingOlder, client, aria, toEnd]);
 
   const tree = useAtomValue(treeStateAtom);
   const transcript = useMemo(

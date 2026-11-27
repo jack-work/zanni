@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { AriaClient, type AriaClientOptions, type AriaSnapshot } from "figaro-forms/aria";
 import type { Dial } from "figaro-forms";
 import { nodi, type TurnModel } from "zanni-react";
-import { CATCH_UP_PAGES, TailClient, releaseBefore, runTop } from "zanni-react/jotai";
+import { CATCH_UP_PAGES, EVICT_BATCH, KEEP_ABOVE, TailClient, farCut, releaseBefore, runTop } from "zanni-react/jotai";
 import { mock, type MockCore } from "./mock";
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -116,5 +116,22 @@ describe("TailClient", () => {
     expect(after[0]).toBeLessThan(top);
     expect(after.every((n, i) => i === 0 || n === after[i - 1]! + 1)).toBe(true);
     c.close();
+  });
+});
+
+describe("what the view holds", () => {
+  const run = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => ({ turn: from + i }));
+
+  it("keeps KEEP_ABOVE turns above the window and releases only in batches", () => {
+    const turns = run(1, 200);
+    expect(farCut(turns, KEEP_ABOVE + EVICT_BATCH - 1)).toBe(0);
+    expect(farCut(turns, KEEP_ABOVE + EVICT_BATCH)).toBe(EVICT_BATCH + 1);
+    expect(farCut(turns, 150)).toBe(150 - KEEP_ABOVE + 1);
+    expect(farCut(turns, 0)).toBe(0);
+  });
+
+  it("names the turn by number, not by place, when turns are missing", () => {
+    const turns = [...run(1, 30), ...run(41, 90)];
+    expect(farCut(turns, 70)).toBe(turns[70 - KEEP_ABOVE]!.turn);
   });
 });
