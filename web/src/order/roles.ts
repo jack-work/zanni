@@ -14,17 +14,18 @@ export interface RoleRow {
 
 export const shortId = (id: string): string => id.replace(/^@/, "").slice(0, 8);
 
-const nameOf = (node: TreeNode): string => node.handle ?? node.mantra ?? shortId(node.id);
-
-export function ariaName(tree: TreeState | null, id: string): string {
-  const node = tree?.nodes.get(id);
-  return node ? nameOf(node) : shortId(id);
+export function namerOf(tree: TreeState | null): (id: string) => string {
+  const seat = new Map<string, string>();
+  if (tree) for (const row of rolesOf(tree)) if (row.holder && !seat.has(row.holder.id)) seat.set(row.holder.id, row.name);
+  return (id) => tree?.nodes.get(id)?.handle ?? seat.get(id) ?? shortId(id);
 }
+
+export const ariaName = (tree: TreeState | null, id: string): string => namerOf(tree)(id);
 
 function holderOf(tree: TreeState, target: string | undefined): Holder | undefined {
   if (!target) return undefined;
   const node = tree.nodes.get(target);
-  return node ? { id: target, name: nameOf(node), known: true } : { id: target, name: shortId(target), known: false };
+  return node ? { id: target, name: node.handle ?? shortId(target), known: true } : { id: target, name: shortId(target), known: false };
 }
 
 export function rolesOf(tree: TreeState): RoleRow[] {

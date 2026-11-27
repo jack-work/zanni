@@ -10,7 +10,7 @@ Three faces, three jobs. The voice is the assignment, not the fonts.
 | **Alegreya** | registro's text and every aligned figure (`serif`) | sturdy at 13px, lining tabular figures; a 35 KB latin subset with `lnum`, `tnum`, `onum`, `pnum`, `liga`, `kern` |
 
 ```html
-<h1 class="fontpack-display">John Kelliher</h1>
+<h1 class="fontpack-display">Sample Name</h1>
 <p  class="fontpack-prose">…</p>
 <div class="fontpack-mono">senior software engineer</div>
 ```

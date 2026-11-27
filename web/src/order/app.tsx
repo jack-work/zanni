@@ -1,38 +1,49 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { Button, useTick } from "zanni-react";
+import { SignedOut } from "zanni-react/jotai/components/signed-out";
+import { PHASE_WORDS } from "zanni-react/jotai/lib/roster";
+import type { Link } from "zanni-react/jotai/state/link";
 import { EntrySheet } from "./entry-sheet";
 import { GraphPage } from "./graph-page";
 import { useRoleQueue } from "./queue-detail";
 import { orderHash } from "./queue";
-import { ariaName } from "./roles";
+import { namerOf } from "./roles";
 import { scoped, type PageContext } from "./rows";
-import type { MissingWhy } from "./derive";
-import { carryCentralAtom, linkAtom, openAtom, orderClientAtom, orderRouteAtom, treeStateAtom, viewAtom, type Link } from "./state";
+import { StandingNote } from "./standing";
+import { queueFormsOf, sameId, type QueueForm } from "./charter";
+import type { MissingWhy, OrderView, Standing } from "./derive";
+import { carryCentralAtom, linkAtom, openAtom, orderClientAtom, orderRouteAtom, pageAtom, treeStateAtom, type Page } from "./state";
 
-const LINK_TEXT: Record<Link, string> = {
-  live: "live",
-  connecting: "connecting",
-  offline: "offline, retrying",
-  signedout: "signed out",
-  closed: "closed",
-  detached: "no door",
-};
+const LOADING = "Loading…";
+const ENTRY_GONE = "This entry has left the live queue.";
+const NOT_HERE = "This form is not in this command.";
 
-function Detail({ page }: { page: PageContext }) {
+function QueueSheet({ page, queue, standing }: { page: PageContext; queue: QueueForm; standing: Standing }) {
   const client = useAtomValue(orderClientAtom)!;
-  const { route } = page;
+  const link = useAtomValue(linkAtom);
   const open = useSetAtom(openAtom);
-  const { form, entries } = useRoleQueue(client, route.node ?? "");
+  const { route } = page;
+  const { form, entries } = useRoleQueue(client, queue.id);
   const byId = useMemo(() => new Map(entries.map((e) => [e.id, e])), [entries]);
-  const shown = route.node && route.entry ? byId.get(route.entry) : undefined;
-  return <EntrySheet open={!!route.entry && !!route.node} entry={shown} byId={byId} settled={form.ready} ctx={scoped(page, route.node ?? "")} onClose={() => open({ node: route.node })} />;
+  const shown = route.entry ? byId.get(route.entry) : undefined;
+  return <EntrySheet open entry={shown} byId={byId} note={form.ready ? ENTRY_GONE : LOADING} standing={standing} link={link} ctx={scoped(page, queue.id)} onClose={() => open({ node: route.node })} />;
+}
+
+function Detail({ page, view, standing }: { page: PageContext; view: OrderView; standing: Standing }) {
+  const link = useAtomValue(linkAtom);
+  const open = useSetAtom(openAtom);
+  const { route } = page;
+  const queue = view.kind === "ready" ? queueFormsOf(view.topology).find((q) => sameId(q.id, route.node ?? "")) : undefined;
+  if (queue) return <QueueSheet page={page} queue={queue} standing={standing} />;
+  const note = view.kind === "loading" ? LOADING : NOT_HERE;
+  return <EntrySheet open entry={undefined} byId={new Map()} note={note} standing={standing} link={link} ctx={scoped(page, route.node ?? "")} onClose={() => open({ node: route.node })} />;
 }
 
 function Status({ link }: { link: Link }) {
   return (
     <span className="ord-status" data-field="link" data-link={link}>
-      {LINK_TEXT[link]}
+      {PHASE_WORDS[link] || link}
     </span>
   );
 }
@@ -46,16 +57,18 @@ const MISSING: Record<MissingWhy, string> = {
   queue: "This form is a queue form, not a central command.",
 };
 
-function Body({ page }: { page: PageContext }) {
+function Body({ page, shown }: { page: PageContext; shown: Page }) {
   const client = useAtomValue(orderClientAtom);
   const tree = useAtomValue(treeStateAtom);
-  const view = useAtomValue(viewAtom);
+  const { view, reads } = shown;
   const link = useAtomValue(linkAtom);
   if (!client || !tree) return <p className="ord-note">No door to figaro.</p>;
   if (link === "signedout")
+    return <SignedOut client={client} />;
+  if (link === "closed" && view.kind === "loading")
     return (
-      <div className="ord-note" role="alert">
-        <p>Signed out: sign in again.</p>
+      <div className="ord-note" role="alert" data-field="closed">
+        <p>The connection is closed.</p>
         <Button variant="outline" size="compact" onClick={() => window.location.reload()}>
           Reload
         </Button>
@@ -75,7 +88,16 @@ function Body({ page }: { page: PageContext }) {
         )}
       </p>
     );
-  return <GraphPage client={client} view={view} page={page} overrides={view.overrides} />;
+  return <GraphPage client={client} view={view} reads={reads} page={page} overrides={view.overrides} />;
+}
+
+function useLastComplete(now: Page, asked: string | undefined): Page {
+  const kept = useRef<{ page: Page; asked: string | undefined }>(undefined);
+  if (now.complete) kept.current = { page: now, asked };
+  const held = kept.current;
+  const standing = held ? now.standing : "current";
+  const page = !now.complete && held && (held.asked === undefined || held.asked === asked) ? held.page : now;
+  return { ...page, standing };
 }
 
 export function App() {
@@ -83,13 +105,14 @@ export function App() {
   const tree = useAtomValue(treeStateAtom);
   const route = useAtomValue(orderRouteAtom);
   const open = useSetAtom(openAtom);
-  const view = useAtomValue(viewAtom);
+  const shown = useLastComplete(useAtomValue(pageAtom), route.central);
   const carry = useSetAtom(carryCentralAtom);
   const now = useTick(30_000);
   useEffect(() => {
-    if (view.central) carry();
-  }, [view.central, carry]);
-  const page = useMemo<PageContext>(() => ({ now, nameOf: (aria) => ariaName(tree, aria), route, openIn: (node, entry) => open({ node, entry }) }), [now, tree, route, open]);
+    if (shown.view.central) carry();
+  }, [shown.view.central, carry]);
+  const nameOf = useMemo(() => namerOf(tree), [tree]);
+  const page = useMemo<PageContext>(() => ({ now, nameOf, route, openIn: (node, entry) => open({ node, entry }) }), [now, nameOf, route, open]);
   return (
     <div className="ord" data-link={link}>
       <header className="ord-bar">
@@ -97,10 +120,11 @@ export function App() {
         <h1 className="ord-h1">Work orders</h1>
         <Status link={link} />
       </header>
-      <main className="ord-main" tabIndex={-1}>
-        <Body page={page} />
+      <main className="ord-main" data-standing={shown.standing} tabIndex={-1}>
+        {shown.view.kind !== "loading" && link !== "signedout" && <StandingNote standing={shown.standing} link={link} />}
+        <Body page={page} shown={shown} />
       </main>
-      {route.node && route.entry && route.node.startsWith("@") && <Detail page={page} />}
+      {route.node && route.entry && route.node.startsWith("@") && <Detail page={page} view={shown.view} standing={shown.standing} />}
     </div>
   );
 }

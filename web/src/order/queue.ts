@@ -196,10 +196,6 @@ export function forestOf(entries: readonly Entry[]): Branch[] {
   return roots;
 }
 
-export function flatten(forest: readonly Branch[]): Entry[] {
-  return forest.flatMap((b) => [b.entry, ...flatten(b.children)]);
-}
-
 export function stateCounts(entries: readonly Entry[]): [string, number][] {
   const counts = new Map<string, number>();
   for (const e of entries) counts.set(e.state, (counts.get(e.state) ?? 0) + 1);
@@ -231,6 +227,16 @@ export function safeHref(link: string): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+const GITHUB_REF = /^([A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)\/([A-Za-z0-9._-]+?)(?:#(\d+))?$/;
+
+export function sourceHref(source: string): string | undefined {
+  if (!source.startsWith("github:")) return undefined;
+  const rest = source.slice("github:".length);
+  const ref = GITHUB_REF.exec(rest);
+  if (ref) return "https://github.com/" + ref[1] + "/" + ref[2] + (ref[3] ? "/issues/" + ref[3] : "");
+  return safeHref(rest);
 }
 
 export type GraphView = "full" | "command";

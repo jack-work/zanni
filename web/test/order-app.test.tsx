@@ -1,11 +1,23 @@
 import { readFileSync } from "node:fs";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createStore, Provider } from "jotai";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { Dial } from "figaro-forms";
 import { AriaClient } from "figaro-forms/aria";
 import { App } from "../src/order/app";
+import * as graphModule from "../src/order/graph";
+import * as layoutModule from "../src/order/graph-layout";
 import { orderClientAtom } from "../src/order/state";
 import { mock } from "./mock";
+
+vi.mock("../src/order/graph", async (original) => {
+  const m = await original<typeof import("../src/order/graph")>();
+  return { ...m, graphOf: vi.fn(m.graphOf) };
+});
+vi.mock("../src/order/graph-layout", async (original) => {
+  const m = await original<typeof import("../src/order/graph-layout")>();
+  return { ...m, layoutOf: vi.fn(m.layoutOf) };
+});
 
 type Role = { id: string; name: string; form: { queue?: Record<string, Record<string, unknown>> } & Record<string, unknown> };
 const fixture = JSON.parse(readFileSync("test/fixtures/order-queues.json", "utf8")) as { roles: Role[]; topology: Record<string, string> };
@@ -15,9 +27,18 @@ const aria = (hex: string): string => ("c0ffee" + hex).repeat(4);
 const CROWN = "@c0de0001c0de0001c0de0001c0de0001";
 const hash = (...parts: string[]): string => "#/" + parts.map(encodeURIComponent).join("/");
 
-function mount(o: { roles?: Role[]; topology?: Record<string, string>; } = {}) {
+function mount(o: { roles?: Role[]; topology?: Record<string, string>} = {}) {
   const core = (mock as unknown as { create(o: object): any }).create({ step: 1, roles: o.roles ?? fixture.roles, topology: o.topology ?? fixture.topology });
-  const client = new AriaClient({ dial: core.dial, pageBytes: 24000, retryMinMs: 20, retryMaxMs: 40 });
+  const gate = { down: false, refusing: false };
+  const dial: Dial = (events) => {
+    if (gate.down) return Promise.reject(new Error("the door is down"));
+    if (!gate.refusing) return core.dial(events);
+    return core.dial(events).then((socket: unknown) => {
+      setTimeout(() => events.closed("the session was refused"), 0);
+      return socket;
+    });
+  };
+  const client = new AriaClient({ dial, pageBytes: 24000, retryMinMs: 20, retryMaxMs: 40 });
   const store = createStore();
   store.set(orderClientAtom, client);
   render(
@@ -25,8 +46,13 @@ function mount(o: { roles?: Role[]; topology?: Record<string, string>; } = {}) {
       <App />
     </Provider>,
   );
-  return core;
+  return Object.assign(core, { gate, client });
 }
+
+const loseDoor = (core: ReturnType<typeof mount>): void => {
+  core.gate.down = true;
+  core.drop();
+};
 
 const nodes = (kind?: string): string[] => [...document.querySelectorAll(kind ? `[data-node][data-kind=${kind}]` : "[data-node]")].map((n) => n.querySelector(".og-label")!.textContent ?? "");
 const node = (id: string): SVGGElement => document.querySelector<SVGGElement>(`[data-node="${id}"]`)!;
@@ -460,5 +486,170 @@ describe("the order page: the address and what is missing", () => {
     expect(fact("seat", d)!).toBe("<img src=x onerror=\"window.__pwned=1\">");
     expect(document.querySelector("img")).toBeNull();
     expect((window as unknown as { __pwned?: number }).__pwned).toBeUndefined();
+  });
+});
+
+describe("the order page: a dropped link", () => {
+  const link = (): string | null => document.querySelector(".ord-status")!.getAttribute("data-link");
+
+  it("words the link in the shared labels", async () => {
+    const core = mount();
+    await shown();
+    expect(document.querySelector(".ord-status")!.textContent).toBe("Live");
+    await act(async () => loseDoor(core));
+    await waitFor(() => expect(document.querySelector(".ord-status")!.textContent).toBe("Offline"), { timeout: 3000 });
+  });
+
+  it("keeps the graph, and the reader's choices, through a drop and a resync", async () => {
+    const core = mount();
+    await shown();
+    const before = nodes().sort();
+    fireEvent.click(document.querySelector('[data-chip="lease"]')!);
+    fireEvent.click(node(aria("03")));
+    await waitFor(() => expect(node(aria("03")).classList.contains("og-sel")).toBe(true));
+    await act(async () => loseDoor(core));
+    await waitFor(() => expect(link()).not.toBe("live"), { timeout: 3000 });
+    expect(document.querySelector('[data-field="graph"]')).not.toBeNull();
+    expect(nodes().sort()).toEqual(before);
+    expect(screen.queryByText(/Loading the chartered roles/)).toBeNull();
+    expect(document.querySelector(".ord-main")!.getAttribute("data-standing")).toBe("stale");
+    expect(document.querySelector(".ord-main > [data-field=standing]")!.textContent).toBe("Offline: showing the last known state, retrying.");
+    await act(async () => {
+      core.gate.down = false;
+    });
+    await waitFor(() => expect(link()).toBe("live"), { timeout: 3000 });
+    await waitFor(() => expect(core.conns.length).toBeGreaterThan(0));
+    expect(nodes().sort()).toEqual(before);
+    expect(document.querySelector('[data-chip="lease"]')!.getAttribute("aria-pressed")).toBe("false");
+    expect(node(aria("03")).classList.contains("og-sel")).toBe(true);
+    await waitFor(() => expect(document.querySelector("[data-field=standing]")).toBeNull(), { timeout: 3000 });
+    expect(document.querySelector(".ord-main")!.getAttribute("data-standing")).toBe("current");
+  });
+
+  it("says on the open sheet that the entry is the last known one", async () => {
+    const core = mount();
+    await shown();
+    fireEvent.click(nodeNamed("Widget Work", "queue"));
+    fireEvent.click(await screen.findByText("Catalogue loader", undefined, { timeout: 3000 }));
+    const sheet = await screen.findByRole("dialog", { name: "Work order" });
+    expect(sheet.querySelector("[data-field=standing]")).toBeNull();
+    await act(async () => loseDoor(core));
+    await waitFor(() => expect(sheet.querySelector("[data-field=standing]")?.textContent).toMatch(/^Offline/), { timeout: 3000 });
+    expect(sheet.querySelector(".ord-sheet-body")!.getAttribute("data-standing")).toBe("stale");
+    expect(within(sheet).getByText("Amendments (1)")).toBeTruthy();
+  });
+
+  it("asks to sign in again with the shared signed-out block, and Retry reconnects", async () => {
+    const core = mount();
+    await shown();
+    core.gate.refusing = true;
+    await act(async () => core.drop());
+    const alert = await screen.findByRole("alert", undefined, { timeout: 3000 });
+    expect(alert.className).toBe("fw-signedout");
+    expect(link()).toBe("signedout");
+    expect(within(alert).getByRole("button", { name: "Reload" })).toBeTruthy();
+    core.gate.refusing = false;
+    fireEvent.click(within(alert).getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(link()).toBe("live"), { timeout: 3000 });
+    await shown();
+  });
+
+  it("says a closed link is closed, not loading, when nothing was ever drawn", async () => {
+    const core = mount();
+    core.gate.down = true;
+    core.client.close();
+    await screen.findByText("The connection is closed.", undefined, { timeout: 3000 });
+    expect(screen.queryByText(/Loading the chartered roles/)).toBeNull();
+  });
+});
+
+describe("the order page: fields the contract does not name", () => {
+  it("shows an unknown entry field as escaped key and value rows, never as raw JSON", async () => {
+    const hostile = fixture.roles.map((r) => {
+      if (r.name !== "Widget Work") return r;
+      const queue = { ...r.form.queue! };
+      const id = Object.keys(queue).find((k) => queue[k]!.title === "Catalogue loader")!;
+      queue[id] = { ...queue[id]!, scratch: { note: "<img src=x onerror=\"window.__pwned=1\">", steps: ["one", { deep: { deeper: { deepest: true } } }], empty: {} }, flag: false };
+      return { ...r, form: { ...r.form, queue } };
+    });
+    mount({ roles: hostile as Role[] });
+    await shown();
+    fireEvent.click(nodeNamed("Widget Work", "queue"));
+    fireEvent.click(await screen.findByText("Catalogue loader", undefined, { timeout: 3000 }));
+    const sheet = await screen.findByRole("dialog", { name: "Work order" });
+    const row = (name: string): string | null | undefined => sheet.querySelector(`[data-field="${name}"] dd`)?.textContent;
+    expect(row("scratch.note")).toBe("<img src=x onerror=\"window.__pwned=1\">");
+    expect(row("scratch.steps.0")).toBe("one");
+    expect(row("scratch.steps.1.deep")).toBe("1 keys");
+    expect(row("scratch.empty")).toBe("{}");
+    expect(row("flag")).toBe("false");
+    expect(sheet.querySelector("pre, img")).toBeNull();
+    expect(sheet.textContent).not.toContain('{"');
+    expect((window as unknown as { __pwned?: number }).__pwned).toBeUndefined();
+  });
+});
+
+describe("the order page: an entry's source", () => {
+  it("links a github short reference, in a new tab that keeps the page private", async () => {
+    const withSource = fixture.roles.map((r) => {
+      if (r.name !== "Widget Work") return r;
+      const queue = { ...r.form.queue! };
+      const id = Object.keys(queue).find((k) => queue[k]!.title === "Catalogue loader")!;
+      queue[id] = { ...queue[id]!, source: "github:jack-work/zanni#12" };
+      return { ...r, form: { ...r.form, queue } };
+    });
+    mount({ roles: withSource as Role[] });
+    await shown();
+    fireEvent.click(nodeNamed("Widget Work", "queue"));
+    fireEvent.click(await screen.findByText("Catalogue loader", undefined, { timeout: 3000 }));
+    const sheet = await screen.findByRole("dialog", { name: "Work order" });
+    const a = within(sheet).getByRole("link", { name: "github:jack-work/zanni#12" });
+    expect(a.getAttribute("href")).toBe("https://github.com/jack-work/zanni/issues/12");
+    expect(a.getAttribute("rel")).toBe("noopener noreferrer");
+  });
+});
+
+describe("the order page: which forms the address may open", () => {
+  const loaded = (core: ReturnType<typeof mount>, id: string): boolean => core.calls.some((c: { method: string; params: Record<string, unknown> }) => c.method === "figaro.form" && c.params.figaro_id === id);
+
+  it("says an entry of a queue form of another command is not in this command, and never reads it", async () => {
+    window.location.hash = hash(CROWN, "@c0de0106", "anything");
+    const core = mount();
+    await screen.findByText("This form is not in this command.", undefined, { timeout: 3000 });
+    expect(screen.queryByText("This entry has left the live queue.")).toBeNull();
+    expect(loaded(core, "@c0de0106")).toBe(false);
+  });
+
+  it("says the same of any form id typed into the address, and never reads it", async () => {
+    window.location.hash = hash(CROWN, "@7e1a0099", "anything");
+    const core = mount();
+    await screen.findByText("This form is not in this command.", undefined, { timeout: 3000 });
+    expect(loaded(core, "@7e1a0099")).toBe(false);
+  });
+
+  it("still opens an entry of a queue form the graph draws", async () => {
+    window.location.hash = hash(CROWN, "@c0de0101", "clear-lens");
+    mount();
+    await screen.findByRole("dialog", { name: "Work order" }, { timeout: 3000 });
+    await waitFor(() => expect(document.querySelector('.ord-detail[data-entry="clear-lens"]')).not.toBeNull(), { timeout: 3000 });
+    expect(screen.queryByText(/not in this command/)).toBeNull();
+  });
+});
+
+describe("the order page: what a repaint costs", () => {
+  it("does not derive or lay out the graph again for a selection, a toggle or a new address", async () => {
+    mount();
+    await shown();
+    await waitFor(() => expect(window.location.hash).toBe(hash(CROWN)));
+    await new Promise((r) => setTimeout(r, 100));
+    const graphs = vi.mocked(graphModule.graphOf).mock.calls.length;
+    const layouts = vi.mocked(layoutModule.layoutOf).mock.calls.length;
+    fireEvent.click(node(aria("03")));
+    await waitFor(() => expect(node(aria("03")).classList.contains("og-sel")).toBe(true));
+    fireEvent.click(document.querySelector('[data-chip="lease"]')!);
+    fireEvent.click(node(aria("06")));
+    await waitFor(() => expect(node(aria("06")).classList.contains("og-sel")).toBe(true));
+    expect(vi.mocked(graphModule.graphOf).mock.calls.length).toBe(graphs);
+    expect(vi.mocked(layoutModule.layoutOf).mock.calls.length).toBe(layouts);
   });
 });

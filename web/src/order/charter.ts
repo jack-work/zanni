@@ -28,7 +28,6 @@ export interface QueueContract {
   readonly contract: string;
   readonly kinds: readonly string[];
   readonly priority: boolean | undefined;
-  readonly states: readonly string[];
 }
 
 export interface QueueForm {
@@ -98,7 +97,7 @@ function fanoutOf(root: JsonObject): Fanout {
 function contractOf(root: JsonObject): QueueContract | undefined {
   const c = root["queue-contract"];
   if (!isObject(c)) return undefined;
-  return { version: text(c.version), contract: text(c.contract), kinds: strings(c.kinds), priority: typeof c.priority === "boolean" ? c.priority : undefined, states: strings(c.states) };
+  return { version: text(c.version), contract: text(c.contract), kinds: strings(c.kinds), priority: typeof c.priority === "boolean" ? c.priority : undefined };
 }
 
 export const QUEUE_FORM_KIND = "queue-form";
@@ -292,6 +291,11 @@ export function topologyOf(central: CharterRole, roles: readonly CharterRole[], 
   const apart = tops.filter((s) => s !== leadTop && !grown.has(s.aria)).map(grow);
   const strays = mine.filter((q) => !members.some((r) => sameId(q.under, r.id)));
   return { central, tree, apart, vacant: vacant.sort(byRole).map((role) => ({ role, queues: queuesOf(role), studies: studiesOf(role) })), strays };
+}
+
+export function queueFormsOf(topology: Topology): QueueForm[] {
+  const walk = (seat: Seat): QueueForm[] => [...seat.roles.flatMap((r) => r.queues), ...seat.children.flatMap(walk)];
+  return [...(topology.tree ? walk(topology.tree) : []), ...topology.apart.flatMap(walk), ...topology.vacant.flatMap((v) => v.queues), ...topology.strays];
 }
 
 export function pickCentral(roles: readonly CharterRole[]): CharterRole | undefined {

@@ -1,10 +1,10 @@
 import { atom } from "jotai";
 import type { AriaClient } from "figaro-forms/aria";
-import { ariaConnectionAtom, boundFormAtom, treeAtom } from "figaro-forms/aria/jotai";
+import { boundFormAtom, treeAtom } from "figaro-forms/aria/jotai";
+import { connectionLinkAtom, type Link } from "zanni-react/jotai/state/link";
 import { TOPOLOGY_FORM } from "./charter";
-import { canonFor, readsOf, viewOf, type OrderView, type Read } from "./derive";
+import { canonFor, completeOf, readsOf, standingOf, viewOf, type OrderView, type Read, type Standing } from "./derive";
 import { orderHash, parseOrderRoute, type GraphView, type OrderRoute } from "./queue";
-import { rolesOf, type RoleRow } from "./roles";
 
 export const orderClientAtom = atom<AriaClient | null>(null);
 
@@ -17,6 +17,8 @@ hashAtom.onMount = (set) => {
 };
 
 export const orderRouteAtom = atom<OrderRoute>((get) => parseOrderRoute(get(hashAtom)));
+
+const askedAtom = atom((get) => get(orderRouteAtom).central);
 
 export const openAtom = atom(null, (get, set, to: { node?: string; entry?: string; view?: GraphView }) => {
   const route = get(orderRouteAtom);
@@ -38,18 +40,9 @@ export const treeStateAtom = atom((get) => {
   return client ? get(treeAtom(client)) : null;
 });
 
-export const rolesAtom = atom<RoleRow[]>((get) => {
-  const tree = get(treeStateAtom);
-  return tree ? rolesOf(tree) : [];
-});
-
-export type Link = "live" | "connecting" | "offline" | "signedout" | "closed" | "detached";
-
-const linkOf = { open: "live", connecting: "connecting", waiting: "offline", signedout: "signedout", closed: "closed" } as const;
-
 export const linkAtom = atom<Link>((get) => {
   const client = get(orderClientAtom);
-  return client ? linkOf[get(ariaConnectionAtom(client))] : "detached";
+  return client ? get(connectionLinkAtom(client)) : "detached";
 });
 
 export const canonAtom = atom((get) => canonFor(get(treeStateAtom)));
@@ -58,12 +51,31 @@ export const readsAtom = atom<Read[]>((get) => {
   const client = get(orderClientAtom);
   const tree = get(treeStateAtom);
   if (!client || !tree) return [];
-  return readsOf({ tree, canon: get(canonAtom), asked: get(orderRouteAtom).central, formOf: (id) => get(boundFormAtom(client, id)) });
+  return readsOf({ tree, canon: get(canonAtom), asked: get(askedAtom), formOf: (id) => get(boundFormAtom(client, id)) });
 });
 
 export const viewAtom = atom<OrderView>((get) => {
   const client = get(orderClientAtom);
   const tree = get(treeStateAtom);
   if (!client || !tree) return { kind: "none", central: undefined };
-  return viewOf({ tree, canon: get(canonAtom), reads: get(readsAtom), topo: get(boundFormAtom(client, TOPOLOGY_FORM)), asked: get(orderRouteAtom).central });
+  return viewOf({ tree, canon: get(canonAtom), reads: get(readsAtom), topo: get(boundFormAtom(client, TOPOLOGY_FORM)), asked: get(askedAtom) });
+});
+
+export interface Page {
+  readonly view: OrderView;
+  readonly reads: readonly Read[];
+  readonly complete: boolean;
+  readonly standing: Standing;
+}
+
+export const pageAtom = atom<Page>((get) => {
+  const client = get(orderClientAtom);
+  const tree = get(treeStateAtom);
+  const view = get(viewAtom);
+  const reads = get(readsAtom);
+  if (!client || !tree) return { view, reads, complete: false, standing: "stale" };
+  const topo = get(boundFormAtom(client, TOPOLOGY_FORM));
+  const complete = completeOf(view, reads, topo);
+  const forms = [topo, ...reads.filter((r) => r.role || r.queue).map((r) => r.form)];
+  return { view, reads, complete, standing: standingOf({ live: get(linkAtom) === "live", complete, tree: tree.freshness, forms }) };
 });

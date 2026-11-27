@@ -11,6 +11,7 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: /^zanni-react\/jotai$/, replacement: resolve(pkg, "jotai.ts") },
+      { find: /^zanni-react\/jotai\/(.+)$/, replacement: resolve(pkg, "jotai") + "/$1" },
       { find: /^zanni-react$/, replacement: resolve(pkg, "index.ts") },
     ],
     dedupe: ["react", "react-dom", "jotai", "figaro-forms"],
