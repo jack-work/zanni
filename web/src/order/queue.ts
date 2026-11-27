@@ -196,10 +196,6 @@ export function forestOf(entries: readonly Entry[]): Branch[] {
   return roots;
 }
 
-export function flatten(forest: readonly Branch[]): Entry[] {
-  return forest.flatMap((b) => [b.entry, ...flatten(b.children)]);
-}
-
 export function stateCounts(entries: readonly Entry[]): [string, number][] {
   const counts = new Map<string, number>();
   for (const e of entries) counts.set(e.state, (counts.get(e.state) ?? 0) + 1);

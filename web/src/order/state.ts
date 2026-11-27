@@ -5,7 +5,6 @@ import { connectionLinkAtom, type Link } from "zanni-react/jotai";
 import { TOPOLOGY_FORM } from "./charter";
 import { canonFor, completeOf, readsOf, standingOf, viewOf, type OrderView, type Read, type Standing } from "./derive";
 import { orderHash, parseOrderRoute, type GraphView, type OrderRoute } from "./queue";
-import { rolesOf, type RoleRow } from "./roles";
 
 export const orderClientAtom = atom<AriaClient | null>(null);
 
@@ -37,11 +36,6 @@ export const carryCentralAtom = atom(null, (get, set) => {
 export const treeStateAtom = atom((get) => {
   const client = get(orderClientAtom);
   return client ? get(treeAtom(client)) : null;
-});
-
-export const rolesAtom = atom<RoleRow[]>((get) => {
-  const tree = get(treeStateAtom);
-  return tree ? rolesOf(tree) : [];
 });
 
 export const linkAtom = atom<Link>((get) => {

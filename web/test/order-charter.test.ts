@@ -35,9 +35,9 @@ describe("reading a role form", () => {
   });
 
   it("reads the fan-out limits, whichever are present, and the queue contract", () => {
-    const r = role("@r1", "R", A("a"), { seat: "knight" }, { system: { fanout: { min_children: 1, max_children: 3, quota: 6 } }, "queue-contract": { version: "v0", contract: "https://c.example.invalid/x", kinds: ["work", 4], priority: true, states: ["posted"] } });
+    const r = role("@r1", "R", A("a"), { seat: "knight" }, { system: { fanout: { min_children: 1, max_children: 3, quota: 6 } }, "queue-contract": { version: "v0", contract: "https://c.example.invalid/x", kinds: ["work", 4], priority: true } });
     expect(r.fanout).toEqual({ min: 1, max: 3, quota: 6 });
-    expect(r.contract).toEqual({ version: "v0", contract: "https://c.example.invalid/x", kinds: ["work"], priority: true, states: ["posted"] });
+    expect(r.contract).toEqual({ version: "v0", contract: "https://c.example.invalid/x", kinds: ["work"], priority: true });
     expect(role("@r2", "R", A("a"), { seat: "king" }).fanout).toEqual({ min: undefined, max: undefined, quota: undefined });
     expect(role("@r2", "R", A("a"), { seat: "king" }).contract).toBeUndefined();
   });
@@ -72,7 +72,7 @@ const queueForm = (id: string, name: string, under: string, root = "@c0de0001", 
 describe("reading a queue form", () => {
   it("is a queue form only when chartered.kind says so, and never a role", () => {
     const form = { name: "Handoff", "queue-contract": { version: "v0", kinds: ["handoff"], priority: false }, chartered: { kind: "queue-form", root: "@c0de0001", under: "@c0de0002" } };
-    expect(queueFormOf("@c0de0101", "Handoff", form as never, canon)).toEqual({ id: "@c0de0101", name: "Handoff", root: "@c0de0001", under: "@c0de0002", contract: { version: "v0", contract: "", kinds: ["handoff"], priority: false, states: [] } });
+    expect(queueFormOf("@c0de0101", "Handoff", form as never, canon)).toEqual({ id: "@c0de0101", name: "Handoff", root: "@c0de0001", under: "@c0de0002", contract: { version: "v0", contract: "", kinds: ["handoff"], priority: false } });
     expect(charterRoleOf("@c0de0101", "Handoff", "", form as never, canon)).toBeUndefined();
     expect(queueFormOf("@r1", "R", { chartered: { seat: "king" } } as never, canon)).toBeUndefined();
     expect(queueFormOf("@r1", "R", { name: "R" } as never, canon)).toBeUndefined();

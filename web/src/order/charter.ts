@@ -28,7 +28,6 @@ export interface QueueContract {
   readonly contract: string;
   readonly kinds: readonly string[];
   readonly priority: boolean | undefined;
-  readonly states: readonly string[];
 }
 
 export interface QueueForm {
@@ -98,7 +97,7 @@ function fanoutOf(root: JsonObject): Fanout {
 function contractOf(root: JsonObject): QueueContract | undefined {
   const c = root["queue-contract"];
   if (!isObject(c)) return undefined;
-  return { version: text(c.version), contract: text(c.contract), kinds: strings(c.kinds), priority: typeof c.priority === "boolean" ? c.priority : undefined, states: strings(c.states) };
+  return { version: text(c.version), contract: text(c.contract), kinds: strings(c.kinds), priority: typeof c.priority === "boolean" ? c.priority : undefined };
 }
 
 export const QUEUE_FORM_KIND = "queue-form";

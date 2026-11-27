@@ -1,12 +1,13 @@
 import { readFileSync } from "node:fs";
 import type { JsonObject } from "figaro-forms";
 import { describe, expect, it } from "vitest";
-import { byQueueOrder, entriesOf, flatten, forestOf, leaseOf, orderHash, parseOrderRoute, safeHref, stateCounts, wantsAttention, type Branch } from "../src/order/queue";
+import { byQueueOrder, entriesOf, forestOf, leaseOf, orderHash, parseOrderRoute, safeHref, stateCounts, wantsAttention, type Branch, type Entry } from "../src/order/queue";
 
 const fixture = JSON.parse(readFileSync("test/fixtures/order-queues.json", "utf8")) as { roles: { name: string; form: JsonObject }[] };
 const form = (name: string) => fixture.roles.find((r) => r.name === name)!.form;
 const shape = (forest: readonly Branch[]): unknown => forest.map((b) => (b.children.length ? [b.entry.title, shape(b.children)] : b.entry.title));
 
+const inOrder = (forest: readonly Branch[]): Entry[] => forest.flatMap((b) => [b.entry, ...inOrder(b.children)]);
 const raw = (extra: Record<string, unknown>): JsonObject => ({ kind: "work", title: "t", state: "posted", ...extra }) as JsonObject;
 const root = (queue: Record<string, JsonObject>): JsonObject => ({ queue }) as JsonObject;
 
@@ -69,7 +70,7 @@ describe("the tree of work orders", () => {
 
   it("breaks a cycle and shows every entry once", () => {
     const entries = entriesOf(root({ A: raw({ title: "a", parent: "B" }), B: raw({ title: "b", parent: "A" }), C: raw({ title: "c", parent: "C" }) }));
-    const shown = flatten(forestOf(entries)).map((e) => e.id);
+    const shown = inOrder(forestOf(entries)).map((e) => e.id);
     expect(shown.sort()).toEqual(["A", "B", "C"]);
   });
 
