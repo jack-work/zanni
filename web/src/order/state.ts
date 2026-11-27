@@ -2,7 +2,7 @@ import { atom } from "jotai";
 import type { AriaClient } from "figaro-forms/aria";
 import { ariaConnectionAtom, boundFormAtom, treeAtom } from "figaro-forms/aria/jotai";
 import { TOPOLOGY_FORM } from "./charter";
-import { canonFor, readsOf, viewOf, type OrderView, type Read } from "./derive";
+import { canonFor, completeOf, readsOf, viewOf, type OrderView, type Read } from "./derive";
 import { orderHash, parseOrderRoute, type GraphView, type OrderRoute } from "./queue";
 import { rolesOf, type RoleRow } from "./roles";
 
@@ -66,4 +66,17 @@ export const viewAtom = atom<OrderView>((get) => {
   const tree = get(treeStateAtom);
   if (!client || !tree) return { kind: "none", central: undefined };
   return viewOf({ tree, canon: get(canonAtom), reads: get(readsAtom), topo: get(boundFormAtom(client, TOPOLOGY_FORM)), asked: get(orderRouteAtom).central });
+});
+
+export interface Page {
+  readonly view: OrderView;
+  readonly reads: readonly Read[];
+  readonly complete: boolean;
+}
+
+export const pageAtom = atom<Page>((get) => {
+  const client = get(orderClientAtom);
+  const view = get(viewAtom);
+  const reads = get(readsAtom);
+  return { view, reads, complete: client ? completeOf(view, reads, get(boundFormAtom(client, TOPOLOGY_FORM))) : false };
 });

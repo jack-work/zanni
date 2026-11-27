@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createStore, Provider } from "jotai";
 import { afterEach, describe, expect, it } from "vitest";
+import type { Dial } from "figaro-forms";
 import { AriaClient } from "figaro-forms/aria";
 import { App } from "../src/order/app";
 import { orderClientAtom } from "../src/order/state";
@@ -17,7 +18,9 @@ const hash = (...parts: string[]): string => "#/" + parts.map(encodeURIComponent
 
 function mount(o: { roles?: Role[]; topology?: Record<string, string>; } = {}) {
   const core = (mock as unknown as { create(o: object): any }).create({ step: 1, roles: o.roles ?? fixture.roles, topology: o.topology ?? fixture.topology });
-  const client = new AriaClient({ dial: core.dial, pageBytes: 24000, retryMinMs: 20, retryMaxMs: 40 });
+  const gate = { down: false };
+  const dial: Dial = (events) => (gate.down ? Promise.reject(new Error("the door is down")) : core.dial(events));
+  const client = new AriaClient({ dial, pageBytes: 24000, retryMinMs: 20, retryMaxMs: 40 });
   const store = createStore();
   store.set(orderClientAtom, client);
   render(
@@ -25,8 +28,13 @@ function mount(o: { roles?: Role[]; topology?: Record<string, string>; } = {}) {
       <App />
     </Provider>,
   );
-  return core;
+  return Object.assign(core, { gate, client });
 }
+
+const loseDoor = (core: ReturnType<typeof mount>): void => {
+  core.gate.down = true;
+  core.drop();
+};
 
 const nodes = (kind?: string): string[] => [...document.querySelectorAll(kind ? `[data-node][data-kind=${kind}]` : "[data-node]")].map((n) => n.querySelector(".og-label")!.textContent ?? "");
 const node = (id: string): SVGGElement => document.querySelector<SVGGElement>(`[data-node="${id}"]`)!;
@@ -460,5 +468,39 @@ describe("the order page: the address and what is missing", () => {
     expect(fact("seat", d)!).toBe("<img src=x onerror=\"window.__pwned=1\">");
     expect(document.querySelector("img")).toBeNull();
     expect((window as unknown as { __pwned?: number }).__pwned).toBeUndefined();
+  });
+});
+
+describe("the order page: a dropped link", () => {
+  const link = (): string | null => document.querySelector(".ord-status")!.getAttribute("data-link");
+
+  it("keeps the graph, and the reader's choices, through a drop and a resync", async () => {
+    const core = mount();
+    await shown();
+    const before = nodes().sort();
+    fireEvent.click(document.querySelector('[data-chip="lease"]')!);
+    fireEvent.click(node(aria("03")));
+    await waitFor(() => expect(node(aria("03")).classList.contains("og-sel")).toBe(true));
+    await act(async () => loseDoor(core));
+    await waitFor(() => expect(link()).not.toBe("live"), { timeout: 3000 });
+    expect(document.querySelector('[data-field="graph"]')).not.toBeNull();
+    expect(nodes().sort()).toEqual(before);
+    expect(screen.queryByText(/Loading the chartered roles/)).toBeNull();
+    await act(async () => {
+      core.gate.down = false;
+    });
+    await waitFor(() => expect(link()).toBe("live"), { timeout: 3000 });
+    await waitFor(() => expect(core.conns.length).toBeGreaterThan(0));
+    expect(nodes().sort()).toEqual(before);
+    expect(document.querySelector('[data-chip="lease"]')!.getAttribute("aria-pressed")).toBe("false");
+    expect(node(aria("03")).classList.contains("og-sel")).toBe(true);
+  });
+
+  it("says a closed link is closed, not loading, when nothing was ever drawn", async () => {
+    const core = mount();
+    core.gate.down = true;
+    core.client.close();
+    await screen.findByText("The connection is closed.", undefined, { timeout: 3000 });
+    expect(screen.queryByText(/Loading the chartered roles/)).toBeNull();
   });
 });

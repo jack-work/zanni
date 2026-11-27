@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useAtomValue, useSetAtom } from "jotai";
+import { useSetAtom } from "jotai";
 import type { AriaClient } from "figaro-forms/aria";
 import { bare } from "./charter";
 import type { ReadyView, Read } from "./derive";
@@ -11,7 +11,7 @@ import { Stage } from "./graph-view";
 import { entriesOf, type GraphView } from "./queue";
 import type { PageContext } from "./rows";
 import { shortId } from "./roles";
-import { openAtom, readsAtom } from "./state";
+import { openAtom } from "./state";
 
 const WHY: Record<string, string> = { closed: "closed to you", gone: "gone", failed: "could not be read", incompatible: "cannot be read by this page" };
 
@@ -31,8 +31,7 @@ function Chip({ className, kind, pressed, onClick, children }: { className: stri
   );
 }
 
-export function GraphPage({ client, view, page, overrides }: { client: AriaClient; view: ReadyView; page: PageContext; overrides: "applied" | "unreadable" }) {
-  const reads = useAtomValue(readsAtom);
+export function GraphPage({ client, view, reads, page, overrides }: { client: AriaClient; view: ReadyView; reads: readonly Read[]; page: PageContext; overrides: "applied" | "unreadable" }) {
   const open = useSetAtom(openAtom);
   const [on, setOn] = useState<Record<EdgeKind, boolean>>(() => Object.fromEntries(EDGE_KINDS.map((k) => [k, true])) as Record<EdgeKind, boolean>);
   const [dir, setDir] = useState<Dir>("both");

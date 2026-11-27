@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { Button, useTick } from "zanni-react";
 import { EntrySheet } from "./entry-sheet";
@@ -8,7 +8,7 @@ import { orderHash } from "./queue";
 import { ariaName } from "./roles";
 import { scoped, type PageContext } from "./rows";
 import type { MissingWhy } from "./derive";
-import { carryCentralAtom, linkAtom, openAtom, orderClientAtom, orderRouteAtom, treeStateAtom, viewAtom, type Link } from "./state";
+import { carryCentralAtom, linkAtom, openAtom, orderClientAtom, orderRouteAtom, pageAtom, treeStateAtom, type Link, type Page } from "./state";
 
 const LINK_TEXT: Record<Link, string> = {
   live: "live",
@@ -46,16 +46,25 @@ const MISSING: Record<MissingWhy, string> = {
   queue: "This form is a queue form, not a central command.",
 };
 
-function Body({ page }: { page: PageContext }) {
+function Body({ page, shown }: { page: PageContext; shown: Page }) {
   const client = useAtomValue(orderClientAtom);
   const tree = useAtomValue(treeStateAtom);
-  const view = useAtomValue(viewAtom);
+  const { view, reads } = shown;
   const link = useAtomValue(linkAtom);
   if (!client || !tree) return <p className="ord-note">No door to figaro.</p>;
   if (link === "signedout")
     return (
       <div className="ord-note" role="alert">
         <p>Signed out: sign in again.</p>
+        <Button variant="outline" size="compact" onClick={() => window.location.reload()}>
+          Reload
+        </Button>
+      </div>
+    );
+  if (link === "closed" && view.kind === "loading")
+    return (
+      <div className="ord-note" role="alert" data-field="closed">
+        <p>The connection is closed.</p>
         <Button variant="outline" size="compact" onClick={() => window.location.reload()}>
           Reload
         </Button>
@@ -75,7 +84,14 @@ function Body({ page }: { page: PageContext }) {
         )}
       </p>
     );
-  return <GraphPage client={client} view={view} page={page} overrides={view.overrides} />;
+  return <GraphPage client={client} view={view} reads={reads} page={page} overrides={view.overrides} />;
+}
+
+function useLastComplete(now: Page, asked: string | undefined): Page {
+  const kept = useRef<{ page: Page; asked: string | undefined }>(undefined);
+  if (now.complete) kept.current = { page: now, asked };
+  const held = kept.current;
+  return !now.complete && held && (held.asked === undefined || held.asked === asked) ? held.page : now;
 }
 
 export function App() {
@@ -83,12 +99,12 @@ export function App() {
   const tree = useAtomValue(treeStateAtom);
   const route = useAtomValue(orderRouteAtom);
   const open = useSetAtom(openAtom);
-  const view = useAtomValue(viewAtom);
+  const shown = useLastComplete(useAtomValue(pageAtom), route.central);
   const carry = useSetAtom(carryCentralAtom);
   const now = useTick(30_000);
   useEffect(() => {
-    if (view.central) carry();
-  }, [view.central, carry]);
+    if (shown.view.central) carry();
+  }, [shown.view.central, carry]);
   const page = useMemo<PageContext>(() => ({ now, nameOf: (aria) => ariaName(tree, aria), route, openIn: (node, entry) => open({ node, entry }) }), [now, tree, route, open]);
   return (
     <div className="ord" data-link={link}>
@@ -98,7 +114,7 @@ export function App() {
         <Status link={link} />
       </header>
       <main className="ord-main" tabIndex={-1}>
-        <Body page={page} />
+        <Body page={page} shown={shown} />
       </main>
       {route.node && route.entry && route.node.startsWith("@") && <Detail page={page} />}
     </div>
