@@ -292,4 +292,32 @@ test.describe("the order page against the fake door", () => {
     expect(await page.evaluate(() => (window as any).__csp)).toEqual([]);
     expect(errors).toEqual([]);
   });
+  test("keeps the graph through a dropped link, says so without overflowing, and clears it on return", async ({ page }, info) => {
+    const { core, errors } = await visit(page);
+    await settle(page);
+    let down = true;
+    await page.routeWebSocket(/\/rpc/, (ws) => {
+      if (down) {
+        ws.close();
+        return;
+      }
+      const conn = core.attach({ text: (s) => ws.send(s), close: () => ws.close() });
+      ws.onMessage((raw) => conn.receive(String(raw)));
+      ws.onClose(() => conn.close());
+    });
+    await page.locator('[data-chip="lease"]').click();
+    core.drop();
+    const note = page.locator(".ord-main > [data-field=standing]");
+    await expect(note).toContainText("showing the last known state");
+    await expect(page.locator("[data-node]")).toHaveCount(20);
+    await expect(page.locator('[data-chip="lease"]')).toHaveAttribute("aria-pressed", "false");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+    await page.screenshot({ path: `test-results/order-graph-${info.project.name}-stale.png`, fullPage: true });
+    down = false;
+    await page.locator(".ord-status[data-link='live']").waitFor({ timeout: 15000 });
+    await expect(note).toHaveCount(0, { timeout: 15000 });
+    await expect(page.locator("[data-node]")).toHaveCount(20);
+    await expect(page.locator('[data-chip="lease"]')).toHaveAttribute("aria-pressed", "false");
+    expect(errors.filter((e) => !/WebSocket|rpc/i.test(e))).toEqual([]);
+  });
 });
