@@ -128,11 +128,21 @@ describe("summaries and links", () => {
 });
 
 describe("the page route", () => {
-  it("round-trips a role and an entry", () => {
-    expect(parseOrderRoute(orderHash("@c0de0001", "@7e1a0001", "clear-lens"))).toEqual({ central: "@c0de0001", role: "@7e1a0001", entry: "clear-lens" });
-    expect(parseOrderRoute(orderHash("@c0de0001"))).toEqual({ central: "@c0de0001", role: undefined, entry: undefined });
-    expect(parseOrderRoute("#/")).toEqual({ central: undefined, role: undefined, entry: undefined });
-    expect(parseOrderRoute("")).toEqual({ central: undefined, role: undefined, entry: undefined });
-    expect(parseOrderRoute("#/%E0%A4%A")).toEqual({ central: undefined, role: undefined, entry: undefined });
+  const none = { central: undefined, node: undefined, entry: undefined, view: "full" };
+
+  it("round-trips a node and an entry", () => {
+    expect(parseOrderRoute(orderHash("@c0de0001", "@7e1a0001", "clear-lens"))).toEqual({ central: "@c0de0001", node: "@7e1a0001", entry: "clear-lens", view: "full" });
+    expect(parseOrderRoute(orderHash("@c0de0001"))).toEqual({ ...none, central: "@c0de0001" });
+    expect(parseOrderRoute("#/")).toEqual(none);
+    expect(parseOrderRoute("")).toEqual(none);
+    expect(parseOrderRoute("#/%E0%A4%A")).toEqual(none);
+  });
+
+  it("carries the command view after the path and defaults to the full one", () => {
+    expect(orderHash("@c0de0001", undefined, undefined, "command")).toBe("#/%40c0de0001?view=command");
+    expect(orderHash("@c0de0001", "c0ffee01", undefined, "full")).toBe("#/%40c0de0001/c0ffee01");
+    expect(parseOrderRoute("#/%40c0de0001/c0ffee01?view=command")).toEqual({ central: "@c0de0001", node: "c0ffee01", entry: undefined, view: "command" });
+    expect(parseOrderRoute("#/%40c0de0001?view=other").view).toBe("full");
+    expect(orderHash(undefined, undefined, undefined, "command")).toBe("#/?view=command");
   });
 });

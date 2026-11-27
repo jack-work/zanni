@@ -233,14 +233,18 @@ export function safeHref(link: string): string | undefined {
   }
 }
 
+export type GraphView = "full" | "command";
+
 export interface OrderRoute {
   readonly central: string | undefined;
-  readonly role: string | undefined;
+  readonly node: string | undefined;
   readonly entry: string | undefined;
+  readonly view: GraphView;
 }
 
 export function parseOrderRoute(hash: string): OrderRoute {
-  const parts = hash.replace(/^#\/?/, "").split("/").filter(Boolean);
+  const [path = "", query = ""] = hash.replace(/^#\/?/, "").split("?");
+  const parts = path.split("/").filter(Boolean);
   const decode = (s: string | undefined): string | undefined => {
     if (!s) return undefined;
     try {
@@ -249,11 +253,13 @@ export function parseOrderRoute(hash: string): OrderRoute {
       return undefined;
     }
   };
-  return { central: decode(parts[0]), role: decode(parts[1]), entry: decode(parts[2]) };
+  const view: GraphView = new URLSearchParams(query).get("view") === "command" ? "command" : "full";
+  return { central: decode(parts[0]), node: decode(parts[1]), entry: decode(parts[2]), view };
 }
 
-export function orderHash(central: string | undefined, role?: string, entry?: string): string {
-  if (!central) return "#/";
+export function orderHash(central: string | undefined, node?: string, entry?: string, view: GraphView = "full"): string {
+  const query = view === "command" ? "?view=command" : "";
+  if (!central) return "#/" + query;
   const part = (s: string): string => "/" + encodeURIComponent(s);
-  return "#" + part(central) + (role ? part(role) + (entry ? part(entry) : "") : "");
+  return "#" + part(central) + (node ? part(node) + (entry ? part(entry) : "") : "") + query;
 }

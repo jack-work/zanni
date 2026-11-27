@@ -24,6 +24,7 @@ export interface GraphNode {
   readonly studies?: readonly Study[];
   readonly seat?: Seat;
   readonly forks?: number;
+  readonly holder?: string;
 }
 
 export interface GraphEdge {
@@ -174,6 +175,7 @@ export function graphOf(input: GraphInput): Graph {
       tone: roles.some((r) => sameId(r.id, central.id)) ? "central" : "",
       roles,
       seat,
+      holder,
     });
     ariaCells.add(seat.aria);
     const direct = seat.children.filter((c) => c.skipped === 0).length;
@@ -351,6 +353,7 @@ export function collapse(graph: Graph, depth = 1): Graph {
       roles: aria?.roles,
       queue: queue?.queue,
       seat: aria?.seat,
+      holder: aria?.holder,
     };
   });
   const home = new Map<string, string>();

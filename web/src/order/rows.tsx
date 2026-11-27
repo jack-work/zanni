@@ -13,15 +13,15 @@ export interface PageContext {
   readonly now: number;
   readonly nameOf: (aria: string) => string;
   readonly route: OrderRoute;
-  readonly openIn: (role: string, entry: string) => void;
+  readonly openIn: (node: string, entry: string) => void;
 }
 
-export function scoped(page: PageContext, role: string): RowContext {
+export function scoped(page: PageContext, node: string): RowContext {
   return {
     now: page.now,
     nameOf: page.nameOf,
-    selected: page.route.role === role ? page.route.entry : undefined,
-    open: (entry) => page.openIn(role, entry),
+    selected: page.route.node === node ? page.route.entry : undefined,
+    open: (entry) => page.openIn(node, entry),
   };
 }
 

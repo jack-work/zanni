@@ -5,7 +5,7 @@ import { TOPOLOGY_FORM } from "./charter";
 import { selectAtom } from "jotai/utils";
 import { canonFor, readsOf, settled, viewOf, type Listing, type OrderView, type Read } from "./derive";
 import { LISTING_FORM, listedForms } from "./enumerate";
-import { orderHash, parseOrderRoute, type OrderRoute } from "./queue";
+import { orderHash, parseOrderRoute, type GraphView, type OrderRoute } from "./queue";
 import { rolesOf, type RoleRow } from "./roles";
 
 export const orderClientAtom = atom<AriaClient | null>(null);
@@ -20,16 +20,18 @@ hashAtom.onMount = (set) => {
 
 export const orderRouteAtom = atom<OrderRoute>((get) => parseOrderRoute(get(hashAtom)));
 
-export const openEntryAtom = atom(null, (get, set, to: { role?: string; entry?: string }) => {
-  const central = get(orderRouteAtom).central ?? get(viewAtom).central;
-  window.location.hash = orderHash(central, to.role, to.entry);
+export const openAtom = atom(null, (get, set, to: { node?: string; entry?: string; view?: GraphView }) => {
+  const route = get(orderRouteAtom);
+  const central = route.central ?? get(viewAtom).central;
+  window.location.hash = orderHash(central, to.node, to.entry, to.view ?? route.view);
   set(hashAtom, window.location.hash);
 });
 
 export const carryCentralAtom = atom(null, (get, set) => {
   const central = get(viewAtom).central;
-  if (!central || get(orderRouteAtom).central) return;
-  window.history.replaceState(null, "", orderHash(central));
+  const route = get(orderRouteAtom);
+  if (!central || route.central) return;
+  window.history.replaceState(null, "", orderHash(central, undefined, undefined, route.view));
   set(hashAtom, window.location.hash);
 });
 
