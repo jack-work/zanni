@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { isObject, type Json } from "figaro-forms";
 import { Fold, Sheet, bytes, stamp } from "zanni-react";
 import { instant, type Amendment, type Blob, type Entry } from "./queue";
 import type { Standing } from "./derive";
@@ -82,8 +83,24 @@ function Amendments({ items, now, nameOf }: { items: readonly Amendment[]; now: 
   );
 }
 
-function jsonText(v: unknown): string {
-  return typeof v === "string" ? v : JSON.stringify(v, null, 1);
+const EXTRA_DEPTH = 3;
+
+const leafText = (v: Json): string => {
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) return v.length === 0 ? "[]" : v.length + " items";
+  if (isObject(v)) return Object.keys(v).length === 0 ? "{}" : Object.keys(v).length + " keys";
+  return String(v);
+};
+
+export function extraRows(extra: Entry["extra"]): [string, string][] {
+  const rows: [string, string][] = [];
+  const walk = (path: string, v: Json, depth: number): void => {
+    if (depth < EXTRA_DEPTH && Array.isArray(v) && v.length > 0) v.forEach((x, i) => walk(path + "." + i, x, depth + 1));
+    else if (depth < EXTRA_DEPTH && isObject(v) && Object.keys(v).length > 0) for (const k of Object.keys(v).sort()) walk(path + "." + k, v[k] as Json, depth + 1);
+    else rows.push([path, leafText(v)]);
+  };
+  for (const [k, v] of extra) walk(k, v, 0);
+  return rows;
 }
 
 export function EntryDetail({ entry, byId, ctx }: { entry: Entry; byId: ReadonlyMap<string, Entry>; ctx: RowContext }) {
@@ -195,9 +212,9 @@ export function EntryDetail({ entry, byId, ctx }: { entry: Entry; byId: Readonly
             </ul>
           </Field>
         )}
-        {entry.extra.map(([k, v]) => (
+        {extraRows(entry.extra).map(([k, v]) => (
           <Field key={k} name={k}>
-            <pre className="ord-raw">{jsonText(v)}</pre>
+            {v}
           </Field>
         ))}
       </dl>

@@ -521,3 +521,29 @@ describe("the order page: a dropped link", () => {
     expect(screen.queryByText(/Loading the chartered roles/)).toBeNull();
   });
 });
+
+describe("the order page: fields the contract does not name", () => {
+  it("shows an unknown entry field as escaped key and value rows, never as raw JSON", async () => {
+    const hostile = fixture.roles.map((r) => {
+      if (r.name !== "Widget Work") return r;
+      const queue = { ...r.form.queue! };
+      const id = Object.keys(queue).find((k) => queue[k]!.title === "Catalogue loader")!;
+      queue[id] = { ...queue[id]!, scratch: { note: "<img src=x onerror=\"window.__pwned=1\">", steps: ["one", { deep: { deeper: { deepest: true } } }], empty: {} }, flag: false };
+      return { ...r, form: { ...r.form, queue } };
+    });
+    mount({ roles: hostile as Role[] });
+    await shown();
+    fireEvent.click(nodeNamed("Widget Work", "queue"));
+    fireEvent.click(await screen.findByText("Catalogue loader", undefined, { timeout: 3000 }));
+    const sheet = await screen.findByRole("dialog", { name: "Work order" });
+    const row = (name: string): string | null | undefined => sheet.querySelector(`[data-field="${name}"] dd`)?.textContent;
+    expect(row("scratch.note")).toBe("<img src=x onerror=\"window.__pwned=1\">");
+    expect(row("scratch.steps.0")).toBe("one");
+    expect(row("scratch.steps.1.deep")).toBe("1 keys");
+    expect(row("scratch.empty")).toBe("{}");
+    expect(row("flag")).toBe("false");
+    expect(sheet.querySelector("pre, img")).toBeNull();
+    expect(sheet.textContent).not.toContain('{"');
+    expect((window as unknown as { __pwned?: number }).__pwned).toBeUndefined();
+  });
+});

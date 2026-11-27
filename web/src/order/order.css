@@ -106,9 +106,8 @@ body.ord-page {
 .ord-field { display: contents; }
 .ord-field > dt { font: 400 1.0625rem / 1.3 var(--ord-mono); letter-spacing: 0.04em; color: var(--z-muted); text-transform: lowercase; }
 .ord-field > dd { min-width: 0; overflow-wrap: anywhere; }
-.ord-field code, .ord-commits code, .ord-raw { font: 400 1.0625rem / 1.3 var(--ord-mono); letter-spacing: 0.04em; }
+.ord-field code, .ord-commits code { font: 400 1.0625rem / 1.3 var(--ord-mono); letter-spacing: 0.04em; }
 .ord-commits { display: flex; flex-wrap: wrap; gap: var(--z-space-2, 4px) var(--z-space-3, 8px); }
-.ord-raw { margin: 0; white-space: pre-wrap; }
 .ord-links, .ord-review, .ord-pointers { list-style: none; display: flex; flex-direction: column; gap: var(--z-space-1, 2px); }
 .ord-link { color: var(--z-accent); text-decoration: underline; text-underline-offset: 2px; }
 .ord-nolink { color: var(--z-muted); }
