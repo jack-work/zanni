@@ -4,7 +4,7 @@ import { AriaClient } from "figaro-forms/aria";
 import { entriesOf } from "../../src/order/queue";
 import { graphOf, type Graph } from "../../src/order/graph";
 import { ariaName } from "../../src/order/roles";
-import { interimFormsAtom, orderClientAtom, readsAtom, treeStateAtom, viewAtom } from "../../src/order/state";
+import { orderClientAtom, readsAtom, treeStateAtom, viewAtom } from "../../src/order/state";
 import { mock } from "../mock";
 
 export interface Role {
@@ -15,6 +15,10 @@ export interface Role {
 }
 
 export const fixture = JSON.parse(readFileSync("test/fixtures/order-queues.json", "utf8")) as { roles: Role[]; topology: Record<string, string> };
+
+export const ariasGlobal = JSON.parse(readFileSync("test/fixtures/arias-global.json", "utf8")) as Record<string, unknown>;
+
+export const LIVE_LISTED = ["@c0de0001c0de0001c0de0001c0de0001"];
 
 export const NOW = Date.parse("2026-11-25T20:30:00Z");
 
@@ -28,11 +32,10 @@ async function until<T>(read: () => T | undefined): Promise<T> {
 }
 
 export async function fixtureGraph(): Promise<Graph> {
-  const core = (mock as unknown as { create(o: object): any }).create({ step: 1, roles: fixture.roles, topology: fixture.topology });
+  const core = (mock as unknown as { create(o: object): any }).create({ step: 1, roles: fixture.roles, topology: fixture.topology, global: ariasGlobal, listed: LIVE_LISTED });
   const client = new AriaClient({ dial: core.dial, pageBytes: 24000, retryMinMs: 20, retryMaxMs: 40 });
   const store = createStore();
   store.set(orderClientAtom, client);
-  store.set(interimFormsAtom, []);
   const stops = [store.sub(viewAtom, () => {}), store.sub(readsAtom, () => {})];
   const view = await until(() => {
     const v = store.get(viewAtom);

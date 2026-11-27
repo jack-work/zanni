@@ -638,6 +638,7 @@
       var root = { arias: level('') };
       if (!o.roles) root.arias['@frontend'] = { id: '@frontend', kind: 'form', name: 'frontend', target: core.ids.main, state: 'active', active_at: base };
       Object.keys(core.roles).forEach(function (rid) {
+        if (o.listed && o.listed.indexOf(rid) < 0) return;
         var r = core.roles[rid];
         root.arias[rid] = { id: rid, kind: 'form', name: r.name, target: r.target, state: 'form', active_at: base };
       });
@@ -657,6 +658,7 @@
       if (id === '@troupe') return core.fixture ? clone(core.fixture.troupe) : { 'mock-node': { self: true, form: '@arias' } };
       if (id === '@arias' && core.fixture) return clone(core.fixture.arias);
       if (id === '@arias') { var root = ariasRoot(); root.roles = {}; return root; }
+      if (id === '@arias-global') return core.global ? clone(core.global) : null;
       if (id === '@recent') return recentRoot();
       if (id === '@topology') return clone(core.topology || {});
       if (id === ASKS_FORM) return clone(core.orders);
@@ -684,6 +686,8 @@
     }
     core.setQueue = function (aria, root) { core.queues[aria] = clone(root); pushQueue(aria); };
     core.setOrders = function (root) { core.orders = clone(root); pushForm(ASKS_FORM); };
+    core.global = o.global ? clone(o.global) : null;
+    core.setGlobal = function (root) { core.global = root ? clone(root) : null; pushForm('@arias-global'); };
     core.topology = clone(o.topology || {});
     core.setTopology = function (root) { core.topology = clone(root); pushForm('@topology'); };
     core.roles = {};
