@@ -195,6 +195,16 @@
           '';
         };
 
+        packages.order-page = self.packages.${system}.figchat-shell.overrideAttrs (old: {
+          pname = "zanni-order-page";
+          npmBuildScript = "build:order";
+          installPhase = ''
+            runHook preInstall
+            cp -r dist-order $out
+            runHook postInstall
+          '';
+        });
+
         packages.zanni-react = pkgs.buildNpmPackage {
           pname = "zanni-react";
           inherit version;
