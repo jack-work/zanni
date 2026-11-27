@@ -20,6 +20,8 @@ export * from "./jotai/lib/attach";
 export * from "./jotai/lib/asks";
 export * from "./jotai/lib/control-rows";
 export * from "./jotai/lib/stt";
+export * from "./jotai/lib/tail-client";
+export * from "./jotai/lib/hold";
 export { configureTraces, traceDial } from "./jotai/telemetry/trace";
 export { sessionUrl } from "./jotai/telemetry/session";
 export { AriaView } from "./jotai/components/aria-view";

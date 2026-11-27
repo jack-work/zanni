@@ -1,18 +1,17 @@
 import { createStore, Provider } from "jotai";
 import { createRoot } from "react-dom/client";
-import { AriaClient } from "figaro-forms/aria";
 import { webSocketDial } from "figaro-forms";
 import { endpointUrl, edgeSession } from "figaro-forms/auth";
 import head from "../../assets/parla/figaro-head.png";
 import "./styles/index.css";
 import { App } from "./app";
-import { bootAtom, configureTraces, sessionUrl, traceDial } from "zanni-react/jotai";
+import { TailClient, bootAtom, configureTraces, sessionUrl, traceDial } from "zanni-react/jotai";
 
 const host = document.getElementById("app");
 if (!host) throw new Error("figaro web needs #app");
 const store = host.getAttribute("data-store") || "local";
 const endpoint = host.getAttribute("data-endpoint") || "rpc";
-const client = new AriaClient({
+const client = new TailClient({
   dial: traceDial(webSocketDial({ url: () => sessionUrl(endpointUrl(endpoint)), credential: edgeSession() })),
   pageBytes: 24000,
 });
