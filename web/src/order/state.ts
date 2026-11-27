@@ -18,6 +18,8 @@ hashAtom.onMount = (set) => {
 
 export const orderRouteAtom = atom<OrderRoute>((get) => parseOrderRoute(get(hashAtom)));
 
+const askedAtom = atom((get) => get(orderRouteAtom).central);
+
 export const openAtom = atom(null, (get, set, to: { node?: string; entry?: string; view?: GraphView }) => {
   const route = get(orderRouteAtom);
   const central = route.central ?? get(viewAtom).central;
@@ -49,14 +51,14 @@ export const readsAtom = atom<Read[]>((get) => {
   const client = get(orderClientAtom);
   const tree = get(treeStateAtom);
   if (!client || !tree) return [];
-  return readsOf({ tree, canon: get(canonAtom), asked: get(orderRouteAtom).central, formOf: (id) => get(boundFormAtom(client, id)) });
+  return readsOf({ tree, canon: get(canonAtom), asked: get(askedAtom), formOf: (id) => get(boundFormAtom(client, id)) });
 });
 
 export const viewAtom = atom<OrderView>((get) => {
   const client = get(orderClientAtom);
   const tree = get(treeStateAtom);
   if (!client || !tree) return { kind: "none", central: undefined };
-  return viewOf({ tree, canon: get(canonAtom), reads: get(readsAtom), topo: get(boundFormAtom(client, TOPOLOGY_FORM)), asked: get(orderRouteAtom).central });
+  return viewOf({ tree, canon: get(canonAtom), reads: get(readsAtom), topo: get(boundFormAtom(client, TOPOLOGY_FORM)), asked: get(askedAtom) });
 });
 
 export interface Page {

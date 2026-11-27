@@ -1,12 +1,23 @@
 import { readFileSync } from "node:fs";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createStore, Provider } from "jotai";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Dial } from "figaro-forms";
 import { AriaClient } from "figaro-forms/aria";
 import { App } from "../src/order/app";
+import * as graphModule from "../src/order/graph";
+import * as layoutModule from "../src/order/graph-layout";
 import { orderClientAtom } from "../src/order/state";
 import { mock } from "./mock";
+
+vi.mock("../src/order/graph", async (original) => {
+  const m = await original<typeof import("../src/order/graph")>();
+  return { ...m, graphOf: vi.fn(m.graphOf) };
+});
+vi.mock("../src/order/graph-layout", async (original) => {
+  const m = await original<typeof import("../src/order/graph-layout")>();
+  return { ...m, layoutOf: vi.fn(m.layoutOf) };
+});
 
 type Role = { id: string; name: string; form: { queue?: Record<string, Record<string, unknown>> } & Record<string, unknown> };
 const fixture = JSON.parse(readFileSync("test/fixtures/order-queues.json", "utf8")) as { roles: Role[]; topology: Record<string, string> };
@@ -602,5 +613,23 @@ describe("the order page: which forms the address may open", () => {
     await screen.findByRole("dialog", { name: "Work order" }, { timeout: 3000 });
     await waitFor(() => expect(document.querySelector('.ord-detail[data-entry="clear-lens"]')).not.toBeNull(), { timeout: 3000 });
     expect(screen.queryByText(/not in this command/)).toBeNull();
+  });
+});
+
+describe("the order page: what a repaint costs", () => {
+  it("does not derive or lay out the graph again for a selection, a toggle or a new address", async () => {
+    mount();
+    await shown();
+    await waitFor(() => expect(window.location.hash).toBe(hash(CROWN)));
+    await new Promise((r) => setTimeout(r, 100));
+    const graphs = vi.mocked(graphModule.graphOf).mock.calls.length;
+    const layouts = vi.mocked(layoutModule.layoutOf).mock.calls.length;
+    fireEvent.click(node(aria("03")));
+    await waitFor(() => expect(node(aria("03")).classList.contains("og-sel")).toBe(true));
+    fireEvent.click(document.querySelector('[data-chip="lease"]')!);
+    fireEvent.click(node(aria("06")));
+    await waitFor(() => expect(node(aria("06")).classList.contains("og-sel")).toBe(true));
+    expect(vi.mocked(graphModule.graphOf).mock.calls.length).toBe(graphs);
+    expect(vi.mocked(layoutModule.layoutOf).mock.calls.length).toBe(layouts);
   });
 });

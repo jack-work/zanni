@@ -6,7 +6,7 @@ import { EntrySheet } from "./entry-sheet";
 import { GraphPage } from "./graph-page";
 import { useRoleQueue } from "./queue-detail";
 import { orderHash } from "./queue";
-import { ariaName } from "./roles";
+import { namerOf } from "./roles";
 import { scoped, type PageContext } from "./rows";
 import { StandingNote } from "./standing";
 import { queueFormsOf, sameId, type QueueForm } from "./charter";
@@ -109,7 +109,8 @@ export function App() {
   useEffect(() => {
     if (shown.view.central) carry();
   }, [shown.view.central, carry]);
-  const page = useMemo<PageContext>(() => ({ now, nameOf: (aria) => ariaName(tree, aria), route, openIn: (node, entry) => open({ node, entry }) }), [now, tree, route, open]);
+  const nameOf = useMemo(() => namerOf(tree), [tree]);
+  const page = useMemo<PageContext>(() => ({ now, nameOf, route, openIn: (node, entry) => open({ node, entry }) }), [now, nameOf, route, open]);
   return (
     <div className="ord" data-link={link}>
       <header className="ord-bar">
