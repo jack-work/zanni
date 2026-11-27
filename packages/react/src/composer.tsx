@@ -1,8 +1,10 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, type KeyboardEvent, type ReactNode, type Ref } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type Ref } from "react";
+import { glide, place, type Placed } from "./lib/flip";
 import { Pill, PillPair, type PillSpec } from "./pill";
 import { onKeyboard } from "./viewport";
 
 export const KEYBOARD_CLOSE_SETTLE_MS = 300;
+const ONE_LINE_MAX = 44;
 
 export interface ComposerProps {
   value: string;
@@ -65,11 +67,27 @@ function markScrolls(el: HTMLTextAreaElement): void {
 export function Composer(props: ComposerProps) {
   const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendGlyph, attach, command, prompt, mode, hints, tray, onEscape, onTab, enterRuns, sendDisabled, running, field, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
   const form = useRef<HTMLFormElement | null>(null);
+  const row = useRef<HTMLDivElement | null>(null);
   const input = useRef<HTMLTextAreaElement | null>(null);
   const typing = useRef(false);
   const coarse = useCoarsePointer();
   const grows = useMemo(() => !(window.CSS?.supports && window.CSS.supports("field-sizing", "content")), []);
   useSizeVar(form, heightVar);
+
+  const [wrapped, setWrapped] = useState(false);
+  const stack = !prompt && (!!field || wrapped);
+  const from = useRef<Placed[] | null>(null);
+  const seen = useRef(false);
+
+  const parts = () => [[input.current, true] as const, [row.current?.querySelector<HTMLElement>(".zr-attach"), false] as const, [row.current?.querySelector<HTMLElement>(".zr-pill-pair"), false] as const];
+
+  const judge = (el: HTMLTextAreaElement) => {
+    if (prompt) return;
+    const next = value !== "" && (wrapped || el.offsetHeight > ONE_LINE_MAX);
+    if (next === wrapped) return;
+    if (seen.current && !field && !prompt) from.current = place(parts());
+    setWrapped(next);
+  };
 
   useLayoutEffect(() => {
     const el = input.current;
@@ -79,7 +97,25 @@ export function Composer(props: ComposerProps) {
       el.style.height = el.scrollHeight + (el.offsetHeight - el.clientHeight) + "px";
     }
     markScrolls(el);
+    judge(el);
+    seen.current = true;
   }, [value, grows]);
+
+  useLayoutEffect(() => {
+    const was = from.current;
+    from.current = null;
+    if (was) glide(was);
+  }, [stack]);
+
+  const judging = useRef(judge);
+  judging.current = judge;
+  useEffect(() => {
+    const el = input.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const watch = new ResizeObserver(() => judging.current(el));
+    watch.observe(el);
+    return () => watch.disconnect();
+  }, []);
 
   const setInput = (el: HTMLTextAreaElement | null) => {
     input.current = el;
@@ -150,7 +186,7 @@ export function Composer(props: ComposerProps) {
     >
       {tray}
       {hints}
-      <div className="zr-compose-row" data-attach={attach ? "" : undefined} data-stack={!prompt ? "" : undefined} data-prompt={prompt ? "" : undefined}>
+      <div ref={row} className="zr-compose-row" data-attach={attach ? "" : undefined} data-stack={stack ? "" : undefined} data-prompt={prompt ? "" : undefined}>
         {attach && <Pill {...attach} className="zr-attach" />}
         {prompt && (
           <span className="zr-prompt" aria-hidden="true">

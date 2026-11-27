@@ -47,6 +47,11 @@ def geometry(pg):
     }""")
 
 
+def calm(pg):
+    pg.wait_for_timeout(60)
+    pg.evaluate("Promise.all(document.getAnimations().map(a => a.finished.catch(() => null)))")
+
+
 def near(a, b, what, tol=1.5):
     assert abs(a - b) <= tol, "%s: %s vs %s" % (what, a, b)
 
@@ -368,20 +373,29 @@ with sync_playwright() as p:
     attend(pg, fast)
     rects = lambda: pg.evaluate("""() => { const r = (s) => { const b = document.querySelector(s).getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, b: b.bottom }; }; return { bar: r('.zr-composer'), input: r('.zr-input'), send: r('.zr-send'), attach: r('.zr-attach') }; }""")
     idle = rects()
-    assert idle["input"]["w"] >= idle["bar"]["w"] - 36, "the input takes the full bar width: %s" % idle
-    assert idle["send"]["y"] >= idle["input"]["b"] - 1 and idle["attach"]["y"] >= idle["input"]["b"] - 1, "the pills sit below the input: %s" % idle
-    assert abs(idle["send"]["x"] + idle["send"]["w"] - (idle["input"]["x"] + idle["input"]["w"])) < 2 and abs(idle["attach"]["x"] - idle["input"]["x"]) < 2, "the pair is right-justified and the attachments button left: %s" % idle
+    assert idle["attach"]["x"] + idle["attach"]["w"] <= idle["input"]["x"] + 1 and idle["input"]["x"] + idle["input"]["w"] <= idle["send"]["x"] + 1, "attach, input and the pair share one row: %s" % idle
+    assert abs(idle["send"]["b"] - idle["input"]["b"]) <= 1 and abs(idle["attach"]["b"] - idle["input"]["b"]) <= 1, "on one baseline: %s" % idle
+    pg.evaluate("window.__node = document.querySelector('.zr-input')")
     pg.locator(".zr-input").tap()
-    pg.keyboard.insert_text("the quick brown fox jumps over the lazy dog " * 3)
-    pg.wait_for_timeout(700)
+    pg.keyboard.insert_text("fits on a line")
+    pg.wait_for_timeout(150)
+    assert rects()["send"]["y"] < rects()["input"]["b"] - 1, "a draft that fits keeps the row"
+    pg.keyboard.insert_text(" the quick brown fox jumps over the lazy dog " * 3)
+    pg.wait_for_timeout(30)
+    glides = pg.evaluate("document.getAnimations().filter(a => a.effect.target.classList.contains('zr-input')).map(a => a.effect.getKeyframes().flatMap(k => Object.keys(k)).filter(k => !['offset', 'easing', 'composite', 'computedOffset'].includes(k)))")
+    assert glides and all(set(g) <= {"transform"} for g in glides), "the input glides on transform alone when the row stacks: %s" % glides
+    pg.evaluate("Promise.all(document.getAnimations().map(a => a.finished.catch(() => null)))")
     over = rects()
     assert over["input"]["w"] >= over["bar"]["w"] - 36, "on overflow the input takes the full bar width: %s" % over
     assert over["send"]["y"] >= over["input"]["b"] - 1 and over["attach"]["y"] >= over["input"]["b"] - 1, "on overflow the pills sit below the input: %s" % over
+    assert abs(over["send"]["x"] + over["send"]["w"] - (over["input"]["x"] + over["input"]["w"])) < 2 and abs(over["attach"]["x"] - over["input"]["x"]) < 2, "the pair is right-justified and the attachments button left: %s" % over
     assert over["input"]["h"] > idle["input"]["h"] + 20, "and the input grows taller: %s" % over
+    assert pg.evaluate("document.activeElement === window.__node"), "the same node keeps focus, so the keyboard stays up through the stack"
     pg.locator(".zr-input").fill("")
-    pg.wait_for_timeout(700)
+    pg.wait_for_timeout(30)
+    pg.evaluate("Promise.all(document.getAnimations().map(a => a.finished.catch(() => null)))")
     back = rects()
-    assert back["send"]["y"] >= back["input"]["b"] - 1 and back["input"]["h"] < over["input"]["h"] - 20, "an empty input shrinks again with the pills still below it: %s" % back
+    assert back["send"]["y"] < back["input"]["b"] - 1 and abs(back["input"]["w"] - idle["input"]["w"]) <= 2, "an empty input puts the row back: %s" % back
     pg.context.close()
 
     NO_FIELD_SIZING = "(() => { const was = CSS.supports.bind(CSS); CSS.supports = (a, b) => (a === 'field-sizing' ? false : was(a, b)); })();"
@@ -404,7 +418,7 @@ with sync_playwright() as p:
         assert one["input"]["height"] <= 40, "one line is one line (%s): %s" % (label, one["input"])
         words = "the quick brown fox jumps over the lazy dog " * 3
         pg.keyboard.insert_text(words)
-        pg.wait_for_timeout(250)
+        calm(pg)
         many = geometry(pg)
         assert many["input"]["height"] > one["input"]["height"] + 20, "typing wrapped text grows the box (%s): %s -> %s" % (label, one["input"]["height"], many["input"]["height"])
         near(many["composer"]["bottom"], one["composer"]["bottom"], "it grows upward, the bottom stays above the keyboard (%s)" % label)
@@ -412,7 +426,7 @@ with sync_playwright() as p:
         near(many["lastBottom"], many["composer"]["top"], "the transcript still ends at the composer (%s)" % label, 40)
         assert many["fromBottom"] <= 1, "following the end, the transcript is carried up with it (%s): %s" % (label, many)
         pg.keyboard.insert_text(words * 3)
-        pg.wait_for_timeout(250)
+        calm(pg)
         capped = geometry(pg)
         cap = pg.evaluate("parseFloat(getComputedStyle(document.querySelector('.zr-input')).maxHeight)")
         assert capped["input"]["height"] <= cap + 1, "the box stops at its cap (%s): %s > %s" % (label, capped["input"]["height"], cap)
@@ -420,7 +434,7 @@ with sync_playwright() as p:
         pg.keyboard.type("!")
         assert pg.evaluate("(() => { const t = document.querySelector('.zr-input'); return t.scrollTop + t.clientHeight >= t.scrollHeight - 2; })()"), "typing at the cap keeps the caret visible (%s)" % label
         pg.locator(".zr-input").fill("")
-        pg.wait_for_timeout(250)
+        calm(pg)
         assert geometry(pg)["input"]["height"] <= 40, "emptying the box shrinks it back (%s)" % label
         assert not pg.errors, pg.errors
         ctx.close()

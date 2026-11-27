@@ -32,6 +32,10 @@ SESSION_REPLY = 3000
 SESSION_CHUNK = 150
 SESSION_FPS = 200
 SESSION_STEP = 100
+ROW_WORDS = "the quick brown fox jumps over the lazy dog " * 4
+ROW_QUIET_MS = 700
+ROW_PROPS = """(() => document.getAnimations().filter((a) => a.effect && a.effect.target && a.effect.target.closest && a.effect.target.closest('.zr-compose-row')).map((a) => a.effect.getKeyframes().flatMap((k) => Object.keys(k)).filter((k) => !['offset', 'easing', 'composite', 'computedOffset'].includes(k))))()"""
+ROW_LAYOUT = {"width", "height", "min-width", "max-width", "min-height", "max-height", "top", "left", "right", "bottom", "margin", "padding", "grid-template-columns", "flex-basis", "inset"}
 PHONE = {"viewport": {"width": 390, "height": 844}, "device_scale_factor": 3, "is_mobile": True, "has_touch": True}
 
 PROBE = """
@@ -445,6 +449,40 @@ def run(bundle, quick=False):
 
         say("webkit")
         out["input_webkit"] = webkit_typing()
+
+        def composer_row():
+            d = Door(bundle, 40)
+            ways = {"stack": [], "unstack": []}
+            for _ in range(reps):
+                pg = page()
+                attend(pg, d)
+                pg.locator("[data-testid=composer-input]").tap()
+                pg.evaluate(FRAME)
+                for way, act in (("stack", lambda: pg.keyboard.insert_text(ROW_WORDS)), ("unstack", lambda: pg.locator("[data-testid=composer-input]").fill(""))):
+                    pg.wait_for_timeout(300)
+                    pg.evaluate("window.__bench.rafOn()")
+                    m0 = metrics(pg)
+                    act()
+                    props = pg.evaluate(ROW_PROPS)
+                    pg.wait_for_timeout(ROW_QUIET_MS)
+                    frames = pg.evaluate("window.__bench.rafOff()")
+                    m1 = metrics(pg)
+                    named = sorted({k for ks in props for k in ks})
+                    ways[way].append({"layouts": m1["LayoutCount"] - m0["LayoutCount"], "style_recalcs": m1["RecalcStyleCount"] - m0["RecalcStyleCount"],
+                                      "layout_ms": (m1["LayoutDuration"] - m0["LayoutDuration"]) * 1000, "task_ms": (m1["TaskDuration"] - m0["TaskDuration"]) * 1000,
+                                      "frames": frames, "animated": named, "layout_props": len(set(named) & ROW_LAYOUT), "glides": len(props)})
+                pg.context.close()
+            d.stop()
+            res = {"viewport": "390x844", "quiet_ms": ROW_QUIET_MS}
+            for way, rs in ways.items():
+                every = [f for r in rs for f in r["frames"]]
+                res[way] = {"layouts": med([r["layouts"] for r in rs]), "style_recalcs": med([r["style_recalcs"] for r in rs]), "layout_ms": med([r["layout_ms"] for r in rs]),
+                            "task_ms": med([r["task_ms"] for r in rs]), "frame_ms": stats(every), "frames_over_33ms": med([sum(1 for f in r["frames"] if f > 33.4) for r in rs]),
+                            "animated": sorted({k for r in rs for k in r["animated"]}), "layout_props": max(r["layout_props"] for r in rs), "glides": med([r["glides"] for r in rs])}
+            return res
+
+        say("composer row")
+        out["composer_row"] = composer_row()
 
         say("scroll")
         d = Door(bundle, 40, history=10000)
