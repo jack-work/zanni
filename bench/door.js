@@ -5,6 +5,20 @@ const mock = require('../examples/aria-mock.js');
 const assetCache = process.env.BENCH_ASSET_CACHE || '';
 let core = null;
 
+let held = null;
+let listening = null;
+const emit = http.Server.prototype.emit;
+http.Server.prototype.emit = function (name, ...args) {
+  if (name === 'upgrade') {
+    listening = this;
+    if (held) {
+      held.push(args);
+      return true;
+    }
+  }
+  return emit.call(this, name, ...args);
+};
+
 const create = mock.create;
 mock.create = function (o) {
   core = create(o);
@@ -24,6 +38,18 @@ function bench(req, res) {
   if (url.pathname === '/__bench/send') {
     send(aria, url.searchParams.get('text') || 'stream the run build please', Number(url.searchParams.get('count') || 1));
     reply({ ok: true });
+    return true;
+  }
+  if (url.pathname === '/__bench/hold') {
+    if (url.searchParams.get('on') === '0') {
+      const queued = held || [];
+      held = null;
+      for (const args of queued) emit.call(listening, 'upgrade', ...args);
+      reply({ released: queued.length });
+    } else {
+      held = held || [];
+      reply({ holding: true });
+    }
     return true;
   }
   if (url.pathname === '/__bench/status') {

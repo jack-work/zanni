@@ -175,6 +175,8 @@ export function useTranscriptScroll(turns: readonly Held[], pane: RefObject<HTML
     };
     fit();
     document.querySelectorAll<HTMLElement>(".nodi-turn").forEach((t) => (heights.current[t.dataset.turn!] = t.offsetHeight + SPACING));
+    const oldest = turns[0]?.turn ?? 0;
+    for (const k of Object.keys(heights.current)) if (Number(k) < oldest) delete heights.current[k];
     fit();
 
     const root = scrollRoot();

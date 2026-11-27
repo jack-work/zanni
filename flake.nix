@@ -500,7 +500,8 @@
           cp -r ${./assets} assets
           cp -r ${./examples} examples
           cp -r ${./test} test
-          chmod -R u+w assets examples test
+          cp -r ${./bench} bench
+          chmod -R u+w assets examples test bench
           mkdir -p $out
           export ZANNI_TIMINGS=$TMPDIR/timings.jsonl ZANNI_REV=${self.shortRev or self.dirtyShortRev or "dirty"}
           env LD_LIBRARY_PATH=${pkgs.mesa}/lib:${pkgs.libglvnd}/lib __EGL_VENDOR_LIBRARY_FILENAMES=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless bash test/wave1/run.sh ${self.packages.${system}.figchat-shell} 2>&1 | tee $out/log.txt

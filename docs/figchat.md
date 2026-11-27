@@ -116,7 +116,10 @@ not in atoms.
 - Attend: the stream reads backward from the end in byte-budget pages and
   follows live. Following lets go when the reader scrolls up and a Latest pill
   says new content landed below. Earlier turns page in above without moving
-  what is on screen.
+  what is on screen. A reconnect that missed more than four pages reads the
+  tail instead of the pages between (`TailClient`), and the view releases the
+  turns more than 24 above the mounted window, 24 at a time; what was released
+  comes back through Earlier turns. Nothing below the reader is released.
 - Composer: Enter sends, Shift+Enter breaks the line, never during IME
   composition, never on a coarse pointer. While a turn runs the composer gains
   one 40px line (glyph, what is running, elapsed time, Stop, Stop all) and the

@@ -3,6 +3,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { ariaAtom } from "figaro-forms/aria/jotai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFirstFrame } from "../lib/first-frame";
+import { farCut, releaseBefore, runTop } from "../lib/hold";
 import { labelOf } from "../lib/roster";
 import { metricsLineAtom, noteAtom, seenAtom, turnsAtom } from "../state/aria";
 import { forkOfAtom, pitSnapAtom, treeStateAtom } from "../state/pit";
@@ -47,6 +48,7 @@ export function AriaView({ attended }: { attended: Attended }) {
   const olderRef = useRef<HTMLButtonElement | null>(null);
   const headRef = useRef<HTMLHeadingElement | null>(null);
   const loading = useRef(false);
+  const seeking = useRef(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [pageError, setPageError] = useState("");
   const [followed, setFollowed] = useState(false);
@@ -89,20 +91,25 @@ export function AriaView({ attended }: { attended: Attended }) {
 
   const seek = useCallback(
     async (turn: number) => {
-      for (let n = 0; n <= DEEP_LIMIT; n++) {
-        reveal(turn);
-        const el = await appears(turn);
-        if (el) {
-          el.setAttribute("data-flash", "");
-          setTimeout(() => el.removeAttribute("data-flash"), FLASH_MS);
-          return;
+      seeking.current = true;
+      try {
+        for (let n = 0; n <= DEEP_LIMIT; n++) {
+          reveal(turn);
+          const el = await appears(turn);
+          if (el) {
+            el.setAttribute("data-flash", "");
+            setTimeout(() => el.removeAttribute("data-flash"), FLASH_MS);
+            return;
+          }
+          if (client.peek(aria).snapshot().olderAvailable !== true) break;
+          try {
+            await loadOlder();
+          } catch {
+            break;
+          }
         }
-        if (client.peek(aria).snapshot().olderAvailable !== true) break;
-        try {
-          await loadOlder();
-        } catch {
-          break;
-        }
+      } finally {
+        seeking.current = false;
       }
       toEnd();
     },
@@ -134,6 +141,17 @@ export function AriaView({ attended }: { attended: Attended }) {
     const stop = watchScroll(root, fill);
     return stop;
   }, [followed, olderAvailable, loadOlder, loadingOlder, pageError]);
+
+  const windowTop = spans[0]?.[0] ?? 0;
+  useEffect(() => {
+    if (!followed || loadingOlder || seeking.current) return;
+    const stream = client.peek(aria);
+    const run = runTop(stream);
+    const cut = Math.max(run ?? 0, farCut(turns, windowTop));
+    if (cut <= 0) return;
+    releaseBefore(stream, cut);
+    if (run !== undefined) toEnd();
+  }, [turns, windowTop, followed, loadingOlder, client, aria, toEnd]);
 
   const tree = useAtomValue(treeStateAtom);
   const transcript = useMemo(
