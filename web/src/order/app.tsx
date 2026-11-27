@@ -2,12 +2,13 @@ import { useEffect, useMemo } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { Button, useTick } from "zanni-react";
 import { EntrySheet } from "./entry-sheet";
-import { useRoleQueue } from "./queue-section";
+import { GraphPage } from "./graph-page";
+import { useRoleQueue } from "./queue-detail";
 import { orderHash } from "./queue";
 import { ariaName } from "./roles";
 import { scoped, type PageContext } from "./rows";
-import { Topologies } from "./seats";
-import { carryCentralAtom, linkAtom, openEntryAtom, orderClientAtom, orderRouteAtom, treeStateAtom, viewAtom, type Link, type MissingWhy } from "./state";
+import type { MissingWhy } from "./derive";
+import { carryCentralAtom, linkAtom, openAtom, orderClientAtom, orderRouteAtom, treeStateAtom, viewAtom, type Link } from "./state";
 
 const LINK_TEXT: Record<Link, string> = {
   live: "live",
@@ -21,11 +22,11 @@ const LINK_TEXT: Record<Link, string> = {
 function Detail({ page }: { page: PageContext }) {
   const client = useAtomValue(orderClientAtom)!;
   const { route } = page;
-  const open = useSetAtom(openEntryAtom);
-  const { form, entries } = useRoleQueue(client, route.role ?? "");
+  const open = useSetAtom(openAtom);
+  const { form, entries } = useRoleQueue(client, route.node ?? "");
   const byId = useMemo(() => new Map(entries.map((e) => [e.id, e])), [entries]);
-  const shown = route.role && route.entry ? byId.get(route.entry) : undefined;
-  return <EntrySheet open={!!route.entry && !!route.role} entry={shown} byId={byId} settled={form.ready} ctx={scoped(page, route.role ?? "")} onClose={() => open({ role: route.role })} />;
+  const shown = route.node && route.entry ? byId.get(route.entry) : undefined;
+  return <EntrySheet open={!!route.entry && !!route.node} entry={shown} byId={byId} settled={form.ready} ctx={scoped(page, route.node ?? "")} onClose={() => open({ node: route.node })} />;
 }
 
 function Status({ link }: { link: Link }) {
@@ -74,21 +75,21 @@ function Body({ page }: { page: PageContext }) {
         )}
       </p>
     );
-  return <Topologies client={client} topology={view.topology} page={page} overrides={view.overrides} />;
+  return <GraphPage client={client} view={view} page={page} overrides={view.overrides} />;
 }
 
 export function App() {
   const link = useAtomValue(linkAtom);
   const tree = useAtomValue(treeStateAtom);
   const route = useAtomValue(orderRouteAtom);
-  const open = useSetAtom(openEntryAtom);
+  const open = useSetAtom(openAtom);
   const view = useAtomValue(viewAtom);
   const carry = useSetAtom(carryCentralAtom);
   const now = useTick(30_000);
   useEffect(() => {
     if (view.central) carry();
   }, [view.central, carry]);
-  const page = useMemo<PageContext>(() => ({ now, nameOf: (aria) => ariaName(tree, aria), route, openIn: (role, entry) => open({ role, entry }) }), [now, tree, route, open]);
+  const page = useMemo<PageContext>(() => ({ now, nameOf: (aria) => ariaName(tree, aria), route, openIn: (node, entry) => open({ node, entry }) }), [now, tree, route, open]);
   return (
     <div className="ord" data-link={link}>
       <header className="ord-bar">
@@ -99,7 +100,7 @@ export function App() {
       <main className="ord-main" tabIndex={-1}>
         <Body page={page} />
       </main>
-      {route.role && <Detail page={page} />}
+      {route.node && route.entry && route.node.startsWith("@") && <Detail page={page} />}
     </div>
   );
 }

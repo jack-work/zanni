@@ -1,0 +1,205 @@
+{
+ "synthetic": true,
+ "arias": {
+  "null": {
+   "id": "null",
+   "state": "anchor",
+   "recency": 1795000020000,
+   "forks": {
+    "@amber-dune": {
+     "id": "@c0de0001c0de0001c0de0001c0de0001",
+     "state": "form",
+     "kind": "form",
+     "name": "Crown",
+     "active_at": 1795000000000,
+     "recency": 1795000000000,
+     "parent": "null",
+     "target": "c0ffee01c0ffee01c0ffee01c0ffee01",
+     "forks": {
+      "@birch-iris": {
+       "id": "@c0de0002",
+       "state": "form",
+       "kind": "form",
+       "name": "Frontier Knight",
+       "active_at": 1795000001000,
+       "recency": 1795000001000,
+       "parent": "@c0de0001c0de0001c0de0001c0de0001",
+       "target": "c0ffee02c0ffee02c0ffee02c0ffee02",
+       "forks": {
+        "@cedar-nettle": {
+         "id": "@c0de0007",
+         "state": "form",
+         "kind": "form",
+         "name": "Frontier Strategist",
+         "active_at": 1795000002000,
+         "recency": 1795000002000,
+         "parent": "@c0de0002",
+         "target": "c0ffee06c0ffee06c0ffee06c0ffee06",
+         "forks": {
+          "@dune-birch": {
+           "id": "@7e1a0001",
+           "state": "form",
+           "kind": "form",
+           "name": "Widget Engineer",
+           "active_at": 1795000003000,
+           "recency": 1795000003000,
+           "parent": "@c0de0007",
+           "target": "c0ffee05c0ffee05c0ffee05c0ffee05",
+           "forks": {
+            "@larch-heath": {
+             "id": "@c0de0101",
+             "state": "form",
+             "kind": "form",
+             "name": "Widget Work",
+             "active_at": 1795000011000,
+             "recency": 1795000011000,
+             "parent": "@7e1a0001"
+            }
+           }
+          },
+          "@heath-ember": {
+           "id": "@c0de0005",
+           "state": "form",
+           "kind": "form",
+           "name": "Lost Lead",
+           "active_at": 1795000007000,
+           "recency": 1795000007000,
+           "parent": "@c0de0007",
+           "target": "c0ffeefec0ffeefec0ffeefec0ffeefe"
+          },
+          "@moss-moss": {
+           "id": "@c0de0102",
+           "state": "form",
+           "kind": "form",
+           "name": "Frontier Handoff",
+           "active_at": 1795000012000,
+           "recency": 1795000012000,
+           "parent": "@c0de0007"
+          }
+         }
+        },
+        "@onyx-fjord": {
+         "id": "@c0de0104",
+         "state": "form",
+         "kind": "form",
+         "name": "Deploy Queue",
+         "active_at": 1795000014000,
+         "recency": 1795000014000,
+         "parent": "@c0de0002"
+        }
+       }
+      },
+      "@ember-grove": {
+       "id": "@7e1a0003",
+       "state": "form",
+       "kind": "form",
+       "name": "Edge Engineer",
+       "active_at": 1795000004000,
+       "recency": 1795000004000,
+       "parent": "@c0de0001c0de0001c0de0001c0de0001",
+       "target": "c0ffee03c0ffee03c0ffee03c0ffee03"
+      },
+      "@fjord-larch": {
+       "id": "@c0de0003",
+       "state": "form",
+       "kind": "form",
+       "name": "Bridge Knight",
+       "active_at": 1795000005000,
+       "recency": 1795000005000,
+       "parent": "@c0de0001c0de0001c0de0001c0de0001",
+       "target": "c0ffee0ac0ffee0ac0ffee0ac0ffee0a",
+       "forks": {
+        "@grove-quartz": {
+         "id": "@c0de0004",
+         "state": "form",
+         "kind": "form",
+         "name": "Backend Lead",
+         "active_at": 1795000006000,
+         "recency": 1795000006000,
+         "parent": "@c0de0003"
+        },
+        "@pine-kelp": {
+         "id": "@c0de0105",
+         "state": "form",
+         "kind": "form",
+         "name": "Backend Handoff",
+         "active_at": 1795000015000,
+         "recency": 1795000015000,
+         "parent": "@c0de0003"
+        }
+       }
+      }
+     }
+    },
+    "@iris-juniper": {
+     "id": "@7e1a0004",
+     "state": "form",
+     "kind": "form",
+     "name": "Idle Scout",
+     "active_at": 1795000008000,
+     "recency": 1795000008000,
+     "parent": "null",
+     "target": "c0ffee09c0ffee09c0ffee09c0ffee09"
+    },
+    "@kelp-cedar": {
+     "id": "@c0de0099",
+     "state": "form",
+     "kind": "form",
+     "name": "Rival Crown",
+     "active_at": 1795000010000,
+     "recency": 1795000010000,
+     "parent": "null",
+     "target": "c0ffee0cc0ffee0cc0ffee0cc0ffee0c",
+     "forks": {
+      "@juniper-onyx": {
+       "id": "@c0de0006",
+       "state": "form",
+       "kind": "form",
+       "name": "Stray Scribe",
+       "active_at": 1795000009000,
+       "recency": 1795000009000,
+       "parent": "@c0de0099",
+       "target": "c0ffee08c0ffee08c0ffee08c0ffee08"
+      },
+      "@quartz-pine": {
+       "id": "@c0de0106",
+       "state": "form",
+       "kind": "form",
+       "name": "Rival Handoff",
+       "active_at": 1795000016000,
+       "recency": 1795000016000,
+       "parent": "@c0de0099"
+      }
+     }
+    },
+    "@nettle-amber": {
+     "id": "@c0de0103",
+     "state": "form",
+     "kind": "form",
+     "name": "Review Queue",
+     "active_at": 1795000013000,
+     "recency": 1795000013000,
+     "parent": "null"
+    }
+   }
+  },
+  "quiet-harbor": {
+   "id": "c0ffee01c0ffee01c0ffee01c0ffee01",
+   "state": "idle",
+   "mantra": "invented head",
+   "active_at": 1795000010000,
+   "recency": 1795000010000,
+   "forks": {
+    "small-lantern": {
+     "id": "c0ffee09c0ffee09c0ffee09c0ffee09",
+     "state": "dormant",
+     "mantra": "invented fork",
+     "parent": "c0ffee01c0ffee01c0ffee01c0ffee01",
+     "active_at": 1795000011000,
+     "recency": 1795000011000
+    }
+   }
+  }
+ },
+ "peers": 1
+}
