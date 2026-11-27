@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type Ref } from "react";
+import { glide, place, type Placed } from "./lib/flip";
 import { Pill, PillPair, type PillSpec } from "./pill";
 import { onKeyboard } from "./viewport";
 
@@ -66,6 +67,7 @@ function markScrolls(el: HTMLTextAreaElement): void {
 export function Composer(props: ComposerProps) {
   const { value, onChange, onSubmit, label = "Message", placeholder, sendLabel, sendGlyph, attach, command, prompt, mode, hints, tray, onEscape, onTab, enterRuns, sendDisabled, running, field, focusTick, inputRef, heightVar = "--zr-composer-h", className, inputClassName, sendClassName } = props;
   const form = useRef<HTMLFormElement | null>(null);
+  const row = useRef<HTMLDivElement | null>(null);
   const input = useRef<HTMLTextAreaElement | null>(null);
   const typing = useRef(false);
   const coarse = useCoarsePointer();
@@ -74,11 +76,17 @@ export function Composer(props: ComposerProps) {
 
   const [wrapped, setWrapped] = useState(false);
   const stack = !prompt && (!!field || wrapped);
+  const from = useRef<Placed[] | null>(null);
+  const seen = useRef(false);
+
+  const parts = () => [[input.current, true] as const, [row.current?.querySelector<HTMLElement>(".zr-attach"), false] as const, [row.current?.querySelector<HTMLElement>(".zr-pill-pair"), false] as const];
 
   const judge = (el: HTMLTextAreaElement) => {
     if (prompt) return;
     const next = value !== "" && (wrapped || el.offsetHeight > ONE_LINE_MAX);
-    if (next !== wrapped) setWrapped(next);
+    if (next === wrapped) return;
+    if (seen.current && !field && !prompt) from.current = place(parts());
+    setWrapped(next);
   };
 
   useLayoutEffect(() => {
@@ -90,7 +98,14 @@ export function Composer(props: ComposerProps) {
     }
     markScrolls(el);
     judge(el);
+    seen.current = true;
   }, [value, grows]);
+
+  useLayoutEffect(() => {
+    const was = from.current;
+    from.current = null;
+    if (was) glide(was);
+  }, [stack]);
 
   const judging = useRef(judge);
   judging.current = judge;
@@ -171,7 +186,7 @@ export function Composer(props: ComposerProps) {
     >
       {tray}
       {hints}
-      <div className="zr-compose-row" data-attach={attach ? "" : undefined} data-stack={stack ? "" : undefined} data-prompt={prompt ? "" : undefined}>
+      <div ref={row} className="zr-compose-row" data-attach={attach ? "" : undefined} data-stack={stack ? "" : undefined} data-prompt={prompt ? "" : undefined}>
         {attach && <Pill {...attach} className="zr-attach" />}
         {prompt && (
           <span className="zr-prompt" aria-hidden="true">

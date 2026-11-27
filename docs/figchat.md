@@ -122,7 +122,8 @@ not in atoms.
   one 40px line (glyph, what is running, elapsed time, Stop, Stop all) and the
   send pill steers. The row is attach, input and the command and send pair
   (✎, ↳ while running), the pills round and 36px; when the draft outgrows the
-  row the input takes the full width and the pills sit under it. Glyphs from figaro-forms by
+  row the input takes the full width and the pills sit under it, and the change
+  glides on transform alone (reduced motion snaps). Glyphs from figaro-forms by
   name. Every pill acts: attach opens the file picker, command toggles command mode, send sends. The record glyph is `voice` (🎙︎ until the table carries it) and
   the attach glyph will be `attach` (📎︎), keyed by name, not by character.
   Every glyph in a pill, a pit row or a message button is centred by its ink,

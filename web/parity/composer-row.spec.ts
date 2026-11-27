@@ -31,7 +31,7 @@ test("attach, input and the pair share one row until the draft outgrows it, then
   expect(one.command.right, note).toBeLessThanOrEqual(one.send.left + 1);
   await page.locator(".zr-pit-head .zr-input").click();
   await page.keyboard.insertText(WORDS);
-  await page.waitForTimeout(150);
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => null))));
   const many = await measure();
   const stacked = JSON.stringify(many);
   expect(many.input.w, `the input takes the row's full width: ${stacked}`).toBeGreaterThanOrEqual(many.row.w - 2);
@@ -50,7 +50,7 @@ test("attach, input and the pair share one row until the draft outgrows it, then
     for (const r of reach) expect(r.tall, `${r.sel} keeps a 44px target: ${JSON.stringify(reach)}`).toBeGreaterThanOrEqual(44);
   }
   await page.locator(".zr-pit-head .zr-input").fill("");
-  await page.waitForTimeout(150);
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => null))));
   const back = await measure();
   expect(Math.abs(back.input.w - one.input.w), `an empty draft puts the row back: ${JSON.stringify(back)}`).toBeLessThanOrEqual(2);
 });

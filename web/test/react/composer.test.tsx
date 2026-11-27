@@ -188,4 +188,25 @@ describe("the composer row stacks only when the draft outgrows it", () => {
     render(<Harness field />);
     expect(row().hasAttribute("data-stack")).toBe(true);
   });
+
+  it("glides the input from where it stood when the row stacks, and snaps under reduced motion", () => {
+    window.matchMedia = (() => ({ matches: false })) as unknown as typeof window.matchMedia;
+    render(<Harness />);
+    const animate = vi.fn();
+    (box() as unknown as { animate: typeof animate }).animate = animate;
+    const narrow = { left: 60, top: 800, width: 235, height: 36, right: 295, bottom: 836, x: 60, y: 800, toJSON: () => ({}) } as DOMRect;
+    const full = { left: 16, top: 748, width: 358, height: 36, right: 374, bottom: 784, x: 16, y: 748, toJSON: () => ({}) } as DOMRect;
+    box().getBoundingClientRect = () => (row().hasAttribute("data-stack") ? full : narrow);
+    tall(80);
+    fireEvent.change(box(), { target: { value: "long enough to wrap" } });
+    expect(animate).toHaveBeenCalledTimes(1);
+    const frames = (animate.mock.calls[0] as unknown as [Keyframe[]])[0];
+    expect(Object.keys(frames[0] as object)).toEqual(["transform"]);
+    animate.mockClear();
+    window.matchMedia = (() => ({ matches: true })) as unknown as typeof window.matchMedia;
+    tall(36);
+    fireEvent.change(box(), { target: { value: "" } });
+    expect(row().hasAttribute("data-stack")).toBe(false);
+    expect(animate).not.toHaveBeenCalled();
+  });
 });

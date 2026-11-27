@@ -330,8 +330,10 @@ try:
             assert not pg.errors, pg.errors
             pg.close()
 
+        LAYOUT_PROPS = {"width", "height", "min-width", "max-width", "min-height", "max-height", "top", "left", "right", "bottom", "margin", "padding", "grid-template-columns", "flex-basis", "inset"}
         ROW = """() => { const r = (s) => { const n = document.querySelector(s); if (!n) return null; const b = n.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom }; };
           return { bar: r('.zr-composer'), row: r('.zr-compose-row'), input: r('.zr-input'), attach: r('.zr-attach'), pair: r('.zr-pill-pair'), stack: document.querySelector('.zr-compose-row').hasAttribute('data-stack') }; }"""
+        MOVING = """() => document.getAnimations().filter(a => a.effect && a.effect.target && a.effect.target.closest && a.effect.target.closest('.zr-compose-row') && a.playState === 'running').map(a => ({ on: a.effect.target.className.split(' ')[0], props: [...new Set(a.effect.getKeyframes().flatMap(k => Object.keys(k)).filter(k => !['offset', 'easing', 'composite', 'computedOffset'].includes(k)))] }))"""
         WORDS = "the quick brown fox jumps over the lazy dog " * 4
 
         for width, height in ((390, 844), (1280, 800)):
@@ -346,7 +348,13 @@ try:
             pg.wait_for_timeout(120)
             assert not pg.evaluate(ROW)["stack"], "a draft that fits stays on the row"
             pg.keyboard.insert_text(" " + WORDS)
-            pg.wait_for_timeout(120)
+            pg.wait_for_timeout(30)
+            moving = pg.evaluate(MOVING)
+            assert [m for m in moving if m["on"] == "zr-input"], "the input glides when the row stacks at %d: %s" % (width, moving)
+            for m in moving:
+                assert set(m["props"]) <= {"transform", "translate", "scale", "opacity"}, "the glide uses transform and opacity only, never a layout property: %s" % m
+                assert not (set(m["props"]) & LAYOUT_PROPS), m
+            settle_motion(pg)
             many = pg.evaluate(ROW)
             assert many["stack"], "a draft that outgrows the row stacks: %s" % many
             assert many["input"]["w"] >= many["row"]["w"] - 2, "the input is the row's full width at %d: %s" % (width, many)
@@ -357,12 +365,28 @@ try:
             pg.wait_for_timeout(120)
             assert pg.evaluate(ROW)["stack"], "a stacked row stays stacked while there is text, even if it would fit again"
             pg.locator(".zr-input").fill("")
-            pg.wait_for_timeout(120)
+            pg.wait_for_timeout(30)
+            back = [m for m in pg.evaluate(MOVING) if m["on"] == "zr-input"]
+            assert back and set(back[0]["props"]) <= {"transform", "translate", "scale", "opacity"}, "the row glides back when the draft goes: %s" % back
+            settle_motion(pg)
             after = pg.evaluate(ROW)
             assert not after["stack"] and after["input"]["w"] < one["input"]["w"] + 2 and abs(after["input"]["w"] - one["input"]["w"]) <= 2, "an empty draft puts the row back as it was: %s" % after
             assert pg.evaluate("document.activeElement === window.__node"), "and focus is still in the same node"
             assert not pg.errors, pg.errors
             pg.close()
+
+            ctx = browser.new_context(viewport={"width": width, "height": height}, is_mobile=width < 600, has_touch=width < 600, reduced_motion="reduce")
+            pg = ctx.new_page()
+            pg.errors = []
+            pg.on("pageerror", lambda e: pg.errors.append(str(e)))
+            attend(pg, door(12), MAIN)
+            pg.locator(".zr-input").click()
+            pg.keyboard.insert_text(WORDS)
+            pg.wait_for_timeout(30)
+            assert pg.evaluate("document.querySelector('.zr-compose-row').hasAttribute('data-stack')"), "reduced motion still stacks"
+            assert not pg.evaluate(MOVING), "reduced motion snaps: nothing glides"
+            assert not pg.errors, pg.errors
+            ctx.close()
 
         for width, height in ((390, 844), (1280, 800)):
             pg = fresh(width, height)
@@ -437,7 +461,8 @@ try:
             assert grown["height"] > 140, "the input grows with its text past four lines: %s" % grown
             assert grown["height"] <= height * 0.32, "the input leaves the transcript room: %s" % grown
             pg.locator(".zr-input").fill("")
-            pg.wait_for_timeout(200)
+            pg.wait_for_timeout(100)
+            settle_motion(pg)
             assert pg.locator(".zr-composer").bounding_box()["height"] <= 64, "the composer settles back to one row when the text goes"
             sendp, field, attach, command = (pg.locator(s).bounding_box() for s in (".zr-send", ".zr-input", ".zr-attach", ".zr-command"))
             assert pg.locator(".zr-pill:disabled").count() == 0, "no pill is drawn disabled"
