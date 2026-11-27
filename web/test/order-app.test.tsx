@@ -547,3 +547,30 @@ describe("the order page: fields the contract does not name", () => {
     expect((window as unknown as { __pwned?: number }).__pwned).toBeUndefined();
   });
 });
+
+describe("the order page: which forms the address may open", () => {
+  const loaded = (core: ReturnType<typeof mount>, id: string): boolean => core.calls.some((c: { method: string; params: Record<string, unknown> }) => c.method === "figaro.form" && c.params.figaro_id === id);
+
+  it("says an entry of a queue form of another command is not in this command, and never reads it", async () => {
+    window.location.hash = hash(CROWN, "@c0de0106", "anything");
+    const core = mount();
+    await screen.findByText("This form is not in this command.", undefined, { timeout: 3000 });
+    expect(screen.queryByText("This entry has left the live queue.")).toBeNull();
+    expect(loaded(core, "@c0de0106")).toBe(false);
+  });
+
+  it("says the same of any form id typed into the address, and never reads it", async () => {
+    window.location.hash = hash(CROWN, "@7e1a0099", "anything");
+    const core = mount();
+    await screen.findByText("This form is not in this command.", undefined, { timeout: 3000 });
+    expect(loaded(core, "@7e1a0099")).toBe(false);
+  });
+
+  it("still opens an entry of a queue form the graph draws", async () => {
+    window.location.hash = hash(CROWN, "@c0de0101", "clear-lens");
+    mount();
+    await screen.findByRole("dialog", { name: "Work order" }, { timeout: 3000 });
+    await waitFor(() => expect(document.querySelector('.ord-detail[data-entry="clear-lens"]')).not.toBeNull(), { timeout: 3000 });
+    expect(screen.queryByText(/not in this command/)).toBeNull();
+  });
+});

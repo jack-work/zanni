@@ -227,19 +227,19 @@ export interface EntrySheetProps {
   readonly open: boolean;
   readonly entry: Entry | undefined;
   readonly byId: ReadonlyMap<string, Entry>;
-  readonly settled: boolean;
+  readonly note: string;
   readonly ctx: RowContext;
   readonly standing: Standing;
   readonly link: Link;
   readonly onClose: () => void;
 }
 
-export function EntrySheet({ open, entry, byId, settled, ctx, standing, link, onClose }: EntrySheetProps) {
+export function EntrySheet({ open, entry, byId, note, ctx, standing, link, onClose }: EntrySheetProps) {
   return (
     <Sheet open={open} onClose={onClose} className="ord-sheet" title={entry ? entry.kind || "entry" : "entry"} label="Work order">
       <div className="ord-sheet-body" data-standing={standing}>
         <StandingNote standing={standing} link={link} />
-        {entry ? <EntryDetail entry={entry} byId={byId} ctx={ctx} /> : <p className="ord-note">{settled ? "This entry has left the live queue." : "Loading…"}</p>}
+        {entry ? <EntryDetail entry={entry} byId={byId} ctx={ctx} /> : <p className="ord-note">{note}</p>}
       </div>
     </Sheet>
   );

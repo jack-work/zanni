@@ -294,6 +294,11 @@ export function topologyOf(central: CharterRole, roles: readonly CharterRole[], 
   return { central, tree, apart, vacant: vacant.sort(byRole).map((role) => ({ role, queues: queuesOf(role), studies: studiesOf(role) })), strays };
 }
 
+export function queueFormsOf(topology: Topology): QueueForm[] {
+  const walk = (seat: Seat): QueueForm[] => [...seat.roles.flatMap((r) => r.queues), ...seat.children.flatMap(walk)];
+  return [...(topology.tree ? walk(topology.tree) : []), ...topology.apart.flatMap(walk), ...topology.vacant.flatMap((v) => v.queues), ...topology.strays];
+}
+
 export function pickCentral(roles: readonly CharterRole[]): CharterRole | undefined {
   const crowns = roles.filter((r) => r.chartered.central);
   const size = (c: CharterRole): number => roles.filter((r) => sameId(r.chartered.root, c.id)).length;

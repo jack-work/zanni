@@ -8,8 +8,13 @@ import { orderHash } from "./queue";
 import { ariaName } from "./roles";
 import { scoped, type PageContext } from "./rows";
 import { StandingNote } from "./standing";
-import type { MissingWhy, Standing } from "./derive";
+import { queueFormsOf, sameId, type QueueForm } from "./charter";
+import type { MissingWhy, OrderView, Standing } from "./derive";
 import { carryCentralAtom, linkAtom, openAtom, orderClientAtom, orderRouteAtom, pageAtom, treeStateAtom, type Link, type Page } from "./state";
+
+const LOADING = "Loading…";
+const ENTRY_GONE = "This entry has left the live queue.";
+const NOT_HERE = "This form is not in this command.";
 
 const LINK_TEXT: Record<Link, string> = {
   live: "live",
@@ -20,15 +25,25 @@ const LINK_TEXT: Record<Link, string> = {
   detached: "no door",
 };
 
-function Detail({ page, standing }: { page: PageContext; standing: Standing }) {
+function QueueSheet({ page, queue, standing }: { page: PageContext; queue: QueueForm; standing: Standing }) {
   const client = useAtomValue(orderClientAtom)!;
-  const { route } = page;
-  const open = useSetAtom(openAtom);
   const link = useAtomValue(linkAtom);
-  const { form, entries } = useRoleQueue(client, route.node ?? "");
+  const open = useSetAtom(openAtom);
+  const { route } = page;
+  const { form, entries } = useRoleQueue(client, queue.id);
   const byId = useMemo(() => new Map(entries.map((e) => [e.id, e])), [entries]);
-  const shown = route.node && route.entry ? byId.get(route.entry) : undefined;
-  return <EntrySheet open={!!route.entry && !!route.node} entry={shown} byId={byId} settled={form.ready} standing={standing} link={link} ctx={scoped(page, route.node ?? "")} onClose={() => open({ node: route.node })} />;
+  const shown = route.entry ? byId.get(route.entry) : undefined;
+  return <EntrySheet open entry={shown} byId={byId} note={form.ready ? ENTRY_GONE : LOADING} standing={standing} link={link} ctx={scoped(page, queue.id)} onClose={() => open({ node: route.node })} />;
+}
+
+function Detail({ page, view, standing }: { page: PageContext; view: OrderView; standing: Standing }) {
+  const link = useAtomValue(linkAtom);
+  const open = useSetAtom(openAtom);
+  const { route } = page;
+  const queue = view.kind === "ready" ? queueFormsOf(view.topology).find((q) => sameId(q.id, route.node ?? "")) : undefined;
+  if (queue) return <QueueSheet page={page} queue={queue} standing={standing} />;
+  const note = view.kind === "loading" ? LOADING : NOT_HERE;
+  return <EntrySheet open entry={undefined} byId={new Map()} note={note} standing={standing} link={link} ctx={scoped(page, route.node ?? "")} onClose={() => open({ node: route.node })} />;
 }
 
 function Status({ link }: { link: Link }) {
@@ -121,7 +136,7 @@ export function App() {
         {shown.view.kind !== "loading" && link !== "signedout" && <StandingNote standing={shown.standing} link={link} />}
         <Body page={page} shown={shown} />
       </main>
-      {route.node && route.entry && route.node.startsWith("@") && <Detail page={page} standing={shown.standing} />}
+      {route.node && route.entry && route.node.startsWith("@") && <Detail page={page} view={shown.view} standing={shown.standing} />}
     </div>
   );
 }
