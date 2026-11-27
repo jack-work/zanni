@@ -25,9 +25,15 @@ describe("roles from the tree", () => {
     expect(rows[1]!.holder).toEqual({ id: "0123456789abcdef", name: "01234567", known: false });
   });
 
-  it("names an aria by handle, else mantra, else short id", () => {
-    const t = tree(node({ id: "a1", handle: "h" }), node({ id: "a2", mantra: "doing a thing" }), node({ id: "a3" }));
-    expect([ariaName(t, "a1"), ariaName(t, "a2"), ariaName(t, "a3"), ariaName(t, "ffffffffffff"), ariaName(null, "@role123456")]).toEqual(["h", "doing a thing", "a3", "ffffffff", "role1234"]);
+  it("names an aria by handle, else the role it holds, else short id, and never by its mantra", () => {
+    const t = tree(
+      node({ id: "a1", handle: "h", mantra: "private task title" }),
+      node({ id: "a2", mantra: "private task title" }),
+      node({ id: "a3" }),
+      node({ id: "@r1", kind: "role", roleName: "Zebra Lead", target: "a2" }),
+      node({ id: "@r2", kind: "role", roleName: "Alpha Lead", target: "a2" }),
+    );
+    expect([ariaName(t, "a1"), ariaName(t, "a2"), ariaName(t, "a3"), ariaName(t, "ffffffffffff"), ariaName(null, "@role123456")]).toEqual(["h", "Alpha Lead", "a3", "ffffffff", "role1234"]);
     expect(shortId("@abcdef012345")).toBe("abcdef01");
   });
 });
