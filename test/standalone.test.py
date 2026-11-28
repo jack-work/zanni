@@ -31,6 +31,14 @@ HEAD = """() => {
     theme: meta('theme-color'),
     viewport: meta('viewport'),
     ground: getComputedStyle(document.querySelector('.zr-pit-head')).backgroundColor,
+    lock: {
+      html: getComputedStyle(document.documentElement).overscrollBehaviorY,
+      body: getComputedStyle(document.body).overscrollBehaviorY,
+      scroll: getComputedStyle(document.querySelector('.zr-scroll')).overscrollBehaviorY,
+      scrollOverflow: getComputedStyle(document.querySelector('.zr-scroll')).overflowY,
+      htmlOverflow: getComputedStyle(document.documentElement).overflowY,
+      bodyPosition: getComputedStyle(document.body).position,
+    },
   };
 }"""
 
@@ -183,6 +191,13 @@ def home_screen(engine, ctx, pg, d):
         assert kind == 3, "%s: the launch image is opaque" % engine
         assert any(max(abs(a - b) for a, b in zip(c, rgb(head["ground"]))) <= 3 for c in png_colours(got.body())), "%s: the launch screen is the composer's colour, so the app does not flash another ground on opening" % engine
     assert len(head["launch"]) == len(LAUNCH_SCREENS), "%s: one launch image per screen and no stray ones: %s" % (engine, len(head["launch"]))
+
+    lock = head["lock"]
+    assert lock["html"] == "none" and lock["body"] == "none", "%s: the page does not rubber-band to the browser chrome: %s" % (engine, lock)
+    assert lock["htmlOverflow"] == "hidden" and lock["bodyPosition"] == "fixed", "%s: the document itself never scrolls, so there is nothing to drag past: %s" % (engine, lock)
+    assert lock["scroll"] == "contain" and lock["scrollOverflow"] in ("auto", "scroll"), "%s: the transcript scrolls on its own and keeps its pulls to itself: %s" % (engine, lock)
+    moved = pg.evaluate("""() => { const s = document.querySelector('.zr-scroll'); const room = s.scrollHeight - s.clientHeight; s.scrollTop = 0; s.scrollTop = 40; return { room, top: s.scrollTop }; }""")
+    assert moved["room"] > 40 and moved["top"] > 0, "%s: the transcript still scrolls: %s" % (engine, moved)
 
     assert not violations, "%s: nothing the home screen needs is refused by the page's policy: %s" % (engine, violations)
     return head

@@ -91,6 +91,11 @@ the bottom inset, the drawer's full stop sits under the top inset, and in
 landscape the edges keep clear of the notch. `test/standalone.test.py` checks
 this with Chromium's safe area override.
 
+Nothing drags the window against the browser chrome: the document never scrolls
+(`html` hidden, `body` fixed, both `overscroll-behavior: none`), and the
+transcript's scroller scrolls by itself and keeps its pulls (`contain`). The test
+reads those computed values in both engines and that the scroller still moves.
+
 ## Routes
 
 `#/` the aria list, `#/<store>/<aria>` an aria, `#/<store>/<aria>:<turn>` an
