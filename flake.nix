@@ -228,6 +228,7 @@
           installPhase = ''
             runHook preInstall
             node ../bin/zanni-react-build $out
+            node ../bin/zanni-react-exports $out
             node ../bin/zanni-react-check $out
             runHook postInstall
           '';
