@@ -47,7 +47,7 @@ export function webAppManifest(): Plugin {
         this.emitFile({ type: "asset", name: `launch-${side}.png`, source: readFileSync(resolve(here, `icons/splash/${side}.png`)) });
       }
       const doc = {
-        name: "figaro web",
+        name: "figaro",
         lang: "en",
         short_name: "figaro",
         start_url: base,

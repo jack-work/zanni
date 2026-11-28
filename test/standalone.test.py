@@ -136,7 +136,7 @@ def home_screen(engine, ctx, pg, d):
     assert reply.headers["content-type"].split(";")[0] == "application/manifest+json", "%s: the manifest has its own type: %s" % (engine, reply.headers["content-type"])
     doc = json.loads(reply.body())
     assert doc["display"] == "standalone", doc
-    assert doc["name"] and doc["short_name"], doc
+    assert doc["name"] == "figaro" and doc["short_name"] == "figaro", "%s: the name under the home screen icon: %s" % (engine, doc)
     served = urlparse(d.url).path
     assert doc["start_url"] == served and doc["scope"] == served, "%s: start_url and scope are the absolute base the page is served at (%s): %s, %s" % (engine, served, doc["start_url"], doc["scope"])
     start, scope = urljoin(link["href"], doc["start_url"]), urljoin(link["href"], doc["scope"])
