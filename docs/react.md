@@ -109,3 +109,5 @@ key and attach fetches, next to `X-Figchat-Session`. Failures become an error sp
 status. `configureTraces(base)` (`data-otel`, default `otel`, resolved against the page, so `/chat/otel/v1/traces` and `/v1/logs`)
 batches every 10 s, on `pagehide` and when the page hides (sendBeacon, else keepalive fetch), keeps at most 512 of each, and gives up
 for the page after a 401, 403, 404 or 405. Set `data-otel=""` to turn it off.
+
+`assets/manifest.json` lists the names each bundle exports. Do not edit that list by hand: after adding or removing an export run `node ../bin/zanni-react-build /tmp/zr && node ../bin/zanni-react-exports /tmp/zr --write` from `web/`. The names are written one to a line, sorted, and `packages.zanni-react` fails when the list is not current.

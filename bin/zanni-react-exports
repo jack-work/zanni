@@ -1,0 +1,36 @@
+#!/usr/bin/env node
+'use strict';
+const fs = require('fs');
+const path = require('path');
+
+const args = process.argv.slice(2);
+const write = args.includes('--write');
+const dir = args.find((a) => !a.startsWith('--'));
+if (!dir || args.includes('-h') || args.includes('--help')) {
+  process.stdout.write('usage: zanni-react-exports BUNDLE_DIR [--write]\n\nReads the names each bundle of zanni-react-build exports and compares them with the\nexport lists in assets/manifest.json. Without --write it fails when they differ. With --write it rewrites the\nlists, one sorted name to a line so that two lanes adding names do not collide. Run from web/ after\nzanni-react-build BUNDLE_DIR.\n');
+  process.exit(dir ? 0 : 2);
+}
+const file = path.join(process.env.ZANNI_ASSETS || path.join(__dirname, '..', 'assets'), 'manifest.json');
+const text = fs.readFileSync(file, 'utf8');
+const manifest = JSON.parse(text);
+const version = manifest.version;
+const names = {};
+for (const [bundle, mod] of [['react', 'zanni-react'], ['react-jotai', 'zanni-react/jotai']]) {
+  const src = fs.readFileSync(path.join(dir, bundle, version, 'index.js'), 'utf8');
+  const e = /export\s*\{([^}]*)\}/.exec(src);
+  if (!e) { process.stderr.write('zanni-react-exports: ' + bundle + '/index.js has no export list\n'); process.exit(1); }
+  names[mod] = [...new Set(e[1].split(',').map((x) => x.trim()).filter(Boolean).map((n) => n.split(/\s+as\s+/).pop()))].sort();
+}
+const listed = manifest.components.react.bundle.exports;
+const stale = Object.keys(names).filter((m) => JSON.stringify(names[m]) !== JSON.stringify([...(listed[m] || [])].sort()));
+const block = '"exports": {\n' + Object.keys(names).map((m) => '          ' + JSON.stringify(m) + ': [\n' + names[m].map((n) => '            ' + JSON.stringify(n)).join(',\n') + '\n          ]').join(',\n') + '\n        }';
+const re = /"exports": \{[\s\S]*?\n        \}/;
+if (!re.test(text)) { process.stderr.write('zanni-react-exports: cannot find the exports block of assets/manifest.json\n'); process.exit(1); }
+const next = text.replace(re, () => block);
+if (write) {
+  fs.writeFileSync(file, next);
+  process.stdout.write('zanni-react-exports: ' + (next === text ? 'already current' : 'rewrote ' + file) + '\n');
+} else if (stale.length || next !== text) {
+  process.stderr.write('zanni-react-exports: assets/manifest.json is stale for ' + (stale.join(', ') || 'its layout') + '; run bin/zanni-react-exports ' + dir + ' --write from web/\n');
+  process.exit(1);
+} else process.stdout.write('zanni-react-exports: current\n');
