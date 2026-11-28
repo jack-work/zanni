@@ -410,10 +410,14 @@ with sync_playwright() as p:
     pg.keyboard.insert_text("fits on a line")
     pg.wait_for_timeout(150)
     assert rects()["send"]["y"] < rects()["input"]["b"] - 1, "a draft that fits keeps the row"
+    pg.evaluate("""(() => { window.addEventListener('input', (e) => { if (e.target.classList && e.target.classList.contains('zr-input')) { const b = e.target.getBoundingClientRect(); window.__was = { x: b.x, y: b.y, w: b.width, h: b.height }; } }, true); })()""")
     pg.keyboard.insert_text(" the quick brown fox jumps over the lazy dog " * 3)
     pg.wait_for_timeout(30)
     glides = pg.evaluate("document.getAnimations().filter(a => a.effect.target.classList.contains('zr-input')).map(a => a.effect.getKeyframes().flatMap(k => Object.keys(k)).filter(k => !['offset', 'easing', 'composite', 'computedOffset'].includes(k)))")
     assert glides and all(set(g) <= {"transform"} for g in glides), "the input glides on transform alone when the row stacks: %s" % glides
+    first = pg.evaluate("""() => { const a = document.getAnimations().find(a => a.effect && a.effect.target && a.effect.target.classList.contains('zr-input')); if (!a) return null; a.pause(); a.currentTime = 0; const b = a.effect.target.getBoundingClientRect(); a.cancel(); return { x: b.x, y: b.y, w: b.width, h: b.height }; }""")
+    had = pg.evaluate("window.__was")
+    assert first and had and all(abs(first[k] - had[k]) <= 1.5 for k in ("x", "y", "w", "h")), "the stack's first frame is the box the input had when the row changed, not one scaled about its centre: first %s, had %s" % (first, had)
     pg.evaluate("Promise.all(document.getAnimations().map(a => a.finished.catch(() => null)))")
     over = rects()
     assert over["input"]["w"] >= over["bar"]["w"] - 36, "on overflow the input takes the full bar width: %s" % over
