@@ -55,8 +55,26 @@ carries `apple-mobile-web-app-capable`, `mobile-web-app-capable`, the
 icons (192, 512 and a 512 maskable) as hashed assets and puts the manifest link
 and `theme-color` into the built page. The manifest's two colours and
 `theme-color` are `--stage` from `gesso.css`, which is the composer's colour.
-The icons are `web/icons/*.png`: the 26 px head from `assets/parla` on that
-colour, scaled by whole steps.
+The icons are `web/icons/*.png`, drawn by `bin/figchat-icons` from the 26 px
+head in `assets/parla` and the tokens in `gesso.css`: every head pixel is a whole
+number of icon pixels, and the ground around it is the page's own two-colour
+dither, one head pixel to a cell. The default is the head in an arch with a
+two-tone gold edge on the stage. `bin/figchat-icons --option N --out web/icons`
+redraws the set for another option, and `--preview DIR` draws all of them to look
+at. The 180 px icon and the 192 and 512 px ones are opaque (iOS paints a
+transparent icon black); the maskable one keeps everything but its ground inside
+the middle 80% circle.
+
+Safari builds no launch screen from the manifest's `background_color` and icon
+(MDN lists no support, and iOS 26 notes say the same; not yet seen on a phone).
+The launch image it takes is a `<link rel="apple-touch-startup-image">` whose
+media query names the screen's width, height and pixel ratio exactly. `web/icons/splash.json` lists the
+portrait screens of the iPhones iOS 26 runs on, `bin/figchat-icons` draws one image
+for each (the page's ground with the icon's arch at its centre, in the dither the
+page paints, so opening the app does not flash another ground), and the plugin
+emits them as hashed assets and writes the links. Landscape launches and iPads
+get iOS's own screen. The images are read when the app is added to the home
+screen, so a changed one needs the app removed and added again.
 
 The manifest's `start_url` and `scope` are the absolute path the shell is served
 at, `/chat/` unless `FIGCHAT_BASE` says otherwise at build time (prod and dev both
@@ -72,6 +90,11 @@ In standalone the status bar floats over the page. `.fw-status` pads its top by
 the bottom inset, the drawer's full stop sits under the top inset, and in
 landscape the edges keep clear of the notch. `test/standalone.test.py` checks
 this with Chromium's safe area override.
+
+Nothing drags the window against the browser chrome: the document never scrolls
+(`html` hidden, `body` fixed, both `overscroll-behavior: none`), and the
+transcript's scroller scrolls by itself and keeps its pulls (`contain`). The test
+reads those computed values in both engines and that the scroller still moves.
 
 ## Routes
 

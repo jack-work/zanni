@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import struct
 import sys
 import zlib
@@ -22,6 +23,7 @@ HEAD = """() => {
   return {
     manifest: link('link[rel="manifest"]'),
     touch: link('link[rel="apple-touch-icon"]'),
+    launch: [...document.querySelectorAll('link[rel="apple-touch-startup-image"]')].map((n) => ({ href: n.href, media: n.getAttribute('media') })),
     capable: meta('apple-mobile-web-app-capable'),
     mobileCapable: meta('mobile-web-app-capable'),
     bar: meta('apple-mobile-web-app-status-bar-style'),
@@ -29,6 +31,14 @@ HEAD = """() => {
     theme: meta('theme-color'),
     viewport: meta('viewport'),
     ground: getComputedStyle(document.querySelector('.zr-pit-head')).backgroundColor,
+    lock: {
+      html: getComputedStyle(document.documentElement).overscrollBehaviorY,
+      body: getComputedStyle(document.body).overscrollBehaviorY,
+      scroll: getComputedStyle(document.querySelector('.zr-scroll')).overscrollBehaviorY,
+      scrollOverflow: getComputedStyle(document.querySelector('.zr-scroll')).overflowY,
+      htmlOverflow: getComputedStyle(document.documentElement).overflowY,
+      bodyPosition: getComputedStyle(document.body).position,
+    },
   };
 }"""
 
@@ -84,6 +94,24 @@ def png_header(body):
     return width, height, depth, colour
 
 
+LAUNCH_SCREENS = [
+    (440, 956, 3), (420, 912, 3), (402, 874, 3), (430, 932, 3), (393, 852, 3), (428, 926, 3),
+    (390, 844, 3), (375, 812, 3), (414, 896, 3), (414, 896, 2), (375, 667, 2),
+]
+
+
+def png_colours(body):
+    width, height, depth, colour = png_header(body)
+    assert (depth, colour) == (8, 3), "an 8-bit palette PNG"
+    pos, plte = 8, b""
+    while pos < len(body):
+        size, kind = struct.unpack(">I4s", body[pos : pos + 8])
+        if kind == b"PLTE":
+            plte = body[pos + 8 : pos + 8 + size]
+        pos += 12 + size
+    return [tuple(plte[i : i + 3]) for i in range(0, len(plte), 3)]
+
+
 def near(a, b, what, tol=3):
     assert max(abs(x - y) for x, y in zip(a, b)) <= tol, "%s: %s against %s" % (what, a, b)
 
@@ -116,7 +144,7 @@ def home_screen(engine, ctx, pg, d):
     assert reply.headers["content-type"].split(";")[0] == "application/manifest+json", "%s: the manifest has its own type: %s" % (engine, reply.headers["content-type"])
     doc = json.loads(reply.body())
     assert doc["display"] == "standalone", doc
-    assert doc["name"] and doc["short_name"], doc
+    assert doc["name"] == "figaro" and doc["short_name"] == "figaro", "%s: the name under the home screen icon: %s" % (engine, doc)
     served = urlparse(d.url).path
     assert doc["start_url"] == served and doc["scope"] == served, "%s: start_url and scope are the absolute base the page is served at (%s): %s, %s" % (engine, served, doc["start_url"], doc["scope"])
     start, scope = urljoin(link["href"], doc["start_url"]), urljoin(link["href"], doc["scope"])
@@ -135,8 +163,12 @@ def home_screen(engine, ctx, pg, d):
         assert png_header(got.body())[:2] == (side, side), "%s: the %s icon is that size" % (engine, key)
         if key[1] == "maskable":
             rows = png_rows(got.body())
-            for x, y in ((2, 2), (side - 3, 2), (2, side - 3), (side - 3, side - 3), (side // 2, 6), (6, side // 2), (side - 7, side // 2), (side // 2, side - 7)):
-                near(list(rows[y][x * 3 : x * 3 + 3]), rgb(head["ground"]), "%s: the maskable icon is the composer's colour out to its edge at (%d, %d)" % (engine, x, y))
+            kept = {}
+            for y in range(side):
+                for x in range(side):
+                    if (x + 0.5 - side / 2) ** 2 + (y + 0.5 - side / 2) ** 2 > (0.4 * side) ** 2:
+                        kept[tuple(rows[y][x * 3 : x * 3 + 3])] = True
+            assert len(kept) <= 2, "%s: outside the maskable safe circle there is only the ground, flat or its two-colour dither: %s" % (engine, sorted(kept))
 
     touch = head["touch"]
     assert touch and touch["sizes"] == "180x180", "%s: an apple-touch-icon is declared: %s" % (engine, touch)
@@ -144,6 +176,28 @@ def home_screen(engine, ctx, pg, d):
     assert got.status == 200 and got.headers["content-type"] == "image/png"
     width, height, _, colour = png_header(got.body())
     assert (width, height) == (180, 180) and colour == 2, "%s: the touch icon is 180 px and opaque, iOS paints a transparent one black: %s" % (engine, (width, height, colour))
+
+    launch = {}
+    for item in head["launch"]:
+        found = re.fullmatch(r"\(device-width: (\d+)px\) and \(device-height: (\d+)px\) and \(-webkit-device-pixel-ratio: (\d)\) and \(orientation: portrait\)", item["media"])
+        assert found, "%s: a launch image names its screen exactly, iOS shows it on no other: %s" % (engine, item)
+        launch[tuple(int(v) for v in found.groups())] = item
+    for screen in LAUNCH_SCREENS:
+        assert screen in launch, "%s: a launch image for the %dx%d @%dx iPhone: %s" % ((engine,) + screen + (sorted(launch),))
+        got = ctx.request.get(launch[screen]["href"])
+        assert got.status == 200 and got.headers["content-type"] == "image/png", "%s: the %s launch image is served: %s" % (engine, screen, got.status)
+        width, height, _, kind = png_header(got.body())
+        assert (width, height) == (screen[0] * screen[2], screen[1] * screen[2]), "%s: the launch image is the screen's size in pixels, or iOS shows none: %s for %s" % (engine, (width, height), screen)
+        assert kind == 3, "%s: the launch image is opaque" % engine
+        assert any(max(abs(a - b) for a, b in zip(c, rgb(head["ground"]))) <= 3 for c in png_colours(got.body())), "%s: the launch screen is the composer's colour, so the app does not flash another ground on opening" % engine
+    assert len(head["launch"]) == len(LAUNCH_SCREENS), "%s: one launch image per screen and no stray ones: %s" % (engine, len(head["launch"]))
+
+    lock = head["lock"]
+    assert lock["html"] == "none" and lock["body"] == "none", "%s: the page does not rubber-band to the browser chrome: %s" % (engine, lock)
+    assert lock["htmlOverflow"] == "hidden" and lock["bodyPosition"] == "fixed", "%s: the document itself never scrolls, so there is nothing to drag past: %s" % (engine, lock)
+    assert lock["scroll"] == "contain" and lock["scrollOverflow"] in ("auto", "scroll"), "%s: the transcript scrolls on its own and keeps its pulls to itself: %s" % (engine, lock)
+    moved = pg.evaluate("""() => { const s = document.querySelector('.zr-scroll'); const room = s.scrollHeight - s.clientHeight; s.scrollTop = 0; s.scrollTop = 40; return { room, top: s.scrollTop }; }""")
+    assert moved["room"] > 40 and moved["top"] > 0, "%s: the transcript still scrolls: %s" % (engine, moved)
 
     assert not violations, "%s: nothing the home screen needs is refused by the page's policy: %s" % (engine, violations)
     return head
