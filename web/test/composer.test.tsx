@@ -301,7 +301,7 @@ describe("the buttons under a message", () => {
     expect(document.querySelector('.fw-inline[data-kind="prose"]')).toBeNull();
     expect(document.querySelector(under + ".nodi-turn-head .fw-play-icon")!.getAttribute("aria-label")).toBe("Play inquiry and reply");
     expect(document.querySelector(under + ".nodi-turn-body .fw-output-play [data-action=\"play\"]")!.getAttribute("aria-label")).toBe("Play reply");
-    expect(document.querySelector(".zr-scrim")).toBeNull();
+    expect(document.querySelector(".zr-scrim[data-open]")).toBeNull();
     expect(document.querySelector(".fw-sheet")).toBeNull();
     expect(document.querySelector(under + '.fw-inline [data-action="play"]')!.textContent).toBe("\uf028");
     expect(document.querySelector(under + '.fw-inline [data-action="retranscribe"]')!.textContent).toBe("↩");
@@ -311,7 +311,7 @@ describe("the buttons under a message", () => {
   it("do not open anything when a message is tapped", async () => {
     await ready();
     press(under + ".nodi-said");
-    expect(document.querySelector(".zr-sheet, .zr-scrim")).toBeNull();
+    expect(document.querySelector(".zr-sheet, .zr-scrim[data-open]")).toBeNull();
   });
 
   it("re-transcribe the stored clip by its key and offer the new text for the composer", async () => {

@@ -36,6 +36,13 @@ export function pitRubber(y: number, f: PitFrame): number {
   return top - (over * 0.55 * f.view) / (f.view + 0.55 * over);
 }
 
+export function pitDim(y: number, f: PitFrame, snaps: readonly PitSnap[]): number {
+  const first = snaps.find((s) => s !== "closed");
+  if (!first) return 0;
+  const reach = pitStop(first, f);
+  return reach < 0 ? Math.max(0, Math.min(1, y / reach)) : 1;
+}
+
 export function pitSettle(y: number, velocity: number, f: PitFrame, snaps: readonly PitSnap[]): PitSnap {
   const stops = snaps.map((s) => ({ s, at: pitStop(s, f) }));
   const aim = y + velocity * PIT_PROJECT_MS;
@@ -165,8 +172,7 @@ export function Pit({ snap: asked, onSnapChange, label, detents = ALL, head, kno
     const g = drag.current;
     if (!el || !g) return;
     el.style.transform = "translate3d(0," + y + "px,0)";
-    const full = pitStop("full", g.frame);
-    if (scrim.current) scrim.current.style.opacity = String(full < 0 ? Math.max(0, Math.min(1, y / full)) : 1);
+    if (scrim.current) scrim.current.style.opacity = String(pitDim(y, g.frame, g.snaps));
   };
 
   const track = useCallback((x: number, y: number, t: number): "wait" | "drag" | "drop" => {
@@ -183,6 +189,7 @@ export function Pit({ snap: asked, onSnapChange, label, detents = ALL, head, kno
       }
       g.moved = true;
       el.style.transition = "none";
+      if (scrim.current) scrim.current.style.transition = "none";
       setDragging(true);
     }
     g.y = pitRubber(g.from + (y - g.startY), g.frame);
@@ -203,7 +210,10 @@ export function Pit({ snap: asked, onSnapChange, label, detents = ALL, head, kno
     if (!el.getAttribute("style")) el.removeAttribute("style");
     const s = scrim.current;
     if (s) {
+      s.style.transition = "";
       s.style.opacity = "";
+      if (next === "closed") s.removeAttribute("data-open");
+      else s.setAttribute("data-open", "");
       if (!s.getAttribute("style")) s.removeAttribute("style");
     }
     el.setAttribute("data-snap", next);
@@ -322,7 +332,7 @@ export function Pit({ snap: asked, onSnapChange, label, detents = ALL, head, kno
   const leave = leaving ? { "data-leaving": "" } : {};
   return (
     <>
-      {!side && mounted && <div ref={scrim} className="zr-scrim zr-pit-scrim" onClick={close} {...leave} />}
+      {!side && <div ref={scrim} className="zr-scrim zr-pit-scrim" data-open={snap !== "closed" ? "" : undefined} onClick={close} />}
       <div
         ref={drawer}
         className={["zr-pit", className].filter(Boolean).join(" ")}

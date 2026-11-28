@@ -116,7 +116,7 @@ class Run:
           const grip = document.querySelector('.zr-pit-knob');
           return { open: !!pit && pit.getAttribute('role') === 'dialog', snap: pit ? pit.dataset.snap : null, dragging: !!(pit && pit.hasAttribute('data-dragging')),
                    grip: grip ? (grip.getAttribute('aria-expanded') === 'true') : null, inline: pit ? pit.getAttribute('style') || '' : '',
-                   scrim: !!document.querySelector('.zr-pit-scrim') };
+                   scrim: !!document.querySelector('.zr-pit-scrim[data-open]') };
         }""")
 
     def focus_facts(self):

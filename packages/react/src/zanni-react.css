@@ -142,8 +142,8 @@
 .zr-pit-close { position: sticky; bottom: 0; flex: none; align-self: flex-end; background: var(--z-ground); min-height: var(--z-control-hit, 36px); padding: 0 var(--z-space-3, 8px); border: 0; background: none; color: var(--z-muted); font: 400 1.125rem / 1 var(--zr-mono, "VT323", "Nerd Icons", ui-monospace, monospace); letter-spacing: 0.04em; cursor: pointer; }
 .zr-pit-close:focus-visible { outline: 2px solid var(--z-focus); outline-offset: -2px; }
 .zr-pit[data-snap="half"] .zr-pit-body::after { content: ""; flex: none; height: calc(var(--zr-vv-h, 100dvh) / 2); }
-.zr-pit-scrim { transition: opacity var(--zr-d-sheet) var(--zr-sheet-curve); }
-.zr-pit-scrim:has(+ .zr-pit[data-dragging]) { transition: none; }
+.zr-pit-scrim { opacity: 0; pointer-events: none; will-change: opacity; transition: opacity var(--zr-d-sheet) var(--zr-sheet-curve); }
+.zr-pit-scrim[data-open] { opacity: 1; pointer-events: auto; }
 .zr-latest-dock { position: sticky; bottom: 0; z-index: 2; height: 0; }
 .zr-latest {
   position: absolute;

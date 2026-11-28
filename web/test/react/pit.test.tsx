@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it } from "vitest";
-import { Button, PIT_HALF_MIN, Pit, glyphs, pitDetents, pitRubber, pitSettle, pitStep, pitStop, type PitFrame, type PitSnap } from "zanni-react";
+import { Button, PIT_HALF_MIN, Pit, glyphs, pitDetents, pitDim, pitRubber, pitSettle, pitStep, pitStop, type PitFrame, type PitSnap } from "zanni-react";
 
 const F: PitFrame = { view: 800, rest: 100, top: 0 };
 const ALL: PitSnap[] = ["closed", "half", "full"];
@@ -34,6 +34,29 @@ describe("pit stops", () => {
     const over = pitRubber(-900, F);
     expect(over).toBeLessThan(-700);
     expect(over).toBeGreaterThan(-900);
+  });
+});
+
+describe("pitDim", () => {
+  it("is nothing at the bottom and everything from the first open stop up", () => {
+    expect(pitDim(0, F, ALL)).toBe(0);
+    expect(pitDim(-150, F, ALL)).toBe(0.5);
+    expect(pitDim(-300, F, ALL)).toBe(1);
+    expect(pitDim(-700, F, ALL)).toBe(1);
+    expect(pitDim(-760, F, ALL)).toBe(1);
+  });
+
+  it("never goes below nothing when the drawer is pushed down past the bottom", () => {
+    expect(pitDim(40, F, ALL)).toBe(0);
+  });
+
+  it("reaches its full strength at full when there is no half stop", () => {
+    expect(pitDim(-350, F, ["closed", "full"])).toBe(0.5);
+    expect(pitDim(-700, F, ["closed", "full"])).toBe(1);
+  });
+
+  it("has nothing to dim when no stop is open", () => {
+    expect(pitDim(-300, F, ["closed"])).toBe(0);
   });
 });
 
@@ -76,6 +99,95 @@ function Harness({ head = true }: { head?: boolean }) {
 function drawer(): HTMLElement {
   return document.querySelector<HTMLElement>(".zr-pit")!;
 }
+
+function Modal() {
+  const [snap, setSnap] = useState<PitSnap>("closed");
+  return (
+    <Pit snap={snap} onSnapChange={setSnap} label="Controls" docked={false} head={<textarea aria-label="Message" defaultValue="draft" />}>
+      <Button>Inside</Button>
+    </Pit>
+  );
+}
+
+function veil(): HTMLElement {
+  return document.querySelector<HTMLElement>(".zr-pit-scrim")!;
+}
+
+describe("the veil of a modal Pit", () => {
+  afterEach(async () => {
+    await new Promise((r) => setTimeout(r, 0));
+    Object.defineProperty(window, "innerHeight", { value: 768, configurable: true });
+  });
+
+  it("is on the page before the first move and is not a part of any one gesture", () => {
+    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+    render(<Modal />);
+    const before = veil();
+    expect(before).toBeTruthy();
+    expect(before.hasAttribute("data-open")).toBe(false);
+    const box = screen.getByRole("textbox", { name: "Message" });
+    fireEvent.pointerDown(box, { pointerId: 2, button: 0, isPrimary: true, clientX: 100, clientY: 780, timeStamp: 0 });
+    act(() => {
+      fireEvent.pointerMove(window, { pointerId: 2, clientX: 100, clientY: 769, timeStamp: 100 });
+    });
+    expect(veil()).toBe(before);
+    expect(Number(veil().style.opacity)).toBeGreaterThanOrEqual(0);
+    expect(Number(veil().style.opacity)).toBeLessThan(0.1);
+    expect(veil().style.transition).toBe("none");
+  });
+
+  it("follows the finger and then hands its strength to the stop the drawer settles on", () => {
+    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+    render(<Modal />);
+    const box = screen.getByRole("textbox", { name: "Message" });
+    fireEvent.pointerDown(box, { pointerId: 2, button: 0, isPrimary: true, clientX: 100, clientY: 780, timeStamp: 0 });
+    act(() => {
+      fireEvent.pointerMove(window, { pointerId: 2, clientX: 100, clientY: 770, timeStamp: 100 });
+    });
+    act(() => {
+      fireEvent.pointerMove(window, { pointerId: 2, clientX: 100, clientY: 630, timeStamp: 400 });
+    });
+    const halfway = Number(veil().style.opacity);
+    expect(halfway).toBeGreaterThan(0.3);
+    expect(halfway).toBeLessThan(0.7);
+    act(() => {
+      fireEvent.pointerMove(window, { pointerId: 2, clientX: 100, clientY: 480, timeStamp: 700 });
+    });
+    act(() => {
+      fireEvent.pointerUp(window, { pointerId: 2, clientX: 100, clientY: 480, timeStamp: 1200 });
+    });
+    expect(drawer().getAttribute("data-snap")).toBe("half");
+    expect(veil().hasAttribute("data-open")).toBe(true);
+    expect(veil().style.opacity).toBe("");
+    expect(veil().style.transition).toBe("");
+    expect(veil().getAttribute("style")).toBeNull();
+  });
+
+  it("lets a short pull fall back without ever showing more than it was given", () => {
+    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+    render(<Modal />);
+    const box = screen.getByRole("textbox", { name: "Message" });
+    fireEvent.pointerDown(box, { pointerId: 2, button: 0, isPrimary: true, clientX: 100, clientY: 780, timeStamp: 0 });
+    act(() => {
+      fireEvent.pointerMove(window, { pointerId: 2, clientX: 100, clientY: 740, timeStamp: 400 });
+    });
+    const held = Number(veil().style.opacity);
+    expect(held).toBeLessThan(0.2);
+    act(() => {
+      fireEvent.pointerUp(window, { pointerId: 2, clientX: 100, clientY: 740, timeStamp: 900 });
+    });
+    expect(drawer().getAttribute("data-snap")).toBe("closed");
+    expect(veil().hasAttribute("data-open")).toBe(false);
+    expect(veil().getAttribute("style")).toBeNull();
+  });
+
+  it("opens with the drawer from the knob", () => {
+    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+    render(<Modal />);
+    fireEvent.click(drawer().querySelector(".zr-pit-knob")!);
+    expect(veil().hasAttribute("data-open")).toBe(true);
+  });
+});
 
 describe("Pit", () => {
   afterEach(() => {
