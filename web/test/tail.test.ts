@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { AriaClient, type AriaClientOptions, type AriaSnapshot, type Page, type ReadRequest } from "figaro-forms/aria";
+import { AriaClient, Transcript, type AriaClientOptions, type AriaSnapshot, type AriaStream, type Page, type ReadRequest } from "figaro-forms/aria";
 import type { Dial } from "figaro-forms";
 import { nodi, type TurnModel } from "zanni-react";
-import { CATCH_UP_PAGES, EVICT_BATCH, KEEP_ABOVE, TailClient, farCut, releaseBefore, runTop } from "zanni-react/jotai";
+import { CATCH_UP_PAGES, EVICT_BATCH, KEEP_ABOVE, TailClient, cutOf, farCut, releaseBefore, runTop } from "zanni-react/jotai";
 import { mock, type MockCore } from "./mock";
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -89,7 +89,7 @@ describe("TailClient", () => {
     expect(seen.some((r) => r.backward && r.at === undefined)).toBe(true);
     const turns = numbers(st.snapshot());
     expect(turns[turns.length - 1]).toBe(40);
-    const top = runTop(st);
+    const top = runTop(st)?.turn;
     expect(top).toBeGreaterThan(turns[0]!);
     expect(turns.filter((n) => n >= top!)).toEqual(Array.from({ length: 41 - top! }, (_, i) => top! + i));
     c.close();
@@ -108,12 +108,12 @@ describe("TailClient", () => {
     const { c, st } = await away((o) => new TailClient(o), 14);
     const top = runTop(st)!;
     releaseBefore(st, top);
-    await until(() => numbers(st.snapshot())[0] === top);
+    await until(() => numbers(st.snapshot())[0] === top.turn);
     expect(runTop(st)).toBeUndefined();
     expect(st.snapshot().olderAvailable).toBe(true);
     expect(await st.loadOlder()).toBe(true);
     const after = numbers(st.snapshot());
-    expect(after[0]).toBeLessThan(top);
+    expect(after[0]).toBeLessThan(top.turn);
     expect(after.every((n, i) => i === 0 || n === after[i - 1]! + 1)).toBe(true);
     c.close();
   });
@@ -216,6 +216,43 @@ describe("a long turn that straddles the pages of a catch up", () => {
     expect(asked.some((r) => r.backward && r.at === undefined)).toBe(true);
     expect(numbers(st.snapshot()).at(-1)).toBe(base + 39);
     c.close();
+  });
+});
+
+function holding(pages: Page[]) {
+  const transcript = new Transcript();
+  for (const page of pages) transcript.apply(page, "quiet");
+  return { transcript, ensure: async () => {} } as unknown as AriaStream;
+}
+
+const word = (id: number) => ({ type: "prose", markdown: "n" + id, id: String(id) });
+const ranges = (s: AriaStream) => s.transcript.held().rangesHeld().map((r) => r.from.turn + ":" + r.from.node + ".." + r.to.turn + ":" + r.to.node);
+
+describe("a hole inside one turn", () => {
+  const straddle = () =>
+    holding([
+      { parts: [{ turn: 9, sealed: true, from: 0, inquiry: "q9", nodes: [word(0)] }, { turn: 10, sealed: true, from: 0, inquiry: "q10", nodes: [word(0), word(1), word(2)], clipped_tail: true }], more: { after: true }, next: { turn: 10, node: 3 } },
+      { parts: [{ turn: 10, sealed: true, from: 7, nodes: [word(7), word(8)], clipped_head: true }, { turn: 11, sealed: true, from: 0, inquiry: "q11", nodes: [word(0)] }], more: { before: true } },
+    ] as unknown as Page[]);
+
+  it("is where the held run begins, so the head of that turn is released with the rest above it", () => {
+    const s = straddle();
+    expect(ranges(s)).toEqual(["9:0..10:2", "10:7..11:0"]);
+    const top = runTop(s)!;
+    expect(top).toEqual({ turn: 10, node: 7 });
+    releaseBefore(s, top);
+    expect(ranges(s)).toEqual(["10:7..11:0"]);
+    expect(runTop(s)).toBeUndefined();
+    expect(s.transcript.moreBefore()).toBe(true);
+  });
+
+  it("cuts at whichever of the run and the far window is later", () => {
+    expect(cutOf(undefined, 0)).toBeUndefined();
+    expect(cutOf(undefined, 30)).toEqual({ turn: 30, node: 0 });
+    expect(cutOf({ turn: 10, node: 7 }, 0)).toEqual({ turn: 10, node: 7 });
+    expect(cutOf({ turn: 10, node: 7 }, 10)).toEqual({ turn: 10, node: 7 });
+    expect(cutOf({ turn: 10, node: 7 }, 11)).toEqual({ turn: 11, node: 0 });
+    expect(cutOf({ turn: 40, node: 0 }, 30)).toEqual({ turn: 40, node: 0 });
   });
 });
 
