@@ -65,6 +65,17 @@ at. The 180 px icon and the 192 and 512 px ones are opaque (iOS paints a
 transparent icon black); the maskable one keeps everything but its ground inside
 the middle 80% circle.
 
+Safari builds no launch screen from the manifest's `background_color` and icon
+(MDN lists no support, and iOS 26 notes say the same; not yet seen on a phone).
+The launch image it takes is a `<link rel="apple-touch-startup-image">` whose
+media query names the screen's width, height and pixel ratio exactly. `web/icons/splash.json` lists the
+portrait screens of the iPhones iOS 26 runs on, `bin/figchat-icons` draws one image
+for each (the page's ground with the icon's arch at its centre, in the dither the
+page paints, so opening the app does not flash another ground), and the plugin
+emits them as hashed assets and writes the links. Landscape launches and iPads
+get iOS's own screen. The images are read when the app is added to the home
+screen, so a changed one needs the app removed and added again.
+
 The manifest's `start_url` and `scope` are the absolute path the shell is served
 at, `/chat/` unless `FIGCHAT_BASE` says otherwise at build time (prod and dev both
 serve `/chat/`). The link says `crossorigin="use-credentials"`:

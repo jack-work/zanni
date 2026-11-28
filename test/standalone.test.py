@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import struct
 import sys
 import zlib
@@ -22,6 +23,7 @@ HEAD = """() => {
   return {
     manifest: link('link[rel="manifest"]'),
     touch: link('link[rel="apple-touch-icon"]'),
+    launch: [...document.querySelectorAll('link[rel="apple-touch-startup-image"]')].map((n) => ({ href: n.href, media: n.getAttribute('media') })),
     capable: meta('apple-mobile-web-app-capable'),
     mobileCapable: meta('mobile-web-app-capable'),
     bar: meta('apple-mobile-web-app-status-bar-style'),
@@ -82,6 +84,24 @@ def png_header(body):
     assert body[:8] == b"\x89PNG\r\n\x1a\n", "a PNG"
     width, height, depth, colour = struct.unpack(">IIBB", body[16:26])
     return width, height, depth, colour
+
+
+LAUNCH_SCREENS = [
+    (440, 956, 3), (420, 912, 3), (402, 874, 3), (430, 932, 3), (393, 852, 3), (428, 926, 3),
+    (390, 844, 3), (375, 812, 3), (414, 896, 3), (414, 896, 2), (375, 667, 2),
+]
+
+
+def png_colours(body):
+    width, height, depth, colour = png_header(body)
+    assert (depth, colour) == (8, 3), "an 8-bit palette PNG"
+    pos, plte = 8, b""
+    while pos < len(body):
+        size, kind = struct.unpack(">I4s", body[pos : pos + 8])
+        if kind == b"PLTE":
+            plte = body[pos + 8 : pos + 8 + size]
+        pos += 12 + size
+    return [tuple(plte[i : i + 3]) for i in range(0, len(plte), 3)]
 
 
 def near(a, b, what, tol=3):
@@ -148,6 +168,21 @@ def home_screen(engine, ctx, pg, d):
     assert got.status == 200 and got.headers["content-type"] == "image/png"
     width, height, _, colour = png_header(got.body())
     assert (width, height) == (180, 180) and colour == 2, "%s: the touch icon is 180 px and opaque, iOS paints a transparent one black: %s" % (engine, (width, height, colour))
+
+    launch = {}
+    for item in head["launch"]:
+        found = re.fullmatch(r"\(device-width: (\d+)px\) and \(device-height: (\d+)px\) and \(-webkit-device-pixel-ratio: (\d)\) and \(orientation: portrait\)", item["media"])
+        assert found, "%s: a launch image names its screen exactly, iOS shows it on no other: %s" % (engine, item)
+        launch[tuple(int(v) for v in found.groups())] = item
+    for screen in LAUNCH_SCREENS:
+        assert screen in launch, "%s: a launch image for the %dx%d @%dx iPhone: %s" % ((engine,) + screen + (sorted(launch),))
+        got = ctx.request.get(launch[screen]["href"])
+        assert got.status == 200 and got.headers["content-type"] == "image/png", "%s: the %s launch image is served: %s" % (engine, screen, got.status)
+        width, height, _, kind = png_header(got.body())
+        assert (width, height) == (screen[0] * screen[2], screen[1] * screen[2]), "%s: the launch image is the screen's size in pixels, or iOS shows none: %s for %s" % (engine, (width, height), screen)
+        assert kind == 3, "%s: the launch image is opaque" % engine
+        assert any(max(abs(a - b) for a, b in zip(c, rgb(head["ground"]))) <= 3 for c in png_colours(got.body())), "%s: the launch screen is the composer's colour, so the app does not flash another ground on opening" % engine
+    assert len(head["launch"]) == len(LAUNCH_SCREENS), "%s: one launch image per screen and no stray ones: %s" % (engine, len(head["launch"]))
 
     assert not violations, "%s: nothing the home screen needs is refused by the page's policy: %s" % (engine, violations)
     return head

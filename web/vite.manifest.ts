@@ -17,6 +17,14 @@ export function appBase(): string {
   return base;
 }
 
+type Screen = { w: number; h: number; ratio: number };
+
+const SCREENS: Screen[] = JSON.parse(readFileSync(resolve(here, "icons/splash.json"), "utf8"));
+
+function launchMedia(screen: Screen): string {
+  return `(device-width: ${screen.w}px) and (device-height: ${screen.h}px) and (-webkit-device-pixel-ratio: ${screen.ratio}) and (orientation: portrait)`;
+}
+
 const ICONS = [
   { file: "icons/icon-192.png", sizes: "192x192", purpose: "any" },
   { file: "icons/icon-512.png", sizes: "512x512", purpose: "any" },
@@ -34,6 +42,10 @@ export function webAppManifest(): Plugin {
         const ref = this.emitFile({ type: "asset", name: basename(icon.file), source: readFileSync(resolve(here, icon.file)) });
         return { icon, ref };
       });
+      for (const screen of SCREENS) {
+        const side = `${screen.w * screen.ratio}x${screen.h * screen.ratio}`;
+        this.emitFile({ type: "asset", name: `launch-${side}.png`, source: readFileSync(resolve(here, `icons/splash/${side}.png`)) });
+      }
       const doc = {
         name: "figaro web",
         lang: "en",
@@ -50,9 +62,16 @@ export function webAppManifest(): Plugin {
     transformIndexHtml: {
       order: "post",
       handler(_html, ctx) {
-        const file = Object.keys(ctx.bundle ?? {}).find((name) => /^assets\/manifest-[^/]+\.webmanifest$/.test(name));
+        const names = Object.keys(ctx.bundle ?? {});
+        const file = names.find((name) => /^assets\/manifest-[^/]+\.webmanifest$/.test(name));
+        const launch = SCREENS.flatMap((screen) => {
+          const side = `${screen.w * screen.ratio}x${screen.h * screen.ratio}`;
+          const found = names.find((name) => name.startsWith(`assets/launch-${side}-`) && name.endsWith(".png"));
+          return found ? [{ tag: "link", attrs: { rel: "apple-touch-startup-image", href: "./" + found, media: launchMedia(screen) }, injectTo: "head" as const }] : [];
+        });
         return [
           { tag: "meta", attrs: { name: "theme-color", content: colour }, injectTo: "head" },
+          ...launch,
           ...(file ? [{ tag: "link", attrs: { rel: "manifest", href: "./" + file, crossorigin: "use-credentials" }, injectTo: "head" as const }] : []),
         ];
       },
