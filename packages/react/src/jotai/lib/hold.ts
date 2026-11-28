@@ -27,6 +27,10 @@ export function cutOf(run: Anchor | undefined, far: number): Anchor | undefined 
   return anchorLess(run, farAt) ? farAt : run;
 }
 
+export function releasesReader(run: Anchor | undefined, reader: number | undefined): boolean {
+  return run !== undefined && reader !== undefined && reader < run.turn;
+}
+
 export function releaseBefore(stream: AriaStream, at: Anchor): void {
   const held = stream.transcript;
   held.evictBefore(at);

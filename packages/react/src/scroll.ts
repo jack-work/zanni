@@ -80,6 +80,7 @@ export interface TranscriptScroll {
   readonly toEnd: () => void;
   readonly latest: (list: HTMLElement | null) => void;
   readonly reveal: (turn: number) => void;
+  readonly readerAt: () => number | undefined;
 }
 
 type Aim = { readonly end: true } | { readonly end: false; readonly turn: number };
@@ -275,5 +276,7 @@ export function useTranscriptScroll(turns: readonly Held[], pane: RefObject<HTML
     commit();
   }, []);
 
-  return { spans, away, toEnd, latest, reveal };
+  const readerAt = useCallback(() => (pinned.current ? undefined : place.current?.turn), []);
+
+  return { spans, away, toEnd, latest, reveal, readerAt };
 }

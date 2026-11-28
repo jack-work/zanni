@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { AriaClient, Transcript, type AriaClientOptions, type AriaSnapshot, type AriaStream, type Page, type ReadRequest } from "figaro-forms/aria";
 import type { Dial } from "figaro-forms";
 import { nodi, type TurnModel } from "zanni-react";
-import { CATCH_UP_PAGES, EVICT_BATCH, KEEP_ABOVE, TailClient, cutOf, farCut, releaseBefore, runTop } from "zanni-react/jotai";
+import { CATCH_UP_PAGES, EVICT_BATCH, KEEP_ABOVE, TailClient, cutOf, farCut, releaseBefore, releasesReader, runTop } from "zanni-react/jotai";
 import { mock, type MockCore } from "./mock";
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -253,6 +253,22 @@ describe("a hole inside one turn", () => {
     expect(cutOf({ turn: 10, node: 7 }, 10)).toEqual({ turn: 10, node: 7 });
     expect(cutOf({ turn: 10, node: 7 }, 11)).toEqual({ turn: 11, node: 0 });
     expect(cutOf({ turn: 40, node: 0 }, 30)).toEqual({ turn: 40, node: 0 });
+  });
+});
+
+describe("who a release of the old run displaces", () => {
+  const run = { turn: 30, node: 0 };
+
+  it("takes a reader whose place lies above the run to the end, as that place is gone", () => {
+    expect(releasesReader(run, 12)).toBe(true);
+    expect(releasesReader(run, 29)).toBe(true);
+  });
+
+  it("leaves alone a reader inside the run, a reader who follows the end, and a view with no hole", () => {
+    expect(releasesReader(run, 30)).toBe(false);
+    expect(releasesReader(run, 41)).toBe(false);
+    expect(releasesReader(run, undefined)).toBe(false);
+    expect(releasesReader(undefined, 12)).toBe(false);
   });
 });
 
