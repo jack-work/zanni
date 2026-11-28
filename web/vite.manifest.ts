@@ -11,6 +11,12 @@ export function stageColour(): string {
   return found[1]!.toLowerCase();
 }
 
+export function appBase(): string {
+  const base = process.env.FIGCHAT_BASE ?? "/chat/";
+  if (!/^\/([A-Za-z0-9._~-]+\/)*$/.test(base)) throw new Error("FIGCHAT_BASE must be an absolute path ending in a slash, got " + base);
+  return base;
+}
+
 const ICONS = [
   { file: "icons/icon-192.png", sizes: "192x192", purpose: "any" },
   { file: "icons/icon-512.png", sizes: "512x512", purpose: "any" },
@@ -19,6 +25,7 @@ const ICONS = [
 
 export function webAppManifest(): Plugin {
   const colour = stageColour();
+  const base = appBase();
   return {
     name: "figaro-web-app-manifest",
     apply: "build",
@@ -31,8 +38,8 @@ export function webAppManifest(): Plugin {
         name: "figaro web",
         lang: "en",
         short_name: "figaro",
-        start_url: "../",
-        scope: "../",
+        start_url: base,
+        scope: base,
         display: "standalone",
         theme_color: colour,
         background_color: colour,

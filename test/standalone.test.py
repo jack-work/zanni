@@ -3,7 +3,7 @@ import os
 import struct
 import sys
 import zlib
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from playwright.sync_api import sync_playwright
@@ -117,6 +117,8 @@ def home_screen(engine, ctx, pg, d):
     doc = json.loads(reply.body())
     assert doc["display"] == "standalone", doc
     assert doc["name"] and doc["short_name"], doc
+    served = urlparse(d.url).path
+    assert doc["start_url"] == served and doc["scope"] == served, "%s: start_url and scope are the absolute base the page is served at (%s): %s, %s" % (engine, served, doc["start_url"], doc["scope"])
     start, scope = urljoin(link["href"], doc["start_url"]), urljoin(link["href"], doc["scope"])
     assert start == d.url, "%s: start_url opens the app's own page: %s against %s" % (engine, start, d.url)
     assert start.startswith(scope) and scope == d.url, "%s: scope holds the start page and nothing wider: %s" % (engine, scope)

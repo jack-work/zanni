@@ -58,8 +58,9 @@ and `theme-color` into the built page. The manifest's two colours and
 The icons are `web/icons/*.png`: the 26 px head from `assets/parla` on that
 colour, scaled by whole steps.
 
-The manifest's `start_url` and `scope` are `../`, so they resolve to `/chat/`
-wherever the bundle is served. The link says `crossorigin="use-credentials"`:
+The manifest's `start_url` and `scope` are the absolute path the shell is served
+at, `/chat/` unless `FIGCHAT_BASE` says otherwise at build time (prod and dev both
+serve `/chat/`). The link says `crossorigin="use-credentials"`:
 a manifest is fetched without cookies unless it does, and the edge signs people
 in before it serves anything under `/chat/`. The edge needs `manifest-src 'self'`
 in the page policy (`lib/figchat-routes.nix` has it) and should answer a
