@@ -16,7 +16,7 @@ export class TailClient extends AriaClient {
       return page;
     }
     const pages = (this.ahead.get(aria) ?? 0) + 1;
-    if (pages < CATCH_UP_PAGES) {
+    if (pages < CATCH_UP_PAGES || req.at.node !== 0) {
       this.ahead.set(aria, pages);
       return page;
     }

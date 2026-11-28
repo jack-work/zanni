@@ -145,7 +145,9 @@ not in atoms.
   what is on screen. A reconnect that missed more than four pages reads the
   tail instead of the pages between (`TailClient`), and the view releases the
   turns more than 24 above the mounted window, 24 at a time; what was released
-  comes back through Earlier turns. Nothing below the reader is released.
+  comes back through Earlier turns. Nothing below the reader is released. When a
+  reconnect jumped, a reader inside the newest turns stays where they are and a
+  reader whose place lay above them is taken to the end, since that place is gone.
 - Composer: Enter sends, Shift+Enter breaks the line, never during IME
   composition, never on a coarse pointer. While a turn runs the composer gains
   one 40px line (glyph, what is running, elapsed time, Stop, Stop all) and the

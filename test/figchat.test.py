@@ -334,7 +334,16 @@ try:
         ROW = """() => { const r = (s) => { const n = document.querySelector(s); if (!n) return null; const b = n.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom }; };
           return { bar: r('.zr-composer'), row: r('.zr-compose-row'), input: r('.zr-input'), attach: r('.zr-attach'), pair: r('.zr-pill-pair'), stack: document.querySelector('.zr-compose-row').hasAttribute('data-stack') }; }"""
         MOVING = """() => document.getAnimations().filter(a => a.effect && a.effect.target && a.effect.target.closest && a.effect.target.closest('.zr-compose-row') && a.playState === 'running').map(a => ({ on: a.effect.target.className.split(' ')[0], props: [...new Set(a.effect.getKeyframes().flatMap(k => Object.keys(k)).filter(k => !['offset', 'easing', 'composite', 'computedOffset'].includes(k)))] }))"""
+        FIRST_FRAME = """() => { const a = document.getAnimations().find(a => a.effect && a.effect.target && a.effect.target.matches('.zr-compose-row > .zr-input')); if (!a) return null; a.pause(); a.currentTime = 0; const b = a.effect.target.getBoundingClientRect(); a.cancel(); return { x: b.x, y: b.y, w: b.width, h: b.height }; }"""
         WORDS = "the quick brown fox jumps over the lazy dog " * 4
+
+        WATCH_INPUT = """(() => { window.addEventListener('input', (e) => { if (e.target.classList && e.target.classList.contains('zr-input')) { const b = e.target.getBoundingClientRect(); window.__was = { x: b.x, y: b.y, w: b.width, h: b.height }; } }, true); })()"""
+
+        def starts_where_it_stood(pg, what):
+            was = pg.evaluate("window.__was")
+            first = pg.evaluate(FIRST_FRAME)
+            assert first and was, "%s: the input has a glide to read" % what
+            assert all(abs(first[k] - was[k]) <= 1.5 for k in ("x", "y", "w", "h")), "%s: the glide's first frame is the box the input had when the row changed, not one scaled about its centre: first %s, had %s" % (what, first, was)
 
         for width, height in ((390, 844), (1280, 800)):
             pg = fresh(width, height)
@@ -347,10 +356,12 @@ try:
             pg.keyboard.insert_text("fits on a line")
             pg.wait_for_timeout(120)
             assert not pg.evaluate(ROW)["stack"], "a draft that fits stays on the row"
+            pg.evaluate(WATCH_INPUT)
             pg.keyboard.insert_text(" " + WORDS)
             pg.wait_for_timeout(30)
             moving = pg.evaluate(MOVING)
             assert [m for m in moving if m["on"] == "zr-input"], "the input glides when the row stacks at %d: %s" % (width, moving)
+            starts_where_it_stood(pg, "stacking at %d" % width)
             for m in moving:
                 assert set(m["props"]) <= {"transform", "translate", "scale", "opacity"}, "the glide uses transform and opacity only, never a layout property: %s" % m
                 assert not (set(m["props"]) & LAYOUT_PROPS), m
@@ -368,6 +379,7 @@ try:
             pg.wait_for_timeout(30)
             back = [m for m in pg.evaluate(MOVING) if m["on"] == "zr-input"]
             assert back and set(back[0]["props"]) <= {"transform", "translate", "scale", "opacity"}, "the row glides back when the draft goes: %s" % back
+            starts_where_it_stood(pg, "unstacking at %d" % width)
             settle_motion(pg)
             after = pg.evaluate(ROW)
             assert not after["stack"] and after["input"]["w"] < one["input"]["w"] + 2 and abs(after["input"]["w"] - one["input"]["w"]) <= 2, "an empty draft puts the row back as it was: %s" % after

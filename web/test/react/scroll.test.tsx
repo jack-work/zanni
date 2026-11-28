@@ -115,6 +115,22 @@ describe("useTranscriptScroll", () => {
     expect(out.current!.away).toBe(false);
   });
 
+  it("says which turn an unpinned reader is on, and nothing while the end is followed", () => {
+    const { root, out, again } = scene(12);
+    again(13);
+    expect(out.current!.readerAt()).toBeUndefined();
+    act(() => {
+      root.scrollTop = 100;
+      root.dispatchEvent(new Event("scroll"));
+    });
+    again(14);
+    const at = out.current!.readerAt();
+    expect(at).toBeGreaterThanOrEqual(1);
+    expect(at).toBeLessThan(14);
+    act(() => out.current!.toEnd());
+    expect(out.current!.readerAt()).toBeUndefined();
+  });
+
   it("windows the turns around the end under one spacer", () => {
     const { out } = scene(40);
     const [near, far] = out.current!.spans;

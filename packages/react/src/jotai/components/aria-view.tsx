@@ -3,7 +3,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { ariaAtom } from "figaro-forms/aria/jotai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFirstFrame } from "../lib/first-frame";
-import { farCut, releaseBefore, runTop } from "../lib/hold";
+import { cutOf, farCut, releaseBefore, releasesReader, runTop } from "../lib/hold";
 import { labelOf } from "../lib/roster";
 import { metricsLineAtom, noteAtom, seenAtom, turnsAtom } from "../state/aria";
 import { forkOfAtom, pitSnapAtom, treeStateAtom } from "../state/pit";
@@ -55,7 +55,7 @@ export function AriaView({ attended }: { attended: Attended }) {
   const [baseline, setBaseline] = useState<number | null>(null);
   const live = snap.phase === "live";
   const olderAvailable = snap.olderAvailable === true;
-  const { spans, away, toEnd, latest, reveal } = useTranscriptScroll(turns, paneRef, followed);
+  const { spans, away, toEnd, latest, reveal, readerAt } = useTranscriptScroll(turns, paneRef, followed);
   useFirstFrame(followed);
 
   const link = useAtomValue(linkAtom);
@@ -147,11 +147,12 @@ export function AriaView({ attended }: { attended: Attended }) {
     if (!followed || loadingOlder || seeking.current) return;
     const stream = client.peek(aria);
     const run = runTop(stream);
-    const cut = Math.max(run ?? 0, farCut(turns, windowTop));
-    if (cut <= 0) return;
+    const cut = cutOf(run, farCut(turns, windowTop));
+    if (!cut) return;
+    const displaced = releasesReader(run, readerAt());
     releaseBefore(stream, cut);
-    if (run !== undefined) toEnd();
-  }, [turns, windowTop, followed, loadingOlder, client, aria, toEnd]);
+    if (displaced) toEnd();
+  }, [turns, windowTop, followed, loadingOlder, client, aria, toEnd, readerAt]);
 
   const tree = useAtomValue(treeStateAtom);
   const transcript = useMemo(

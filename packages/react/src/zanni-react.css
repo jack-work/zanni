@@ -223,6 +223,7 @@
 .zr-compose-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--z-space-3, 8px); }
 .zr-compose-row[data-attach] { grid-template-columns: auto minmax(0, 1fr) auto; }
 .zr-input[hidden] { display: none; }
+.zr-compose-row > .zr-input, .zr-compose-row > .zr-attach, .zr-compose-row > .zr-pill-pair { transform-origin: 0 0; }
 .zr-compose-row[data-stack] > .zr-input { grid-area: 1 / 1 / 2 / -1; }
 .zr-compose-row[data-stack] > :not(.zr-input) { grid-row: 2; }
 .zr-compose-row[data-stack] > .zr-pill-pair { grid-column: -2 / -1; justify-self: end; }
