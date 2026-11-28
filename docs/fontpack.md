@@ -5,7 +5,7 @@ Three faces, three jobs. The voice is the assignment, not the fonts.
 | face | job | notes |
 |---|---|---|
 | **Jacquard 24** | display, numerals, drop caps | pixel blackletter, **one weight (400)**. Ask for bold and the browser synthesises one, which smears the pixel grid. |
-| **EB Garamond** | prose, act names in italic | the humane register |
+| **Source Serif 4** | prose, act names in italic | the humane register |
 | **VT323** | everything technical: commands, labels, chips, timestamps | CRT terminal face. **Never below ~13px CSS.** It is bitmap-derived and disintegrates. |
 | **Alegreya** | registro's text and every aligned figure (`serif`) | sturdy at 13px, lining tabular figures; a 35 KB latin subset with `lnum`, `tnum`, `onum`, `pnum`, `liga`, `kern` |
 
@@ -30,7 +30,7 @@ and `zanni-check` fails a page that does.
 | consumer | how | cost |
 |---|---|---|
 | `zanni-inline` page | `fontpack.gen.js` writes one `<style>` of `@font-face` rules at the marker, each `src` a `data:font/woff2;base64,…` URI. Works where the app serves one document and nothing else, and under a CSP whose `font-src` allows `data:` | about 160 KB of base64 for all three faces in every page load; the browser cannot cache it apart from the page |
-| a site that serves files | copy `fonts/` and `fonts.css` beside the page and link `fonts.css`. It names the files relatively (`fonts/eb-garamond.woff2`) | 122 KB once, then cached |
+| a site that serves files | copy `fonts/` and `fonts.css` beside the page and link `fonts.css`. It names the files relatively (`fonts/source-serif-4.woff2`) | 122 KB once, then cached |
 
 `--set fontpack.faces=prose,mono` inlines only those faces (`display`,
 `prose`, `mono`). A page with no display type saves Jacquard's 35 KB. The

@@ -5,8 +5,8 @@ const path = require('path');
 const FACES = {
   display: [{ family: 'Jacquard 24', style: 'normal', weight: '400', file: 'jacquard-24.woff2' }],
   prose: [
-    { family: 'EB Garamond', style: 'normal', weight: '400 600', file: 'eb-garamond.woff2' },
-    { family: 'EB Garamond', style: 'italic', weight: '400', file: 'eb-garamond-italic.woff2' },
+    { family: 'Source Serif 4', style: 'normal', weight: '400 600', file: 'source-serif-4.woff2' },
+    { family: 'Source Serif 4', style: 'italic', weight: '400', file: 'source-serif-4-italic.woff2' },
   ],
   mono: [{ family: 'VT323', style: 'normal', weight: '400', file: 'vt323.woff2' }],
   ui: [{ family: 'Inter', style: 'normal', weight: '100 900', file: 'inter.woff2' }],

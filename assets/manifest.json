@@ -98,7 +98,7 @@
       ]
     },
     "fontpack": {
-      "summary": "Three faces, three jobs: Jacquard 24 display, EB Garamond prose, VT323 technical. Self-hosted: inlined as data: URIs, or served from fonts/ with fonts.css.",
+      "summary": "Three faces, three jobs: Jacquard 24 display, Source Serif 4 prose, VT323 technical. Self-hosted: inlined as data: URIs, or served from fonts/ with fonts.css.",
       "marker": "<!-- zanni:fontpack -->",
       "classes": [
         "fontpack-display",
@@ -107,7 +107,7 @@
       ],
       "families": [
         "Jacquard 24",
-        "EB Garamond",
+        "Source Serif 4",
         "VT323"
       ],
       "files": [
