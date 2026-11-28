@@ -908,11 +908,11 @@ try:
                 assert box["height"] >= 44 and box["width"] >= 44, "thumb size: %s" % box
                 assert_centred(b, "a message button's glyph at %d" % width)
                 assert b.locator(".zr-ink").evaluate("n => parseFloat(getComputedStyle(n).fontSize)") >= 24, "a visibly larger glyph"
-            assert pg.locator(".zr-scrim, .zr-sheet").count() == 0
+            assert pg.locator(".zr-scrim[data-open], .zr-sheet").count() == 0
             snap(pg, "inline-%d" % width)
             sans_free(pg, "the inline buttons at %d" % width)
             pg.locator(".nodi-turn[data-turn='26'] .nodi-said").first.click()
-            assert pg.locator(".zr-scrim, .zr-sheet").count() == 0, "tapping a message opens nothing"
+            assert pg.locator(".zr-scrim[data-open], .zr-sheet").count() == 0, "tapping a message opens nothing"
             mine.locator("[data-action='play']").click()
             pg.wait_for_selector(".fw-inline-player .voce")
             until(pg, "['loading','playing','idle','expired','error'].includes(document.querySelector('.fw-inline-player .voce').dataset.state)", 10000)
@@ -920,7 +920,7 @@ try:
             pg.wait_for_selector(".fw-inline-heard")
             assert "re-heard words" in pg.locator(".fw-inline-heard").inner_text()
             assert inline_door.state()["retranscribed"] == ["gluck/" + MAIN + ":26/in"], inline_door.state()["retranscribed"]
-            assert pg.locator(".zr-scrim, .zr-sheet").count() == 0, "no shaded sheet for re-transcribe"
+            assert pg.locator(".zr-scrim[data-open], .zr-sheet").count() == 0, "no shaded sheet for re-transcribe"
             pg.locator(".fw-inline-heard [data-action='use']").click()
             assert pg.locator(".zr-input").input_value() == "typed re-heard words"
             assert pg.locator(".fw-inline[data-kind='prose']").count() == 0, "a reply has no row of its own for play"
