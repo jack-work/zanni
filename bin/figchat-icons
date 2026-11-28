@@ -1,0 +1,304 @@
+#!/usr/bin/env python3
+import argparse
+import json
+import os
+import re
+import struct
+import zlib
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+HEAD = os.path.join(ROOT, "assets", "parla", "figaro-head.png")
+GESSO = os.path.join(ROOT, "assets", "gesso", "gesso.css")
+DEVICES = os.path.join(ROOT, "web", "icons", "splash.json")
+CELLS = 26
+
+
+def hexrgb(text):
+    return tuple(int(text[i : i + 2], 16) for i in (1, 3, 5))
+
+
+def tokens():
+    css = open(GESSO).read()
+    found = dict(re.findall(r"--([a-z0-9-]+):\s*(#[0-9a-fA-F]{6})\s*;", css))
+    return {name: hexrgb(value) for name, value in found.items()}
+
+
+def mixed(under, over, part):
+    return tuple(round(u * (1 - part) + o * part) for u, o in zip(under, over))
+
+
+def read_head():
+    body = open(HEAD, "rb").read()
+    pos, idat, palette = 8, b"", []
+    while pos < len(body):
+        size, kind = struct.unpack(">I4s", body[pos : pos + 8])
+        chunk = body[pos + 8 : pos + 8 + size]
+        pos += 12 + size
+        if kind == b"IHDR":
+            width, height, depth, colour = struct.unpack(">IIBB", chunk[:10])
+            if (width, height, depth, colour) != (CELLS, CELLS, 8, 3):
+                raise SystemExit("the head is a %dx%d 8-bit palette PNG" % (CELLS, CELLS))
+        elif kind == b"PLTE":
+            palette = [tuple(chunk[i : i + 3]) for i in range(0, len(chunk), 3)]
+        elif kind == b"IDAT":
+            idat += chunk
+    raw = zlib.decompress(idat)
+    rows, prev = [], bytearray(CELLS)
+    for y in range(CELLS):
+        at = y * (CELLS + 1)
+        kind, line = raw[at], bytearray(raw[at + 1 : at + 1 + CELLS])
+        for x in range(CELLS):
+            a = line[x - 1] if x else 0
+            b = prev[x]
+            c = prev[x - 1] if x else 0
+            if kind == 1:
+                line[x] = (line[x] + a) & 255
+            elif kind == 2:
+                line[x] = (line[x] + b) & 255
+            elif kind == 3:
+                line[x] = (line[x] + ((a + b) >> 1)) & 255
+            elif kind == 4:
+                guess = a + b - c
+                pa, pb, pc = abs(guess - a), abs(guess - b), abs(guess - c)
+                line[x] = (line[x] + (a if pa <= pb and pa <= pc else b if pb <= pc else c)) & 255
+        rows.append(line)
+        prev = line
+    return [[palette[i] for i in line] for line in rows]
+
+
+def slots(head, t):
+    names = {
+        t["paper"]: "paper",
+        t["paper-2"]: "paper2",
+        t["stage-muted"]: "mid",
+        t["muted"]: "shade",
+        t["ink"]: "ink",
+        t["stage"]: "stage",
+    }
+    out = []
+    for line in head:
+        row = []
+        for rgb in line:
+            if rgb not in names:
+                raise SystemExit("the head carries %s, which gesso names no token for" % (rgb,))
+            row.append(names[rgb])
+        out.append(row)
+    return out
+
+
+def palettes(t):
+    stage, ink = t["stage"], t["stage-ink"]
+    return {
+        "stage": {
+            "head": {"paper": t["paper"], "paper2": t["paper-2"], "mid": t["stage-muted"], "shade": t["muted"], "ink": t["ink"], "stage": t["stage"]},
+            "ground": (stage, mixed(stage, ink, 0.05)),
+            "ring": (t["gold-bright"], t["gold"]),
+            "field": t["paper"],
+        },
+        "oro": {
+            "head": {
+                "paper": t["gold-bright"],
+                "paper2": mixed(t["gold-bright"], t["gold"], 0.3),
+                "mid": t["gold"],
+                "shade": t["oxblood"],
+                "ink": mixed(t["oxblood"], t["stage"], 0.6),
+                "stage": t["stage"],
+            },
+            "ground": (stage, mixed(stage, ink, 0.05)),
+            "ring": (t["oxblood"], t["gold"]),
+            "field": t["gold-bright"],
+        },
+        "kanagawa": {
+            "head": {
+                "paper": hexrgb("#DCD7BA"),
+                "paper2": hexrgb("#C8C093"),
+                "mid": hexrgb("#938AA9"),
+                "shade": hexrgb("#54546D"),
+                "ink": hexrgb("#2A2A37"),
+                "stage": hexrgb("#16161D"),
+            },
+            "ground": (hexrgb("#1F1F28"), hexrgb("#2A2A37")),
+            "ring": (hexrgb("#E6C384"), hexrgb("#C0A36E")),
+            "field": hexrgb("#DCD7BA"),
+        },
+    }
+
+
+OPTIONS = {
+    1: {"name": "proscenium", "design": "arch", "palette": "stage"},
+    2: {"name": "oro", "design": "bleed", "palette": "oro"},
+    3: {"name": "kanagawa", "design": "arch", "palette": "kanagawa"},
+}
+
+ARCH_RADIUS = 13
+ARCH_SPAN = 30
+ARCH_REACH = 21.5
+
+
+def inside_arch(px, py, grow):
+    if py > CELLS + grow or abs(px - CELLS / 2) > CELLS / 2 + grow:
+        return False
+    if py >= ARCH_RADIUS:
+        return True
+    left, right = ARCH_RADIUS, CELLS - ARCH_RADIUS
+    if px < left:
+        return (px - left) ** 2 + (py - ARCH_RADIUS) ** 2 <= (ARCH_RADIUS + grow) ** 2
+    if px > right:
+        return (px - right) ** 2 + (py - ARCH_RADIUS) ** 2 <= (ARCH_RADIUS + grow) ** 2
+    return py >= -grow
+
+
+def inside_square(px, py, grow):
+    return -grow <= px <= CELLS + grow and -grow <= py <= CELLS + grow
+
+
+def art_painter(option, grid, pal):
+    colours = pal["head"]
+    ring = pal["ring"]
+    inside = inside_arch if option["design"] == "arch" else inside_square
+
+    def paint(cx, cy):
+        px, py = cx + 0.5, cy + 0.5
+        if inside(px, py, 0):
+            return colours[grid[cy][cx]]
+        if inside(px, py, 1):
+            return ring[0]
+        if inside(px, py, 2):
+            return ring[1]
+        return None
+    return paint
+
+
+def layout(option, size, purpose):
+    if option["design"] == "arch":
+        if purpose == "maskable":
+            cell = int(0.4 * size / ARCH_REACH)
+        else:
+            cell = round(0.82 * size / ARCH_SPAN)
+    else:
+        if purpose == "maskable":
+            cell = int(0.4 * size / (CELLS / 2 * 2 ** 0.5))
+        else:
+            cell = -(-size // CELLS)
+    return cell, (size - CELLS * cell) // 2
+
+
+def png(width, height, rows, palette=None):
+    def chunk(kind, data):
+        body = kind + data
+        return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body))
+
+    if palette is None:
+        header = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+        extra = b""
+    else:
+        header = struct.pack(">IIBBBBB", width, height, 8, 3, 0, 0, 0)
+        extra = chunk(b"PLTE", b"".join(bytes(c) for c in palette))
+    raw = b"".join(b"\x00" + row for row in rows)
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header) + extra + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b"")
+
+
+def render(width, height, cell, ox, oy, paint):
+    cache, rows = {}, []
+    first = (0 - ox) // cell
+    spans = [(x - ox) // cell for x in range(width)]
+    for y in range(height):
+        cy = (y - oy) // cell
+        row = cache.get(cy)
+        if row is None:
+            line = {cx: paint(cx, cy) for cx in range(first, spans[-1] + 1)}
+            row = cache[cy] = b"".join(bytes(line[cx]) for cx in spans)
+        rows.append(row)
+    return rows
+
+
+def icon(option, pal, grid, size, purpose):
+    cell, off = layout(option, size, purpose)
+    art = art_painter(option, grid, pal)
+    ground = pal["ground"]
+    bleed = option["design"] == "bleed"
+
+    def paint(cx, cy):
+        colour = art(cx, cy)
+        if colour is not None:
+            return colour
+        return pal["field"] if bleed else ground[(cx + cy) & 1]
+    return png(size, size, render(size, size, cell, off, off, paint))
+
+
+def splash(option, pal, grid, width, height, ratio):
+    art = art_painter(option, grid, pal)
+    ground = pal["ground"]
+    dither = 3 * ratio
+    cell = 2 * dither
+    left = ((width - CELLS * cell) // 2) // dither * dither
+    top = (int(height * 0.46) - CELLS * cell // 2) // dither * dither
+    colours = sorted(set(list(pal["head"].values()) + list(pal["ring"]) + list(ground)))
+    index = {c: i for i, c in enumerate(colours)}
+    reach = 4
+    rows, cache = [], {}
+    for y in range(height):
+        ay = (y - top) // cell
+        key = (y // dither, ay if -reach <= ay < CELLS + reach else None)
+        row = cache.get(key)
+        if row is None:
+            line = bytearray(width)
+            for x in range(width):
+                colour = None
+                if key[1] is not None:
+                    ax = (x - left) // cell
+                    if -reach <= ax < CELLS + reach:
+                        colour = art(ax, ay)
+                if colour is None:
+                    colour = ground[(x // dither + y // dither) & 1]
+                line[x] = index[colour]
+            row = cache[key] = bytes(line)
+        rows.append(row)
+    return png(width, height, rows, colours)
+
+
+def devices():
+    return json.load(open(DEVICES))
+
+
+def write(path, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "wb") as out:
+        out.write(data)
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Draw the home screen icons and launch images from the 26 px head.")
+    ap.add_argument("--option", type=int, choices=sorted(OPTIONS), default=1)
+    ap.add_argument("--out", help="write the shipped set (icons, splash/) for --option under OUT")
+    ap.add_argument("--preview", help="write every option's icons and one launch image under DIR")
+    args = ap.parse_args()
+    if not args.out and not args.preview:
+        ap.error("give --out or --preview")
+    t = tokens()
+    grid = slots(read_head(), t)
+    pals = palettes(t)
+    if args.out:
+        option = OPTIONS[args.option]
+        pal = pals[option["palette"]]
+        write(os.path.join(args.out, "apple-touch-icon.png"), icon(option, pal, grid, 180, "any"))
+        write(os.path.join(args.out, "icon-192.png"), icon(option, pal, grid, 192, "any"))
+        write(os.path.join(args.out, "icon-512.png"), icon(option, pal, grid, 512, "any"))
+        write(os.path.join(args.out, "icon-maskable-512.png"), icon(option, pal, grid, 512, "maskable"))
+        for d in devices():
+            w, h = d["w"] * d["ratio"], d["h"] * d["ratio"]
+            write(os.path.join(args.out, "splash", "%dx%d.png" % (w, h)), splash(option, pal, grid, w, h, d["ratio"]))
+    if args.preview:
+        for n, option in OPTIONS.items():
+            pal = pals[option["palette"]]
+            stem = os.path.join(args.preview, "option-%d-%s" % (n, option["name"]))
+            write(stem + "-180.png", icon(option, pal, grid, 180, "any"))
+            write(stem + "-192.png", icon(option, pal, grid, 192, "any"))
+            write(stem + "-512.png", icon(option, pal, grid, 512, "any"))
+            write(stem + "-maskable-512.png", icon(option, pal, grid, 512, "maskable"))
+            write(stem + "-launch-1170x2532.png", splash(option, pal, grid, 1170, 2532, 3))
+
+
+if __name__ == "__main__":
+    main()

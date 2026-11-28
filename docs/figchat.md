@@ -55,8 +55,15 @@ carries `apple-mobile-web-app-capable`, `mobile-web-app-capable`, the
 icons (192, 512 and a 512 maskable) as hashed assets and puts the manifest link
 and `theme-color` into the built page. The manifest's two colours and
 `theme-color` are `--stage` from `gesso.css`, which is the composer's colour.
-The icons are `web/icons/*.png`: the 26 px head from `assets/parla` on that
-colour, scaled by whole steps.
+The icons are `web/icons/*.png`, drawn by `bin/figchat-icons` from the 26 px
+head in `assets/parla` and the tokens in `gesso.css`: every head pixel is a whole
+number of icon pixels, and the ground around it is the page's own two-colour
+dither, one head pixel to a cell. The default is the head in an arch with a
+two-tone gold edge on the stage. `bin/figchat-icons --option N --out web/icons`
+redraws the set for another option, and `--preview DIR` draws all of them to look
+at. The 180 px icon and the 192 and 512 px ones are opaque (iOS paints a
+transparent icon black); the maskable one keeps everything but its ground inside
+the middle 80% circle.
 
 The manifest's `start_url` and `scope` are the absolute path the shell is served
 at, `/chat/` unless `FIGCHAT_BASE` says otherwise at build time (prod and dev both

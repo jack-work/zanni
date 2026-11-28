@@ -135,8 +135,12 @@ def home_screen(engine, ctx, pg, d):
         assert png_header(got.body())[:2] == (side, side), "%s: the %s icon is that size" % (engine, key)
         if key[1] == "maskable":
             rows = png_rows(got.body())
-            for x, y in ((2, 2), (side - 3, 2), (2, side - 3), (side - 3, side - 3), (side // 2, 6), (6, side // 2), (side - 7, side // 2), (side // 2, side - 7)):
-                near(list(rows[y][x * 3 : x * 3 + 3]), rgb(head["ground"]), "%s: the maskable icon is the composer's colour out to its edge at (%d, %d)" % (engine, x, y))
+            kept = {}
+            for y in range(side):
+                for x in range(side):
+                    if (x + 0.5 - side / 2) ** 2 + (y + 0.5 - side / 2) ** 2 > (0.4 * side) ** 2:
+                        kept[tuple(rows[y][x * 3 : x * 3 + 3])] = True
+            assert len(kept) <= 2, "%s: outside the maskable safe circle there is only the ground, flat or its two-colour dither: %s" % (engine, sorted(kept))
 
     touch = head["touch"]
     assert touch and touch["sizes"] == "180x180", "%s: an apple-touch-icon is declared: %s" % (engine, touch)
