@@ -2,6 +2,7 @@ import react from "@vitejs/plugin-react";
 import { resolve } from "node:path";
 import type { Plugin } from "vite";
 import { defineConfig } from "vitest/config";
+import { webAppManifest } from "./vite.manifest";
 
 const assets = resolve(import.meta.dirname, "../assets");
 const pkg = resolve(import.meta.dirname, "../packages/react/src");
@@ -29,7 +30,7 @@ export default defineConfig({
     ],
     dedupe: ["react", "react-dom", "jotai", "figaro-forms"],
   },
-  plugins: [zanniModules(), react()],
+  plugins: [zanniModules(), react(), webAppManifest()],
   build: {
     outDir: "dist",
     emptyOutDir: true,

@@ -46,6 +46,32 @@ route for the gateway's `POST /attach`, figaro-forms 0.11.1 and later). Same ori
 style: `bin/figchat-bundle` refuses an `index.html` that has one, and the edge
 CSP would block it. `THIRD-PARTY.txt` carries the notices and the upstream map.
 
+## Home screen
+
+The page installs to an iPhone home screen and opens standalone. `index.html`
+carries `apple-mobile-web-app-capable`, `mobile-web-app-capable`, the
+`black-translucent` status bar style, the home screen title and a 180 px opaque
+`apple-touch-icon`. `web/vite.manifest.ts` emits the manifest and its three
+icons (192, 512 and a 512 maskable) as hashed assets and puts the manifest link
+and `theme-color` into the built page. The manifest's two colours and
+`theme-color` are `--stage` from `gesso.css`, which is the composer's colour.
+The icons are `web/icons/*.png`: the 26 px head from `assets/parla` on that
+colour, scaled by whole steps.
+
+The manifest's `start_url` and `scope` are `../`, so they resolve to `/chat/`
+wherever the bundle is served. The link says `crossorigin="use-credentials"`:
+a manifest is fetched without cookies unless it does, and the edge signs people
+in before it serves anything under `/chat/`. The edge needs `manifest-src 'self'`
+in the page policy (`lib/figchat-routes.nix` has it) and should answer a
+`.webmanifest` under `/chat/assets/` as `application/manifest+json`; Caddy's
+mime table has no entry for the extension.
+
+In standalone the status bar floats over the page. `.fw-status` pads its top by
+`env(safe-area-inset-top)`, the composer and the drawer's last row keep clear of
+the bottom inset, the drawer's full stop sits under the top inset, and in
+landscape the edges keep clear of the notch. `test/standalone.test.py` checks
+this with Chromium's safe area override.
+
 ## Routes
 
 `#/` the aria list, `#/<store>/<aria>` an aria, `#/<store>/<aria>:<turn>` an

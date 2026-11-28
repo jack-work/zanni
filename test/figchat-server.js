@@ -28,7 +28,7 @@ const seen = { otel: [], attach: [], upgrades: 0, refused: 0, audio: 0, stt: [],
 const expired = new Set([5, 6]);
 const sessions = [];
 const noteSession = (kind, req, url) => sessions.push({ kind, header: req.headers['x-figchat-session'] || '', query: url.searchParams.get('session') || '', traceparent: req.headers.traceparent || '' });
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.woff2': 'font/woff2', '.json': 'application/json' };
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.woff2': 'font/woff2', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
 const csp = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; media-src 'self' blob:; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
 function file(res, rel, extra) {
