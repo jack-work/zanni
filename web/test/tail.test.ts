@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { AriaClient, type AriaClientOptions, type AriaSnapshot } from "figaro-forms/aria";
+import { describe, expect, it, vi } from "vitest";
+import { AriaClient, type AriaClientOptions, type AriaSnapshot, type Page, type ReadRequest } from "figaro-forms/aria";
 import type { Dial } from "figaro-forms";
 import { nodi, type TurnModel } from "zanni-react";
 import { CATCH_UP_PAGES, EVICT_BATCH, KEEP_ABOVE, TailClient, farCut, releaseBefore, runTop } from "zanni-react/jotai";
@@ -115,6 +115,106 @@ describe("TailClient", () => {
     const after = numbers(st.snapshot());
     expect(after[0]).toBeLessThan(top);
     expect(after.every((n, i) => i === 0 || n === after[i - 1]! + 1)).toBe(true);
+    c.close();
+  });
+});
+
+interface Shape {
+  readonly turn: number;
+  readonly sealed: boolean;
+  readonly nodes: number;
+}
+
+function paged(shapes: readonly Shape[], per: number) {
+  const node = (turn: number, i: number) => ({ type: "prose", markdown: "t" + turn + "n" + i, id: String(i) });
+  const part = (t: Shape, from: number, to: number) => ({
+    turn: t.turn,
+    sealed: t.sealed,
+    from,
+    ...(from === 0 ? { inquiry: "q" + t.turn } : {}),
+    nodes: Array.from({ length: to - from }, (_, i) => node(t.turn, from + i)),
+    ...(t.sealed ? {} : { live: { from, v: to } }),
+    ...(from > 0 ? { clipped_head: true } : {}),
+    ...(to < t.nodes ? { clipped_tail: true } : {}),
+  });
+  const forward = (at: { turn: number; node: number }): Page => {
+    const parts: unknown[] = [];
+    let budget = per;
+    let next: { turn: number; node: number } | undefined;
+    for (const [k, t] of shapes.entries()) {
+      if (t.turn < at.turn) continue;
+      const from = t.turn === at.turn ? at.node : 0;
+      if (from >= t.nodes) continue;
+      const take = Math.min(budget, t.nodes - from);
+      parts.push(part(t, from, from + take));
+      budget -= take;
+      if (from + take < t.nodes) next = { turn: t.turn, node: from + take };
+      else if (budget === 0 && shapes[k + 1]) next = { turn: shapes[k + 1]!.turn, node: 0 };
+      if (next) break;
+    }
+    return { parts, more: next ? { after: true } : {}, ...(next ? { next } : {}) } as Page;
+  };
+  const backward = (end?: { turn: number; node: number }): Page => {
+    const parts: unknown[] = [];
+    let budget = per;
+    let more = false;
+    for (let k = shapes.length - 1; k >= 0 && !more; k--) {
+      const t = shapes[k]!;
+      if (end && t.turn > end.turn) continue;
+      const to = end && t.turn === end.turn ? end.node : t.nodes;
+      if (to <= 0) continue;
+      const take = Math.min(budget, to);
+      parts.unshift(part(t, to - take, to));
+      budget -= take;
+      if (to - take > 0) more = true;
+      else if (budget === 0 && k > 0) more = true;
+      if (budget === 0) break;
+    }
+    return { parts, more: more ? { before: true } : {} } as Page;
+  };
+  return (req: ReadRequest): Page => (req.backward ? backward(req.at) : forward(req.at ?? { turn: 0, node: 0 }));
+}
+
+async function sleepThrough(shapes: (base: number) => Shape[], per: number) {
+  const core = mock.create({ step: 1, pageBytes: 3000 });
+  const g = gate(core);
+  const c = new TailClient({ dial: g.dial, retryMinMs: 20, retryMaxMs: 60, pageBytes: 3000 });
+  const st = c.attach(core.ids.main);
+  await st.ready();
+  const base = st.cursor;
+  const serve = paged(shapes(base), per);
+  const asked: ReadRequest[] = [];
+  const spy = vi.spyOn(AriaClient.prototype, "read").mockImplementation(async (_aria, req = {}) => {
+    asked.push(req as ReadRequest);
+    return serve(req as ReadRequest);
+  });
+  g.shut();
+  core.drop();
+  await until(() => st.state === "offline");
+  g.release();
+  await until(() => st.state === "live");
+  await wait(50);
+  spy.mockRestore();
+  return { c, st, asked, base };
+}
+
+describe("a long turn that straddles the pages of a catch up", () => {
+  it("is read on to its end, not jumped into the middle of, so no node of it is left blank", async () => {
+    const { c, st, asked, base } = await sleepThrough((b) => [{ turn: b, sealed: true, nodes: 1 }, { turn: b + 1, sealed: true, nodes: 1 }, { turn: b + 2, sealed: false, nodes: 18 }], 4);
+    const view = st.transcript.view();
+    const turn = [...view.closed, ...(view.open ? [view.open] : [])].filter((m) => m.turn === base + 2);
+    const nodes = turn.flatMap((m) => m.nodes.map((n) => [m.from, n.type]));
+    expect(nodes.map(([, type]) => type)).toEqual(Array.from({ length: 18 }, () => "prose"));
+    expect(runTop(st)).toBeUndefined();
+    expect(asked.some((r) => r.backward)).toBe(false);
+    c.close();
+  });
+
+  it("still jumps to the tail once a page ends between two turns", async () => {
+    const { c, st, asked, base } = await sleepThrough((b) => Array.from({ length: 40 }, (_, i) => ({ turn: b + i, sealed: i < 39, nodes: 1 })), 4);
+    expect(asked.filter((r) => !r.backward).length).toBeLessThanOrEqual(CATCH_UP_PAGES);
+    expect(asked.some((r) => r.backward && r.at === undefined)).toBe(true);
+    expect(numbers(st.snapshot()).at(-1)).toBe(base + 39);
     c.close();
   });
 });
