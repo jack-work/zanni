@@ -1,8 +1,10 @@
 import json
 import os
+import struct
 import subprocess
 import time
 import urllib.request
+import zlib
 
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAIN = "c0ffee01" * 4
@@ -40,6 +42,56 @@ FAKE_VISUAL_VIEWPORT = """
 
 
 HANG_MS = int(os.environ.get("FIGCHAT_HANG_MS", "120000"))
+
+
+def png_mean(png):
+    assert png[:8] == b"\x89PNG\r\n\x1a\n"
+    pos, idat = 8, b""
+    while pos < len(png):
+        size, kind = struct.unpack(">I4s", png[pos : pos + 8])
+        body = png[pos + 8 : pos + 8 + size]
+        pos += 12 + size
+        if kind == b"IHDR":
+            w, h, _, ctype = struct.unpack(">IIBB", body[:10])
+        elif kind == b"IDAT":
+            idat += body
+    raw = zlib.decompress(idat)
+    bpp = {2: 3, 6: 4}[ctype]
+    stride = w * bpp
+    prev = bytearray(stride)
+    total = [0, 0, 0]
+    at = 0
+    for _ in range(h):
+        f = raw[at]
+        line = bytearray(raw[at + 1 : at + 1 + stride])
+        at += 1 + stride
+        for k in range(stride):
+            a = line[k - bpp] if k >= bpp else 0
+            b = prev[k]
+            c = prev[k - bpp] if k >= bpp else 0
+            if f == 1:
+                line[k] = (line[k] + a) & 255
+            elif f == 2:
+                line[k] = (line[k] + b) & 255
+            elif f == 3:
+                line[k] = (line[k] + ((a + b) >> 1)) & 255
+            elif f == 4:
+                p = a + b - c
+                pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+                line[k] = (line[k] + (a if pa <= pb and pa <= pc else b if pb <= pc else c)) & 255
+        for px in range(w):
+            for ch in range(3):
+                total[ch] += line[px * bpp + ch]
+        prev = line
+    return [t / (w * h) for t in total]
+
+
+def shade(pg, x, y, size=6):
+    return png_mean(pg.screenshot(clip={"x": x, "y": y, "width": size, "height": size}))
+
+
+def rgb(css):
+    return [float(v) for v in css[css.index("(") + 1 : css.index(")")].replace("/", ",").split(",")[:3]]
 
 
 def until(pg, js, timeout=HANG_MS):

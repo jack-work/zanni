@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from playwright.sync_api import sync_playwright
 
 import timing
-from figchat_kit import FAKE_VISUAL_VIEWPORT, HANG_MS, MAIN, Door, assert_centred, keystrokes, quantile, until
+from figchat_kit import FAKE_VISUAL_VIEWPORT, HANG_MS, MAIN, Door, assert_centred, keystrokes, quantile, rgb, shade, until
 
 bundle = os.path.abspath(sys.argv[1])
 shots = os.environ.get("FIGCHAT_SHOTS", "")
@@ -137,6 +137,36 @@ with sync_playwright() as p:
     comp = pg.evaluate("(() => { const t = document.querySelector('.zr-input'); return [t.autocapitalize, t.getAttribute('autocorrect'), t.spellcheck, !!document.querySelector('[contenteditable]')]; })()")
     assert comp == ["sentences", "off", False, False], "autocapitalize, autocorrect and spellcheck are set on purpose and the editable is a plain textarea: %s" % comp
     assert not pg.errors, pg.errors
+    pg.context.close()
+
+    def same_colour(a, b, what):
+        assert max(abs(x - y) for x, y in zip(a, b)) <= 3, "%s: %s against the composer's %s" % (what, a, b)
+
+    for kb, top in ((80, 0), (160, 0), (250, 0), (KB, 0), (160, 90), (KB, KB)):
+        pg = fresh()
+        attend(pg, fast)
+        surface = rgb(pg.evaluate("getComputedStyle(document.querySelector('.zr-pit-head')).backgroundColor"))
+        pg.evaluate("window.__kb.open(%d, %d)" % (kb, top))
+        pg.wait_for_timeout(250)
+        g = geometry(pg)
+        floor = pg.evaluate("innerHeight")
+        below = list(range(int(g["composer"]["bottom"]) + 2, floor - 6, 40)) + [floor - 6]
+        for y in below:
+            if y < g["composer"]["bottom"] + 1:
+                continue
+            same_colour(shade(pg, 120, y), surface, "the strip %d px from the top, %d px of keyboard at offset %d, is the composer's colour and not the page's" % (y, kb, top))
+            owner = pg.evaluate("(() => { const n = document.elementFromPoint(120, %d); return !!n && !!n.closest('.zr-pit'); })()" % y)
+            assert owner, "the drawer's own surface is what lies under the composer at %d (keyboard %d, offset %d)" % (y, kb, top)
+        pg.context.close()
+
+    pg = fresh()
+    attend(pg, fast)
+    surface = rgb(pg.evaluate("getComputedStyle(document.querySelector('.zr-pit-head')).backgroundColor"))
+    for name in ("document.documentElement", "document.body"):
+        same_colour(rgb(pg.evaluate("getComputedStyle(%s).backgroundColor" % name)), surface, "%s carries the composer's colour as an explicit background" % name)
+    pg.evaluate("document.body.style.bottom = '300px'")
+    pg.wait_for_timeout(150)
+    same_colour(shade(pg, 120, 810), surface, "what the browser draws outside the app box is the composer's colour, flat")
     pg.context.close()
 
     for top in (0, 60):
