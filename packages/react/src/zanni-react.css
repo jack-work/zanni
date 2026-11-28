@@ -37,7 +37,8 @@
 .zr-btn:focus-visible { outline: 2px solid var(--z-focus); outline-offset: 2px; }
 .zr-group { display: inline-flex; flex-wrap: wrap; gap: 8px; }
 
-.zr-scrim { position: fixed; inset: 0; z-index: 4; background: color-mix(in srgb, var(--z-ink) 35%, transparent); opacity: 1; transition: opacity var(--zr-d-exit) var(--zr-out); @starting-style { opacity: 0; } }
+.zr-scrim { position: fixed; inset: 0; z-index: 4; opacity: 1; transition: opacity var(--zr-d-exit) var(--zr-out); @starting-style { opacity: 0; } }
+.zr-scrim::before { content: ""; position: absolute; inset: 0; background: color-mix(in srgb, var(--z-ink) 35%, transparent); }
 .zr-scrim[data-leaving] { opacity: 0; }
 .zr-sheet {
   box-sizing: border-box;
